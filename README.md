@@ -24,7 +24,7 @@ We release a series of [OpenMath models](https://huggingface.co/collections/nvid
 improved with this pipeline that are one of the best open models for solving mathematical problems and are currently
 the only state-of-the-art open models that do not rely on OpenAI for data generation!
 
-<table border="1">
+<table>
   <tr>
     <td></td>
     <td colspan="2" style="text-align: center;">greedy</td>
