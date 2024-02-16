@@ -107,7 +107,7 @@ for more details!
 
 Try to [run inference with our models](/docs/inference.md) with just a few commands!
 
-We provide [all instructions](/docs/reproducing-results.md) to fully reproduce our results.
+We provide all instructions to [fully reproduce our results](/docs/reproducing-results.md).
 
 If you want to improve your own models or to learn more about our pipeline, read through the relevant docs below.
 
