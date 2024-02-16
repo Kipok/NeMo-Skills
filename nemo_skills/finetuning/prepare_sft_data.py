@@ -68,7 +68,7 @@ class PrepareSFTDataConfig:
     add_correct: bool = True  # can set to False if only want to export incorrect solutions
     add_incorrect: bool = False  # if True, saves only incorrect solutions instead of correct
 
-    downsampling_method: Optional[str] = None
+    downsampling_method: Optional[str] = None  # random or fair
     num_output_samples: int = -1
 
     prompt: PromptConfig = field(default_factory=get_default_prompt_config)

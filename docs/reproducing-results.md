@@ -172,7 +172,11 @@ you can run the following:
    ```
    python nemo_skills/finetuning/prepare_sft_data.py \
        ++preprocessed_dataset_files="open-math-instruct-1/train.jsonl open-math-instruct-1/validation.jsonl" \
-       ++output_path=$NEMO_SKILLS_DATA/sft-data.jsonl
+       ++output_path=$NEMO_SKILLS_DATA/sft-data.jsonl \
+       ++downsampling_method=fair \
+       ++num_output_samples=1024000 \
+       ++text_filter_type=any_code \
+       ++trim_solutions=True
    ```
 
 3. Get the model you want to finetune, e.g. https://huggingface.co/mistralai/Mistral-7B-v0.1. Convert the model
