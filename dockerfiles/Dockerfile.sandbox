@@ -1,0 +1,33 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+FROM tiangolo/uwsgi-nginx-flask:python3.10
+
+# copying everything inside nemo_skills to make it available in the sandbox
+COPY nemo_skills /app/nemo_skills
+# registering local_sandbox_server.py as the starting point
+COPY nemo_skills/code_execution/local_sandbox/local_sandbox_server.py /app/main.py
+# installing required packages
+RUN pip install -r /app/nemo_skills/code_execution/requirements.txt
+
+
+ARG UWSGI_CHEAPER
+ENV UWSGI_CHEAPER $UWSGI_CHEAPER
+
+ARG UWSGI_PROCESSES
+ENV UWSGI_PROCESSES $UWSGI_PROCESSES
+
+ENV LISTEN_PORT 6000
+
+EXPOSE 6000
