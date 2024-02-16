@@ -12,14 +12,13 @@ Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
    ```
    python nemo_skills/finetuning/prepare_sft_data.py \
        ++prediction_jsonl_files=<path to the generated synthetic data>/output-rs*.jsonl \
-       ++output_path=sft-data.jsonl \
-       ++dataset=gsm8k \
-       ++split_name=train_full
+       ++output_path=sft-data.jsonl
    ```
 
    Note that `prediction_jsonl_files` can accept multiple glob patterns separated by space.
 
 2. Run SFT + checkpoint averaging + evaluation in one script.
+   If running locally add `--extra_eval_args="--num_nodes=1"`
 
    ```
    python pipeline/run_sft_and_eval.py \
@@ -30,7 +29,7 @@ Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
       ++model.data.train_ds.file_path=/data/<path to the data inside NEMO_SKILLS_DATA folder>
    ```
 
-   This will put all checkpoints, results and logs inside `NEMO_SKILLS_RESULTS` folder.
+   This will put all checkpoints, results and logs inside `$NEMO_SKILLS_RESULTS` folder.
    Note that you can provide `--stages` argument to control which steps to run. E.g.
    to skip evaluation use `--stages sft prepare_eval` or to only run evaluation
    (e.g. to re-run with different sampling parameters) use `--stages eval`.

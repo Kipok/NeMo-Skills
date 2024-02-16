@@ -12,6 +12,9 @@ Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
    in a zero-shot setting or any other model with few-shot examples of code usage in the prompt.
 
 2. [Convert the model](/docs/checkpoint-conversion.md) if it's not in the right format.
+   You do not need any conversion if using one of our NeMo models and can refer to
+   the exact steps on how to convert HF version of the models to TensorRT-LLM format
+   [here](/docs/reproducing-results.md#evaluation).
 
 3. Start model server and local [sandbox](/docs/sandbox.md) for code execution.
    We recommend using TensorRT-LLM for fastest inference,

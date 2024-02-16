@@ -5,7 +5,7 @@ Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
 Please note that unless you have an access to a large GPU cluster, it might take a long time
 for some of the commands to complete!
 
-All commands were tested on a node with 8 80Gb A100 GPUs.
+All commands were tested on a cluster with 8 80Gb A100 GPUs per node (or a local machine with the same setup).
 If you're using different GPU configuration, change the commands accordingly and
 expect ~1% variation in results.
 
@@ -14,6 +14,10 @@ expect ~1% variation in results.
 Here are the commands you can run to reproduce our evaluation numbers.
 The commands below are for Mistral-7B model as an example. They are identical for all models,
 except we use batch size of 16 for 34B+ model sizes.
+
+Note that this is not the most efficient configuration for running inference with these models.
+We refer you to the [TensoRT-LLM](https://github.com/NVIDIA/TensorRT-LLM)
+documentation to learn how to make inference more efficient.
 
 1. Get the model from HuggingFace
 
@@ -153,4 +157,59 @@ you can run the following:
 
 ## Model finetuning
 
-Coming soon!
+1. Download [OpenMathInstruct-1](https://huggingface.co/datasets/nvidia/OpenMathInstruct-1) dataset from HuggingFace, e.g.
+
+   ```
+   mkdir open-math-instruct-1
+   wget https://huggingface.co/datasets/nvidia/OpenMathInstruct-1/resolve/main/correct_solutions/train.jsonl?download=true -o open-math-instruct-1/train.jsonl
+   wget https://huggingface.co/datasets/nvidia/OpenMathInstruct-1/resolve/main/correct_solutions/validation.jsonl?download=true -o open-math-instruct-1/validation.jsonl
+   ```
+
+2. Convert the data to the format that [NeMo-Aligner](https://github.com/NVIDIA/NeMo-Aligner/) understands.
+   Make sure that NEMO_SKILLS_DATA environment variable is defined
+   (see [prerequisites](/docs/prerequisites.md) for more information).
+
+   ```
+   python nemo_skills/finetuning/prepare_sft_data.py \
+       ++preprocessed_dataset_files="open-math-instruct-1/train.jsonl open-math-instruct-1/validation.jsonl" \
+       ++output_path=$NEMO_SKILLS_DATA/sft-data.jsonl
+   ```
+
+3. Get the model you want to finetune, e.g. https://huggingface.co/mistralai/Mistral-7B-v0.1. Convert the model
+   to nemo format by running steps from [checkpoint conversion](/docs/checkpoint-conversion.md#huggingface-to-nemo) docs.
+
+4. Run finetuning. The commands below are assumed to be run on a Slurm cluster, but you can modify them to run
+   locally for small enough models. Here is an example command for Mistral-7b
+
+   ```
+   python pipeline/run_sft_and_eval.py \
+      --expname openmath-mistral-7b \
+      --nemo_model <path to the nemo model> \
+      --stages sft prepare_eval \
+      --num_nodes 8 \
+      --num_gpus 8 \
+      ++model.data.train_ds.file_path=/data/sft-data.jsonl \
+      ++trainer.sft.max_epochs=4 \
+      ++trainer.sft.val_check_interval=4000 \
+      ++model.tensor_model_parallel_size=4 \
+      ++model.pipeline_model_parallel_size=1 \
+      ++model.optim.lr=1e-6
+   ```
+
+   The finetuned model will be available inside `$NEMO_SKILLS_RESULTS` folder.
+
+   For other models modify the above command according to the following table
+
+   |                    | **Epochs** | **LR** | **# of GPUs** | **TP** | **PP** |
+   |--------------------|------------|--------|---------------|--------|--------|
+   | **Mistral-7B**     | 4          | 1e-6   | 64            | 4      | 1      |
+   | **CodeLlama-7B**   | 4          | 2e-5   | 64            | 4      | 1      |
+   | **CodeLlama-13B**  | 4          | 2e-5   | 64            | 4      | 1      |
+   | **CodeLlama-34B**  | 4          | 1e-5   | 128           | 8      | 1      |
+   | **Llama2-70B**     | 2          | 1e-5   | 256           | 8      | 2      |
+   | **CodeLlama-70B**  | 3          | 1e-5   | 256           | 8      | 2      |
+
+Note that the above configuration is not the most efficient way to train these models,
+but this is what we used in our project. We refer you to the
+[NeMo Framework](https://www.nvidia.com/en-us/ai-data-science/generative-ai/nemo-framework/)
+documentation to learn how to make training more efficient.

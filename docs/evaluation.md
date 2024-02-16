@@ -123,9 +123,7 @@ the [quick start](#quick-start) section.
    ```
    python nemo_skills/evaluation/evaluate_results.py \
      prediction_jsonl_files=./test-results/gsm8k/output-greedy.jsonl \
-     ++sandbox.host=<Sandbox IP> \
-     ++dataset=gsm8k \
-     ++split_name=test
+     ++sandbox.host=<Sandbox IP>
    ```
 
 After this you would typically follow up with the same command to compute metrics as in the [quick start](#quick-start).
@@ -137,4 +135,5 @@ To customize the prompt template for the model, create a new .yaml file inside
 [nemo_skills/inference/prompt](nemo_skills/inference/prompt) folder. Have a look
 at the existing templates there for an example.
 
-TODO: an example of how to use chat model?
+You can run `python nemo_skills/inference/generate_solutions.py --help`
+to see other available customization options.

@@ -100,7 +100,8 @@ We also release [OpenMathInstruct-1](https://huggingface.co/datasets/nvidia/Open
 a math instruction tuning dataset with 1.8M problem-solution pairs generated using permissively licensed
 [Mixtral-8x7B](https://huggingface.co/mistralai/Mixtral-8x7B-v0.1) model.
 
-Please see our paper ["OpenMathInstruct-1: A 1.8 Million Math Instruction Tuning Dataset"](TODO) for more details!
+Please see our paper ["OpenMathInstruct-1: A 1.8 Million Math Instruction Tuning Dataset"](https://arxiv.org/abs/2402.10176)
+for more details!
 
 ## Getting started
 
@@ -146,6 +147,13 @@ Please check out [evaluation](/docs/evaluation.md) and [finetuning](/docs/finetu
 
 If you find our work useful, please consider citing us!
 
-TODO
+```bibtex
+@article{toshniwal2024openmath,
+  title   = {OpenMathInstruct-1: A 1.8 Million Math Instruction Tuning Dataset},
+  author  = {Shubham Toshniwal and Ivan Moshkov and Sean Narenthiran and Daria Gitman and Fei Jia and Igor Gitman},
+  year    = {2024},
+  journal = {arXiv preprint arXiv: Arxiv-2402.10176}
+}
+```
 
 Disclaimer: This project is strictly for research purposes, and not an official product from NVIDIA.

@@ -96,7 +96,7 @@ def parse_input(input_texts: str, tokenizer):
     batch_input_ids = [
         tokenizer.encode(
             input_text,
-            add_special_tokens=False,  # TODO: does this need to be true?
+            add_special_tokens=False,
         )
         for input_text in input_texts
     ]
