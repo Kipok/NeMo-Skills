@@ -106,6 +106,7 @@ model:
       top_k: 0
       top_p: 0.95
       repetition_penalty: 1.0
+      add_BOS: False
       all_probs: False
       compute_logprob: False
       end_strings: ["<|endoftext|>", "<extra_id_1>"]

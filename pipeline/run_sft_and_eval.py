@@ -49,6 +49,7 @@ def run_sft(
         f'    --checkpoints_folder {checkpoints_folder}/training '
         f'    --nemo_model {args.nemo_model} '
         f'    --num_nodes {args.num_nodes} '
+        f'    --num_gpus {args.num_gpus} '
         f'    {extra_sft_arguments} '
     )
     last_job_id = start_job(extra_sbatch_args, cmd)
@@ -74,6 +75,7 @@ def run_prepare_eval(
         f'    --training_folder {checkpoints_folder}/training/checkpoints '
         f'    --output_path {inference_path} '
         f'    --nemo_model {args.nemo_model} '
+        f'    --num_gpus {args.num_gpus} '
         f'    --server_type {args.server_type} '
         f'    {args.extra_prepare_eval_args} '
     )
@@ -92,11 +94,12 @@ def run_eval(
     cmd = (
         f'{sys.executable} {current_folder}/run_eval.py '
         f'    --model_path {inference_path} '
-        f'    --prompt_type code_sfted '
         f'    --output_dir {results_folder} '
-        f'    --num_gpus 8 '
+        f'    --num_gpus {args.num_gpus} '
         f'    --server_type {args.server_type} '
-        f'    prompt.num_few_shots=0 '
+        f'    ++split_name=validation '
+        f'    +prompt=code_sfted '
+        f'    ++prompt.num_few_shots=0 '
         f'    {args.extra_eval_args} '
     )
     last_job_id = start_job(extra_sbatch_args, cmd)
@@ -118,6 +121,7 @@ if __name__ == "__main__":
     parser.add_argument("--expname", required=True, help="Experiment name for logging purposes")
     parser.add_argument("--nemo_model", required=True)
     parser.add_argument("--num_nodes", type=int, default=1)
+    parser.add_argument("--num_gpus", type=int)
     parser.add_argument("--num_sft_jobs", type=int, default=1)
     parser.add_argument("--server_type", choices=('nemo',), default='nemo')
     parser.add_argument("--stages", nargs="+", default=["sft", "prepare_eval", "eval"])
@@ -144,7 +148,7 @@ if __name__ == "__main__":
     if args.server_type == "nemo":  # adding expname for better logging
         inference_path = f"{checkpoints_folder}/{args.expname}.nemo"
     else:
-        inference_path = f"{checkpoints_folder}/{args.server_type}/{args.expname}/"
+        inference_path = f"{checkpoints_folder}/{args.server_type}"
 
     last_job_id = None
     for stage in args.stages:

@@ -45,7 +45,7 @@ if __name__ == "__main__":
     parser.add_argument("--server_type", choices=('nemo',), default='nemo')
     parser.add_argument("--output_path", required=True, help="Path to save the TensorRT-LLM model")
     parser.add_argument("--nemo_model", required=True, help="Only need this to get the config file")
-    parser.add_argument("--num_gpus", type=int, default=8)
+    parser.add_argument("--num_gpus", required=True, type=int)
     parser.add_argument(
         "--partition",
         required=False,
@@ -57,7 +57,7 @@ if __name__ == "__main__":
     args.output_path = Path(args.output_path).absolute()
     model_name = args.output_path.name
 
-    if str(args.output_path).endswith('.nemo'):
+    if model_name.endswith('.nemo'):
         # mounting the parent folder instead
         args.output_path = args.output_path.parent
     args.output_path.mkdir(exist_ok=True, parents=True)
