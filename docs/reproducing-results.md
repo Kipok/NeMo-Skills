@@ -161,8 +161,8 @@ you can run the following:
 
    ```
    mkdir open-math-instruct-1
-   wget https://huggingface.co/datasets/nvidia/OpenMathInstruct-1/resolve/main/correct_solutions/train.jsonl?download=true -o open-math-instruct-1/train.jsonl
-   wget https://huggingface.co/datasets/nvidia/OpenMathInstruct-1/resolve/main/correct_solutions/validation.jsonl?download=true -o open-math-instruct-1/validation.jsonl
+   wget https://huggingface.co/datasets/nvidia/OpenMathInstruct-1/resolve/main/correct_solutions/train.jsonl?download=true -O open-math-instruct-1/train.jsonl
+   wget https://huggingface.co/datasets/nvidia/OpenMathInstruct-1/resolve/main/correct_solutions/validation.jsonl?download=true -O open-math-instruct-1/validation.jsonl
    ```
 
 2. Convert the data to the format that [NeMo-Aligner](https://github.com/NVIDIA/NeMo-Aligner/) understands.
