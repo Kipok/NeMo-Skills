@@ -21,14 +21,12 @@ from argparse import ArgumentParser
 from collections import OrderedDict
 
 import torch
-from pytorch_lightning import Trainer
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
-
 from nemo.collections.nlp.models.language_modeling.megatron_gpt_model import MegatronGPTModel
-from nemo.collections.nlp.parts.nlp_overrides import NLPSaveRestoreConnector
-from nemo.collections.nlp.parts.nlp_overrides import NLPDDPStrategy
+from nemo.collections.nlp.parts.nlp_overrides import NLPDDPStrategy, NLPSaveRestoreConnector
 from nemo.utils import logging
 from nemo_aligner.utils.utils import load_from_nemo
+from pytorch_lightning import Trainer
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 
 def get_args():

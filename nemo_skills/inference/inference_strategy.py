@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import List, Dict
+from typing import Dict, List
 
 import torch
-
-from nemo.collections.nlp.modules.common.text_generation_strategy import GPTModelTextGenerationStrategy
 from megatron.core import parallel_state
+from nemo.collections.nlp.modules.common.text_generation_strategy import GPTModelTextGenerationStrategy
 
-from nemo_skills.code_execution.sandbox import get_sandbox
 from nemo_skills.code_execution import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS, extract_code_to_execute
+from nemo_skills.code_execution.sandbox import get_sandbox
 
 
 class CodeExecutionStrategy(GPTModelTextGenerationStrategy):

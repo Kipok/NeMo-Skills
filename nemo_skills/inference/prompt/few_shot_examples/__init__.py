@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from nemo_skills.code_execution import CODE_SEPARATORS, CODE_OUTPUT_SEPARATORS
+from nemo_skills.code_execution import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS
 from nemo_skills.inference.prompt.few_shot_examples.examples_gsm8k import examples_map as examples_gsm8k
 from nemo_skills.inference.prompt.few_shot_examples.examples_math import examples_map as examples_math
 

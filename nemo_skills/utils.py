@@ -23,7 +23,6 @@ def unroll_files(prediction_jsonl_files):
             yield file
 
 
-
 def setup_logging(disable_hydra_logs: bool = True):
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)

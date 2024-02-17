@@ -19,9 +19,10 @@ from pathlib import Path
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 
+from launcher import CLUSTER_CONFIG, fill_env_vars, get_server_command, launch_job
+
+from nemo_skills.inference.prompt.utils import examples_map, prompt_types
 from nemo_skills.utils import setup_logging
-from nemo_skills.inference.prompt.utils import prompt_types, examples_map
-from launcher import fill_env_vars, launch_job, CLUSTER_CONFIG, get_server_command
 
 
 def get_greedy_cmd(benchmark, output_name='output-greedy.jsonl', extra_arguments=""):

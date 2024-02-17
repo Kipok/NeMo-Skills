@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import torch
 import logging
+
+import torch
 from torchmetrics import Metric
 
 from nemo_skills.code_execution.sandbox import get_sandbox

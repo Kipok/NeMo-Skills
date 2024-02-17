@@ -19,8 +19,9 @@ from pathlib import Path
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 
-from nemo_skills.utils import setup_logging
 from launcher import CLUSTER_CONFIG, fill_env_vars, launch_job
+
+from nemo_skills.utils import setup_logging
 
 SLURM_CMD = (
     "python /code/nemo_skills/finetuning/average_checkpoints.py "

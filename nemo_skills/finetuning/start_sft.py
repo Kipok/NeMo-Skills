@@ -14,8 +14,6 @@
 
 
 import torch.multiprocessing as mp
-from omegaconf.omegaconf import OmegaConf, open_dict
-
 from nemo.collections.nlp.data.language_modeling.megatron.gpt_sft_chat_dataset import get_prompt_template_example
 from nemo.core.config import hydra_runner
 from nemo.utils import logging
@@ -35,6 +33,7 @@ from nemo_aligner.utils.train_script_utils import (
     retrieve_custom_trainer_state_dict,
 )
 from nemo_aligner.utils.utils import load_from_nemo
+from omegaconf.omegaconf import OmegaConf, open_dict
 
 """Script to start SFT training"""
 

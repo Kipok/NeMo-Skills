@@ -18,17 +18,16 @@
 import json
 import logging
 import sys
-import json
-from pathlib import Path
 from argparse import ArgumentParser
+from pathlib import Path
 
 import numpy as np
-import torch
 import tensorrt_llm
+import torch
 from flask import Flask, jsonify, request
 from flask_restful import Api, Resource
-from tensorrt_llm.runtime import ModelRunnerCpp
 from mpi4py import MPI
+from tensorrt_llm.runtime import ModelRunnerCpp
 from transformers import AutoTokenizer
 
 

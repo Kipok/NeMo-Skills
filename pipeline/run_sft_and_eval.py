@@ -20,8 +20,9 @@ from pathlib import Path
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 
+from launcher import CLUSTER_CONFIG, fill_env_vars
+
 from nemo_skills.utils import setup_logging
-from launcher import fill_env_vars, CLUSTER_CONFIG
 
 
 def start_job(extra_sbatch_args: str, cmd: str) -> int:

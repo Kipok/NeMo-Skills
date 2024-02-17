@@ -16,17 +16,16 @@
 # different clusters and local execution
 
 import argparse
-import uuid
+import atexit
 import logging
 import os
 import subprocess
 import tempfile
-import atexit
-from time import sleep
+import uuid
 from pathlib import Path
+from time import sleep
 
 import yaml
-
 
 LOG = logging.getLogger(__file__)
 

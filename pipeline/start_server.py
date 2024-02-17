@@ -14,8 +14,8 @@
 
 import atexit
 import os
-import sys
 import subprocess
+import sys
 import time
 from argparse import ArgumentParser
 from pathlib import Path
@@ -23,8 +23,9 @@ from pathlib import Path
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 
+from launcher import CLUSTER_CONFIG, fill_env_vars, get_server_command, launch_job
+
 from nemo_skills.utils import setup_logging
-from launcher import CLUSTER_CONFIG, fill_env_vars, launch_job, get_server_command
 
 SLURM_CMD = """
 nvidia-smi && \

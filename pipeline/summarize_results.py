@@ -15,11 +15,11 @@
 # will run compute metrics on all relevant files and summarize results in a .csv file
 
 import argparse
+import glob
+import json
 import logging
 import subprocess
-import glob
 import sys
-import json
 from pathlib import Path
 
 # adding nemo_skills to python path to avoid requiring installation

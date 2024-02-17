@@ -17,9 +17,9 @@ import json
 import os
 import random
 import re
+import sys
 import tarfile
 import tempfile
-import sys
 import urllib.request
 from collections import defaultdict
 from pathlib import Path
@@ -29,9 +29,10 @@ from normalizer import normalize_answer_string
 sys.path.append(str(Path(__file__).parents[1]))
 from utils import prepare_for_sft
 
+from nemo_skills.code_execution.math_grader import extract_answer
+
 # utils is adding main package to path already
 from nemo_skills.inference.prompt.utils import prompt_types
-from nemo_skills.code_execution.math_grader import extract_answer
 
 DOWNLOAD_LINK = "https://people.eecs.berkeley.edu/~hendrycks/MATH.tar"
 

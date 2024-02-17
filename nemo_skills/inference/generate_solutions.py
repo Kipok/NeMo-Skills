@@ -12,21 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
-import logging
 import json
-from dataclasses import dataclass, field, asdict
+import logging
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Optional
 
 import hydra
 from omegaconf import OmegaConf
 from tqdm import tqdm
 
-from nemo_skills.inference.server.model import get_model
-from nemo_skills.inference.prompt.utils import get_prompt, PromptConfig
 from nemo_skills.code_execution.sandbox import get_sandbox
+from nemo_skills.inference.prompt.utils import PromptConfig, get_prompt
+from nemo_skills.inference.server.model import get_model
 from nemo_skills.utils import setup_logging
-
 
 LOG = logging.getLogger(__file__)
 

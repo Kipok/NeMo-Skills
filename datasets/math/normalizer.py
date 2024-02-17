@@ -82,7 +82,6 @@ This logic is largely copied from the Hendrycks' MATH release (math_equivalence)
 
 import re
 
-
 # sympy might hang -- we don't care about trying to be lenient in these cases
 BAD_SUBSTRINGS = ["^{", "^("]
 BAD_REGEXES = ["\^[0-9]+\^", "\^[0-9][0-9]+"]

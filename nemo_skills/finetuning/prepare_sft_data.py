@@ -21,7 +21,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import zip_longest
 from pathlib import Path
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 
 import hydra
 import numpy as np

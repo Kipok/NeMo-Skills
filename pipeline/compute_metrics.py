@@ -14,16 +14,16 @@
 
 import argparse
 import json
-import sys
 import logging
+import sys
 from collections import Counter
-from pathlib import Path
 from itertools import zip_longest
+from pathlib import Path
 
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 
-from nemo_skills.utils import unroll_files, setup_logging
+from nemo_skills.utils import setup_logging, unroll_files
 
 LOG = logging.getLogger(__file__)
 
