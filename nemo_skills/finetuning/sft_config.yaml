@@ -156,7 +156,7 @@ model:
       micro_batch_size: 1
       shuffle: True
       memmap_workers: null
-      max_seq_length: 2048
+      max_seq_length: 4096
       min_seq_length: 1
       drop_last: True
       label_key: 'output'

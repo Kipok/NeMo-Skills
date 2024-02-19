@@ -58,7 +58,7 @@ if [ $SLURM_LOCALID -eq 0 ]; then \
     echo "Waiting for the server to start" && \
     tail -n0 -f /tmp/server_logs.txt | sed '/Running on all addresses/ q' && \
     {eval_cmds} \
-    echo "done"; \
+    kill %1; \
 else \
     sleep infinity; \
 fi \

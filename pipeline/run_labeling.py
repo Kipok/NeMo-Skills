@@ -43,7 +43,7 @@ if [ $SLURM_LOCALID -eq 0 ]; then \
         {extra_arguments} && \
     python nemo_skills/evaluation/evaluate_results.py \
         prediction_jsonl_files=/results/output-rs{random_seed}.jsonl && \
-    echo "done"; \
+    kill %1; \
 else \
     sleep infinity; \
 fi \
