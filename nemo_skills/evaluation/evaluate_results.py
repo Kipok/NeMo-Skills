@@ -13,15 +13,14 @@
 # limitations under the License.
 
 import logging
+import sys
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Optional
 
 import hydra
 from omegaconf import MISSING, OmegaConf
 
 from nemo_skills.code_execution.sandbox import get_sandbox
-from nemo_skills.utils import setup_logging
+from nemo_skills.utils import print_fields_docstring, setup_logging
 
 LOG = logging.getLogger(__file__)
 
@@ -71,5 +70,8 @@ def evaluate_results(cfg: EvaluateResultsConfig):
 
 
 if __name__ == "__main__":
-    setup_logging()
-    evaluate_results()
+    if '--help' in sys.argv:
+        print_fields_docstring(EvaluateResultsConfig)
+    else:
+        setup_logging()
+        evaluate_results()
