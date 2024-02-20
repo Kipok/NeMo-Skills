@@ -51,7 +51,7 @@ def get_server_command(server_type, num_gpus):
             num_tasks = 1
     else:
         server_start_cmd = (
-            f"(mpirun -np {num_gpus} python /code/nemo_skills/inference/server/serve_trt.py "
+            f"(mpirun -np {num_gpus} --allow-run-as-root --oversubscribe python /code/nemo_skills/inference/server/serve_trt.py "
             "--model_path /model > /tmp/server_logs.txt &)"
         )
         num_tasks = 1  # we launch via mpirun directly
