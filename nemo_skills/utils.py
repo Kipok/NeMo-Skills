@@ -13,8 +13,11 @@
 # limitations under the License.
 
 import glob
+import inspect
 import logging
 import sys
+import typing
+from dataclasses import fields, is_dataclass, MISSING
 
 
 def unroll_files(prediction_jsonl_files):
@@ -36,3 +39,79 @@ def setup_logging(disable_hydra_logs: bool = True):
         sys.argv.extend(
             ["hydra.run.dir=.", "hydra.output_subdir=null", "hydra/job_logging=none", "hydra/hydra_logging=none"]
         )
+
+
+def type_to_str(type_hint):
+    """Convert type hints to a more readable string."""
+    origin = typing.get_origin(type_hint)
+    args = typing.get_args(type_hint)
+
+    if hasattr(type_hint, '__name__'):
+        return type_hint.__name__.replace('NoneType', 'None')
+    elif origin is typing.Union:
+        if len(args) == 2 and type(None) in args:
+            return f'Optional[{type_to_str(args[0])}]'
+        else:
+            return ' or '.join(type_to_str(arg) for arg in args)
+    elif origin is typing.Callable:
+        if args[0] is Ellipsis:
+            args_str = '...'
+        else:
+            args_str = ', '.join(type_to_str(arg) for arg in args[:-1])
+        return f'Callable[[{args_str}], {type_to_str(args[-1])}]'
+    elif origin:
+        inner_types = ', '.join(type_to_str(arg) for arg in args)
+        origin_name = origin.__name__ if hasattr(origin, '__name__') else str(origin)
+        return f'{origin_name}[{inner_types}]'
+    else:
+        return str(type_hint)
+
+
+def extract_comments_above_fields(dataclass_obj, prefix: str = '', level: int = 0):
+    source_lines = inspect.getsource(dataclass_obj).split('\n')
+    fields_info = {
+        field.name: {
+            'type': field.type,
+            'default': field.default if field.default != MISSING else None,
+            'default_factory': field.default_factory if field.default_factory != MISSING else None
+        } for field in fields(dataclass_obj)
+    }
+    comments, comment_cache = {}, []
+
+    for line in source_lines:
+        if line.strip().startswith('#'):
+            comment_cache.append(' '.join(line.strip().lstrip('# ').strip().split()))
+            continue
+        if ':' not in line:
+            continue
+
+        field_name = line.split(':')[0].strip()
+        if field_name not in fields_info:
+            continue
+
+        field_info = fields_info[field_name]
+        field_type = type_to_str(field_info['type'])
+        default = field_info['default']
+        default_factory = field_info['default_factory']
+        default_factory_str = f', Default Factory: {default_factory.__name__}' if default_factory else ''
+        default_str = f', Default: {default}' if not default_factory else default_factory_str
+        
+        comment = '. '.join(comment_cache)
+        field_detail = f"{'  ' * level}{prefix + field_name}: {comment}\n{'  ' * level}Type: {field_type}{default_str}"
+        comments[field_name] = field_detail
+        comment_cache = []
+
+        # Recursively extract nested dataclasses
+        if is_dataclass(field_info['type']):
+            nested_comments = extract_comments_above_fields(field_info['type'], prefix=prefix + field_name + '.', level=level + 1)
+            for k, v in nested_comments.items():
+                comments[f"{prefix}{field_name}.{k}"] = v
+
+    return comments
+
+
+def print_fields_docstring(dataclass_obj):
+    commented_fields = extract_comments_above_fields(dataclass_obj)
+    for content in commented_fields.values():
+        print(content)
+        print()
