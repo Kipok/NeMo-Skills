@@ -17,7 +17,7 @@ import inspect
 import logging
 import sys
 import typing
-from dataclasses import fields, is_dataclass, MISSING
+from dataclasses import MISSING, fields, is_dataclass
 
 
 def unroll_files(prediction_jsonl_files):
@@ -73,8 +73,9 @@ def extract_comments_above_fields(dataclass_obj, prefix: str = '', level: int = 
         field.name: {
             'type': field.type,
             'default': field.default if field.default != MISSING else None,
-            'default_factory': field.default_factory if field.default_factory != MISSING else None
-        } for field in fields(dataclass_obj)
+            'default_factory': field.default_factory if field.default_factory != MISSING else None,
+        }
+        for field in fields(dataclass_obj)
     }
     comments, comment_cache = {}, []
 
@@ -95,7 +96,7 @@ def extract_comments_above_fields(dataclass_obj, prefix: str = '', level: int = 
         default_factory = field_info['default_factory']
         default_factory_str = f', Default Factory: {default_factory.__name__}' if default_factory else ''
         default_str = f', Default: {default}' if not default_factory else default_factory_str
-        
+
         comment = '. '.join(comment_cache)
         field_detail = f"{'  ' * level}{prefix + field_name}: {comment}\n{'  ' * level}Type: {field_type}{default_str}"
         comments[field_name] = field_detail
@@ -103,7 +104,9 @@ def extract_comments_above_fields(dataclass_obj, prefix: str = '', level: int = 
 
         # Recursively extract nested dataclasses
         if is_dataclass(field_info['type']):
-            nested_comments = extract_comments_above_fields(field_info['type'], prefix=prefix + field_name + '.', level=level + 1)
+            nested_comments = extract_comments_above_fields(
+                field_info['type'], prefix=prefix + field_name + '.', level=level + 1
+            )
             for k, v in nested_comments.items():
                 comments[f"{prefix}{field_name}.{k}"] = v
 
