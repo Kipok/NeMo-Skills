@@ -14,8 +14,10 @@
 
 import glob
 import inspect
+import io
 import logging
 import sys
+import tokenize
 import typing
 from dataclasses import MISSING, fields, is_dataclass
 
@@ -39,6 +41,18 @@ def setup_logging(disable_hydra_logs: bool = True):
         sys.argv.extend(
             ["hydra.run.dir=.", "hydra.output_subdir=null", "hydra/job_logging=none", "hydra/hydra_logging=none"]
         )
+
+
+def extract_comments(code: str):
+    """Extract a list of comments from the given Python code."""
+    comments = []
+    tokens = tokenize.tokenize(io.BytesIO(code.encode()).readline)
+
+    for token, line, *_ in tokens:
+        if token is tokenize.COMMENT:
+            comments.append(line.lstrip('#').strip())
+
+    return comments
 
 
 def type_to_str(type_hint):
@@ -80,9 +94,9 @@ def extract_comments_above_fields(dataclass_obj, prefix: str = '', level: int = 
     comments, comment_cache = {}, []
 
     for line in source_lines:
-        if line.strip().startswith('#'):
-            comment_cache.append(' '.join(line.strip().lstrip('# ').strip().split()))
-            continue
+        line_comment = extract_comments(line)
+        if line_comment:
+            comment_cache.append(line_comment[0])
         if ':' not in line:
             continue
 
