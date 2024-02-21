@@ -26,7 +26,7 @@ from tqdm import tqdm
 from nemo_skills.code_execution.sandbox import get_sandbox
 from nemo_skills.inference.prompt.utils import PromptConfig, get_prompt
 from nemo_skills.inference.server.model import get_model
-from nemo_skills.utils import print_fields_docstring, setup_logging
+from nemo_skills.utils import get_fields_docstring, setup_logging
 
 LOG = logging.getLogger(__file__)
 
@@ -139,7 +139,8 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
 if __name__ == "__main__":
     if '--help' in sys.argv:
-        print_fields_docstring(GenerateSolutionsConfig)
+        help_msg = get_fields_docstring(GenerateSolutionsConfig)
+        print(help_msg)
     else:
         setup_logging()
         generate_solutions()

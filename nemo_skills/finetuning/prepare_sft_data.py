@@ -21,6 +21,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import zip_longest
 from pathlib import Path
+from pydoc import doc
 from typing import Dict, List, Optional
 
 import hydra
@@ -33,7 +34,7 @@ sys.path.append(str(Path(__file__).absolute().parents[2]))
 
 from nemo_skills.finetuning.filtering_utils import downsample_data, process_bad_solutions
 from nemo_skills.inference.prompt.utils import PromptConfig, get_prompt
-from nemo_skills.utils import print_fields_docstring, setup_logging, unroll_files
+from nemo_skills.utils import get_fields_docstring, setup_logging, unroll_files
 
 LOG = logging.getLogger(__file__)
 
@@ -207,7 +208,8 @@ def prepare_sft_data(cfg: PrepareSFTDataConfig):
 
 if __name__ == "__main__":
     if '--help' in sys.argv:
-        print_fields_docstring(PrepareSFTDataConfig)
+        help_msg = get_fields_docstring(PrepareSFTDataConfig)
+        # print(help_msg)
     else:
         setup_logging()
         prepare_sft_data()
