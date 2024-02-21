@@ -94,6 +94,9 @@ def extract_comments_above_fields(dataclass_obj, prefix: str = '', level: int = 
     comments, comment_cache = {}, []
 
     for line in source_lines:
+        # skip unfinished multiline comments
+        if line.count("'") % 2 or line.count('"') % 2:
+            continue
         line_comment = extract_comments(line)
         if line_comment:
             comment_cache.append(line_comment[0])
@@ -105,30 +108,37 @@ def extract_comments_above_fields(dataclass_obj, prefix: str = '', level: int = 
             continue
 
         field_info = fields_info[field_name]
+        field_name = prefix + field_name
         field_type = type_to_str(field_info['type'])
         default = field_info['default']
         default_factory = field_info['default_factory']
-        default_factory_str = f', Default Factory: {default_factory.__name__}' if default_factory else ''
-        default_str = f', Default: {default}' if not default_factory else default_factory_str
+        default_factory_str = f'default factory: {default_factory.__name__}' if default_factory else ''
+        if default == '???':
+            default_str = ', required'
+        else:
+            default_str = f', default: {default}' if not default_factory else default_factory_str
+        if is_dataclass(default_factory):
+            default_str = ''
 
-        comment = '. '.join(comment_cache)
-        field_detail = f"{'  ' * level}{prefix + field_name}: {comment}\n{'  ' * level}Type: {field_type}{default_str}"
+        indent = '  ' * level
+        comment = f"\n{indent}".join(comment_cache)
+        comment = "- " + comment if comment else ""
+        field_detail = f"{indent}{field_name} ({field_type}{default_str}) {comment}"
         comments[field_name] = field_detail
         comment_cache = []
 
         # Recursively extract nested dataclasses
         if is_dataclass(field_info['type']):
             nested_comments = extract_comments_above_fields(
-                field_info['type'], prefix=prefix + field_name + '.', level=level + 1
+                field_info['type'], prefix=field_name + '.', level=level + 1
             )
             for k, v in nested_comments.items():
-                comments[f"{prefix}{field_name}.{k}"] = v
+                comments[f"{field_name}.{k}"] = v
 
     return comments
 
 
-def print_fields_docstring(dataclass_obj):
+def get_fields_docstring(dataclass_obj):
     commented_fields = extract_comments_above_fields(dataclass_obj)
-    for content in commented_fields.values():
-        print(content)
-        print()
+    docstring = [content for content in commented_fields.values()]
+    return '\n\n'.join(docstring)
