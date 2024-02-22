@@ -95,7 +95,7 @@ def extract_comments_above_fields(dataclass_obj, prefix: str = '', level: int = 
 
     for line in source_lines:
         # skip unfinished multiline comments
-        if line.count("'") % 2 or line.count('"') % 2:
+        if line.count("'") == 3 or line.count('"') == 3:
             continue
         line_comment = extract_comments(line)
         if line_comment:
@@ -142,3 +142,15 @@ def get_fields_docstring(dataclass_obj):
     commented_fields = extract_comments_above_fields(dataclass_obj)
     docstring = [content for content in commented_fields.values()]
     return '\n\n'.join(docstring)
+
+
+def get_help_message(dataclass_obj):
+    heading = """
+This script uses Hydra for dynamic configuration management.
+You can apply Hydra's command-line syntax for overriding configuration values directly.
+Below are the available configuration options and their default values:
+    """.strip()
+
+    docstring = get_fields_docstring(dataclass_obj)
+
+    return f"{heading}\n\n{'-' * 75}\n\n{docstring}"
