@@ -23,7 +23,7 @@ from pathlib import Path
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 
-from launcher import CLUSTER_CONFIG, fill_env_vars, get_server_command, launch_job
+from launcher import CLUSTER_CONFIG, get_server_command, launch_job
 
 from nemo_skills.utils import setup_logging
 
@@ -72,8 +72,8 @@ if __name__ == "__main__":
         "num_gpus": args.num_gpus,
         "server_start_cmd": server_start_cmd,
         "server_type": args.server_type,
+        "NEMO_SKILLS_CODE": str(Path(__file__).absolute().parents[1]),
     }
-    fill_env_vars(format_dict, ["NEMO_SKILLS_CODE"])
 
     num_tasks = format_dict["num_gpus"]
     # somehow on slurm nemo needs multiple tasks, but locally only 1

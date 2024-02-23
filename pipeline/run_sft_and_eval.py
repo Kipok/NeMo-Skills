@@ -133,8 +133,10 @@ if __name__ == "__main__":
     # these are the extra SFT arguments you can provide
     extra_sft_arguments = f'{" ".join(unknown)}'
 
-    format_dict = {}
-    fill_env_vars(format_dict, ["NEMO_SKILLS_CODE", "NEMO_SKILLS_RESULTS"])
+    format_dict = {
+        "NEMO_SKILLS_CODE": str(Path(__file__).absolute().parents[1]),
+    }
+    fill_env_vars(format_dict, ["NEMO_SKILLS_RESULTS"])
 
     exp_path = f"{format_dict['NEMO_SKILLS_RESULTS']}/{args.project}"
 

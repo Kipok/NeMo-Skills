@@ -103,8 +103,9 @@ if __name__ == "__main__":
         "num_gpus": args.num_gpus,
         "extra_arguments": extra_arguments,
         "timeout": timeout,
+        "NEMO_SKILLS_CODE": str(Path(__file__).absolute().parents[1]),
     }
-    fill_env_vars(format_dict, ["NEMO_SKILLS_CODE", "NEMO_SKILLS_DATA"])
+    fill_env_vars(format_dict, ["NEMO_SKILLS_DATA"])
     if not args.disable_wandb:
         fill_env_vars(format_dict, ["WANDB_API_KEY"])
         logging_params = (
