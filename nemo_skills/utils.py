@@ -78,7 +78,7 @@ def type_to_str(type_hint):
         origin_name = origin.__name__ if hasattr(origin, '__name__') else str(origin)
         return f'{origin_name}[{inner_types}]'
     else:
-        return str(type_hint)
+        return str(type_hint).replace('typing.', '')
 
 
 def extract_comments_above_fields(dataclass_obj, prefix: str = '', level: int = 0):
@@ -112,18 +112,23 @@ def extract_comments_above_fields(dataclass_obj, prefix: str = '', level: int = 
         field_type = type_to_str(field_info['type'])
         default = field_info['default']
         default_factory = field_info['default_factory']
-        default_factory_str = f'default factory: {default_factory.__name__}' if default_factory else ''
         if default == '???':
-            default_str = ', required'
+            default_str = ' = MISSING'
         else:
-            default_str = f', default: {default}' if not default_factory else default_factory_str
-        if is_dataclass(default_factory):
-            default_str = ''
+            default_str = f' = {default}'
+        if default_factory:
+            try:
+                default_factory = default_factory()
+                default_str = f' = {default_factory}'
+            except:
+                pass
+            if is_dataclass(default_factory):
+                default_str = f' = {field_type}()'
 
         indent = '  ' * level
         comment = f"\n{indent}".join(comment_cache)
         comment = "- " + comment if comment else ""
-        field_detail = f"{indent}{field_name} ({field_type}{default_str}) {comment}"
+        field_detail = f"{indent}{field_name}: {field_type}{default_str} {comment}"
         comments[field_name] = field_detail
         comment_cache = []
 
@@ -141,16 +146,16 @@ def extract_comments_above_fields(dataclass_obj, prefix: str = '', level: int = 
 def get_fields_docstring(dataclass_obj):
     commented_fields = extract_comments_above_fields(dataclass_obj)
     docstring = [content for content in commented_fields.values()]
-    return '\n\n'.join(docstring)
+    return '\n'.join(docstring)
 
 
 def get_help_message(dataclass_obj):
     heading = """
-This script uses Hydra for dynamic configuration management.
+This script uses Hydra (https://hydra.cc/) for dynamic configuration management.
 You can apply Hydra's command-line syntax for overriding configuration values directly.
 Below are the available configuration options and their default values:
     """.strip()
 
     docstring = get_fields_docstring(dataclass_obj)
 
-    return f"{heading}\n\n{'-' * 75}\n\n{docstring}"
+    return f"{heading}\n{'-' * 75}\n{docstring}"

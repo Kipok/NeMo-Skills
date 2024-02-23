@@ -21,8 +21,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from itertools import zip_longest
 from pathlib import Path
-from pydoc import doc
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import hydra
 import numpy as np
@@ -64,7 +63,7 @@ class PrepareSFTDataConfig:
     preprocessed_dataset_files: Optional[str] = None  # can specify datasets from HF instead of prediction_jsonl_files
     output_path: str = MISSING
     # can provide additional metadata to store (e.g. dataset or generation_type)
-    metadata: Dict = field(default_factory=dict)
+    metadata: Dict[Any, Any] = field(default_factory=dict)
     skip_first: int = 0  # useful for skipping validation set from train_full generation (it's always first)
     add_correct: bool = True  # can set to False if only want to export incorrect solutions
     add_incorrect: bool = False  # if True, saves only incorrect solutions instead of correct
