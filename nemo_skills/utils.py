@@ -149,7 +149,7 @@ def get_fields_docstring(dataclass_obj):
     return '\n'.join(docstring)
 
 
-def get_help_message(dataclass_obj):
+def get_help_message(dataclass_obj, help_message=""):
     heading = """
 This script uses Hydra (https://hydra.cc/) for dynamic configuration management.
 You can apply Hydra's command-line syntax for overriding configuration values directly.
@@ -158,4 +158,8 @@ Below are the available configuration options and their default values:
 
     docstring = get_fields_docstring(dataclass_obj)
 
-    return f"{heading}\n{'-' * 75}\n{docstring}"
+    full_help = f"{heading}\n{'-' * 75}\n{docstring}"
+    if help_message:
+        full_help = f"{help_message}\n\n{full_help}"
+
+    return full_help
