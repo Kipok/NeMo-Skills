@@ -20,7 +20,7 @@ from pathlib import Path
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 
-from launcher import CLUSTER_CONFIG, fill_env_vars, launch_job
+from launcher import CLUSTER_CONFIG, NEMO_SKILLS_CODE, fill_env_vars, launch_job
 
 from nemo_skills.utils import setup_logging
 
@@ -103,7 +103,7 @@ if __name__ == "__main__":
         "num_gpus": args.num_gpus,
         "extra_arguments": extra_arguments,
         "timeout": timeout,
-        "NEMO_SKILLS_CODE": str(Path(__file__).absolute().parents[1]),
+        "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
     }
     fill_env_vars(format_dict, ["NEMO_SKILLS_DATA"])
     if not args.disable_wandb:
