@@ -61,13 +61,28 @@ context_templates = {
 }
 
 
-def get_prompt(prompt_config: PromptConfig, input_dict: dict):
+def get_prompt(
+    prompt_config: PromptConfig,
+    input_dict: dict,
+    examples: Optional[list[dict]] = None,
+    context: Optional[str] = None,
+):
     """Will build few-shot prompt from the provided pieces of information."""
     if prompt_config.num_few_shots != 0:
-        examples = examples_map[prompt_config.examples_type][: prompt_config.num_few_shots]
+        examples = (
+            examples[: prompt_config.num_few_shots]
+            if examples is not None
+            else examples_map[prompt_config.examples_type][
+                : prompt_config.num_few_shots
+            ]
+        )
     else:
         examples = []
-    context = context_templates[prompt_config.context_type]
+    context = (
+        context
+        if context is not None
+        else context_templates[prompt_config.context_type]
+    )
 
     filled_examples = []
     for example_dict in examples:

@@ -1,0 +1,8 @@
+defaults:
+  - visualization_config
+  - generation_config
+  - _self_
+
+hydra:
+  searchpath:
+    - file://nemo_skills/inference
