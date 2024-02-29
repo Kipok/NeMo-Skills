@@ -1,5 +1,6 @@
 from collections import defaultdict
 import datetime
+from flask import current_app
 import functools
 from joblib import Parallel, delayed
 import json
@@ -57,13 +58,13 @@ def get_general_custom_stats() -> Dict:
 def parse_model_answer(answer: str) -> List[Dict]:
     code_start, code_end = map(
         re.escape,
-        ConfigHolder.get_config()["visualization_params"][
+        current_app.config['prompt_explorer']["visualization_params"][
             "code_separators"
         ].split(' '),
     )
     output_start, output_end = map(
         re.escape,
-        ConfigHolder.get_config()["visualization_params"][
+        current_app.config['prompt_explorer']["visualization_params"][
             "code_output_separators"
         ].split(' '),
     )
@@ -143,7 +144,7 @@ def get_test_data(
     if not dataset or not split_name:
         return {QUESTION_FIELD: "", ANSWER_FIELD: ""}, 0
     with open(
-        ConfigHolder.get_config()["visualization_params"][
+        current_app.config['prompt_explorer']["visualization_params"][
             "dataset_path"
         ].format(
             dataset,
@@ -268,7 +269,7 @@ def custom_deepcopy(data) -> List:
 @functools.lru_cache()
 def get_data_from_files() -> List:
     logging.info("Getting data from files")
-    base_config = ConfigHolder.get_config()
+    base_config = current_app.config['prompt_explorer']
     dataset = None
     if base_config["visualization_params"]["dataset_path"]:
         dataset_path = base_config["visualization_params"][
@@ -384,9 +385,9 @@ def get_available_models() -> Dict:
         runs_storage[model_name]["file_paths"] = list(
             unroll_files([RESULTS_PATH.format(model_name) + f"{OUTPUT}*.jsonl"])
         )
-    for model_name, files in ConfigHolder.get_config()["visualization_params"][
-        "prediction_jsonl_files"
-    ].items():
+    for model_name, files in current_app.config['prompt_explorer'][
+        "visualization_params"
+    ]["prediction_jsonl_files"].items():
         runs_storage[model_name] = {
             "utils": {},
             "examples": {},

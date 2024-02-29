@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from flask import current_app
 import logging
 from typing import Callable, Dict, Iterable, List, Tuple, Union
 
@@ -29,7 +30,8 @@ from visualization.settings.constants import QUERY_INPUT_TYPE
 class ModeStrategies:
     def __init__(self):
         self.sandbox = None
-        self.config = ConfigHolder.get_config()
+        self.config = current_app.config['prompt_explorer']
+        logging.info(self.config)
 
     def sandbox_init(self, utils):
         if self.sandbox is None:

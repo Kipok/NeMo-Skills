@@ -1,3 +1,4 @@
+from flask import current_app
 import logging
 import os
 from typing import Dict, List, Tuple
@@ -78,12 +79,12 @@ def save_dataset(n_click: int, base_model: str) -> Tuple[List, bool]:
     if not n_click:
         return no_update
     if (
-        not ConfigHolder.get_config()['base']['save_dataset_path']
+        not current_app.config['prompt_explorer']['base']['save_dataset_path']
         or not base_model
     ):
         return no_update
     logging.info("save_dataset")
-    path = ConfigHolder.get_config()['base']['save_dataset_path']
+    path = current_app.config['prompt_explorer']['base']['save_dataset_path']
     if not os.path.exists(path):
         os.mkdir(path)
 
