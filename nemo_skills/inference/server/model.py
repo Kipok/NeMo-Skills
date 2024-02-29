@@ -351,7 +351,7 @@ class OpenAIModel(BaseModel):
             temperature=temperature,
             top_p=top_p,
             max_tokens=tokens_to_generate,
-            frequency_penalty=repetition_penalty,
+            presence_penalty=repetition_penalty,
             seed=random_seed,
             stop=stop_phrases,
             messages=messages,
