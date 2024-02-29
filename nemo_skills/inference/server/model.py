@@ -99,13 +99,6 @@ class BaseModel(abc.ABC):
         random_seed,
         stop_phrases: List[str],
     ):
-        # temperature of 0 means greedy, but it's not always supported by the server
-        # so setting explicit greedy parameters instead
-        if temperature == 0:
-            temperature = 1.0
-            top_k = 1
-            top_p = 1.0
-
         if self.handle_code_execution:
             full_stop_phrases = stop_phrases + [CODE_SEPARATORS[-1]]
         else:
@@ -209,6 +202,13 @@ class BaseModel(abc.ABC):
         return outputs
 
     def _send_request(self, request):
+        # temperature of 0 means greedy, but it's not always supported by the server
+        # so setting explicit greedy parameters instead
+        if request["temperature"] == 0:
+            request["temperature"] = 1.0
+            request["top_k"] = 1
+            request["top_p"] = 1.0
+
         if self.ssh_server and self.ssh_key_path:
             import sshtunnel_requests
 
@@ -291,9 +291,78 @@ class NemoModel(BaseModel):
         return outputs
 
 
+class OpenAIModel(BaseModel):
+    def __init__(
+        self,
+        api_key,
+        model="gpt-3.5-turbo",
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        from openai import OpenAI
+
+        self.model = model
+        self.client = OpenAI(api_key=api_key)
+
+    def _single_call(
+        self,
+        prompts,
+        tokens_to_generate,
+        temperature,
+        top_p,
+        top_k,
+        repetition_penalty,
+        random_seed,
+        stop_phrases: List[str],
+    ):
+        # top_k is not supported by OpenAI, so skipping it
+        responses = []
+        for prompt in prompts:
+            response = self._send_request(
+                prompt=prompt,
+                tokens_to_generate=tokens_to_generate,
+                temperature=temperature,
+                top_p=top_p,
+                repetition_penalty=repetition_penalty,
+                random_seed=random_seed,
+                stop_phrases=stop_phrases,
+            )
+            responses.append(response)
+        return responses
+
+    def _send_request(
+        self,
+        prompt,
+        tokens_to_generate,
+        temperature,
+        top_p,
+        repetition_penalty,
+        random_seed,
+        stop_phrases: List[str],
+    ):
+        try:
+            messages = json.loads(prompt, encoding="utf-8")
+        except json.JSONDecodeError:
+            raise ValueError(
+                "Prompt is not a valid JSON. This is most likely because you are not using `openai_chat` prompt template."
+            )
+        response = self.client.chat.completions.create(
+            model=self.model,
+            temperature=temperature,
+            top_p=top_p,
+            max_tokens=tokens_to_generate,
+            frequency_penalty=repetition_penalty,
+            seed=random_seed,
+            stop=stop_phrases,
+            messages=messages,
+        )
+        return response.choices[0].message.content
+
+
 models = {
     'tensorrt_llm': TensorRTLLMModel,
     'nemo': NemoModel,
+    'openai': OpenAIModel,
 }
 
 
