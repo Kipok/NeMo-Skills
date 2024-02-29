@@ -128,7 +128,8 @@ def extract_comments_above_fields(dataclass_obj, prefix: str = '', level: int = 
         indent = '  ' * level
         comment = f"\n{indent}".join(comment_cache)
         comment = "- " + comment if comment else ""
-        field_detail = f"{indent}{field_name}: {field_type}{default_str} {comment}"
+        comment = comment.replace('\n', f'\n{indent}    ')
+        field_detail = f"{indent}\033[92m{field_name}: {field_type}{default_str}\033[0m {comment}"
         comments[field_name] = field_detail
         comment_cache = []
 
@@ -149,7 +150,7 @@ def get_fields_docstring(dataclass_obj):
     return '\n'.join(docstring)
 
 
-def get_help_message(dataclass_obj, help_message=""):
+def get_help_message(dataclass_obj, help_message="", **kwargs):
     heading = """
 This script uses Hydra (https://hydra.cc/) for dynamic configuration management.
 You can apply Hydra's command-line syntax for overriding configuration values directly.
@@ -157,6 +158,7 @@ Below are the available configuration options and their default values:
     """.strip()
 
     docstring = get_fields_docstring(dataclass_obj)
+    docstring = docstring.format(**kwargs)
 
     full_help = f"{heading}\n{'-' * 75}\n{docstring}"
     if help_message:

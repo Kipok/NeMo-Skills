@@ -19,9 +19,9 @@ from pathlib import Path
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 
-from launcher import CLUSTER_CONFIG, NEMO_SKILLS_CODE, get_server_command, launch_job
+from launcher import CLUSTER_CONFIG, NEMO_SKILLS_CODE, get_server_command, launch_job, WRAPPER_HELP
 
-from nemo_skills.inference.prompt.utils import examples_map, prompt_types
+from nemo_skills.inference.generate_solutions import HELP_MESSAGE
 from nemo_skills.utils import setup_logging
 
 
@@ -70,26 +70,27 @@ JOB_NAME = "eval-{model_name}"
 
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
-    parser = ArgumentParser()
-    parser.add_argument("--model_path", required=True)
-    parser.add_argument("--server_type", choices=('nemo', 'tensorrt_llm'), default='tensorrt_llm')
-    parser.add_argument("--output_dir", required=True)
-    parser.add_argument("--num_gpus", type=int, required=True)
-    parser.add_argument("--starting_seed", type=int, default=0)
-    parser.add_argument(
+    parser = ArgumentParser(usage=WRAPPER_HELP + '\n\nscript arguments:\n\n' + HELP_MESSAGE)
+    wrapper_args = parser.add_argument_group('wrapper arguments')
+    wrapper_args.add_argument("--model_path", required=True)
+    wrapper_args.add_argument("--server_type", choices=('nemo', 'tensorrt_llm'), default='tensorrt_llm')
+    wrapper_args.add_argument("--output_dir", required=True)
+    wrapper_args.add_argument("--num_gpus", type=int, required=True)
+    wrapper_args.add_argument("--starting_seed", type=int, default=0)
+    wrapper_args.add_argument(
         "--benchmarks",
         nargs="+",
         default=[],
         help="Need to be in a format <benchmark>:<num samples for majority voting>. "
         "Use <benchmark>:0 to only run greedy decoding.",
     )
-    parser.add_argument(
+    wrapper_args.add_argument(
         "--num_nodes",
         type=int,
         default=-1,
         help="Will parallelize across this number of nodes. Set -1 to run each decoding on a separate node.",
     )
-    parser.add_argument(
+    wrapper_args.add_argument(
         "--partition",
         required=False,
         help="Can specify if need interactive jobs or a specific non-default partition",
