@@ -4,37 +4,39 @@ from dash import html
 import dash_bootstrap_components as dbc
 
 from layouts.table_layouts import (
-    get_available_models,
     get_filter_layout,
     get_selector_layout,
     get_sorting_layout,
 )
-from visualization.settings.constants import DELETE, GENERAL_STATS
+from layouts.base_layouts import get_switch_layout
+from settings.constants import DELETE, GENERAL_STATS
+from utils.common import get_available_models
 
 
 def get_models_options_layout() -> dbc.Accordion:
     runs_storage = get_available_models()
-
-    return dbc.Accordion(
+    items = [
         dbc.AccordionItem(
             dbc.Accordion(
                 [
-                    dbc.AccordionItem(
-                        dbc.Accordion(
-                            [
-                                get_utils_layout(values["utils"]),
-                                get_few_shots_layout(values["examples"]),
-                            ],
-                            start_collapsed=True,
-                            always_open=True,
-                        ),
-                        title=model,
-                    )
-                    for model, values in runs_storage.items()
+                    get_utils_layout(values["utils"]),
+                    get_few_shots_layout(values["examples"]),
                 ],
                 start_collapsed=True,
                 always_open=True,
             ),
+            title=model,
+        )
+        for model, values in runs_storage.items()
+    ]
+    models_options = dbc.Accordion(
+        items,
+        start_collapsed=True,
+        always_open=True,
+    )
+    return dbc.Accordion(
+        dbc.AccordionItem(
+            models_options,
             title="Models options",
         ),
         start_collapsed=True,
@@ -43,49 +45,48 @@ def get_models_options_layout() -> dbc.Accordion:
 
 
 def get_utils_layout(utils: Dict) -> dbc.AccordionItem:
-    return dbc.AccordionItem(
-        html.Div(
+    input_groups = [
+        dbc.InputGroup(
             [
-                dbc.InputGroup(
-                    [
-                        html.Pre(f"{name}: ", className="mr-2"),
-                        html.Pre(value, className="mr-2"),
-                    ],
-                    className="mb-3",
-                )
-                for name, value in utils.items()
-            ]
-        ),
+                html.Pre(f"{name}: ", className="mr-2"),
+                html.Pre(value, className="mr-2"),
+            ],
+            className="mb-3",
+        )
+        for name, value in utils.items()
+    ]
+    return dbc.AccordionItem(
+        html.Div(input_groups),
         title="Utils",
     )
 
 
 def get_few_shots_layout(examples: List[Dict]) -> dbc.AccordionItem:
-    return dbc.AccordionItem(
+    example_layout = lambda example: [
         html.Div(
             [
-                dbc.Accordion(
-                    dbc.AccordionItem(
-                        [
-                            html.Div(
-                                [
-                                    html.P(
-                                        name,
-                                        className="font-weight-bold",
-                                    ),
-                                    html.Pre(value),
-                                ]
-                            )
-                            for name, value in example.items()
-                        ],
-                        title=f"example {id}",
-                    ),
-                    start_collapsed=True,
-                    always_open=True,
-                )
-                for id, example in enumerate(examples)
+                html.P(
+                    name,
+                    className="font-weight-bold",
+                ),
+                html.Pre(value),
             ]
-        ),
+        )
+        for name, value in example.items()
+    ]
+    examples_layout = [
+        dbc.Accordion(
+            dbc.AccordionItem(
+                example_layout(example),
+                title=f"example {id}",
+            ),
+            start_collapsed=True,
+            always_open=True,
+        )
+        for id, example in enumerate(examples)
+    ]
+    return dbc.AccordionItem(
+        html.Div(examples_layout),
         title="Few shots",
     )
 
@@ -167,48 +168,42 @@ def get_stats_text(general_stats: bool = False, delete: bool = False):
 
 
 def get_add_stats_layout() -> html.Div:
+    modal_header = dbc.ModalHeader(
+        [
+            dbc.ModalTitle("set up your stats"),
+            get_switch_layout(
+                id="stats_modes",
+                labels=["general stats", "delete mode"],
+                values=[GENERAL_STATS, DELETE],
+                additional_params={"inline": True},
+            ),
+        ],
+        close_button=True,
+    )
+    modal_body = dbc.ModalBody(
+        html.Div(
+            [
+                html.Pre(get_stats_text(), id="stats_text"),
+                dbc.Textarea(id="new_stats_input"),
+            ]
+        )
+    )
+    modal_footer = dbc.ModalFooter(
+        dbc.Button(
+            "Apply",
+            id="apply_new_stats",
+            className="ms-auto",
+            n_clicks=0,
+        )
+    )
     return html.Div(
         [
             dbc.Button("Stats", id="set_new_stats_button"),
             dbc.Modal(
                 [
-                    dbc.ModalHeader(
-                        [
-                            dbc.ModalTitle("set up your stats"),
-                            dbc.Checklist(
-                                id="stats_modes",
-                                options=[
-                                    {
-                                        "label": "general stats",
-                                        "value": GENERAL_STATS,
-                                    },
-                                    {
-                                        "label": "delete mode",
-                                        "value": DELETE,
-                                    },
-                                ],
-                                switch=True,
-                                inline=True,
-                            ),
-                        ],
-                        close_button=True,
-                    ),
-                    dbc.ModalBody(
-                        html.Div(
-                            [
-                                html.Pre(get_stats_text(), id="stats_text"),
-                                dbc.Textarea(id="new_stats_input"),
-                            ]
-                        )
-                    ),
-                    dbc.ModalFooter(
-                        dbc.Button(
-                            "Apply",
-                            id="apply_new_stats",
-                            className="ms-auto",
-                            n_clicks=0,
-                        )
-                    ),
+                    modal_header,
+                    modal_body,
+                    modal_footer,
                 ],
                 size="lg",
                 id="new_stats",

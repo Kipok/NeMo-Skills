@@ -194,7 +194,7 @@ def get_stats(all_files_data: List[Dict], is_correct: bool = True) -> float:
 
 def get_metrics(
     all_files_data: List[Dict],
-) -> Dict:  # Change if need to add more stats
+) -> Dict:  # TODO handle exceptions
     correct_responses = get_stats(all_files_data, True)
     wrong_responses = get_stats(all_files_data, False)
     no_response = 1.0 - correct_responses - wrong_responses

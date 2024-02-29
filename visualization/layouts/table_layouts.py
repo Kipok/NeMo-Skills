@@ -7,19 +7,12 @@ from typing import List, Iterable
 from dash import html, dash_table
 import dash_bootstrap_components as dbc
 
-
-from utils.decoration import (
-    design_text_output,
-    highlight_code,
-)
-
 from settings.constants import (
     CHOOSE_MODEL,
     DATA_PAGE_SIZE,
     MODEL_SELECTOR_ID,
     STATS_KEYS,
 )
-
 
 from utils.common import (
     catch_eval_exception,
@@ -32,7 +25,10 @@ from utils.common import (
     get_general_custom_stats,
     get_metrics,
     is_detailed_answers_rows_key,
-    parse_model_answer,
+)
+from layouts.base_layouts import (
+    get_switch_layout,
+    get_single_prompt_output_layout,
 )
 
 table_data = []
@@ -82,65 +78,58 @@ def get_filter_layout(
         if not files_only
         else "For example:\ndata['correct_responses'] > 0.5 && data['no_response'] < 0.2\n"
     )
+    text = (
+        "Write an expression to filter the data\n"
+        + inner_text
+        + "The function has to return bool.\n\n"
+        "Available parameters to filter data:\n"
+        + '\n'.join(
+            [
+                ', '.join(available_filters[start : start + 5])
+                for start in range(0, len(available_filters), 5)
+            ]
+        )
+    )
+    header = dbc.ModalHeader(
+        dbc.ModalTitle("set up your filter"), close_button=True
+    )
+    body = dbc.ModalBody(
+        html.Div(
+            [
+                html.Pre(text),
+                dbc.Textarea(
+                    id={
+                        "type": "filter_function_input",
+                        "id": id,
+                    },
+                ),
+            ]
+        )
+    )
+    switch = get_switch_layout(
+        {
+            "type": "apply_on_filtered_data",
+            "id": id,
+        },
+        ["Apply for filtered data"],
+    )
+    footer = dbc.ModalFooter(
+        dbc.Button(
+            "Apply",
+            id={"type": "apply_filter_button", "id": id},
+            className="ms-auto",
+            n_clicks=0,
+        )
+    )
     return html.Div(
         [
             dbc.Button("Filters", id={"type": "set_filter_button", "id": id}),
             dbc.Modal(
                 [
-                    dbc.ModalHeader(
-                        dbc.ModalTitle("set up your filter"), close_button=True
-                    ),
-                    dbc.ModalBody(
-                        html.Div(
-                            [
-                                html.Pre(
-                                    "Write an expression to filter the data\n"
-                                    + inner_text
-                                    + "The function has to return bool.\n\n"
-                                    "Available parameters to filter data:\n"
-                                    + '\n'.join(
-                                        [
-                                            ', '.join(
-                                                available_filters[
-                                                    start : start + 5
-                                                ]
-                                            )
-                                            for start in range(
-                                                0, len(available_filters), 5
-                                            )
-                                        ]
-                                    )
-                                ),
-                                dbc.Textarea(
-                                    id={
-                                        "type": "filter_function_input",
-                                        "id": id,
-                                    },
-                                ),
-                            ]
-                        )
-                    ),
-                    dbc.Checklist(
-                        id={
-                            "type": "apply_on_filtered_data",
-                            "id": id,
-                        },
-                        options=[
-                            {
-                                "label": "Apply for filtered data",
-                                "value": 1,
-                            }
-                        ],
-                        switch=True,
-                    ),
-                    dbc.ModalFooter(
-                        dbc.Button(
-                            "Apply",
-                            id={"type": "apply_filter_button", "id": id},
-                            className="ms-auto",
-                            n_clicks=0,
-                        )
-                    ),
+                    header,
+                    body,
+                    switch,
+                    footer,
                 ],
                 size="lg",
                 id={"type": "filter", "id": id},
@@ -162,53 +151,51 @@ def get_sorting_layout(
         + list(get_metrics([]).keys())
         + ["+ all fields in json"]
     )
+    text = (
+        "Write an expression to sort the data\n"
+        "For example: len(data['question'])\n"
+        "The function has to return sortable type\n\n"
+        "Available parameters to sort data:\n"
+        + '\n'.join(
+            [
+                ', '.join(available_params[start : start + 5])
+                for start in range(0, len(available_params), 5)
+            ]
+        )
+    )
+    header = dbc.ModalHeader(
+        dbc.ModalTitle("set up your sorting parameters"),
+        close_button=True,
+    )
+    body = dbc.ModalBody(
+        html.Div(
+            [
+                html.Pre(text),
+                dbc.Textarea(
+                    id={
+                        "type": "sorting_function_input",
+                        "id": id,
+                    },
+                ),
+            ],
+        )
+    )
+    footer = dbc.ModalFooter(
+        dbc.Button(
+            "Apply",
+            id={"type": "apply_sorting_button", "id": id},
+            className="ms-auto",
+            n_clicks=0,
+        )
+    )
     return html.Div(
         [
             dbc.Button("Sort", id={"type": "set_sorting_button", "id": id}),
             dbc.Modal(
                 [
-                    dbc.ModalHeader(
-                        dbc.ModalTitle("set up your sorting parameters"),
-                        close_button=True,
-                    ),
-                    dbc.ModalBody(
-                        html.Div(
-                            [
-                                html.Pre(
-                                    "Write an expression to sort the data\n"
-                                    "For example: len(data['question'])\n"
-                                    "The function has to return sortable type\n\n"
-                                    "Available parameters to sort data:\n"
-                                    + '\n'.join(
-                                        [
-                                            ', '.join(
-                                                available_params[
-                                                    start : start + 5
-                                                ]
-                                            )
-                                            for start in range(
-                                                0, len(available_params), 5
-                                            )
-                                        ]
-                                    )
-                                ),
-                                dbc.Textarea(
-                                    id={
-                                        "type": "sorting_function_input",
-                                        "id": id,
-                                    },
-                                ),
-                            ],
-                        )
-                    ),
-                    dbc.ModalFooter(
-                        dbc.Button(
-                            "Apply",
-                            id={"type": "apply_sorting_button", "id": id},
-                            className="ms-auto",
-                            n_clicks=0,
-                        )
-                    ),
+                    header,
+                    body,
+                    footer,
                 ],
                 size="lg",
                 id={"type": "sorting", "id": id},
@@ -221,86 +208,79 @@ def get_sorting_layout(
 
 
 def get_change_label_layout(id: int = -1) -> html.Div:
+    header = dbc.ModalHeader(
+        dbc.ModalTitle("Manage labels"),
+        close_button=True,
+    )
+    body = dbc.ModalBody(
+        html.Div(
+            [
+                get_selector_layout(
+                    options=labels,
+                    id={"type": "label_selector", "id": id},
+                    default_value="choose label",
+                ),
+                dbc.InputGroup(
+                    [
+                        dbc.Input(
+                            id={
+                                "type": "new_label_input",
+                                "id": id,
+                            },
+                            placeholder="Enter new label",
+                            type="text",
+                        ),
+                        dbc.Button(
+                            "Add",
+                            id={
+                                "type": "add_new_label_button",
+                                "id": id,
+                            },
+                        ),
+                    ]
+                ),
+                get_switch_layout(
+                    {
+                        "type": "aplly_for_all_label",
+                        "id": id,
+                    },
+                    ["Apply for all files"],
+                ),
+                html.Pre("", id={"type": "chosen_label", "id": id}),
+            ],
+        )
+    )
+    footer = (
+        dbc.ModalFooter(
+            html.Div(
+                [
+                    dbc.Button(
+                        children="Delete",
+                        id={
+                            "type": "delete_label_button",
+                            "id": id,
+                        },
+                        className="ms-auto",
+                        n_clicks=0,
+                    ),
+                    dbc.Button(
+                        children="Apply",
+                        id={"type": "apply_label_button", "id": id},
+                        className="ms-auto",
+                        n_clicks=0,
+                    ),
+                ]
+            ),
+            style={'display': 'inline-block'},
+        ),
+    )
     return html.Div(
         [
             dbc.Button(
                 "Labels", id={"type": "set_file_label_button", "id": id}
             ),
             dbc.Modal(
-                [
-                    dbc.ModalHeader(
-                        dbc.ModalTitle("Manage labels"),
-                        close_button=True,
-                    ),
-                    dbc.ModalBody(
-                        html.Div(
-                            [
-                                get_selector_layout(
-                                    options=labels,
-                                    id={"type": "label_selector", "id": id},
-                                    default_value="choose label",
-                                ),
-                                dbc.InputGroup(
-                                    [
-                                        dbc.Input(
-                                            id={
-                                                "type": "new_label_input",
-                                                "id": id,
-                                            },
-                                            placeholder="Enter new label",
-                                            type="text",
-                                        ),
-                                        dbc.Button(
-                                            "Add",
-                                            id={
-                                                "type": "add_new_label_button",
-                                                "id": id,
-                                            },
-                                        ),
-                                    ]
-                                ),
-                                dbc.Checklist(
-                                    id={
-                                        "type": "aplly_for_all_label",
-                                        "id": id,
-                                    },
-                                    options=[
-                                        {
-                                            "label": "Apply for all files",
-                                            "value": 1,
-                                        }
-                                    ],
-                                    switch=True,
-                                ),
-                                html.Pre(
-                                    "", id={"type": "chosen_label", "id": id}
-                                ),
-                            ],
-                        )
-                    ),
-                    dbc.ModalFooter(
-                        html.Div(
-                            [
-                                dbc.Button(
-                                    children="Delete",
-                                    id={
-                                        "type": "delete_label_button",
-                                        "id": id,
-                                    },
-                                    className="ms-auto",
-                                    n_clicks=0,
-                                ),
-                                dbc.Button(
-                                    children="Apply",
-                                    id={"type": "apply_label_button", "id": id},
-                                    className="ms-auto",
-                                    n_clicks=0,
-                                ),
-                            ]
-                        ),
-                        style={'display': 'inline-block'},
-                    ),
-                ],
+                [header, body, footer],
                 size="lg",
                 id={"type": "label", "id": id},
                 centered=True,
@@ -309,44 +289,6 @@ def get_change_label_layout(id: int = -1) -> html.Div:
         ],
         style={'display': 'inline-block'},
     )
-
-
-def get_single_prompt_output_layout(answer: str) -> List[html.Div]:
-    parsed_answers = parse_model_answer(answer)
-    return [
-        item
-        for parsed_answer in parsed_answers
-        for item in [
-            design_text_output(parsed_answer["explanation"]),
-            (
-                highlight_code(
-                    parsed_answer["code"],
-                )
-                if parsed_answer["code"]
-                else ""
-            ),
-            (
-                design_text_output(
-                    parsed_answer["output"],
-                    style=(
-                        {
-                            "border": "1px solid black",
-                            "background-color": "#9CADF0",
-                            "marginBottom": "10px",
-                        }
-                        if 'wrong_code_block' not in parsed_answer
-                        else {
-                            "border": "1px solid red",
-                            "marginBottom": "10px",
-                        }
-                    ),
-                )
-                if parsed_answer["output"] is not None
-                else ""
-            ),
-        ]
-        if item != ""
-    ]
 
 
 def get_stats_layout() -> List[dbc.Row]:
@@ -433,19 +375,13 @@ def get_models_selector_table_cell(  # TODO change style
             ]
             + del_model_layout
             + [
-                dbc.Checklist(
-                    id={
+                get_switch_layout(
+                    {
                         "type": "plain_text_switch",
                         "id": id,
                     },
-                    options=[
-                        {
-                            "label": "plain text",
-                            "value": 1,
-                        }
-                    ],
-                    switch=True,
-                ),
+                    ["plain text"],
+                )
             ],
             style={'display': 'inline-flex'},
         ),
@@ -505,7 +441,7 @@ def get_detailed_answers_rows(
             [
                 dbc.Col(
                     html.Div(
-                        children=html.Div(
+                        html.Div(
                             [
                                 html.Div(
                                     key,
@@ -621,7 +557,7 @@ def get_table_detailed_inner_data(
 
 def get_general_stats_layout(
     base_model: str,
-) -> html.Div:  # Change if need to add more metrics
+) -> html.Div:  # TODO handle exceptions
     data_for_base_model = [
         data.get(base_model, []) for data in get_table_data()
     ]

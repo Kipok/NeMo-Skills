@@ -53,6 +53,7 @@ compute_metrics_template = (
     header
     + """
 python3 pipeline/compute_metrics.py \\
-  --prediction_jsonl_files {prediction_jsonl_files}
+  --prediction_jsonl_files {prediction_jsonl_files} \\
+  --save_metrics_file {save_metrics_file}
 """
 )

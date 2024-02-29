@@ -16,6 +16,7 @@ from layouts import (
     get_model_answers_table_layout,
     get_models_selector_table_cell,
     get_sorting_answers_layout,
+    get_stats_text,
     get_table_data,
     get_table_detailed_inner_data,
 )
@@ -37,7 +38,6 @@ from utils.common import (
     get_filtered_files,
     get_general_custom_stats,
 )
-from layouts.analyze_page_layouts import get_stats_text
 from settings.config import ConfigHolder
 
 
@@ -213,8 +213,7 @@ def apply_new_stat(
     code_raw: str,
     base_model: str,
     stats_modes: List[str],
-) -> List:  # TODO rewrite using strategy class
-    # TODO delete statistic from table
+) -> List:
     if not n_click or code_raw == "":
         return no_update
     logging.info("apply_new_stats")
@@ -960,26 +959,23 @@ def change_files_order(
         return no_update
     model = models[button_id]
     question_id = current_page * page_size + idx[0]
+    array_to_filter = (
+        get_table_data()[question_id][model]
+        if not apply_on_filtered_data or not apply_on_filtered_data[button_id]
+        else list(
+            filter(
+                lambda data: data['file_name']
+                in [file_name['label'] for file_name in file_selector_options],
+                get_table_data()[question_id][model],
+            )
+        )
+    )
     file_selector_options[button_id] = [
         {'label': data['file_name'], 'value': data['file_name']}
         for data in get_filtered_files(
             filter_functions[button_id + 1],
             sorting_functions[button_id + 1],
-            (
-                get_table_data()[question_id][model]
-                if not apply_on_filtered_data
-                or not apply_on_filtered_data[button_id]
-                else list(
-                    filter(
-                        lambda data: data['file_name']
-                        in [
-                            file_name['label']
-                            for file_name in file_selector_options
-                        ],
-                        get_table_data()[question_id][model],
-                    )
-                )
-            ),
+            array_to_filter,
         )
     ]
     file_selector_values[button_id] = file_selector_options[button_id][0]
