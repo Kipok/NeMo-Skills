@@ -341,7 +341,7 @@ class OpenAIModel(BaseModel):
         stop_phrases: List[str],
     ):
         try:
-            messages = json.loads(prompt, encoding="utf-8")
+            messages = json.loads(prompt)
         except json.JSONDecodeError:
             raise ValueError(
                 "Prompt is not a valid JSON. This is most likely because you are not using `openai_chat` prompt template."
