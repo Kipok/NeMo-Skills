@@ -24,6 +24,16 @@ from launcher import CLUSTER_CONFIG, NEMO_SKILLS_CODE, get_server_command, launc
 from nemo_skills.inference.generate_solutions import HELP_MESSAGE
 from nemo_skills.utils import setup_logging
 
+SCRIPT_HELP = """
+This script can be used to run evaluation of a model on a set of benchmarks.
+It can run both greedy decoding and sampling and can parallelize generations
+across multiple nodes. It uses nemo_skills/inference/generate_solutions.py
+to generate solutions and nemo_skills/evaluation/evaluate_results.py to
+evaluate them. It will set reasonable defaults for most of the generation parameters,
+but you can override any of them by directly providing corresponding arguments
+in the Hydra format.
+"""
+
 
 def get_greedy_cmd(benchmark, output_name='output-greedy.jsonl', extra_arguments=""):
     return f"""echo "Evaluating benchmark {benchmark}" && \
@@ -67,10 +77,9 @@ fi \
 MOUNTS = "{NEMO_SKILLS_CODE}:/code,{model_path}:/model,{output_dir}:/results"
 JOB_NAME = "eval-{model_name}"
 
-
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
-    parser = ArgumentParser(usage=WRAPPER_HELP + '\n\nscript arguments:\n\n' + HELP_MESSAGE)
+    parser = ArgumentParser(usage=WRAPPER_HELP + '\n\n' + SCRIPT_HELP + '\n\nscript arguments:\n\n' + HELP_MESSAGE)
     wrapper_args = parser.add_argument_group('wrapper arguments')
     wrapper_args.add_argument("--model_path", required=True)
     wrapper_args.add_argument("--server_type", choices=('nemo', 'tensorrt_llm'), default='tensorrt_llm')
