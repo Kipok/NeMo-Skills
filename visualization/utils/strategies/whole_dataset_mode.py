@@ -108,7 +108,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
                 sandbox_host=self.config['server']['host'],
                 **{
                     key: (
-                        value.replace('\n', '\\n')  # TODO handle single quotes
+                        value.replace('\n', '\\n')
                         .replace(')', '\)')
                         .replace('(', '\(')
                         .replace('}', '\}')
@@ -143,9 +143,9 @@ class WholeDatasetModeStrategy(ModeStrategies):
                 (compute_metrics_command, "Compute metrics"),
             ]:
                 logging.info(log_message)
-                _, success = run_subprocess(command)
+                _, errors, success = run_subprocess(command)
                 if not success:
-                    return html.Div("Something went wrong")
+                    return html.Div(f"Something went wrong\n{errors}")
 
         runs_storage[run_index] = {
             "utils": utils,

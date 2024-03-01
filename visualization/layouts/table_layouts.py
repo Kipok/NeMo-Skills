@@ -342,7 +342,7 @@ def get_stats_layout() -> List[dbc.Row]:
     ]
 
 
-def get_models_selector_table_cell(  # TODO change style
+def get_models_selector_table_cell(
     models: List[str], name: str, id: int, add_del_button: bool = False
 ) -> dbc.Col:
     del_model_layout = (
@@ -659,7 +659,6 @@ def get_filter_answers_layout(
     if not apply_on_filtered_data:
         table_data = custom_deepcopy(get_data_from_files())
     errors_dict = {}
-    start_time_filtering = datetime.datetime.now()
     if filtering_function:
         available_models = {
             model_name: model_info["file_paths"]

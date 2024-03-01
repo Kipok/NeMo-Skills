@@ -430,4 +430,4 @@ def run_subprocess(command: str) -> Tuple[str, bool]:
         logging.info(f"Output (stderr): {result.stderr.strip()}")
         success = False
 
-    return result.stdout.strip(), success
+    return result.stdout.strip(), result.stderr.strip(), success

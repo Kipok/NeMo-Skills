@@ -193,7 +193,7 @@ def update_examples(
 )
 def update_examples_type(
     examples_type: str,
-) -> NoUpdate | dbc.AccordionItem:
+) -> Union[NoUpdate, dbc.AccordionItem]:
     logging.info("update_examples_type")
     if not examples_type:
         examples_type = ""
@@ -214,7 +214,7 @@ def update_examples_type(
 )
 def update_context_type(
     context_type: str,
-) -> NoUpdate | dbc.AccordionItem:
+) -> Union[NoUpdate, dbc.AccordionItem]:
     logging.info("update_context_type")
     return context_templates.get(context_type, no_update)
 

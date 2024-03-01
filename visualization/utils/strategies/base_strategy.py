@@ -207,11 +207,15 @@ class ModeStrategies:
             top_p=utils['top_p'],
             random_seed=utils['random_seed'],
         )
-        outputs = llm(
-            prompts=params['prompts'],
-            stop_phrases=[utils["delimiter"]],
-            **asdict(inference_cfg),
-        )
+        try:
+            outputs = llm(
+                prompts=params['prompts'],
+                stop_phrases=[utils["delimiter"]],
+                **asdict(inference_cfg),
+            )
+        except Exception as e:
+            logging.error(f"error during run prompt: {e}")
+            return html.Div(f"Got error\n{e}")
 
         logging.info(f"query's answer: {outputs[0]}")
         color = (

@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from dash import html
+from dash import html, dcc
 import dash_bootstrap_components as dbc
 
 from layouts.table_layouts import (
@@ -49,7 +49,14 @@ def get_utils_layout(utils: Dict) -> dbc.AccordionItem:
         dbc.InputGroup(
             [
                 html.Pre(f"{name}: ", className="mr-2"),
-                html.Pre(value, className="mr-2"),
+                html.Pre(
+                    (
+                        value
+                        if value == "" or str(value).strip() != ""
+                        else repr(value)[1:-1]
+                    ),
+                    className="mr-2",
+                ),
             ],
             className="mb-3",
         )
@@ -65,10 +72,7 @@ def get_few_shots_layout(examples: List[Dict]) -> dbc.AccordionItem:
     example_layout = lambda example: [
         html.Div(
             [
-                html.P(
-                    name,
-                    className="font-weight-bold",
-                ),
+                dcc.Markdown(f'**{name}**'),
                 html.Pre(value),
             ]
         )
@@ -117,8 +121,8 @@ def get_compare_test_layout() -> html.Div:
                     ),
                 ]
             ),
-            dbc.Container(id="filtering_container"),
-            dbc.Container(id="sorting_container"),
+            html.Pre(id="filtering_container"),
+            html.Pre(id="sorting_container"),
             html.Div(  # TODO spinner
                 children=[],
                 id="compare_models_rows",
