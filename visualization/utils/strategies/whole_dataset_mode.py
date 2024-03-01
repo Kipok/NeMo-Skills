@@ -113,7 +113,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
                         .replace('(', '\(')
                         .replace('}', '\}')
                         .replace('{', '\{')
-                        .replace("'", '')
+                        .replace("'", "\\'")
                         if isinstance(value, str)
                         else value
                     )

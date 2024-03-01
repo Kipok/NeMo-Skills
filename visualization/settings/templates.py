@@ -8,21 +8,21 @@ generate_solution_template = (
     header
     + """
 python3 nemo_skills/inference/generate_solutions.py \\
-    output_file={output_file} \\
-    ++dataset={dataset} \\
-    ++split_name={split_name} \\
+    "output_file='{output_file}'" \\
+    "++dataset='{dataset}'" \\
+    "++split_name='{split_name}'" \\
     ++batch_size={batch_size} \\
     ++max_samples={max_samples} \\
     ++skip_filled={skip_filled} \\
     ++offset={offset} \\
-    ++context={context_templates} \\
-    ++prompt.delimiter="{delimiter}" \\
-    ++prompt.prefix="{prefix}" \\
-    ++prompt.examples_type={examples_type} \\
-    ++prompt.template="{template}" \\
+    "++context='{context_templates}'" \\
+    "++prompt.delimiter='{delimiter}'" \\
+    "++prompt.prefix='{prefix}'" \\
+    "++prompt.examples_type='{examples_type}'" \\
+    "++prompt.template='{template}'" \\
     ++prompt.num_few_shots={num_few_shots} \\
-    ++prompt.context_type={context_type} \\
-    ++server.server_type={server_type} \\
+    "++prompt.context_type='{context_type}'" \\
+    "++server.server_type='{server_type}'" \\
     ++server.host={host} \\
     ++server.port={port} \\
     ++server.ssh_server={ssh_server} \\
