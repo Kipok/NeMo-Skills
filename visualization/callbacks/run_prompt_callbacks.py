@@ -112,10 +112,19 @@ def add_example(
     [
         State("few_shots_pagination", "active_page"),
         State('examples_type', "value"),
+        State(
+            {
+                "type": "view_mode",
+                "id": "few_shots_input",
+            },
+            "value",
+        ),
     ],
     prevent_initial_call=True,
 )
-def del_example(n_clicks: int, page: int, examples_type: str) -> Tuple[
+def del_example(
+    n_clicks: int, page: int, examples_type: str, view_mode: List[str]
+) -> Tuple[
     Union[int, NoUpdate],
     Union[int, NoUpdate],
     Union[Tuple[html.Div], NoUpdate],
@@ -133,7 +142,9 @@ def del_example(n_clicks: int, page: int, examples_type: str) -> Tuple[
         return (
             last_page - 1,
             prev_pagination_page,
-            get_few_shots_by_id_layout(prev_pagination_page, examples_type),
+            get_few_shots_by_id_layout(
+                prev_pagination_page, examples_type, view_mode
+            ),
         )
     return (
         no_update,
@@ -186,10 +197,14 @@ def update_examples_type(
     logging.info("update_examples_type")
     if not examples_type:
         examples_type = ""
+    size = len(
+        examples.get(
+            examples_type,
+            [{}],
+        )
+    )
     return (
-        RunPromptStrategyMaker()
-        .get_strategy()
-        .get_few_shots_div_layout(examples_type)
+        RunPromptStrategyMaker().get_strategy().get_few_shots_div_layout(size)
     )
 
 
@@ -280,12 +295,7 @@ def change_mode(run_mode: str) -> Tuple[List[dbc.AccordionItem], None]:
     ],
     [
         Input("query_search_button", "n_clicks"),
-    ],
-    [
-        State("query_search_input", "value"),
-        State("dataset", "value"),
-        State("split_name", "value"),
-        State(
+        Input(
             {
                 "type": "view_mode",
                 "id": QUERY_INPUT_TYPE,
@@ -293,10 +303,15 @@ def change_mode(run_mode: str) -> Tuple[List[dbc.AccordionItem], None]:
             "value",
         ),
     ],
+    [
+        State("query_search_input", "value"),
+        State("dataset", "value"),
+        State("split_name", "value"),
+    ],
     prevent_initial_call=True,
 )
 def prompt_search(
-    n_clicks: int, index: int, dataset: str, split_name: str, view_mode: str
+    n_clicks: int, view_mode: str, index: int, dataset: str, split_name: str
 ) -> Tuple[Union[List[str], NoUpdate]]:
     logging.info("prompt_search")
     key_values = get_test_data(

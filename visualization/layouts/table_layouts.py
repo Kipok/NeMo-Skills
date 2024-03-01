@@ -244,7 +244,7 @@ def get_change_label_layout(id: int = -1) -> html.Div:
                         "type": "aplly_for_all_label",
                         "id": id,
                     },
-                    ["Apply for all files"],
+                    ["Apply for all labels"],
                 ),
                 html.Pre("", id={"type": "chosen_label", "id": id}),
             ],

@@ -90,16 +90,15 @@ class ModeStrategies:
 
     def get_few_shots_input_layout(self) -> List[dbc.AccordionItem]:
         examples_type = self.config["prompt"]["examples_type"]
+        size = len(
+            examples.get(
+                examples_type,
+                [{}],
+            )
+        )
         return [
             dbc.AccordionItem(
-                self.get_few_shots_div_layout(
-                    len(
-                        examples.get(
-                            examples_type,
-                            [{}],
-                        )
-                    )
-                ),
+                self.get_few_shots_div_layout(size),
                 title="Few shots",
                 id="few_shots_group",
             )
