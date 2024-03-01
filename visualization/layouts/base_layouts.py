@@ -1,10 +1,11 @@
 import itertools
 from typing import Dict, List, Optional, Union
-from dash import html, dcc
-import dash_bootstrap_components as dbc
 
+import dash_bootstrap_components as dbc
+from dash import dcc, html
 from utils.common import get_estimated_height, parse_model_answer
 from utils.decoration import design_text_output, highlight_code
+
 from visualization.settings.constants import QUERY_INPUT_TYPE
 
 
@@ -54,18 +55,14 @@ def get_switch_layout(
                 "value": values,
                 "disabled": is_disabled,
             }
-            for label, values, is_disabled in itertools.zip_longest(
-                labels, values, disabled, fillvalue=False
-            )
+            for label, values, is_disabled in itertools.zip_longest(labels, values, disabled, fillvalue=False)
         ],
         switch=True,
         **additional_params,
     )
 
 
-def validation_parameters(
-    name: str, value: Union[str, int, float]
-) -> Dict[str, str]:
+def validation_parameters(name: str, value: Union[str, int, float]) -> Dict[str, str]:
     parameters = {"type": "text"}
     if str(value).replace(".", "", 1).replace("-", "", 1).isdigit():
         parameters["type"] = "number"
@@ -89,11 +86,7 @@ def get_input_group_layout(
     if input_function is dbc.Input:
         additional_params = validation_parameters(name, value)
     else:
-        height = (
-            {'height': get_estimated_height(value)}
-            if value != "" and str(value).strip() != ""
-            else {}
-        )
+        height = {'height': get_estimated_height(value)} if value != "" and str(value).strip() != "" else {}
         additional_params = {
             "style": {
                 'width': '100%',
@@ -105,11 +98,7 @@ def get_input_group_layout(
         [
             dbc.InputGroupText(name),
             input_function(
-                value=(
-                    value
-                    if value == "" or str(value).strip() != ""
-                    else repr(value)[1:-1]
-                ),
+                value=(value if value == "" or str(value).strip() != "" else repr(value)[1:-1]),
                 id=name,
                 **additional_params,
                 debounce=True,
@@ -119,19 +108,13 @@ def get_input_group_layout(
     )
 
 
-def get_text_area_layout(
-    key: str, value: str, view_mode: bool = False
-) -> Union[dbc.Textarea, html.Pre]:
+def get_text_area_layout(key: str, value: str, view_mode: bool = False) -> Union[dbc.Textarea, html.Pre]:
     component = dbc.Textarea
     if view_mode:
         component = html.Pre
 
     return component(
-        **(
-            {'children': get_single_prompt_output_layout(value)}
-            if view_mode
-            else {"value": value}
-        ),
+        **({'children': get_single_prompt_output_layout(value)} if view_mode else {"value": value}),
         id={
             "type": QUERY_INPUT_TYPE,
             "id": key,

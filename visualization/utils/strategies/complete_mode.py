@@ -1,11 +1,7 @@
 from typing import Dict, List
 
-from settings.constants import (
-    ANSWER_FIELD,
-    ONE_TEST_MODE,
-    QUESTION_FIELD,
-)
 import dash_bootstrap_components as dbc
+from settings.constants import ANSWER_FIELD, ONE_TEST_MODE, QUESTION_FIELD
 
 from visualization.utils.strategies.base_strategy import ModeStrategies
 
@@ -19,9 +15,7 @@ class CompleteModeStrategy(ModeStrategies):
     def get_utils_input_layout(self) -> List[dbc.AccordionItem]:
         inference_condition = lambda name, value: not isinstance(value, dict)
 
-        return super().get_utils_input_layout(
-            inference_condition, lambda name, value: False, True
-        )
+        return super().get_utils_input_layout(inference_condition, lambda name, value: False, True)
 
     def get_few_shots_input_layout(self) -> List[dbc.AccordionItem]:
         return []

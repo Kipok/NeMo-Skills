@@ -1,18 +1,16 @@
 import os
 from pathlib import Path
 
-from dash import Dash
-import hydra
-from flask import Flask
 import dash_bootstrap_components as dbc
+import hydra
+from dash import Dash
+from flask import Flask
 from omegaconf import OmegaConf
-from nemo_skills.utils import unroll_files
-
 from settings.config import Config
 
-config_path = os.path.join(
-    os.path.abspath(Path(__file__).parent.parent), "settings"
-)
+from nemo_skills.utils import unroll_files
+
+config_path = os.path.join(os.path.abspath(Path(__file__).parent.parent), "settings")
 
 config = {}
 
@@ -27,13 +25,11 @@ def set_config(cfg: Config) -> None:
         if 'start_random_seed' in config['prompt_explorer']['inference']
         else 0
     )
-    config['prompt_explorer']['visualization_params'][
-        'prediction_jsonl_files'
-    ] = {
+    config['prompt_explorer']['visualization_params']['prediction_jsonl_files'] = {
         model_name: list(unroll_files(file_path.split(" ")))
-        for model_name, file_path in config['prompt_explorer'][
-            'visualization_params'
-        ]['prediction_jsonl_files'].items()
+        for model_name, file_path in config['prompt_explorer']['visualization_params'][
+            'prediction_jsonl_files'
+        ].items()
     }
 
 
@@ -49,9 +45,5 @@ app = Dash(
 )
 
 from callbacks.base_callback import nav_click
-from callbacks.run_prompt_callbacks import (
-    add_example,
-)
-from callbacks.table_callbacks import (
-    choose_base_model,
-)
+from callbacks.run_prompt_callbacks import add_example
+from callbacks.table_callbacks import choose_base_model

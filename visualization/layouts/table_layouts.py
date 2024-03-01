@@ -2,19 +2,12 @@ import datetime
 import json
 import logging
 import math
-from typing import List, Iterable
+from typing import Iterable, List
 
-from dash import html, dash_table
 import dash_bootstrap_components as dbc
-
-from settings.constants import (
-    CHOOSE_MODEL,
-    DATA_PAGE_SIZE,
-    ERROR_MESSAGE_TEMPLATE,
-    MODEL_SELECTOR_ID,
-    STATS_KEYS,
-)
-
+from dash import dash_table, html
+from layouts.base_layouts import get_single_prompt_output_layout, get_switch_layout
+from settings.constants import CHOOSE_MODEL, DATA_PAGE_SIZE, ERROR_MESSAGE_TEMPLATE, MODEL_SELECTOR_ID, STATS_KEYS
 from utils.common import (
     catch_eval_exception,
     custom_deepcopy,
@@ -26,10 +19,6 @@ from utils.common import (
     get_general_custom_stats,
     get_metrics,
     is_detailed_answers_rows_key,
-)
-from layouts.base_layouts import (
-    get_switch_layout,
-    get_single_prompt_output_layout,
 )
 
 table_data = []
@@ -44,9 +33,7 @@ def get_labels() -> List:
     return labels
 
 
-def get_selector_layout(
-    options: Iterable, id: str, default_value: str = CHOOSE_MODEL
-) -> dbc.Select:
+def get_selector_layout(options: Iterable, id: str, default_value: str = CHOOSE_MODEL) -> dbc.Select:
     if default_value not in options:
         options = [default_value] + list(options)
     return dbc.Select(
@@ -62,15 +49,11 @@ def get_selector_layout(
     )
 
 
-def get_filter_layout(
-    id: int = -1, available_filters: List[str] = [], files_only: bool = False
-) -> html.Div:
+def get_filter_layout(id: int = -1, available_filters: List[str] = [], files_only: bool = False) -> html.Div:
     available_filters = list(
         get_table_data()[0][list(get_available_models())[0]][0].keys()
         if len(get_table_data()) and not available_filters
-        else STATS_KEYS
-        + list(get_metrics([]).keys())
-        + ["+ all fields in json"]
+        else STATS_KEYS + list(get_metrics([]).keys()) + ["+ all fields in json"]
     )
 
     inner_text = (
@@ -80,20 +63,11 @@ def get_filter_layout(
         else "For example:\ndata['correct_responses'] > 0.5 && data['no_response'] < 0.2\n\n"
     )
     text = (
-        "Write an expression to filter the data\n"
-        + inner_text
-        + "The function has to return bool.\n\n"
+        "Write an expression to filter the data\n" + inner_text + "The function has to return bool.\n\n"
         "Available parameters to filter data:\n"
-        + '\n'.join(
-            [
-                ', '.join(available_filters[start : start + 5])
-                for start in range(0, len(available_filters), 5)
-            ]
-        )
+        + '\n'.join([', '.join(available_filters[start : start + 5]) for start in range(0, len(available_filters), 5)])
     )
-    header = dbc.ModalHeader(
-        dbc.ModalTitle("Set Up Your Filter"), close_button=True
-    )
+    header = dbc.ModalHeader(dbc.ModalTitle("Set Up Your Filter"), close_button=True)
     body = dbc.ModalBody(
         html.Div(
             [
@@ -142,27 +116,18 @@ def get_filter_layout(
     )
 
 
-def get_sorting_layout(
-    id: int = -1, available_params: List[str] = []
-) -> html.Div:
+def get_sorting_layout(id: int = -1, available_params: List[str] = []) -> html.Div:
     available_params = list(
         get_table_data()[0][list(get_available_models())[0]][0].keys()
         if len(get_table_data()) and not available_params
-        else STATS_KEYS
-        + list(get_metrics([]).keys())
-        + ["+ all fields in json"]
+        else STATS_KEYS + list(get_metrics([]).keys()) + ["+ all fields in json"]
     )
     text = (
         "Write an expression to sort the data\n\n"
         "For example: len(data['question'])\n\n"
         "The function has to return sortable type\n\n"
         "Available parameters to sort data:\n"
-        + '\n'.join(
-            [
-                ', '.join(available_params[start : start + 5])
-                for start in range(0, len(available_params), 5)
-            ]
-        )
+        + '\n'.join([', '.join(available_params[start : start + 5]) for start in range(0, len(available_params), 5)])
     )
     header = dbc.ModalHeader(
         dbc.ModalTitle("Set Up Your Sorting Parameters"),
@@ -275,9 +240,7 @@ def get_change_label_layout(id: int = -1) -> html.Div:
     )
     return html.Div(
         [
-            dbc.Button(
-                "Labels", id={"type": "set_file_label_button", "id": id}
-            ),
+            dbc.Button("Labels", id={"type": "set_file_label_button", "id": id}),
             dbc.Modal(
                 [header, body, footer],
                 size="lg",
@@ -342,9 +305,7 @@ def get_stats_layout() -> List[dbc.Row]:
     ]
 
 
-def get_models_selector_table_cell(
-    models: List[str], name: str, id: int, add_del_button: bool = False
-) -> dbc.Col:
+def get_models_selector_table_cell(models: List[str], name: str, id: int, add_del_button: bool = False) -> dbc.Col:
     del_model_layout = (
         [
             dbc.Button(
@@ -403,9 +364,7 @@ def get_models_selector_table_header(models: List[str]) -> List[dbc.Row]:
                 )
             ]
             + [
-                get_models_selector_table_cell(
-                    get_available_models(), name, i, i != 0
-                )
+                get_models_selector_table_cell(get_available_models(), name, i, i != 0)
                 for i, name in enumerate(models)
             ],
             id='detailed_answers_header',
@@ -417,11 +376,7 @@ def get_detailed_answer_column(id: int, file_id=None) -> dbc.Col:
     return dbc.Col(
         html.Div(
             children=(
-                get_selector_layout(
-                    [], {"type": "file_selector", "id": file_id}, ""
-                )
-                if file_id is not None
-                else ""
+                get_selector_layout([], {"type": "file_selector", "id": file_id}, "") if file_id is not None else ""
             ),
             id={
                 'type': 'detailed_models_answers',
@@ -432,9 +387,7 @@ def get_detailed_answer_column(id: int, file_id=None) -> dbc.Col:
     )
 
 
-def get_detailed_answers_rows(
-    keys: List[str], colums_number: int
-) -> List[dbc.Row]:
+def get_detailed_answers_rows(keys: List[str], colums_number: int) -> List[dbc.Row]:
     return [
         dbc.Row(
             [
@@ -466,10 +419,7 @@ def get_detailed_answers_rows(
                     class_name='mt-1 bg-light font-monospace text-break small rounded border',
                 )
             ]
-            + [
-                get_detailed_answer_column(j * len(keys) + i)
-                for j in range(colums_number)
-            ],
+            + [get_detailed_answer_column(j * len(keys) + i) for j in range(colums_number)],
             id={"type": "detailed_answers_row", "id": i},
         )
         for i, key in enumerate(keys)
@@ -480,9 +430,7 @@ def get_table_answers_detailed_data_layout(
     models: List[str],
     keys: List[str],
 ) -> List[dbc.Row]:
-    return get_models_selector_table_header(models) + get_detailed_answers_rows(
-        keys, len(models)
-    )
+    return get_models_selector_table_header(models) + get_detailed_answers_rows(keys, len(models))
 
 
 def get_row_detailed_inner_data(
@@ -516,9 +464,7 @@ def get_row_detailed_inner_data(
             )
         else:
             value = (
-                get_single_prompt_output_layout(
-                    str(table_data[file_id].get(key, None))
-                )
+                get_single_prompt_output_layout(str(table_data[file_id].get(key, None)))
                 if not plain_text
                 else html.Pre(str(table_data[file_id].get(key, None)))
             )
@@ -557,9 +503,7 @@ def get_table_detailed_inner_data(
 def get_general_stats_layout(
     base_model: str,
 ) -> html.Div:
-    data_for_base_model = [
-        data.get(base_model, []) for data in get_table_data()
-    ]
+    data_for_base_model = [data.get(base_model, []) for data in get_table_data()]
     custom_stats = {}
     for name, func in get_general_custom_stats().items():
         errors_dict = {}
@@ -573,29 +517,20 @@ def get_general_stats_layout(
         if len(errors_dict):
             logging.error(ERROR_MESSAGE_TEMPLATE.format(name, errors_dict))
     stats = {
-        "overall number of runs": sum(
-            len(question_data) for question_data in data_for_base_model
-        ),
+        "overall number of runs": sum(len(question_data) for question_data in data_for_base_model),
         **custom_stats,
     }
-    return [
-        html.Div(
-            [html.Div(f'{name}: {value}') for name, value in stats.items()]
-        )
-    ]
+    return [html.Div([html.Div(f'{name}: {value}') for name, value in stats.items()])]
 
 
-def get_sorting_answers_layout(
-    base_model: str, sorting_function: str, models: List[str]
-) -> List[html.Tr]:
+def get_sorting_answers_layout(base_model: str, sorting_function: str, models: List[str]) -> List[html.Tr]:
     errors_dict = {}
     global table_data
     start_time_sorting = datetime.datetime.now()
     if sorting_function:
         sortting_eval_function = get_eval_function(sorting_function.strip())
         available_models = {
-            model_name: model_info["file_paths"]
-            for model_name, model_info in get_available_models().items()
+            model_name: model_info["file_paths"] for model_name, model_info in get_available_models().items()
         }
 
         for question_id in range(len(table_data)):
@@ -626,9 +561,7 @@ def get_sorting_answers_layout(
         )
     if len(errors_dict):
         logging.error(ERROR_MESSAGE_TEMPLATE.format("sorting", errors_dict))
-    logging.info(
-        f'Sorting time: {datetime.datetime.now() - start_time_sorting}'
-    )
+    logging.info(f'Sorting time: {datetime.datetime.now() - start_time_sorting}')
     return (
         get_stats_layout()
         + get_general_stats_layout(base_model)
@@ -661,17 +594,11 @@ def get_filter_answers_layout(
     errors_dict = {}
     if filtering_function:
         available_models = {
-            model_name: model_info["file_paths"]
-            for model_name, model_info in get_available_models().items()
+            model_name: model_info["file_paths"] for model_name, model_info in get_available_models().items()
         }
 
         filtering_functions = (
-            list(
-                [
-                    get_eval_function(func.strip())
-                    for func in filtering_function.split('&&')
-                ]
-            )
+            list([get_eval_function(func.strip()) for func in filtering_function.split('&&')])
             if filtering_function
             else []
         )
@@ -737,10 +664,7 @@ def get_filter_answers_layout(
     )
 
 
-def get_model_answers_table_layout(
-    base_model: str, use_current: bool = False
-) -> List:
-
+def get_model_answers_table_layout(base_model: str, use_current: bool = False) -> List:
     global table_data
     if not use_current:
         table_data = custom_deepcopy(get_data_from_files())

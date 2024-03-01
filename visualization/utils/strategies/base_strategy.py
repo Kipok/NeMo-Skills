@@ -1,28 +1,17 @@
-from dataclasses import asdict
-from flask import current_app
 import logging
+from dataclasses import asdict
 from typing import Callable, Dict, Iterable, List, Tuple, Union
+
+import dash_bootstrap_components as dbc
+from dash import html
+from flask import current_app
+from layouts import get_input_group_layout, get_single_prompt_output_layout, get_switch_layout, get_text_area_layout
+from utils.common import examples
 
 from nemo_skills.code_execution.sandbox import get_sandbox
 from nemo_skills.inference.generate_solutions import InferenceConfig
-from nemo_skills.inference.prompt.utils import (
-    context_templates,
-    PromptConfig,
-    get_prompt,
-)
+from nemo_skills.inference.prompt.utils import PromptConfig, context_templates, get_prompt
 from nemo_skills.inference.server.model import get_model
-import dash_bootstrap_components as dbc
-from dash import html
-
-from layouts import (
-    get_input_group_layout,
-    get_switch_layout,
-    get_text_area_layout,
-    get_single_prompt_output_layout,
-)
-from utils.common import (
-    examples,
-)
 from visualization.settings.constants import QUERY_INPUT_TYPE
 
 
@@ -42,24 +31,17 @@ class ModeStrategies:
 
     def get_utils_input_layout(
         self,
-        inference_condition: Callable[
-            [str, Union[str, int, float, bool]], bool
-        ],
+        inference_condition: Callable[[str, Union[str, int, float, bool]], bool],
         prompt_condition: Callable[[str, Union[str, int, float, bool]], bool],
         disabled: bool = False,
-        additional_config_values: List[
-            Tuple[str, Union[str, int, float, bool]]
-        ] = [],
+        additional_config_values: List[Tuple[str, Union[str, int, float, bool]]] = [],
     ) -> List[dbc.AccordionItem]:
-        self.config['prompt']['context_templates'] = context_templates[
-            self.config["prompt"]["context_type"]
-        ]
+        self.config['prompt']['context_templates'] = context_templates[self.config["prompt"]["context_type"]]
         input_group_layout = html.Div(
             (
                 [
                     get_input_group_layout(name, value, dbc.Input)
-                    for name, value in list(self.config["inference"].items())
-                    + additional_config_values
+                    for name, value in list(self.config["inference"].items()) + additional_config_values
                     if inference_condition(name, value)
                 ]
                 + [
@@ -116,9 +98,7 @@ class ModeStrategies:
                 ["view mode"],
             )
         ]
-        search_layout = (
-            [self._get_search_prompt_layout()] if is_prompt_search else []
-        )
+        search_layout = [self._get_search_prompt_layout()] if is_prompt_search else []
         query_input = [
             html.Div(
                 self.get_query_input_children_layout(key_values),
@@ -220,9 +200,7 @@ class ModeStrategies:
         logging.info(f"query's answer: {outputs[0]}")
         color = (
             'green'
-            if self.sandbox.is_output_correct(
-                outputs[0]['predicted_answer'], params["expected_answer"]
-            )
+            if self.sandbox.is_output_correct(outputs[0]['predicted_answer'], params["expected_answer"])
             else "red"
         )
         return html.Div(
@@ -255,11 +233,7 @@ class ModeStrategies:
         )
 
     def get_prompt(self, utils: Dict, question: str) -> str:
-        prompt_config = {
-            key: value
-            for key, value in utils.items()
-            if key in self.config['prompt'].keys()
-        }
+        prompt_config = {key: value for key, value in utils.items() if key in self.config['prompt'].keys()}
 
         prompt = get_prompt(
             PromptConfig(**prompt_config),
@@ -267,8 +241,6 @@ class ModeStrategies:
                 'question': question,
             },
             context=utils['context_templates'],
-            examples=examples.get(
-                utils['examples_type'] if utils['examples_type'] else "", []
-            ),
+            examples=examples.get(utils['examples_type'] if utils['examples_type'] else "", []),
         )
         return prompt

@@ -1,13 +1,10 @@
-from dataclasses import dataclass, field
 import logging
+from dataclasses import dataclass, field
 from typing import Dict, Optional
 
 import hydra
 
-from nemo_skills.inference.generate_solutions import (
-    GenerateSolutionsConfig,
-)
-
+from nemo_skills.inference.generate_solutions import GenerateSolutionsConfig
 from nemo_skills.utils import unroll_files
 
 
@@ -31,9 +28,7 @@ class BaseVisualizationConfig:
 
 @dataclass
 class Config(GenerateSolutionsConfig):
-    visualization_params: BaseVisualizationConfig = field(
-        default_factory=BaseVisualizationConfig
-    )
+    visualization_params: BaseVisualizationConfig = field(default_factory=BaseVisualizationConfig)
 
 
 cs = hydra.core.config_store.ConfigStore.instance()

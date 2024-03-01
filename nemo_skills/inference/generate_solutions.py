@@ -116,11 +116,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
             if idx == cfg.max_samples:
                 break
 
-            prompts.append(
-                get_prompt(
-                    cfg.prompt, input_dict=data_point, context=cfg.context
-                )
-            )
+            prompts.append(get_prompt(cfg.prompt, input_dict=data_point, context=cfg.context))
             data_points.append(data_point)
 
             if len(prompts) == cfg.batch_size:

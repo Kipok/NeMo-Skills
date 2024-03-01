@@ -1,15 +1,11 @@
 from typing import Optional
 
-from settings.constants import (
-    COMPLETE_MODE,
-    ONE_TEST_MODE,
-    WHOLE_DATASET_MODE,
-)
-
-from visualization.utils.strategies.base_strategy import ModeStrategies
+from settings.constants import COMPLETE_MODE, ONE_TEST_MODE, WHOLE_DATASET_MODE
+from utils.strategies.complete_mode import CompleteModeStrategy
 from utils.strategies.one_test_mode import OneTestModeStrategy
 from utils.strategies.whole_dataset_mode import WholeDatasetModeStrategy
-from utils.strategies.complete_mode import CompleteModeStrategy
+
+from visualization.utils.strategies.base_strategy import ModeStrategies
 
 
 class RunPromptStrategyMaker:

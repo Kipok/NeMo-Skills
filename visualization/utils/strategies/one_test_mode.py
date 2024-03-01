@@ -1,15 +1,10 @@
 from typing import Dict, List
 
-from settings.constants import (
-    ONE_TEST_MODE,
-    PARAMS_FOR_WHOLE_DATASET_ONLY,
-)
 import dash_bootstrap_components as dbc
 from dash import html
+from settings.constants import ONE_TEST_MODE, PARAMS_FOR_WHOLE_DATASET_ONLY
+from utils.common import get_test_data
 
-from utils.common import (
-    get_test_data,
-)
 from visualization.utils.strategies.base_strategy import ModeStrategies
 
 
@@ -21,8 +16,7 @@ class OneTestModeStrategy(ModeStrategies):
 
     def get_utils_input_layout(self) -> List[dbc.AccordionItem]:
         inference_condition = (
-            lambda name, value: not isinstance(value, dict)
-            and name not in PARAMS_FOR_WHOLE_DATASET_ONLY
+            lambda name, value: not isinstance(value, dict) and name not in PARAMS_FOR_WHOLE_DATASET_ONLY
         )
         return super().get_utils_input_layout(
             inference_condition,

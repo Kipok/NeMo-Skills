@@ -3,28 +3,12 @@ import logging
 import os
 from typing import Dict, List
 
-from settings.constants import (
-    GREEDY,
-    METRICS,
-    OUTPUT_PATH,
-    OUTPUT,
-    ONE_TEST_MODE,
-    PARAMETERS_FILE_NAME,
-    RESULTS_PATH,
-)
-from dash import html
 import dash_bootstrap_components as dbc
+from dash import html
+from settings.constants import GREEDY, METRICS, ONE_TEST_MODE, OUTPUT, OUTPUT_PATH, PARAMETERS_FILE_NAME, RESULTS_PATH
+from settings.templates import compute_metrics_template, evaluate_results_template, generate_solution_template
+from utils.common import examples, get_available_models, run_subprocess
 
-from settings.templates import (
-    compute_metrics_template,
-    evaluate_results_template,
-    generate_solution_template,
-)
-from utils.common import (
-    examples,
-    get_available_models,
-    run_subprocess,
-)
 from visualization.utils.strategies.base_strategy import ModeStrategies
 
 
@@ -75,18 +59,9 @@ class WholeDatasetModeStrategy(ModeStrategies):
             '{{context}}',
             utils['delimiter'].join(filled_examples) + '{{context}}',
         )
-        random_seed_start = (
-            utils['start_random_seed']
-            if params['range_random_mode']
-            else utils['random_seed']
-        )
-        random_seed_end = (
-            utils['random_seed']
-            if params['range_random_mode']
-            else utils['random_seed'] + 1
-        )
+        random_seed_start = utils['start_random_seed'] if params['range_random_mode'] else utils['random_seed']
+        random_seed_end = utils['random_seed'] if params['range_random_mode'] else utils['random_seed'] + 1
         for random_seed in range(random_seed_start, random_seed_end):
-
             output_file = (
                 output_file
                 if not params['range_random_mode']
@@ -155,9 +130,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
         with open(PARAMETERS_FILE_NAME, "w") as f:
             f.write(json.dumps(runs_storage))
 
-        return html.Pre(
-            f'Done. Results are in folder\n{"/".join(output_file.split("/")[:-1])}'
-        )
+        return html.Pre(f'Done. Results are in folder\n{"/".join(output_file.split("/")[:-1])}')
 
     def get_prompt(self, utils: Dict, question: str) -> str:
         return super().get_prompt(utils, "***your question***")

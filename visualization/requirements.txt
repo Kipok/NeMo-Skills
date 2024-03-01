@@ -1,6 +1,6 @@
 dash
 dash_bootstrap_components
-sshtunnel_requests
-pygments
 hydra-core
 joblib
+pygments
+sshtunnel_requests

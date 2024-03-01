@@ -1,11 +1,11 @@
 import random
 import re
 import string
-from dash import html, dcc
 
+from dash import dcc, html
 from pygments import highlight
-from pygments.lexers import PythonLexer
 from pygments.formatters import HtmlFormatter
+from pygments.lexers import PythonLexer
 
 
 def design_text_output(text: str, style={}):
@@ -15,11 +15,7 @@ def design_text_output(text: str, style={}):
             marked_lines = lines
         else:
             marked_lines = [
-                (
-                    "$$" + line
-                    if i == len(lines) - 1
-                    else line + "$$" if i == 0 else "$$" + line + "$$"
-                )
+                ("$$" + line if i == len(lines) - 1 else line + "$$" if i == 0 else "$$" + line + "$$")
                 for i, line in enumerate(lines)
             ]
         return '$$' + '\n'.join(marked_lines) + '$$'
@@ -59,9 +55,7 @@ def highlight_code(code: str) -> html.Iframe:
         "background-color": "#CCD1E0",
     }
 
-    iframe_id = ''.join(
-        random.choices(string.ascii_letters + string.digits, k=20)
-    )
+    iframe_id = ''.join(random.choices(string.ascii_letters + string.digits, k=20))
     return html.Iframe(
         id=iframe_id,
         srcDoc=f"""

@@ -2,37 +2,18 @@ import json
 import logging
 from typing import Dict, List, Optional, Tuple, Union
 
-from dash import ALL, dcc, html, no_update
 import dash_bootstrap_components as dbc
+from callbacks import app
+from dash import ALL, dcc, html, no_update
 from dash._callback import NoUpdate
 from dash.dependencies import Input, Output, State
-
-from callbacks import app
-
-from settings.constants import (
-    ANSWER_FIELD,
-    QUERY_INPUT_ID,
-    QUERY_INPUT_TYPE,
-    QUESTION_FIELD,
-)
-from utils.common import (
-    examples,
-    get_test_data,
-    get_values_from_input_group,
-)
-from layouts import (
-    get_few_shots_by_id_layout,
-    get_query_params_layout,
-    get_single_prompt_output_layout,
-)
-
-from nemo_skills.inference.prompt.utils import (
-    context_templates,
-)
-from layouts.base_layouts import (
-    get_switch_layout,
-)
+from layouts import get_few_shots_by_id_layout, get_query_params_layout, get_single_prompt_output_layout
+from layouts.base_layouts import get_switch_layout
+from settings.constants import ANSWER_FIELD, QUERY_INPUT_ID, QUERY_INPUT_TYPE, QUESTION_FIELD
+from utils.common import examples, get_test_data, get_values_from_input_group
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
+
+from nemo_skills.inference.prompt.utils import context_templates
 
 
 @app.callback(
@@ -60,11 +41,7 @@ def change_examples_page(
 ) -> Tuple[Tuple[html.Div], int]:
     if not examples_type:
         examples_type = ""
-    return [
-        get_few_shots_by_id_layout(
-            page, examples_type, view_mode and len(view_mode)
-        )
-    ]
+    return [get_few_shots_by_id_layout(page, examples_type, view_mode and len(view_mode))]
 
 
 @app.callback(
@@ -87,14 +64,8 @@ def add_example(
     if examples_type not in examples:
         examples[examples_type] = []
     last_page = len(examples[examples_type])
-    examples_type_keys = (
-        list(examples.keys())[0]
-        if not len(examples[examples_type])
-        else examples_type
-    )
-    examples[examples_type].append(
-        {key: "" for key in examples[examples_type_keys][0].keys()}
-    )
+    examples_type_keys = list(examples.keys())[0] if not len(examples[examples_type]) else examples_type
+    examples[examples_type].append({key: "" for key in examples[examples_type_keys][0].keys()})
     return (last_page + 1, last_page + 1)
 
 
@@ -102,9 +73,7 @@ def add_example(
     [
         Output("few_shots_pagination", "max_value", allow_duplicate=True),
         Output("few_shots_pagination", "active_page", allow_duplicate=True),
-        Output(
-            "few_shots_pagination_content", "children", allow_duplicate=True
-        ),
+        Output("few_shots_pagination_content", "children", allow_duplicate=True),
     ],
     [Input("del_example_button", "n_clicks")],
     [
@@ -122,12 +91,7 @@ def add_example(
 )
 def del_example(
     n_clicks: int, page: int, examples_type: str, view_mode: List[str]
-) -> Tuple[
-    Union[int, NoUpdate],
-    Union[int, NoUpdate],
-    Union[Tuple[html.Div], NoUpdate],
-    Union[int, NoUpdate],
-]:
+) -> Tuple[Union[int, NoUpdate], Union[int, NoUpdate], Union[Tuple[html.Div], NoUpdate], Union[int, NoUpdate],]:
     if not examples_type:
         examples_type = ""
     if examples_type not in examples:
@@ -139,9 +103,7 @@ def del_example(
         return (
             last_page - 1,
             prev_pagination_page,
-            get_few_shots_by_id_layout(
-                prev_pagination_page, examples_type, view_mode
-            ),
+            get_few_shots_by_id_layout(prev_pagination_page, examples_type, view_mode),
         )
     return (
         no_update,
@@ -177,8 +139,7 @@ def update_examples(
     last_page = len(examples[examples_type])
     if last_page:
         examples[examples_type][page - 1 if page else 0] = {
-            key["id"]: value
-            for key, value in zip(page_content_ids, page_content)
+            key["id"]: value for key, value in zip(page_content_ids, page_content)
         }
     return no_update
 
@@ -198,9 +159,7 @@ def update_examples_type(
             [{}],
         )
     )
-    return (
-        RunPromptStrategyMaker().get_strategy().get_few_shots_div_layout(size)
-    )
+    return RunPromptStrategyMaker().get_strategy().get_few_shots_div_layout(size)
 
 
 @app.callback(
@@ -241,12 +200,8 @@ def get_run_test_results(
         utils["examples_type"] = ""
 
     try:
-        question_id = query_params_ids.index(
-            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD))
-        )
-        answer_id = query_params_ids.index(
-            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, ANSWER_FIELD))
-        )
+        question_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD)))
+        answer_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, ANSWER_FIELD)))
         question = query_params[question_id]
         answer = query_params[answer_id]
     except ValueError:
@@ -342,18 +297,12 @@ def preview(
 ) -> html.Pre:
     utils = get_values_from_input_group(utils)
     try:
-        question_id = query_params_ids.index(
-            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD))
-        )
+        question_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD)))
         question = query_params[question_id]
     except ValueError:
         question = ""
 
-    prompt = (
-        RunPromptStrategyMaker(run_mode)
-        .get_strategy()
-        .get_prompt(utils, question)
-    )
+    prompt = RunPromptStrategyMaker(run_mode).get_strategy().get_prompt(utils, question)
     return html.Div(
         [
             get_switch_layout(
@@ -387,8 +336,4 @@ def preview(
     prevent_initial_call=True,
 )
 def change_preview_mode(view_mode: bool, text: str) -> html.Pre:
-    return (
-        get_single_prompt_output_layout(text)
-        if view_mode and len(view_mode)
-        else text
-    )
+    return get_single_prompt_output_layout(text) if view_mode and len(view_mode) else text
