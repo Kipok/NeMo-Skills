@@ -1,34 +1,32 @@
-import logging
 from dataclasses import dataclass, field
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 import hydra
 
-from nemo_skills.inference.generate_solutions import GenerateSolutionsConfig
-from nemo_skills.utils import unroll_files
+from nemo_skills.code_execution.utils import (
+    CODE_SEPARATORS,
+    CODE_OUTPUT_SEPARATORS,
+)
+from nemo_skills.inference.generate_solutions import (
+    GenerateSolutionsConfig,
+)
 
 
 @dataclass
 class BaseVisualizationConfig:
     prediction_jsonl_files: Dict[str, str] = field(default_factory=dict)
 
-    code_separators: str = "<llm-code>\n \n</llm-code>"
-    code_output_separators: str = "<llm-code-output>\n \n</llm-code-output>"
+    code_separators: Tuple[str, str] = CODE_SEPARATORS
+    code_output_separators: Tuple[str, str] = CODE_OUTPUT_SEPARATORS
     dataset_path: Optional[str] = "datasets/{}/{}.jsonl"
     save_dataset_path: Optional[str] = "results/saved_dataset"
-
-    # def __post_init__(self):
-    #     """Building data_file from dataset/split_name if not provided directly."""
-    #     if isinstance(self.prediction_jsonl_files, str):
-    #         self.prediction_jsonl_files = {
-    #             model_name: list(unroll_files(file_path.split(" ")))
-    #             for model_name, file_path in self.prediction_jsonl_files.items()
-    #         }
 
 
 @dataclass
 class Config(GenerateSolutionsConfig):
-    visualization_params: BaseVisualizationConfig = field(default_factory=BaseVisualizationConfig)
+    visualization_params: BaseVisualizationConfig = field(
+        default_factory=BaseVisualizationConfig
+    )
 
 
 cs = hydra.core.config_store.ConfigStore.instance()

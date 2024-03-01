@@ -9,10 +9,10 @@ By default 'math' dataset will be used. You can change it in config.yaml file (d
 Command to launch the program (all parameters are optional):
 ```
     python3 visualization/__main__.py \
-    ssh_key={path_to_ssh} \
-    ssh_server={server} \
-    hostname={host} \
-    dataset={dataset_name}
+    ssh_key=<path_to_ssh> \
+    ssh_server=<server> \
+    hostname=<host> \
+    dataset=<dataset_name>
 ```
 
 For instance:
@@ -24,7 +24,7 @@ For instance:
     dataset=gsm8k
 ```
 
-To set the path to your results files you should change visualization/settings/visualization_config.yaml file
+To set the path to your results files you should change visualization/settings/visualization_config.yaml file:
 
 ```
 prediction_jsonl_files:
