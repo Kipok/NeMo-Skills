@@ -2,9 +2,8 @@ import json
 import logging
 from typing import Dict, List, Optional, Tuple, Union
 
-from dash import ALL, html, no_update
+from dash import ALL, dcc, html, no_update
 import dash_bootstrap_components as dbc
-import dash_core_components as dcc
 from dash._callback import NoUpdate
 from dash.dependencies import Input, Output, State
 

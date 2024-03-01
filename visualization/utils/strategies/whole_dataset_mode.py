@@ -108,12 +108,12 @@ class WholeDatasetModeStrategy(ModeStrategies):
                 sandbox_host=self.config['server']['host'],
                 **{
                     key: (
-                        value.replace('\n', '\\n')
-                        # .replace("'", "\\'")
+                        value.replace('\n', '\\n')  # TODO handle single quotes
                         .replace(')', '\)')
                         .replace('(', '\(')
                         .replace('}', '\}')
                         .replace('{', '\{')
+                        .replace("'", '')
                         if isinstance(value, str)
                         else value
                     )

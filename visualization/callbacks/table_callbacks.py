@@ -39,7 +39,6 @@ from utils.common import (
     get_filtered_files,
     get_general_custom_stats,
 )
-from settings.config import ConfigHolder
 
 
 @app.callback(

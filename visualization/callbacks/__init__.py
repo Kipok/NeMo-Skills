@@ -6,6 +6,7 @@ import hydra
 from flask import Flask
 import dash_bootstrap_components as dbc
 from omegaconf import OmegaConf
+from nemo_skills.utils import unroll_files
 
 from settings.config import Config
 
@@ -26,6 +27,14 @@ def set_config(cfg: Config) -> None:
         if 'start_random_seed' in config['prompt_explorer']['inference']
         else 0
     )
+    config['prompt_explorer']['visualization_params'][
+        'prediction_jsonl_files'
+    ] = {
+        model_name: list(unroll_files(file_path.split(" ")))
+        for model_name, file_path in config['prompt_explorer'][
+            'visualization_params'
+        ]['prediction_jsonl_files'].items()
+    }
 
 
 set_config()

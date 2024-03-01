@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+import logging
 from typing import Dict, Optional
 
 import hydra
@@ -19,13 +20,13 @@ class BaseVisualizationConfig:
     dataset_path: Optional[str] = "datasets/{}/{}.jsonl"
     save_dataset_path: Optional[str] = "results/saved_dataset"
 
-    def __post_init__(self):
-        """Building data_file from dataset/split_name if not provided directly."""
-        if isinstance(self.prediction_jsonl_files, str):
-            self.prediction_jsonl_files = {
-                model_name: list(unroll_files(file_path.split(" ")))
-                for model_name, file_path in self.prediction_jsonl_files.items()
-            }
+    # def __post_init__(self):
+    #     """Building data_file from dataset/split_name if not provided directly."""
+    #     if isinstance(self.prediction_jsonl_files, str):
+    #         self.prediction_jsonl_files = {
+    #             model_name: list(unroll_files(file_path.split(" ")))
+    #             for model_name, file_path in self.prediction_jsonl_files.items()
+    #         }
 
 
 @dataclass

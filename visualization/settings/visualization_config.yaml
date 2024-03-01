@@ -2,9 +2,3 @@ visualization_params:
   prediction_jsonl_files:
     our_script: /home/dgitman/visualization/llm-skill-improvement/results/math_tora_70b/output-tora-correct_predictions.jsonl
     tora_script: /home/dgitman/visualization/llm-skill-improvement/results/math_tora_70b/output-tora.jsonl
-    # tora: /home/dgitman/visualization/llm-skill-improvement/results/math_tora/output*
-    # 7b: results/all_final/results-final/codellama-7b/math/output-greedy.jsonl
-    # 13b: results/all_final/results-final/codellama-13b/math/output-greedy.jsonl
-    # 70b: results/all_final/results-final/codellama-70b/math/output-greedy.jsonl
-    # 2-70b: results/all_final/results-final/llama2-7b/math/output-greedy.jsonl
-    # mistral: results/all_final/results-final/mistral-7b/math/output-greedy.jsonl

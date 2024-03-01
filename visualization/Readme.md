@@ -12,7 +12,7 @@ Command to launch the program (all parameters are optional):
     ssh_key={path_to_ssh} \
     ssh_server={server} \
     hostname={host} \
-    base.dataset={dataset_name}
+    dataset={dataset_name}
 ```
 
 For instance:
@@ -21,7 +21,7 @@ For instance:
     ssh_key=~/.ssh/id_rsa.pub \
     ssh_server=igitman@draco-rno-login.nvidia.com \
     hostname=10.180.11.36 \
-    base.dataset=gsm8k
+    dataset=gsm8k
 ```
 
 To set the path to your results files you should change visualization/settings/base/models_predictions.yaml file

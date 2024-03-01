@@ -18,7 +18,6 @@ from nemo_skills.inference.prompt.few_shot_examples.examples_math import (
 
 from nemo_skills.utils import unroll_files
 
-from settings.config import ConfigHolder
 from settings.constants import (
     ANSWER_FIELD,
     OUTPUT,

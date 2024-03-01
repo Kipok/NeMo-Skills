@@ -119,15 +119,10 @@ def get_compare_test_layout() -> html.Div:
             ),
             dbc.Container(id="filtering_container"),
             dbc.Container(id="sorting_container"),
-            # dcc.Loading( # TODO spinner
-            # children=
-            html.Div(
+            html.Div(  # TODO spinner
                 children=[],
                 id="compare_models_rows",
             ),
-            #     type="circle",
-            #     style={'margin-top': '50px'},
-            # ),
         ],
     )
 

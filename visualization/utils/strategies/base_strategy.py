@@ -20,7 +20,6 @@ from layouts import (
     get_text_area_layout,
     get_single_prompt_output_layout,
 )
-from settings.config import ConfigHolder
 from utils.common import (
     examples,
 )
@@ -31,7 +30,6 @@ class ModeStrategies:
     def __init__(self):
         self.sandbox = None
         self.config = current_app.config['prompt_explorer']
-        logging.info(self.config)
 
     def sandbox_init(self, utils):
         if self.sandbox is None:
