@@ -137,11 +137,13 @@ def get_stats_text(general_stats: bool = False, delete: bool = False):
     else:
         if general_stats:
             return (
-                "The last line should be a dictionary with new custom stats.\n"
-                "The keys will be the stat names, and the values should be\n"
-                "functions of arrays with data from all files, where first dimension\n"
-                "is a question number and second is a file number (both sorted and filtered).\n"
-                "For example\n"
+                "Creating General Custom Statistics:\n\n"
+                "To introduce new general custom statistics:\n"
+                "1. Create a dictionary where keys are the names of your custom stats.\n"
+                "2. Assign functions as values. These functions should accept arrays where first dimension\n"
+                "is a question index and second is a file number (both sorted and filtered).\n\n"
+                "Example:\n\n"
+                "Define a custom function to integrate into your stats:\n\n"
                 "def my_func(datas):\n"
                 "    correct_responses = 0\n"
                 "    for question_data in datas:\n"
@@ -152,24 +154,28 @@ def get_stats_text(general_stats: bool = False, delete: bool = False):
             )
         else:
             return (
-                "The last line should be a dictionary with new custom stats.\n"
-                "The keys will be the stat names, and the values should be\n"
-                "functions of arrays with data from all files.\n"
-                "Avoid using the same name as the existing stats or json fields.\n"
-                "For example:\n"
-                "def my_func(datas):\n"
-                "    errors_set = set()\n"
+                "Creating Custom Statistics:\n\n"
+                "To introduce new custom statistics:\n"
+                "1. Create a dictionary where keys are the names of your custom stats.\n"
+                "2. Assign functions as values. These functions should accept arrays containing data\n"
+                "from all relevant files.\n\n"
+                "Note: Do not use names that already exist in the current stats or JSON fields\n"
+                "to avoid conflicts.\n\n"
+                "Example:\n\n"
+                "Define a custom function to integrate into your stats:\n\n"
+                "def unique_error_counter(datas):\n"
+                "    unique_errors = set()\n"
                 "    for data in datas:\n"
-                "        errors_set.add(data.get('error_message'))\n"
-                "    return len(errors_set)\n"
-                "{'my_custom_stats': my_func}"
+                "        unique_errors.add(data.get('error_message'))\n"
+                "    return len(unique_errors)\n\n"
+                "{'unique_error_count': unique_error_counter}"
             )
 
 
 def get_add_stats_layout() -> html.Div:
     modal_header = dbc.ModalHeader(
         [
-            dbc.ModalTitle("set up your stats"),
+            dbc.ModalTitle("Set Up Your Stats"),
             get_switch_layout(
                 id="stats_modes",
                 labels=["general stats", "delete mode"],

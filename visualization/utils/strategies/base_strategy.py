@@ -221,7 +221,7 @@ class ModeStrategies:
         color = (
             'green'
             if self.sandbox.is_output_correct(
-                outputs[0]['predicted_answer'], params["answer"]
+                outputs[0]['predicted_answer'], params["expected_answer"]
             )
             else "red"
         )

@@ -9,25 +9,22 @@ from visualization.settings.constants import QUERY_INPUT_TYPE
 
 
 def get_main_page_layout() -> html.Div:
+    nav_items = [
+        dbc.NavItem(
+            dbc.NavLink(
+                "Run model",
+                id="run_mode_link",
+                href="/",
+                active=True,
+            )
+        ),
+        dbc.NavItem(dbc.NavLink("Analyze", id="analyze_link", href="/analyze")),
+    ]
     return html.Div(
         [
             dcc.Location(id="url", refresh=False),
             dbc.NavbarSimple(
-                children=[
-                    dbc.NavItem(
-                        dbc.NavLink(
-                            "Run model",
-                            id="run_mode_link",
-                            href="/",
-                            active=True,
-                        )
-                    ),
-                    dbc.NavItem(
-                        dbc.NavLink(
-                            "Analyze", id="analyze_link", href="/analyze"
-                        )
-                    ),
-                ],
+                children=nav_items,
                 brand="Data Explorer",
                 sticky="top",
                 color="blue",

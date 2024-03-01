@@ -25,6 +25,7 @@ from settings.constants import (
     CHOOSE_LABEL,
     CHOOSE_MODEL,
     DELETE,
+    ERROR_MESSAGE_TEMPLATE,
     GENERAL_STATS,
     LABEL,
     MODEL_SELECTOR_ID,
@@ -55,7 +56,6 @@ def choose_base_model(
 ) -> Tuple[List, bool]:
     if base_model == CHOOSE_MODEL:
         return [], no_update
-    logging.info("choose_base_model")
     get_excluded_row().clear()
     return [
         get_model_answers_table_layout(
@@ -75,14 +75,14 @@ def choose_base_model(
     prevent_initial_call=True,
 )
 def save_dataset(n_click: int, base_model: str) -> Tuple[List, bool]:
-    if not n_click:
-        return no_update
     if (
-        not current_app.config['prompt_explorer']['base']['save_dataset_path']
+        not n_click
+        or not current_app.config['prompt_explorer']['base'][
+            'save_dataset_path'
+        ]
         or not base_model
     ):
         return no_update
-    logging.info("save_dataset")
     path = current_app.config['prompt_explorer']['base']['save_dataset_path']
     if not os.path.exists(path):
         os.mkdir(path)
@@ -115,7 +115,6 @@ def toggle_modal_filter(n1: int, n2: int, is_open: bool) -> bool:
     ctx = callback_context
     if not ctx.triggered:
         return no_update
-    logging.info("modal_filter")
     button_id = json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id'] + 1
 
     if not ctx.triggered[0]['value']:
@@ -139,7 +138,6 @@ def toggle_modal_sorting(n1: int, n2: int, is_open: bool) -> bool:
     ctx = callback_context
     if not ctx.triggered:
         return no_update
-    logging.info("modal_sorting")
 
     button_id = json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id'] + 1
 
@@ -165,7 +163,6 @@ def toggle_modal_label(n1: int, n2: int, n3: int, is_open: bool) -> bool:
     ctx = callback_context
     if not ctx.triggered:
         return no_update
-    logging.info("modal_label")
 
     button_id = json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']
     if not ctx.triggered[0]['value']:
@@ -188,7 +185,6 @@ def toggle_modal_label(n1: int, n2: int, n3: int, is_open: bool) -> bool:
 def toggle_modal_stats(n1: int, n2: int, is_open: bool) -> bool:
     if not n1 and not n2:
         return no_update
-    logging.info("modal_new_stats")
 
     if n1 or n2:
         is_open = not is_open
@@ -216,7 +212,6 @@ def apply_new_stat(
 ) -> List:
     if not n_click or code_raw == "":
         return no_update
-    logging.info("apply_new_stats")
     code_raw_lines = code_raw.strip().split('\n')
     if not stats_modes or DELETE not in stats_modes:
         code = (
@@ -230,7 +225,7 @@ def apply_new_stat(
     try:
         exec(code, namespace)
     except Exception as e:
-        logging.info(f"When execute function\n{code}\ngot_errors {str(e)}")
+        logging.error(ERROR_MESSAGE_TEMPLATE.format(code, str(e)))
         return no_update
     if stats_modes and GENERAL_STATS in stats_modes:
         if DELETE in stats_modes:
@@ -282,7 +277,6 @@ def filter_data(
         filtering_functions['props']['children'] += f"\n{filter_function}"
     if base_model == CHOOSE_MODEL:
         return [], no_update
-    logging.info("filter_data")
     if len(get_table_data()) == 0:  # TODO fix
         models = [models[0]]
     get_filter_answers_layout(
@@ -330,7 +324,6 @@ def sorting_data(
 ) -> Tuple[List[html.Tr], bool]:
     if base_model == CHOOSE_MODEL or not sorting_function:
         return no_update
-    logging.info("sorting_data")
     return (
         get_sorting_answers_layout(
             base_model=base_model,
@@ -372,7 +365,6 @@ def del_row(
     ctx = callback_context
     if not ctx.triggered or not n_clicks:
         return no_update
-    logging.info("del_row")
     button_id = json.loads(ctx.triggered[0]['prop_id'].split('.')[0])['id']
     row_index = 0
     for i, current_button_id in enumerate(button_ids):
@@ -406,7 +398,6 @@ def change_page(
 ) -> List[Dict]:
     if not get_table_data():
         return no_update
-    logging.info("change_page")
     return [
         data[base_model][0]
         for data in get_table_data()[
@@ -451,7 +442,6 @@ def show_item(
 ) -> List[str]:
     if not idx:
         raise PreventUpdate
-    logging.info("show_item")
     return get_table_detailed_inner_data(
         question_id=current_page * page_size + idx[0],
         rows_names=rows_names,
@@ -466,7 +456,6 @@ def show_item(
 def change_stats_text(mode: List[str]) -> str:
     if mode is None:
         return no_update
-    logging.info("change_stats_text")
     return [get_stats_text(GENERAL_STATS in mode, DELETE in mode)]
 
 
@@ -517,7 +506,6 @@ def apply_new_label(
     ctx = callback_context
     if not ctx.triggered or not idx:
         return no_update
-    logging.info("apply_new_label")
 
     button_id = model_ids.index(
         json.loads(
@@ -592,7 +580,6 @@ def delete_label(
     ctx = callback_context
     if not ctx.triggered or not idx:
         return no_update
-    logging.info("delete_label")
 
     button_id = model_ids.index(
         json.loads(
@@ -669,7 +656,6 @@ def change_file(
     ctx = callback_context
     if not ctx.triggered:
         return no_update
-    logging.info("change_file")
 
     question_id = page_size * current_page + idx[0]
     try:
@@ -740,7 +726,6 @@ def add_new_label(
     ctx = callback_context
     if not ctx.triggered:
         return no_update
-    logging.info("add_new_labels")
 
     button_id = model_ids.index(
         json.loads(
@@ -788,7 +773,6 @@ def choose_label(
     ctx = callback_context
     if not ctx.triggered:
         return no_update
-    logging.info("choose_label")
 
     button_id = model_ids.index(
         json.loads(
@@ -840,7 +824,6 @@ def add_model(
 ) -> Tuple[List, List]:
     if not n_clicks:
         return no_update
-    logging.info("add_model")
     available_models = list(get_available_models().keys())
     last_header_id = selectors_ids[-1]['id'] if selectors_ids != [] else -1
     header.append(
@@ -882,7 +865,6 @@ def del_model(
     ctx = callback_context
     if not ctx.triggered:
         return no_update
-    logging.info("del_model")
 
     button_id = json.loads(ctx.triggered[0]['prop_id'].split('.')[0])['id']
 
@@ -939,7 +921,6 @@ def change_files_order(
 ) -> Tuple[List[List[str]], List[str]]:
     if not idx:
         raise PreventUpdate
-    logging.info("change_files_order")
     ctx = callback_context
     if not ctx.triggered:
         return no_update

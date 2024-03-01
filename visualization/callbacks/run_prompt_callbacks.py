@@ -58,7 +58,6 @@ def change_examples_page(
     view_mode: bool,
     examples_type: str,
 ) -> Tuple[Tuple[html.Div], int]:
-    logging.info("change_examples_page")
     if not examples_type:
         examples_type = ""
     return [
@@ -83,7 +82,6 @@ def add_example(
     n_clicks: int,
     examples_type: str,
 ) -> Tuple[int, int, int]:
-    logging.info("add_example")
     if not examples_type:
         examples_type = ""
     if examples_type not in examples:
@@ -130,7 +128,6 @@ def del_example(
     Union[Tuple[html.Div], NoUpdate],
     Union[int, NoUpdate],
 ]:
-    logging.info("del_example")
     if not examples_type:
         examples_type = ""
     if examples_type not in examples:
@@ -173,7 +170,6 @@ def update_examples(
     examples_type: str,
     page_content_ids: List[int],
 ) -> NoUpdate:
-    logging.info("update_examples")
     if not examples_type:
         examples_type = ""
     if examples_type not in examples:
@@ -194,7 +190,6 @@ def update_examples(
 def update_examples_type(
     examples_type: str,
 ) -> Union[NoUpdate, dbc.AccordionItem]:
-    logging.info("update_examples_type")
     if not examples_type:
         examples_type = ""
     size = len(
@@ -215,7 +210,6 @@ def update_examples_type(
 def update_context_type(
     context_type: str,
 ) -> Union[NoUpdate, dbc.AccordionItem]:
-    logging.info("update_context_type")
     return context_templates.get(context_type, no_update)
 
 
@@ -241,7 +235,6 @@ def get_run_test_results(
 ) -> Union[html.Div, NoUpdate]:
     if n_clicks is None:
         return no_update
-    logging.info('run_test_results')
 
     utils = get_values_from_input_group(utils)
     if "examples_type" in utils and utils["examples_type"] is None:
@@ -258,7 +251,7 @@ def get_run_test_results(
         answer = query_params[answer_id]
     except ValueError:
         question = ""
-        answer = ""
+        expected_answer = ""
 
     return (
         RunPromptStrategyMaker(run_mode)
@@ -267,7 +260,7 @@ def get_run_test_results(
             utils,
             {
                 "question": question,
-                "answer": answer,
+                "expected_answer": expected_answer,
                 "range_random_mode": range_random_mode,
             },
         )
@@ -285,7 +278,6 @@ def get_run_test_results(
     prevent_initial_call=True,
 )
 def change_mode(run_mode: str) -> Tuple[List[dbc.AccordionItem], None]:
-    logging.info("change_mode")
     return get_query_params_layout(run_mode), None
 
 
@@ -313,7 +305,6 @@ def change_mode(run_mode: str) -> Tuple[List[dbc.AccordionItem], None]:
 def prompt_search(
     n_clicks: int, view_mode: str, index: int, dataset: str, split_name: str
 ) -> Tuple[Union[List[str], NoUpdate]]:
-    logging.info("prompt_search")
     key_values = get_test_data(
         index,
         dataset,
@@ -349,8 +340,6 @@ def preview(
     query_params: List[str],
     query_params_ids: List[int],
 ) -> html.Pre:
-    logging.info("preview")
-
     utils = get_values_from_input_group(utils)
     try:
         question_id = query_params_ids.index(
@@ -398,7 +387,6 @@ def preview(
     prevent_initial_call=True,
 )
 def change_preview_mode(view_mode: bool, text: str) -> html.Pre:
-    logging.info("change_preview_mode")
     return (
         get_single_prompt_output_layout(text)
         if view_mode and len(view_mode)

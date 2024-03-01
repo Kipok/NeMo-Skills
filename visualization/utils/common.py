@@ -283,7 +283,6 @@ def custom_deepcopy(data) -> List:
 
 @functools.lru_cache()
 def get_data_from_files() -> List:
-    logging.info("Getting data from files")
     base_config = current_app.config['prompt_explorer']
     dataset = None
     if base_config["visualization_params"]["dataset_path"]:

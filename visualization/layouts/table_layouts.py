@@ -74,10 +74,10 @@ def get_filter_layout(
     )
 
     inner_text = (
-        "Separate expressions for different models with &&\n"
-        + "For example:\ndata['model1']['correct_responses'] > 0.5 && data['model2']['no_response'] < 0.2\n"
+        "Separate expressions for different models with &&\n\n"
+        + "For example:\ndata['model1']['correct_responses'] > 0.5 && data['model2']['no_response'] < 0.2\n\n"
         if not files_only
-        else "For example:\ndata['correct_responses'] > 0.5 && data['no_response'] < 0.2\n"
+        else "For example:\ndata['correct_responses'] > 0.5 && data['no_response'] < 0.2\n\n"
     )
     text = (
         "Write an expression to filter the data\n"
@@ -92,7 +92,7 @@ def get_filter_layout(
         )
     )
     header = dbc.ModalHeader(
-        dbc.ModalTitle("set up your filter"), close_button=True
+        dbc.ModalTitle("Set Up Your Filter"), close_button=True
     )
     body = dbc.ModalBody(
         html.Div(
@@ -153,8 +153,8 @@ def get_sorting_layout(
         + ["+ all fields in json"]
     )
     text = (
-        "Write an expression to sort the data\n"
-        "For example: len(data['question'])\n"
+        "Write an expression to sort the data\n\n"
+        "For example: len(data['question'])\n\n"
         "The function has to return sortable type\n\n"
         "Available parameters to sort data:\n"
         + '\n'.join(
@@ -165,7 +165,7 @@ def get_sorting_layout(
         )
     )
     header = dbc.ModalHeader(
-        dbc.ModalTitle("set up your sorting parameters"),
+        dbc.ModalTitle("Set Up Your Sorting Parameters"),
         close_button=True,
     )
     body = dbc.ModalBody(
@@ -740,12 +740,10 @@ def get_filter_answers_layout(
 def get_model_answers_table_layout(
     base_model: str, use_current: bool = False
 ) -> List:
-    start_time = datetime.datetime.now()
 
     global table_data
     if not use_current:
         table_data = custom_deepcopy(get_data_from_files())
-    logging.info(f'Loading time: {datetime.datetime.now() - start_time}')
 
     return (
         get_stats_layout()
