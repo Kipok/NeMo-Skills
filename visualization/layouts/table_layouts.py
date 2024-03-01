@@ -250,29 +250,27 @@ def get_change_label_layout(id: int = -1) -> html.Div:
             ],
         )
     )
-    footer = (
-        dbc.ModalFooter(
-            html.Div(
-                [
-                    dbc.Button(
-                        children="Delete",
-                        id={
-                            "type": "delete_label_button",
-                            "id": id,
-                        },
-                        className="ms-auto",
-                        n_clicks=0,
-                    ),
-                    dbc.Button(
-                        children="Apply",
-                        id={"type": "apply_label_button", "id": id},
-                        className="ms-auto",
-                        n_clicks=0,
-                    ),
-                ]
-            ),
-            style={'display': 'inline-block'},
+    footer = dbc.ModalFooter(
+        html.Div(
+            [
+                dbc.Button(
+                    children="Delete",
+                    id={
+                        "type": "delete_label_button",
+                        "id": id,
+                    },
+                    className="ms-auto",
+                    n_clicks=0,
+                ),
+                dbc.Button(
+                    children="Apply",
+                    id={"type": "apply_label_button", "id": id},
+                    className="ms-auto",
+                    n_clicks=0,
+                ),
+            ]
         ),
+        style={'display': 'inline-block'},
     )
     return html.Div(
         [
