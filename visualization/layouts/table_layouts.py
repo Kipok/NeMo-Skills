@@ -10,6 +10,7 @@ import dash_bootstrap_components as dbc
 from settings.constants import (
     CHOOSE_MODEL,
     DATA_PAGE_SIZE,
+    ERROR_MESSAGE_TEMPLATE,
     MODEL_SELECTOR_ID,
     STATS_KEYS,
 )
@@ -555,18 +556,27 @@ def get_table_detailed_inner_data(
 
 def get_general_stats_layout(
     base_model: str,
-) -> html.Div:  # TODO handle exceptions
+) -> html.Div:
     data_for_base_model = [
         data.get(base_model, []) for data in get_table_data()
     ]
+    custom_stats = {}
+    for name, func in get_general_custom_stats().items():
+        errors_dict = {}
+        custom_stats[name] = catch_eval_exception(
+            [],
+            func,
+            data_for_base_model,
+            "Got error when applying function",
+            errors_dict,
+        )
+        if len(errors_dict):
+            logging.error(ERROR_MESSAGE_TEMPLATE.format(name, errors_dict))
     stats = {
         "overall number of runs": sum(
             len(question_data) for question_data in data_for_base_model
         ),
-        **{
-            name: func(data_for_base_model)
-            for name, func in get_general_custom_stats().items()
-        },
+        **custom_stats,
     }
     return [
         html.Div(
@@ -614,9 +624,8 @@ def get_sorting_answers_layout(
                 )
             )
         )
-    logging.error(
-        f'While applying sorting function\n{sorting_function}\ngot errors\n{errors_dict}'
-    )
+    if len(errors_dict):
+        logging.error(ERROR_MESSAGE_TEMPLATE.format("sorting", errors_dict))
     logging.info(
         f'Sorting time: {datetime.datetime.now() - start_time_sorting}'
     )
@@ -707,14 +716,8 @@ def get_filter_answers_layout(
                 clean_table_data.append(table_data[question_id])
 
         table_data = clean_table_data
-
-    logging.error(
-        f'While applying filter functions\n{filtering_function}\ngot errors\n{errors_dict}'
-    )
-
-    logging.info(
-        f'Filtering time: {datetime.datetime.now() - start_time_filtering}'
-    )
+    if len(errors_dict):
+        logging.error(ERROR_MESSAGE_TEMPLATE.format("filtering", errors_dict))
 
     return (
         get_stats_layout()

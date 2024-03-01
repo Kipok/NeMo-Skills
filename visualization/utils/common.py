@@ -7,7 +7,7 @@ import json
 import logging
 import re
 import subprocess
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from nemo_skills.inference.prompt.few_shot_examples.examples_gsm8k import (
     examples_map as examples_gsm8k,
@@ -20,6 +20,7 @@ from nemo_skills.utils import unroll_files
 
 from settings.constants import (
     ANSWER_FIELD,
+    ERROR_MESSAGE_TEMPLATE,
     OUTPUT,
     PARAMETERS_FILE_NAME,
     QUESTION_FIELD,
@@ -136,7 +137,7 @@ def get_estimated_height(text) -> float:
     )
 
 
-@functools.lru_cache
+@functools.lru_cache()
 def get_test_data(
     index: int, dataset: str, split_name: str
 ) -> Tuple[Dict, int]:
@@ -192,18 +193,29 @@ def get_stats(all_files_data: List[Dict], is_correct: bool = True) -> float:
     return right / len(all_files_data) if len(all_files_data) else -1
 
 
-def get_metrics(
-    all_files_data: List[Dict],
-) -> Dict:  # TODO handle exceptions
+def get_metrics(all_files_data: List[Dict], errors_dict: Dict = {}) -> Dict:
     correct_responses = get_stats(all_files_data, True)
     wrong_responses = get_stats(all_files_data, False)
     no_response = 1.0 - correct_responses - wrong_responses
-    return {
+    custom_stats = {}
+    for name, func in get_custom_stats().items():
+        if name not in errors_dict:
+            errors_dict[name] = {}
+        custom_stats[name] = catch_eval_exception(
+            [],
+            func,
+            all_files_data,
+            "Got error when applying function",
+            errors_dict[name],
+        )
+
+    stats = {
         'correct_responses': round(correct_responses, 2),
         "wrong_responses": round(wrong_responses, 2),
         "no_response": round(no_response, 2),
-        **{name: func(all_files_data) for name, func in custom_stats.items()},
+        **custom_stats,
     }
+    return stats
 
 
 def get_eval_function(text):
@@ -223,31 +235,35 @@ def eval_function(data):
 
 
 def calculate_metrics_for_whole_data(table_data: List, model_id: str) -> Dict:
+    errors_dict = {}
     for question_id in range(len(table_data)):
-        stats = get_metrics(table_data[question_id][model_id])
+        stats = get_metrics(table_data[question_id][model_id], errors_dict)
         table_data[question_id][model_id] = list(
             map(
                 lambda data: {**data, **stats},
                 table_data[question_id][model_id],
             )
         )
+    if len(errors_dict):
+        for name, error_dict in errors_dict.items():
+            logging.error(ERROR_MESSAGE_TEMPLATE.format(name, error_dict))
 
 
 def catch_eval_exception(
     available_models: List[str],
-    eval_text: Callable[[Dict], bool],
+    eval_func: Callable[[Dict], bool],
     data: Dict,
-    default_answer: bool,
+    default_answer: Union[bool, str],
     errors_dict: Optional[Dict] = {},
 ) -> bool:
     try:
-        if eval_text is None:
+        if eval_func is None:
             return default_answer
-        return eval_text(data)
+        return eval_func(data)
     except Exception as e:
         if str(e).split(" ")[-1].replace("'", "") not in available_models:
             if str(e) not in errors_dict:
-                errors_dict[str(e)] = 1
+                errors_dict[str(e)] = 0
             errors_dict[str(e)] += 1
         return default_answer
 
@@ -372,7 +388,7 @@ def is_detailed_answers_rows_key(key: str) -> bool:
     )
 
 
-@functools.cache
+@functools.lru_cache()
 def get_available_models() -> Dict:
     try:
         with open(PARAMETERS_FILE_NAME) as f:
