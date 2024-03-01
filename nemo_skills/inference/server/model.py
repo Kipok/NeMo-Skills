@@ -45,6 +45,25 @@ def remove_stop_tokens(text: str, stop_phrases: List[str]) -> str:
 
 
 class BaseModel(abc.ABC):
+    """Base model class for handling requests to the inference server.
+
+    Args:
+        host: Optional[str] = '127.0.0.1' - Host of the inference server.
+        port: Optional[str] = '5000' - Port of the inference server.
+        sandbox: Optional[Sandbox] = None - Sandbox for executing code.
+            Only required if handle_code_execution is True.
+        ssh_server: Optional[str] = None - SSH server for tunneling requests.
+            Useful if server is running on slurm cluster to which there is an ssh access.
+        ssh_key_path: Optional[str] = None - Path to the ssh key for tunneling.
+        max_code_output_characters: Optional[int] = 1000 - Maximum number of characters for code execution output.
+        code_execution_timeout: Optional[float] = 10.0 - Timeout for code execution in seconds.
+        max_code_executions: Optional[int] = 3 - Maximum number of code executions per generation.
+        stop_on_code_error: Optional[bool] = True - Whether to stop generation if code execution fails.
+        handle_code_execution: Optional[bool] = True - Whether to handle code execution in this class
+            or make a single call to the server. If set to False, the server needs to have special logic
+            for communicating with the sandbox.
+    """
+
     def __init__(
         self,
         host='127.0.0.1',
@@ -56,7 +75,7 @@ class BaseModel(abc.ABC):
         code_execution_timeout=10.0,
         max_code_executions=3,
         stop_on_code_error=True,
-        handle_code_execution=True,  # for some of the inference types (e.g. nemo), code execution is handled internally
+        handle_code_execution=True,
     ):
         self.server_host = host
         self.server_port = port
@@ -301,3 +320,24 @@ def get_model(server_type, **kwargs):
     """A helper function to make it easier to set server type through cmd."""
     model_class = models[server_type.lower()]
     return model_class(**kwargs)
+
+
+def server_params():
+    """Returns server documentation (to include in cmd help).
+
+    Will also color the args and change the format to match what we use in cmd help.
+    """
+    all_args = f'\n        server_type: str = MISSING - Choices: {list(models.keys())}'
+    all_args += BaseModel.__doc__.split("Args:")[1].rstrip()
+    # \033[92m ... \033[0m - green in terminal
+    colored_args = ""
+    for line in all_args.split("\n"):
+        if "        " in line and " - " in line:
+            # add colors
+            line = line.replace("        ", "        \033[92m").replace(" - ", "\033[0m - ")
+            # fixing arg format
+            line = line.replace('        \033[92m', '        \033[92mserver.')
+        # fixing indent
+        line = line.replace("        ", "    ").replace("    ", "  ")
+        colored_args += line + '\n'
+    return colored_args[:-1]

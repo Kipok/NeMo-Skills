@@ -24,8 +24,8 @@ from omegaconf import OmegaConf
 from tqdm import tqdm
 
 from nemo_skills.code_execution.sandbox import get_sandbox
-from nemo_skills.inference.prompt.utils import PromptConfig, get_prompt, datasets
-from nemo_skills.inference.server.model import get_model
+from nemo_skills.inference.prompt.utils import PromptConfig, get_prompt, prompt_types, datasets
+from nemo_skills.inference.server.model import get_model, server_params
 from nemo_skills.utils import get_help_message, setup_logging
 
 LOG = logging.getLogger(__file__)
@@ -46,12 +46,17 @@ class GenerateSolutionsConfig:
     """Top-level parameters for the script"""
 
     output_file: str  # where to save the generations
-    server: dict  # will be directly passed to model.get_client function
+    # inference server configuration {server_params}
+    server: dict
     sandbox: dict  # will be directly passed to sandbox.get_sandbox function
+    # prompt configuration.
+    # Available pre-configured prompts: {prompt_types}.
     prompt: PromptConfig = field(default_factory=PromptConfig)
     inference: InferenceConfig = field(default_factory=InferenceConfig)  # LLM call parameters
 
-    dataset: Optional[str] = None  # can specify one of the existing datasets. Choices: {datasets}
+    # can specify one of the existing datasets.
+    # Choices: {datasets}.
+    dataset: Optional[str] = None
     split_name: Optional[str] = None  # train, validation, test or train_full (train + validation)
     data_file: Optional[str] = None  # can directly specify a data file, if using a custom dataset
 
@@ -138,7 +143,9 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                 fout.write(json.dumps(output) + "\n")
 
 
-HELP_MESSAGE = get_help_message(GenerateSolutionsConfig, datasets=datasets)
+HELP_MESSAGE = get_help_message(
+    GenerateSolutionsConfig, datasets=datasets, server_params=server_params(), prompt_types=prompt_types
+)
 
 
 if __name__ == "__main__":

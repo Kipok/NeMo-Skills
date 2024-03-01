@@ -128,7 +128,7 @@ def extract_comments_above_fields(dataclass_obj, prefix: str = '', level: int = 
         indent = '  ' * level
         comment = f"\n{indent}".join(comment_cache)
         comment = "- " + comment if comment else ""
-        comment = comment.replace('\n', f'\n{indent}    ')
+        comment = comment.replace('\n', f'\n{indent}  ')
         field_detail = f"{indent}\033[92m{field_name}: {field_type}{default_str}\033[0m {comment}"
         comments[field_name] = field_detail
         comment_cache = []
