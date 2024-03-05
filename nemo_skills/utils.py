@@ -165,3 +165,24 @@ Below are the available configuration options and their default values:
         full_help = f"{help_message}\n\n{full_help}"
 
     return full_help
+
+
+def python_doc_to_cmd_help(doc_class, docs_prefix="", arg_prefix=""):
+    """Converts python doc to cmd help format.
+
+    Will color the args and change the format to match what we use in cmd help.
+    """
+    all_args = docs_prefix
+    all_args += doc_class.__doc__.split("Args:")[1].rstrip()
+    # \033[92m ... \033[0m - green in terminal
+    colored_args = ""
+    for line in all_args.split("\n"):
+        if "        " in line and " - " in line:
+            # add colors
+            line = line.replace("        ", "        \033[92m").replace(" - ", "\033[0m - ")
+            # fixing arg format
+            line = line.replace('        \033[92m', f'        \033[92m{arg_prefix}')
+        # fixing indent
+        line = line.replace("        ", "    ").replace("    ", "  ")
+        colored_args += line + '\n'
+    return colored_args[:-1]

@@ -23,7 +23,7 @@ import hydra
 from omegaconf import OmegaConf
 from tqdm import tqdm
 
-from nemo_skills.code_execution.sandbox import get_sandbox
+from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
 from nemo_skills.inference.prompt.utils import PromptConfig, get_prompt, prompt_types, datasets
 from nemo_skills.inference.server.model import get_model, server_params
 from nemo_skills.utils import get_help_message, setup_logging
@@ -48,7 +48,8 @@ class GenerateSolutionsConfig:
     output_file: str  # where to save the generations
     # inference server configuration {server_params}
     server: dict
-    sandbox: dict  # will be directly passed to sandbox.get_sandbox function
+    # sandbox configuration {sandbox_params}
+    sandbox: dict
     # prompt configuration.
     # Available pre-configured prompts: {prompt_types}.
     prompt: PromptConfig = field(default_factory=PromptConfig)
@@ -144,12 +145,16 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
 
 HELP_MESSAGE = get_help_message(
-    GenerateSolutionsConfig, datasets=datasets, server_params=server_params(), prompt_types=prompt_types
+    GenerateSolutionsConfig,
+    datasets=datasets,
+    prompt_types=prompt_types,
+    server_params=server_params(),
+    sandbox_params=sandbox_params(),
 )
 
 
 if __name__ == "__main__":
-    if '--help' in sys.argv:
+    if '--help' in sys.argv or '-h' in sys.argv:
         print(HELP_MESSAGE)
     else:
         setup_logging()

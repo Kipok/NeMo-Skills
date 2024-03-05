@@ -19,7 +19,7 @@ import logging
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Union
+from typing import List
 
 import requests
 
@@ -31,6 +31,7 @@ from nemo_skills.code_execution import (
 )
 from nemo_skills.code_execution.math_grader import extract_answer
 from nemo_skills.code_execution.sandbox import Sandbox
+from nemo_skills.utils import python_doc_to_cmd_help
 
 LOG = logging.getLogger(__name__)
 
@@ -53,8 +54,10 @@ class BaseModel(abc.ABC):
         sandbox: Optional[Sandbox] = None - Sandbox for executing code.
             Only required if handle_code_execution is True.
         ssh_server: Optional[str] = None - SSH server for tunneling requests.
-            Useful if server is running on slurm cluster to which there is an ssh access.
+            Useful if server is running on slurm cluster to which there is an ssh access
+            Can also be specified through SSH_SERVER env var..
         ssh_key_path: Optional[str] = None - Path to the ssh key for tunneling.
+            Can also be specified through SSH_KEY_PATH env var.
         max_code_output_characters: Optional[int] = 1000 - Maximum number of characters for code execution output.
         code_execution_timeout: Optional[float] = 10.0 - Timeout for code execution in seconds.
         max_code_executions: Optional[int] = 3 - Maximum number of code executions per generation.
@@ -317,27 +320,12 @@ models = {
 
 
 def get_model(server_type, **kwargs):
-    """A helper function to make it easier to set server type through cmd."""
+    """A helper function to make it easier to set server through cmd."""
     model_class = models[server_type.lower()]
     return model_class(**kwargs)
 
 
 def server_params():
-    """Returns server documentation (to include in cmd help).
-
-    Will also color the args and change the format to match what we use in cmd help.
-    """
-    all_args = f'\n        server_type: str = MISSING - Choices: {list(models.keys())}'
-    all_args += BaseModel.__doc__.split("Args:")[1].rstrip()
-    # \033[92m ... \033[0m - green in terminal
-    colored_args = ""
-    for line in all_args.split("\n"):
-        if "        " in line and " - " in line:
-            # add colors
-            line = line.replace("        ", "        \033[92m").replace(" - ", "\033[0m - ")
-            # fixing arg format
-            line = line.replace('        \033[92m', '        \033[92mserver.')
-        # fixing indent
-        line = line.replace("        ", "    ").replace("    ", "  ")
-        colored_args += line + '\n'
-    return colored_args[:-1]
+    """Returns server documentation (to include in cmd help)."""
+    prefix = f'\n        server_type: str = MISSING - Choices: {list(models.keys())}'
+    return python_doc_to_cmd_help(BaseModel, docs_prefix=prefix, arg_prefix="server.")
