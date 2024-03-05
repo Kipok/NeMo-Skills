@@ -24,7 +24,7 @@ from omegaconf import OmegaConf
 from tqdm import tqdm
 
 from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
-from nemo_skills.inference.prompt.utils import PromptConfig, get_prompt, prompt_types, datasets
+from nemo_skills.inference.prompt.utils import PromptConfig, datasets, get_prompt, prompt_types
 from nemo_skills.inference.server.model import get_model, server_params
 from nemo_skills.utils import get_help_message, setup_logging
 
