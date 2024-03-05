@@ -1,3 +1,17 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import datetime
 import functools
 import json
@@ -19,8 +33,12 @@ from settings.constants import (
     STATS_KEYS,
 )
 
-from nemo_skills.inference.prompt.few_shot_examples.examples_gsm8k import examples_map as examples_gsm8k
-from nemo_skills.inference.prompt.few_shot_examples.examples_math import examples_map as examples_math
+from nemo_skills.inference.prompt.few_shot_examples.examples_gsm8k import (
+    examples_map as examples_gsm8k,
+)
+from nemo_skills.inference.prompt.few_shot_examples.examples_math import (
+    examples_map as examples_math,
+)
 from nemo_skills.utils import unroll_files
 
 examples = {
@@ -53,11 +71,13 @@ def get_general_custom_stats() -> Dict:
 def parse_model_answer(answer: str) -> List[Dict]:
     code_start, code_end = map(
         re.escape,
-        current_app.config['prompt_explorer']["visualization_params"]["code_separators"],
+        current_app.config['data_explorer']["visualization_params"]["code_separators"],
     )
     output_start, output_end = map(
         re.escape,
-        current_app.config['prompt_explorer']["visualization_params"]["code_output_separators"],
+        current_app.config['data_explorer']["visualization_params"][
+            "code_output_separators"
+        ],
     )
     code_pattern = re.compile(fr'{code_start}(.*?){code_end}', re.DOTALL)
     code_output_pattern = re.compile(
@@ -92,45 +112,38 @@ def parse_model_answer(answer: str) -> List[Dict]:
             parsed_results.append(
                 {
                     'explanation': trailing_text[0:code_start_index].strip(),
-                    'code': trailing_text[code_start_index + len(code_start.replace("\\", "")) :],
+                    'code': trailing_text[
+                        code_start_index + len(code_start.replace("\\", "")) :
+                    ],
                     'output': "code_block was not finished",
                     'wrong_code_block': True,
                 }
             )
             trailing_text = None
         if trailing_text:
-            parsed_results.append({'explanation': trailing_text, 'code': None, 'output': None})
+            parsed_results.append(
+                {'explanation': trailing_text, 'code': None, 'output': None}
+            )
     return parsed_results
 
 
 def get_estimated_height(text) -> float:
-    return max(
-        max(
-            50,
-            int(
-                sum(
-                    map(
-                        lambda text: (len(text) + 119) // 120 + 1,
-                        str(text).split("\n"),
-                    )
-                )
-            )
-            * 15,
-        ),
-        len(str(text)) / 4,
+    line_to_height_func = lambda text: (len(text) + 119) // 120 + 1
+    splitted_text = str(text).split("\n")
+    extimated_height_for_lines = map(
+        line_to_height_func,
+        splitted_text,
     )
+    estimated_height = sum(extimated_height_for_lines) * 15
+    return max(50, estimated_height)
 
 
 @functools.lru_cache()
-def get_test_data(index: int, dataset: str, split_name: str) -> Tuple[Dict, int]:
-    if not dataset or not split_name:
+def get_test_data(index: int) -> Tuple[Dict, int]:
+    data_file = current_app.config['data_explorer']["data_file"]
+    if data_file == "dummy":
         return {QUESTION_FIELD: "", ANSWER_FIELD: ""}, 0
-    with open(
-        current_app.config['prompt_explorer']["visualization_params"]["dataset_path"].format(
-            dataset,
-            split_name,
-        )
-    ) as file:
+    with open(data_file) as file:
         tests = file.readlines()
         index = max(min(len(tests), index), 1)
         test = json.loads(tests[index - 1])
@@ -141,7 +154,10 @@ def get_values_from_input_group(children: Iterable) -> Dict:
     values = {}
     for child in children:
         for input_group_child in child["props"]["children"]:
-            if "id" in input_group_child["props"].keys() and "value" in input_group_child["props"].keys():
+            if (
+                "id" in input_group_child["props"].keys()
+                and "value" in input_group_child["props"].keys()
+            ):
                 type_function = str
                 value = input_group_child["props"]["value"]
 
@@ -150,7 +166,9 @@ def get_values_from_input_group(children: Iterable) -> Dict:
                 elif str(value).replace(".", "", 1).replace("-", "", 1).isdigit():
                     type_function = float
 
-                values[input_group_child["props"]["id"]] = type_function(str(value).replace('\\n', '\n'))
+                values[input_group_child["props"]["id"]] = type_function(
+                    str(value).replace('\\n', '\n')
+                )
 
     return values
 
@@ -243,26 +261,25 @@ def custom_deepcopy(data) -> List:
     for item in data:
         new_item = {}
         for key, value_list in item.items():
-            new_value_list = [{k: v for k, v in sub_item.items()} for sub_item in value_list]
+            new_value_list = [
+                {k: v for k, v in sub_item.items()} for sub_item in value_list
+            ]
             new_item[key] = new_value_list
         new_data.append(new_item)
     return new_data
 
 
-@functools.lru_cache()
-def get_data_from_files() -> List:
-    base_config = current_app.config['prompt_explorer']
+@functools.lru_cache(maxsize=1)
+def get_data_from_files(_=None) -> List:
+    base_config = current_app.config['data_explorer']
     dataset = None
-    if base_config["visualization_params"]["dataset_path"] and base_config["dataset"] and base_config["split_name"]:
-        dataset_path = base_config["visualization_params"]["dataset_path"].format(
-            base_config["dataset"], base_config["split_name"]
-        )
-
-        with open(dataset_path) as f:
+    if base_config['data_file']:
+        with open(base_config['data_file']) as f:
             dataset = [json.loads(line) for line in f]
 
     available_models = {
-        model_name: model_info["file_paths"] for model_name, model_info in get_available_models().items()
+        model_name: model_info["file_paths"]
+        for model_name, model_info in get_available_models(_).items()
     }
 
     all_models_data_array = []
@@ -312,7 +329,8 @@ def get_filtered_files(
     array_to_filter: List,
 ) -> List:
     filter_lambda_functions = [
-        get_eval_function(func.strip()) for func in (filter_function if filter_function else "True").split('&&')
+        get_eval_function(func.strip())
+        for func in (filter_function if filter_function else "True").split('&&')
     ]
     filtered_data = list(
         filter(
@@ -320,7 +338,9 @@ def get_filtered_files(
             [
                 list(
                     filter(
-                        lambda data: catch_eval_exception(get_available_models(), function, data, False),
+                        lambda data: catch_eval_exception(
+                            get_available_models(), function, data, False
+                        ),
                         array_to_filter,
                     )
                 )
@@ -332,7 +352,9 @@ def get_filtered_files(
     if sorting_function:
         sorting_lambda_function = get_eval_function(sorting_function.strip())
         filtered_data.sort(
-            key=lambda data: catch_eval_exception(get_available_models(), sorting_lambda_function, data, 0)
+            key=lambda data: catch_eval_exception(
+                get_available_models(), sorting_lambda_function, data, 0
+            )
         )
 
     return filtered_data
@@ -347,8 +369,8 @@ def is_detailed_answers_rows_key(key: str) -> bool:
     )
 
 
-@functools.lru_cache()
-def get_available_models() -> Dict:
+@functools.lru_cache(maxsize=1)
+def get_available_models(_=None) -> Dict:
     try:
         with open(PARAMETERS_FILE_NAME) as f:
             runs_storage = json.load(f)
@@ -359,14 +381,15 @@ def get_available_models() -> Dict:
         runs_storage[model_name]["file_paths"] = list(
             unroll_files([RESULTS_PATH.format(model_name) + f"{OUTPUT}*.jsonl"])
         )
-    for model_name, files in current_app.config['prompt_explorer']["visualization_params"][
-        "prediction_jsonl_files"
+    for model_name, files in current_app.config['data_explorer']["visualization_params"][
+        "model_prediction"
     ].items():
         runs_storage[model_name] = {
             "utils": {},
             "examples": {},
             "file_paths": files,
         }
+
     return runs_storage
 
 

@@ -1,3 +1,17 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import json
 import logging
 from typing import Dict, List, Optional, Tuple, Union
@@ -7,9 +21,18 @@ from callbacks import app
 from dash import ALL, dcc, html, no_update
 from dash._callback import NoUpdate
 from dash.dependencies import Input, Output, State
-from layouts import get_few_shots_by_id_layout, get_query_params_layout, get_single_prompt_output_layout
+from layouts import (
+    get_few_shots_by_id_layout,
+    get_query_params_layout,
+    get_single_prompt_output_layout,
+)
 from layouts.base_layouts import get_switch_layout
-from settings.constants import ANSWER_FIELD, QUERY_INPUT_ID, QUERY_INPUT_TYPE, QUESTION_FIELD
+from settings.constants import (
+    ANSWER_FIELD,
+    QUERY_INPUT_ID,
+    QUERY_INPUT_TYPE,
+    QUESTION_FIELD,
+)
 from utils.common import examples, get_test_data, get_values_from_input_group
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
 
@@ -64,8 +87,12 @@ def add_example(
     if examples_type not in examples:
         examples[examples_type] = []
     last_page = len(examples[examples_type])
-    examples_type_keys = list(examples.keys())[0] if not len(examples[examples_type]) else examples_type
-    examples[examples_type].append({key: "" for key in examples[examples_type_keys][0].keys()})
+    examples_type_keys = (
+        list(examples.keys())[0] if not len(examples[examples_type]) else examples_type
+    )
+    examples[examples_type].append(
+        {key: "" for key in examples[examples_type_keys][0].keys()}
+    )
     return (last_page + 1, last_page + 1)
 
 
@@ -91,7 +118,12 @@ def add_example(
 )
 def del_example(
     n_clicks: int, page: int, examples_type: str, view_mode: List[str]
-) -> Tuple[Union[int, NoUpdate], Union[int, NoUpdate], Union[Tuple[html.Div], NoUpdate], Union[int, NoUpdate],]:
+) -> Tuple[
+    Union[int, NoUpdate],
+    Union[int, NoUpdate],
+    Union[Tuple[html.Div], NoUpdate],
+    Union[int, NoUpdate],
+]:
     if not examples_type:
         examples_type = ""
     if examples_type not in examples:
@@ -156,7 +188,7 @@ def update_examples_type(
     size = len(
         examples.get(
             examples_type,
-            [{}],
+            [],
         )
     )
     return RunPromptStrategyMaker().get_strategy().get_few_shots_div_layout(size)
@@ -200,10 +232,14 @@ def get_run_test_results(
         utils["examples_type"] = ""
 
     try:
-        question_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD)))
-        answer_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, ANSWER_FIELD)))
+        question_id = query_params_ids.index(
+            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD))
+        )
+        answer_id = query_params_ids.index(
+            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, ANSWER_FIELD))
+        )
         question = query_params[question_id]
-        answer = query_params[answer_id]
+        expected_answer = query_params[answer_id]
     except ValueError:
         question = ""
         expected_answer = ""
@@ -252,19 +288,13 @@ def change_mode(run_mode: str) -> Tuple[List[dbc.AccordionItem], None]:
     ],
     [
         State("query_search_input", "value"),
-        State("dataset", "value"),
-        State("split_name", "value"),
     ],
     prevent_initial_call=True,
 )
 def prompt_search(
-    n_clicks: int, view_mode: str, index: int, dataset: str, split_name: str
+    n_clicks: int, view_mode: str, index: int
 ) -> Tuple[Union[List[str], NoUpdate]]:
-    key_values = get_test_data(
-        index,
-        dataset,
-        split_name,
-    )[0].items()
+    key_values = get_test_data(index)[0].items()
     return [
         RunPromptStrategyMaker()
         .get_strategy()
@@ -297,7 +327,9 @@ def preview(
 ) -> html.Pre:
     utils = get_values_from_input_group(utils)
     try:
-        question_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD)))
+        question_id = query_params_ids.index(
+            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD))
+        )
         question = query_params[question_id]
     except ValueError:
         question = ""

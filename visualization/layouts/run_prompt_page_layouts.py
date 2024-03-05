@@ -1,3 +1,17 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from typing import List, Tuple
 
 import dash_bootstrap_components as dbc
@@ -8,7 +22,9 @@ from utils.common import examples
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
 
 
-def get_few_shots_by_id_layout(page: int, examples_type: str, view_mode: bool) -> Tuple[html.Div]:
+def get_few_shots_by_id_layout(
+    page: int, examples_type: str, view_mode: bool
+) -> Tuple[html.Div]:
     examples_list = examples.get(
         examples_type,
         [{}],
@@ -36,7 +52,9 @@ def get_query_params_layout(
 ) -> List[dbc.AccordionItem]:
     strategy = RunPromptStrategyMaker(mode).get_strategy()
     return (
-        strategy.get_utils_input_layout() + strategy.get_few_shots_input_layout() + strategy.get_query_input_layout()
+        strategy.get_utils_input_layout()
+        + strategy.get_few_shots_input_layout()
+        + strategy.get_query_input_layout()
     )
 
 

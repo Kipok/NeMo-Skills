@@ -1,3 +1,17 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import random
 import re
 import string
@@ -15,7 +29,11 @@ def design_text_output(text: str, style={}):
             marked_lines = lines
         else:
             marked_lines = [
-                ("$$" + line if i == len(lines) - 1 else line + "$$" if i == 0 else "$$" + line + "$$")
+                (
+                    "$$" + line
+                    if i == len(lines) - 1
+                    else line + "$$" if i == 0 else "$$" + line + "$$"
+                )
                 for i, line in enumerate(lines)
             ]
         return '$$' + '\n'.join(marked_lines) + '$$'
@@ -55,7 +73,9 @@ def highlight_code(code: str) -> html.Iframe:
         "background-color": "#CCD1E0",
     }
 
-    iframe_id = ''.join(random.choices(string.ascii_letters + string.digits, k=20))
+    iframe_id = ''.join(
+        random.choices(string.ascii_letters + string.digits, k=20)
+    )
     return html.Iframe(
         id=iframe_id,
         srcDoc=f"""

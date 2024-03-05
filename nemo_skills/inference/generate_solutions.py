@@ -55,7 +55,6 @@ class GenerateSolutionsConfig:
     dataset: Optional[str] = None
     split_name: Optional[str] = None
     data_file: Optional[str] = None
-    context: Optional[str] = None
 
     batch_size: int = 16
     max_samples: int = -1
@@ -115,8 +114,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
         for idx, data_point in tqdm(enumerate(data), initial=starting_idx, total=len(data) + starting_idx):
             if idx == cfg.max_samples:
                 break
-
-            prompts.append(get_prompt(cfg.prompt, input_dict=data_point, context=cfg.context))
+            prompts.append(get_prompt(cfg.prompt, input_dict=data_point))
             data_points.append(data_point)
 
             if len(prompts) == cfg.batch_size:

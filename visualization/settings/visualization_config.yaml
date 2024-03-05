@@ -1,4 +1,4 @@
 visualization_params:
-  prediction_jsonl_files:
-    model1: <your_path>
-    model2: <your_path>
+  model_prediction:
+    model1: ???
+    model2: ???

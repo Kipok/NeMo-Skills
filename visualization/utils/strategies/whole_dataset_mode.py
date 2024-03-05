@@ -1,3 +1,18 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from ast import In
 import json
 import logging
 import os
@@ -5,21 +20,38 @@ from typing import Dict, List
 
 import dash_bootstrap_components as dbc
 from dash import html
-from settings.constants import GREEDY, METRICS, ONE_TEST_MODE, OUTPUT, OUTPUT_PATH, PARAMETERS_FILE_NAME, RESULTS_PATH
-from settings.templates import compute_metrics_template, evaluate_results_template, generate_solution_template
-from utils.common import examples, get_available_models, run_subprocess
+from flask import current_app
+from omegaconf import OmegaConf
 
-from visualization.utils.strategies.base_strategy import ModeStrategies
+from nemo_skills.inference.generate_solutions import (
+    InferenceConfig,
+    generate_solutions,
+    GenerateSolutionsConfig,
+)
+from nemo_skills.inference.prompt.utils import PromptConfig
+
+from settings.constants import (
+    GREEDY,
+    METRICS,
+    WHOLE_DATASET_MODE,
+    OUTPUT,
+    OUTPUT_PATH,
+    PARAMETERS_FILE_NAME,
+    RESULTS_PATH,
+)
+from settings.templates import compute_metrics_template, evaluate_results_template
+from utils.common import examples, get_available_models, run_subprocess
+from utils.strategies.base_strategy import ModeStrategies
 
 
 class WholeDatasetModeStrategy(ModeStrategies):
-    mode = ONE_TEST_MODE
+    mode = WHOLE_DATASET_MODE
 
     def __init__(self):
         super().__init__()
 
     def get_utils_input_layout(self) -> List[dbc.AccordionItem]:
-        inference_condition = lambda name, value: not isinstance(value, dict)
+        inference_condition = lambda name, value: isinstance(value, (str, int, float))
         return super().get_utils_input_layout(
             inference_condition,
             lambda name, value: True,
@@ -35,32 +67,50 @@ class WholeDatasetModeStrategy(ModeStrategies):
 
         run_index = len(runs_storage)
         metrics_directory = RESULTS_PATH.format(run_index)
-        output_file = (
-            os.path.join(metrics_directory, OUTPUT_PATH.format(OUTPUT, GREEDY))
-            if utils["output_file"] == '???'
-            else utils["output_file"]
+        output_file = os.path.join(metrics_directory, OUTPUT_PATH.format(OUTPUT, GREEDY))
+        save_metrics_file = os.path.join(
+            metrics_directory, OUTPUT_PATH.format(METRICS, GREEDY)
         )
-        save_metrics_file = (
-            os.path.join(metrics_directory, OUTPUT_PATH.format(METRICS, GREEDY))
-            if "save_metrics" not in utils or not utils["save_metrics"]
-            else utils["save_metrics"]
+        random_seed_start = (
+            utils['start_random_seed']
+            if params['range_random_mode']
+            else utils['random_seed']
         )
-        utils['context_type'] = "empty"
-        utils['num_few_shots'] = 0
-        filled_examples = [
-            utils['template'].format(
-                context=utils['context_templates'].format(**example_dict),
-                **example_dict,
-            )
-            for example_dict in examples.get(utils['examples_type'], [])
-        ]
+        random_seed_end = (
+            utils['random_seed']
+            if params['range_random_mode']
+            else utils['random_seed'] + 1
+        )
+        generate_solutions_config = GenerateSolutionsConfig(
+            output_file=output_file,
+            sandbox=self.config['sandbox'],
+            server=self.config['server'],
+            data_file=self.config['data_file'],
+            **{
+                key: value
+                for key, value in utils.items()
+                if key in current_app.config['data_explorer']
+            },
+        )
+        generate_solutions_config.prompt = PromptConfig(
+            **{
+                key: value
+                for key, value in utils.items()
+                if key in current_app.config['data_explorer']['prompt']
+            }
+        )
+        generate_solutions_config.prompt.context = utils['context_templates']
+        generate_solutions_config.prompt.examples = examples.get(
+            utils['examples_type'] if utils['examples_type'] else "", []
+        )
 
-        utils['template'].replace(
-            '{{context}}',
-            utils['delimiter'].join(filled_examples) + '{{context}}',
+        generate_solutions_config.inference = InferenceConfig(
+            **{
+                key: value
+                for key, value in utils.items()
+                if key in current_app.config['data_explorer']['inference']
+            }
         )
-        random_seed_start = utils['start_random_seed'] if params['range_random_mode'] else utils['random_seed']
-        random_seed_end = utils['random_seed'] if params['range_random_mode'] else utils['random_seed'] + 1
         for random_seed in range(random_seed_start, random_seed_end):
             output_file = (
                 output_file
@@ -78,33 +128,13 @@ class WholeDatasetModeStrategy(ModeStrategies):
                     OUTPUT_PATH.format(METRICS, "rs" + str(random_seed)),
                 )
             )
-            generate_solution_command = generate_solution_template.format(
-                output_file=output_file,
-                sandbox_host=self.config['server']['host'],
-                **{
-                    key: (
-                        value.replace('\n', '\\n')
-                        .replace(')', '\)')
-                        .replace('(', '\(')
-                        .replace('}', '\}')
-                        .replace('{', '\{')
-                        .replace("'", "\\'")
-                        if isinstance(value, str)
-                        else value
-                    )
-                    for key, value in utils.items()
-                    if key != 'output_file'
-                },
-                **self.config['server'],
-            )
-            if self.config['data_file']:
-                generate_solution_command += f"++data_file={utils['data_file']}"
+            generate_solutions_config.inference.random_seed = random_seed
+            logging.info("Generate solutions")
+            generate_solutions(OmegaConf.structured(generate_solutions_config))
 
             evaluate_results_command = evaluate_results_template.format(
                 prediction_jsonl_files=output_file,
-                sandbox_host=self.config['server']['host'],
-                ssh_server=self.config['server']['ssh_server'],
-                ssh_key_path=self.config['server']['ssh_key_path'],
+                **self.config['sandbox'],
             )
 
             compute_metrics_command = compute_metrics_template.format(
@@ -113,7 +143,6 @@ class WholeDatasetModeStrategy(ModeStrategies):
             )
 
             for command, log_message in [
-                (generate_solution_command, "Generate solutions"),
                 (evaluate_results_command, "Evaluate results"),
                 (compute_metrics_command, "Compute metrics"),
             ]:
@@ -130,7 +159,9 @@ class WholeDatasetModeStrategy(ModeStrategies):
         with open(PARAMETERS_FILE_NAME, "w") as f:
             f.write(json.dumps(runs_storage))
 
-        return html.Pre(f'Done. Results are in folder\n{"/".join(output_file.split("/")[:-1])}')
+        return html.Pre(
+            f'Done. Results are in folder\n{"/".join(output_file.split("/")[:-1])}'
+        )
 
     def get_prompt(self, utils: Dict, question: str) -> str:
         return super().get_prompt(utils, "***your question***")

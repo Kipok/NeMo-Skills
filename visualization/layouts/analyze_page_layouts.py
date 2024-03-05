@@ -1,9 +1,27 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from typing import Dict, List
 
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 from layouts.base_layouts import get_switch_layout
-from layouts.table_layouts import get_filter_layout, get_selector_layout, get_sorting_layout
+from layouts.table_layouts import (
+    get_filter_layout,
+    get_selector_layout,
+    get_sorting_layout,
+)
 from settings.constants import DELETE, GENERAL_STATS
 from utils.common import get_available_models
 
@@ -45,7 +63,11 @@ def get_utils_layout(utils: Dict) -> dbc.AccordionItem:
             [
                 html.Pre(f"{name}: ", className="mr-2"),
                 html.Pre(
-                    (value if value == "" or str(value).strip() != "" else repr(value)[1:-1]),
+                    (
+                        value
+                        if value == "" or str(value).strip() != ""
+                        else repr(value)[1:-1]
+                    ),
                     className="mr-2",
                 ),
             ],

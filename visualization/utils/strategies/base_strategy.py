@@ -1,3 +1,18 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from copy import deepcopy
 import logging
 from dataclasses import asdict
 from typing import Callable, Dict, Iterable, List, Tuple, Union
@@ -5,12 +20,21 @@ from typing import Callable, Dict, Iterable, List, Tuple, Union
 import dash_bootstrap_components as dbc
 from dash import html
 from flask import current_app
-from layouts import get_input_group_layout, get_single_prompt_output_layout, get_switch_layout, get_text_area_layout
+from layouts import (
+    get_input_group_layout,
+    get_single_prompt_output_layout,
+    get_switch_layout,
+    get_text_area_layout,
+)
 from utils.common import examples
 
 from nemo_skills.code_execution.sandbox import get_sandbox
 from nemo_skills.inference.generate_solutions import InferenceConfig
-from nemo_skills.inference.prompt.utils import PromptConfig, context_templates, get_prompt
+from nemo_skills.inference.prompt.utils import (
+    PromptConfig,
+    context_templates,
+    get_prompt,
+)
 from nemo_skills.inference.server.model import get_model
 from visualization.settings.constants import QUERY_INPUT_TYPE
 
@@ -18,15 +42,18 @@ from visualization.settings.constants import QUERY_INPUT_TYPE
 class ModeStrategies:
     def __init__(self):
         self.sandbox = None
-        self.config = current_app.config['prompt_explorer']
+        self.config = deepcopy(current_app.config['data_explorer'])
 
-    def sandbox_init(self, utils):
+        self.config['inference']['start_random_seed'] = (
+            self.config['inference']['start_random_seed']
+            if 'start_random_seed' in self.config['inference']
+            else 0
+        )
+
+    def sandbox_init(self):
         if self.sandbox is None:
             self.sandbox = get_sandbox(
-                sandbox_type=self.config['sandbox']['sandbox_type'],
-                host=self.config['server']['host'],
-                ssh_server=self.config['server']['ssh_server'],
-                ssh_key_path=self.config['server']['ssh_key_path'],
+                **self.config['sandbox'],
             )
 
     def get_utils_input_layout(
@@ -36,12 +63,15 @@ class ModeStrategies:
         disabled: bool = False,
         additional_config_values: List[Tuple[str, Union[str, int, float, bool]]] = [],
     ) -> List[dbc.AccordionItem]:
-        self.config['prompt']['context_templates'] = context_templates[self.config["prompt"]["context_type"]]
+        self.config['prompt']['context_templates'] = context_templates[
+            self.config["prompt"]["context_type"]
+        ]
         input_group_layout = html.Div(
             (
                 [
                     get_input_group_layout(name, value, dbc.Input)
-                    for name, value in list(self.config["inference"].items()) + additional_config_values
+                    for name, value in list(self.config["inference"].items())
+                    + additional_config_values
                     if inference_condition(name, value)
                 ]
                 + [
@@ -75,7 +105,7 @@ class ModeStrategies:
         size = len(
             examples.get(
                 examples_type,
-                [{}],
+                [],
             )
         )
         return [
@@ -170,13 +200,10 @@ class ModeStrategies:
         )
 
     def run(self, utils: Dict, params: Dict) -> html.Div:
-        self.sandbox_init(utils)
+        self.sandbox_init()
         llm = get_model(
-            server_type=self.config['server']['server_type'],
-            host=self.config['server']['host'],
+            **self.config['server'],
             sandbox=self.sandbox,
-            ssh_server=self.config['server']['ssh_server'],
-            ssh_key_path=self.config['server']['ssh_key_path'],
         )
 
         logging.info(f"query to process: {params['prompts'][0]}")
@@ -200,7 +227,9 @@ class ModeStrategies:
         logging.info(f"query's answer: {outputs[0]}")
         color = (
             'green'
-            if self.sandbox.is_output_correct(outputs[0]['predicted_answer'], params["expected_answer"])
+            if self.sandbox.is_output_correct(
+                outputs[0]['predicted_answer'], params["expected_answer"]
+            )
             else "red"
         )
         return html.Div(
@@ -209,6 +238,26 @@ class ModeStrategies:
             ),
             style={"border": "2px solid " + color},
         )
+
+    def get_prompt(self, utils: Dict, question: str) -> str:
+        prompt_config = {
+            key: value
+            for key, value in utils.items()
+            if key in self.config['prompt'].keys()
+        }
+
+        prompt_config['context'] = utils['context_templates']
+        prompt_config['examples'] = examples.get(
+            utils['examples_type'] if utils['examples_type'] else "", []
+        )
+
+        prompt = get_prompt(
+            PromptConfig(**prompt_config),
+            input_dict={
+                'question': question,
+            },
+        )
+        return prompt
 
     def _get_search_prompt_layout(self) -> dbc.InputGroup:
         return dbc.InputGroup(
@@ -231,16 +280,3 @@ class ModeStrategies:
             ],
             className="mb-3",
         )
-
-    def get_prompt(self, utils: Dict, question: str) -> str:
-        prompt_config = {key: value for key, value in utils.items() if key in self.config['prompt'].keys()}
-
-        prompt = get_prompt(
-            PromptConfig(**prompt_config),
-            input_dict={
-                'question': question,
-            },
-            context=utils['context_templates'],
-            examples=examples.get(utils['examples_type'] if utils['examples_type'] else "", []),
-        )
-        return prompt
