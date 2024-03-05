@@ -31,6 +31,7 @@ from nemo_skills.code_execution import (
 )
 from nemo_skills.code_execution.math_grader import extract_answer
 from nemo_skills.code_execution.sandbox import Sandbox
+from nemo_skills.inference.prompt.utils import Prompt
 
 LOG = logging.getLogger(__name__)
 
@@ -315,7 +316,9 @@ class OpenAIModel(BaseModel):
         random_seed,
         stop_phrases: List[str],
     ):
-        # top_k is not supported by OpenAI, so skipping it
+        if top_k != 0:
+            raise ValueError("`top_k` is not supported by OpenAI, please set it to default value `0`.")
+
         responses = []
         for prompt in prompts:
             response = self._send_request(
@@ -332,7 +335,7 @@ class OpenAIModel(BaseModel):
 
     def _send_request(
         self,
-        prompt,
+        prompt: Prompt,
         tokens_to_generate,
         temperature,
         top_p,
@@ -340,12 +343,7 @@ class OpenAIModel(BaseModel):
         random_seed,
         stop_phrases: List[str],
     ):
-        try:
-            messages = json.loads(prompt)
-        except json.JSONDecodeError:
-            raise ValueError(
-                "Prompt is not a valid JSON. This is most likely because you are not using `openai_chat` prompt template."
-            )
+        messages = prompt.build_structured_examples()
         response = self.client.chat.completions.create(
             model=self.model,
             temperature=temperature,

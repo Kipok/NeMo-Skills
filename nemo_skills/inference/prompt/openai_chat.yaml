@@ -1,7 +1,7 @@
 delimiter: "\n\n\n\n\n\n"
-prefix: "\
-  [{\"role\": \"system\", \"content\": \"\
+system: "\
   You're an expert Python programmer and mathematician. \
   Help the user to solve this problem using code when necessary. \
-  Make sure to put the answer (and only answer) inside \\\\boxed{}.\"}, "
-template: "{{\"role\": \"user\", \"content\": \"{question}\\n\\n{context}\"}}]"
+  Make sure to put the answer (and only answer) inside \\boxed{}.\n\n"
+prompt_template: "System:\n{system}\n\n{examples}"
+example_template: "User:\n{question}\n\n{context}Assistant:\n{generated_solution}"

@@ -14,7 +14,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 import yaml
 
@@ -39,11 +39,63 @@ datasets = [
 @dataclass
 class PromptConfig:
     delimiter: str = MISSING
-    prefix: str = MISSING
-    template: str = MISSING
+    example_template: str = MISSING
+    prompt_template: str = MISSING
+    prefix: Optional[str] = None
+    system: Optional[str] = None
     context_type: str = "empty"
     examples_type: Optional[str] = None
     num_few_shots: int = 5
+
+
+@dataclass
+class Prompt:
+    config: PromptConfig
+    input_dict: Dict[str, Any]
+    example_dicts: List[Dict[str, Any]] = None
+
+    def __post_init__(self):
+        """Initialize example_dicts if not provided."""
+        if self.example_dicts is None:
+            self.example_dicts = examples_map.get(self.config.examples_type, [])[: self.config.num_few_shots]
+
+    def build_context(self, example_dict: Dict[str, Any]) -> str:
+        """Builds the context string based on the example dictionary."""
+        template = context_templates.get(self.config.context_type, "")
+        return template.format(**example_dict)
+
+    def build_filled_example(self, example_dict: Dict[str, Any]) -> str:
+        """Builds a filled example string based on the example dictionary."""
+        context = self.build_context(example_dict)
+        return self.config.example_template.format(context=context, **example_dict)
+
+    def build_examples(self) -> str:
+        """Builds all examples string concatenated by delimiter."""
+        filled_examples = [self.build_filled_example(example) for example in self.example_dicts]
+        filled_examples.append(self.build_filled_example({**self.input_dict, 'generated_solution': ''}))
+        return self.config.delimiter.join(filled_examples)
+
+    def build_structured_examples(self) -> List[Dict[str, str]]:
+        """Builds a structured representation of the prompt."""
+        structured_prompt = [{"role": "system", "content": self.config.system or self.config.prefix}]
+        for example in self.example_dicts:
+            structured_prompt.append({"role": "user", "content": example['question']})
+            if context := self.build_context(example):
+                structured_prompt.append({"role": "user", "content": context})
+            structured_prompt.append({"role": "assistant", "content": example['generated_solution']})
+        structured_prompt.append({"role": "user", "content": self.input_dict['question']})
+        if context := self.build_context(self.input_dict):
+            structured_prompt.append({"role": "user", "content": context})
+        return structured_prompt
+
+    def __str__(self) -> str:
+        """Returns the complete prompt string representation."""
+        prompt = self.config.prompt_template.format(
+            system=self.config.system,
+            prefix=self.config.prefix,
+            examples=self.build_examples(),
+        )
+        return prompt
 
 
 def get_prompt_config(prompt_type: str) -> PromptConfig:
@@ -61,19 +113,7 @@ context_templates = {
 }
 
 
-def get_prompt(prompt_config: PromptConfig, input_dict: dict):
-    """Will build few-shot prompt from the provided pieces of information."""
-    if prompt_config.num_few_shots != 0:
-        examples = examples_map[prompt_config.examples_type][: prompt_config.num_few_shots]
-    else:
-        examples = []
-    context = context_templates[prompt_config.context_type]
-
-    filled_examples = []
-    for example_dict in examples:
-        filled_examples.append(prompt_config.template.format(context=context.format(**example_dict), **example_dict))
-    filled_examples.append(
-        prompt_config.template.format(context=context.format(**input_dict), **input_dict, generated_solution="")
-    )
-
-    return prompt_config.prefix + prompt_config.delimiter.join(filled_examples)
+def get_prompt(prompt_config: PromptConfig, input_dict: Dict[str, Any]) -> Prompt:
+    """Builds and returns a string representation of a few-shot prompt from the provided configuration and input dictionary."""
+    prompt = Prompt(prompt_config, input_dict)
+    return prompt
