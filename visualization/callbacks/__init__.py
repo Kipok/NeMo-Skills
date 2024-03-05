@@ -12,18 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import asdict
 import logging
 import os
+from dataclasses import asdict
 from pathlib import Path
 
 import dash_bootstrap_components as dbc
-from dash import Dash
 import hydra
+from dash import Dash
 from flask import Flask
 from omegaconf import OmegaConf
-from nemo_skills.inference.prompt.utils import get_prompt_config
 from settings.config import Config
+
+from nemo_skills.inference.prompt.utils import get_prompt_config
 
 config_path = os.path.join(os.path.abspath(Path(__file__).parent.parent), "settings")
 
@@ -41,9 +42,7 @@ def set_config(cfg: Config) -> None:
 
     for param in ['host', 'ssh_server', 'ssh_key_path']:
         if param not in config['data_explorer']['sandbox']:
-            config['data_explorer']['sandbox'][param] = config['data_explorer']['server'][
-                param
-            ]
+            config['data_explorer']['sandbox'][param] = config['data_explorer']['server'][param]
 
     config['data_explorer'].pop('output_file')
     config['data_explorer'].pop('dataset')

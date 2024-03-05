@@ -17,11 +17,7 @@ from typing import Dict, List
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 from layouts.base_layouts import get_switch_layout
-from layouts.table_layouts import (
-    get_filter_layout,
-    get_selector_layout,
-    get_sorting_layout,
-)
+from layouts.table_layouts import get_filter_layout, get_selector_layout, get_sorting_layout
 from settings.constants import DELETE, GENERAL_STATS
 from utils.common import get_available_models
 
@@ -63,11 +59,7 @@ def get_utils_layout(utils: Dict) -> dbc.AccordionItem:
             [
                 html.Pre(f"{name}: ", className="mr-2"),
                 html.Pre(
-                    (
-                        value
-                        if value == "" or str(value).strip() != ""
-                        else repr(value)[1:-1]
-                    ),
+                    (value if value == "" or str(value).strip() != "" else repr(value)[1:-1]),
                     className="mr-2",
                 ),
             ],

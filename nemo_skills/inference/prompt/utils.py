@@ -14,7 +14,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Optional, List
+from typing import Dict, List, Optional
 
 import yaml
 
@@ -32,9 +32,7 @@ prompt_types = [cfg.stem for cfg in Path(__file__).parent.glob("*.yaml")]
 # listing all dataset folders available - note this will not be available
 # if using from installed package but you need to have data files available anyway
 datasets = [
-    d.name
-    for d in (Path(__file__).parents[3] / 'datasets').glob("*")
-    if d.is_dir() and d.name != "__pycache__"
+    d.name for d in (Path(__file__).parents[3] / 'datasets').glob("*") if d.is_dir() and d.name != "__pycache__"
 ]
 
 
@@ -79,20 +77,12 @@ def get_prompt(
     else:
         examples = []
     context = (
-        prompt_config.context
-        if prompt_config.context is not None
-        else context_templates[prompt_config.context_type]
+        prompt_config.context if prompt_config.context is not None else context_templates[prompt_config.context_type]
     )
     filled_examples = []
     for example_dict in examples:
-        filled_examples.append(
-            prompt_config.template.format(
-                context=context.format(**example_dict), **example_dict
-            )
-        )
+        filled_examples.append(prompt_config.template.format(context=context.format(**example_dict), **example_dict))
     filled_examples.append(
-        prompt_config.template.format(
-            context=context.format(**input_dict), **input_dict, generated_solution=""
-        )
+        prompt_config.template.format(context=context.format(**input_dict), **input_dict, generated_solution="")
     )
     return prompt_config.prefix + prompt_config.delimiter.join(filled_examples)

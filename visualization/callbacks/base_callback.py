@@ -18,6 +18,7 @@ from callbacks import app
 from dash import html
 from dash.dependencies import Input, Output
 from layouts import get_compare_test_layout, get_run_test_layout
+
 from visualization.utils.common import get_available_models, get_data_from_files
 
 

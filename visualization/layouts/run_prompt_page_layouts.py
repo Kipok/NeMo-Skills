@@ -22,9 +22,7 @@ from utils.common import examples
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
 
 
-def get_few_shots_by_id_layout(
-    page: int, examples_type: str, view_mode: bool
-) -> Tuple[html.Div]:
+def get_few_shots_by_id_layout(page: int, examples_type: str, view_mode: bool) -> Tuple[html.Div]:
     examples_list = examples.get(
         examples_type,
         [{}],
@@ -52,9 +50,7 @@ def get_query_params_layout(
 ) -> List[dbc.AccordionItem]:
     strategy = RunPromptStrategyMaker(mode).get_strategy()
     return (
-        strategy.get_utils_input_layout()
-        + strategy.get_few_shots_input_layout()
-        + strategy.get_query_input_layout()
+        strategy.get_utils_input_layout() + strategy.get_few_shots_input_layout() + strategy.get_query_input_layout()
     )
 
 
