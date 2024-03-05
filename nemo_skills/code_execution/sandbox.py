@@ -22,7 +22,7 @@ from concurrent.futures import ThreadPoolExecutor
 from itertools import zip_longest
 from typing import Dict, List, Optional, Tuple
 
-from nemo_skills.utils import unroll_files, python_doc_to_cmd_help
+from nemo_skills.utils import python_doc_to_cmd_help, unroll_files
 
 LOG = logging.getLogger(__file__)
 
@@ -183,6 +183,7 @@ class LocalSandbox(Sandbox):
         ssh_key_path: Optional[str] = None - Path to the ssh key for tunneling.
             Can also be specified through SSH_KEY_PATH env var.
     """
+
     def __init__(
         self,
         host: str = os.getenv("NEMO_SKILLS_SANDBOX_HOST", "127.0.0.1"),
