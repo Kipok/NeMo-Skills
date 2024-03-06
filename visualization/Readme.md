@@ -29,7 +29,7 @@ Before using this tool, you first need to do instructions in [prerequisites.md](
 You can change parameters in the [config.yaml](/visualization/settings/config.yaml) file, in [visualization_config.yaml](/visualization/settings/visualization_config.yaml), or through the command line.
 Command to launch the program (all parameters are optional):
 ```
-python3 visualization/data_explorer.py \
+python visualization/data_explorer.py \
 ++server.ssh_key_path=<path_to_ssh> \
 ++server.ssh_server=<server> \
 ++server.host=<host>

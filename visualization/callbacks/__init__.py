@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import asdict, fields
 import os
 from dataclasses import asdict
 from pathlib import Path
@@ -20,7 +21,7 @@ import dash_bootstrap_components as dbc
 import hydra
 from dash import Dash
 from flask import Flask
-from omegaconf import OmegaConf
+from omegaconf import MISSING, MissingMandatoryValue, OmegaConf
 from settings.config import Config
 
 from nemo_skills.inference.prompt.utils import get_prompt_config
@@ -35,16 +36,26 @@ config = {}
 def set_config(cfg: Config) -> None:
     global config
     cfg.output_file = ""
-    cfg.prompt = get_prompt_config("code_sfted")
-
+    new_prompt = get_prompt_config('code_sfted')
+    for param in fields(new_prompt):
+        try:
+            setattr(new_prompt, param.name, getattr(cfg.prompt, param.name))
+        except MissingMandatoryValue:
+            pass
+    cfg.prompt = new_prompt
     if not cfg.data_file and not cfg.dataset and not cfg.split_name:
         cfg.data_file = UNDEFINED
 
     config['data_explorer'] = asdict(OmegaConf.to_object(cfg))
 
     for param in ['host', 'ssh_server', 'ssh_key_path']:
-        if param not in config['data_explorer']['sandbox'] and param in config['data_explorer']['server']:
-            config['data_explorer']['sandbox'][param] = config['data_explorer']['server'][param]
+        if (
+            param not in config['data_explorer']['sandbox']
+            and param in config['data_explorer']['server']
+        ):
+            config['data_explorer']['sandbox'][param] = config['data_explorer']['server'][
+                param
+            ]
     # All parameters in config can be modified through the application except Server and Sandbox configs
     # Following parameters are not used and should not be modified
     config['data_explorer'].pop('output_file')
