@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import re
+from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Union
 
@@ -55,6 +56,7 @@ class BaseModel(abc.ABC):
         max_code_output_characters=1000,
         code_execution_timeout=10.0,
         max_code_executions=3,
+        error_recovery_attempts=0,
         stop_on_code_error=True,
         handle_code_execution=True,  # for some of the inference types (e.g. nemo), code execution is handled internally
     ):
@@ -65,6 +67,7 @@ class BaseModel(abc.ABC):
         self.max_code_output_characters = max_code_output_characters
         self.code_execution_timeout = code_execution_timeout
         self.max_code_executions = max_code_executions
+        self.error_recovery_attempts = error_recovery_attempts
         self.handle_code_execution = handle_code_execution
         self.stop_on_code_error = stop_on_code_error
         if self.handle_code_execution and sandbox is None:
@@ -168,7 +171,6 @@ class BaseModel(abc.ABC):
                             session_id=new_outputs[idx]['session_id'],
                         )
                 for idx, output in zip(remaining_ids, outputs):
-                    new_outputs[idx]['full_prompt'] += output
                     if output.endswith(CODE_SEPARATORS[-1]):
                         result, new_outputs[idx]['session_id'] = futures[idx].result()
                         # for now if there is any error or no output, we stop generation
@@ -176,14 +178,22 @@ class BaseModel(abc.ABC):
                         if result['error_message']:
                             new_outputs[idx]['error_message'] = result['error_message']
                             if self.stop_on_code_error:
+                                new_outputs[idx]['full_prompt'] += output
                                 continue
+                            text_only_part = output.split(CODE_SEPARATORS[0])[0]
+                            new_outputs[idx]['full_prompt'] += text_only_part
+                            code_output = self.__recover_from_error(request, new_outputs[idx], executor)
+                            # if re-generation did not help
+                            if code_output is None:
+                                code_output = result["result"]
+                                new_outputs[idx]['full_prompt'] += output[len(text_only_part) :]
                         else:
+                            new_outputs[idx]['full_prompt'] += output
                             new_outputs[idx]['error_message'] = ''
+                            code_output = result["result"]
 
                         # adding code output to the prompt
-                        code_output = (
-                            f'\n{CODE_OUTPUT_SEPARATORS[0]}\n{result["result"]}\n{CODE_OUTPUT_SEPARATORS[1]}\n'
-                        )
+                        code_output = f'\n{CODE_OUTPUT_SEPARATORS[0]}\n{code_output}\n{CODE_OUTPUT_SEPARATORS[1]}\n'
                         new_outputs[idx]['full_prompt'] += code_output
                         # setting a limit on max code executions to speed things up
                         # (sometimes keeps repeating the same sequence forever)
@@ -191,6 +201,8 @@ class BaseModel(abc.ABC):
                             new_outputs[idx]['error_message'] = "Max code executions reached"
                         else:
                             new_ids.append(idx)
+                    else:
+                        new_outputs[idx]['full_prompt'] += output
                 remaining_ids = new_ids
 
         # removing original prompt and stop tokens from the end of the generated text
@@ -207,6 +219,53 @@ class BaseModel(abc.ABC):
                 }
             )
         return outputs
+
+    def __recover_from_error(self, request, new_output, executor):
+        recovery_request = {key: value for key, value in request.items() if key != 'prompts'}
+        recovery_request['prompts'] = [new_output['full_prompt']]
+
+        # if greedy, setting parameters to random
+        if request['temperature'] == 0 or request['top_k'] == 1:
+            recovery_request['temperature'] = 0.7
+            recovery_request['top_p'] = 0.95
+            recovery_request['top_k'] = 0
+
+        outputs = []
+        futures = [None] * self.error_recovery_attempts
+        for rs in range(self.error_recovery_attempts):
+            recovery_request['random_seed'] = rs
+            output = self._single_call(**recovery_request)[0]
+            outputs.append(output)
+            if output.endswith(CODE_SEPARATORS[-1]):
+                futures[rs] = executor.submit(
+                    self.sandbox.execute_code,
+                    generated_code=extract_code_to_execute(output),
+                    timeout=self.code_execution_timeout,
+                    max_output_characters=self.max_code_output_characters,
+                    session_id=new_output['session_id'],
+                )
+
+        results = [None] * self.error_recovery_attempts
+        for idx, output in enumerate(outputs):
+            if not output.endswith(CODE_SEPARATORS[-1]):
+                continue
+            result, _ = futures[idx].result()
+            if result['error_message']:
+                continue
+            results[idx] = result['result']
+
+        # majority voting on valid code output results
+        counts = Counter(res for res in results if res)
+        # all errors
+        if not counts:
+            return
+
+        most_common = counts.most_common(1)[0][0]
+        valid_idx = results.index(most_common)
+        new_output['full_prompt'] += outputs[valid_idx]
+        new_output['error_message'] = ''
+
+        return most_common
 
     def _send_request(self, request):
         if self.ssh_server and self.ssh_key_path:
