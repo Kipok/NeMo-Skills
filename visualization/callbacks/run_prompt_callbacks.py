@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from copy import deepcopy
 import json
+from copy import deepcopy
 from typing import Dict, List, Optional, Tuple, Union
 
 import dash_bootstrap_components as dbc
@@ -21,18 +21,9 @@ from callbacks import app
 from dash import ALL, dcc, html, no_update
 from dash._callback import NoUpdate
 from dash.dependencies import Input, Output, State
-from layouts import (
-    get_few_shots_by_id_layout,
-    get_query_params_layout,
-    get_single_prompt_output_layout,
-)
+from layouts import get_few_shots_by_id_layout, get_query_params_layout, get_single_prompt_output_layout
 from layouts.base_layouts import get_switch_layout
-from settings.constants import (
-    ANSWER_FIELD,
-    QUERY_INPUT_ID,
-    QUERY_INPUT_TYPE,
-    QUESTION_FIELD,
-)
+from settings.constants import ANSWER_FIELD, QUERY_INPUT_ID, QUERY_INPUT_TYPE, QUESTION_FIELD
 from utils.common import get_examples, get_test_data, get_values_from_input_group
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
 
@@ -87,14 +78,8 @@ def add_example(
     if examples_type not in get_examples():
         get_examples()[examples_type] = []
     last_page = len(get_examples()[examples_type])
-    examples_type_keys = (
-        list(get_examples().keys())[0]
-        if not len(get_examples()[examples_type])
-        else examples_type
-    )
-    get_examples()[examples_type].append(
-        {key: "" for key in get_examples()[examples_type_keys][0].keys()}
-    )
+    examples_type_keys = list(get_examples().keys())[0] if not len(get_examples()[examples_type]) else examples_type
+    get_examples()[examples_type].append({key: "" for key in get_examples()[examples_type_keys][0].keys()})
     return (last_page + 1, last_page + 1)
 
 
@@ -120,12 +105,7 @@ def add_example(
 )
 def del_example(
     n_clicks: int, page: int, examples_type: str, view_mode: List[str]
-) -> Tuple[
-    Union[int, NoUpdate],
-    Union[int, NoUpdate],
-    Union[Tuple[html.Div], NoUpdate],
-    Union[int, NoUpdate],
-]:
+) -> Tuple[Union[int, NoUpdate], Union[int, NoUpdate], Union[Tuple[html.Div], NoUpdate], Union[int, NoUpdate],]:
     if not examples_type:
         examples_type = ""
     if examples_type not in get_examples():
@@ -262,12 +242,8 @@ def get_run_test_results(
         utils["examples_type"] = ""
 
     try:
-        question_id = query_params_ids.index(
-            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD))
-        )
-        answer_id = query_params_ids.index(
-            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, ANSWER_FIELD))
-        )
+        question_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD)))
+        answer_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, ANSWER_FIELD)))
         question = query_params[question_id]
         expected_answer = query_params[answer_id]
     except ValueError:
@@ -321,9 +297,7 @@ def change_mode(run_mode: str) -> Tuple[List[dbc.AccordionItem], None]:
     ],
     prevent_initial_call=True,
 )
-def prompt_search(
-    n_clicks: int, view_mode: str, index: int
-) -> Tuple[Union[List[str], NoUpdate]]:
+def prompt_search(n_clicks: int, view_mode: str, index: int) -> Tuple[Union[List[str], NoUpdate]]:
     key_values = get_test_data(index)[0].items()
     return [
         RunPromptStrategyMaker()
@@ -357,9 +331,7 @@ def preview(
 ) -> html.Pre:
     utils = get_values_from_input_group(utils)
     try:
-        question_id = query_params_ids.index(
-            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD))
-        )
+        question_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD)))
         question = query_params[question_id]
     except ValueError:
         question = ""

@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import asdict
 import os
+from dataclasses import asdict
 from pathlib import Path
 
 import dash_bootstrap_components as dbc
@@ -22,9 +22,9 @@ from dash import Dash
 from flask import Flask
 from omegaconf import OmegaConf
 from settings.config import Config
-from visualization.settings.constants import UNDEFINED
 
 from nemo_skills.inference.prompt.utils import get_prompt_config
+from visualization.settings.constants import UNDEFINED
 
 config_path = os.path.join(os.path.abspath(Path(__file__).parent.parent), "settings")
 
@@ -43,13 +43,8 @@ def set_config(cfg: Config) -> None:
     config['data_explorer'] = asdict(OmegaConf.to_object(cfg))
 
     for param in ['host', 'ssh_server', 'ssh_key_path']:
-        if (
-            param not in config['data_explorer']['sandbox']
-            and param in config['data_explorer']['server']
-        ):
-            config['data_explorer']['sandbox'][param] = config['data_explorer']['server'][
-                param
-            ]
+        if param not in config['data_explorer']['sandbox'] and param in config['data_explorer']['server']:
+            config['data_explorer']['sandbox'][param] = config['data_explorer']['server'][param]
     # All parameters in config can be modified through the application except Server and Sandbox configs
     # Following parameters are not used and should not be modified
     config['data_explorer'].pop('output_file')
