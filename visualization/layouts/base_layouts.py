@@ -27,7 +27,7 @@ def get_main_page_layout() -> html.Div:
     nav_items = [
         dbc.NavItem(
             dbc.NavLink(
-                "Run model",
+                "Inference",
                 id="run_mode_link",
                 href="/",
                 active=True,

@@ -31,6 +31,7 @@ from settings.constants import (
     QUESTION_FIELD,
     RESULTS_PATH,
     STATS_KEYS,
+    UNDEFINED,
 )
 
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
@@ -63,6 +64,20 @@ def get_examples() -> Dict:
 
 
 def parse_model_answer(answer: str) -> List[Dict]:
+    """
+    Parses a model answer and extracts code blocks, explanations, and outputs preserving their sequence.
+
+    Args:
+        answer (str): The model answer to parse.
+
+    Returns:
+        List[Dict]: A list of dictionaries containing the parsed results. Each dictionary
+        contains the following keys:
+            - 'explanation': The explanation text before the code block.
+            - 'code': The code block.
+            - 'output': The output of the code block.
+
+    """
     code_start, code_end = map(
         re.escape,
         current_app.config['data_explorer']["visualization_params"]["code_separators"],
@@ -135,7 +150,7 @@ def get_estimated_height(text) -> float:
 @functools.lru_cache()
 def get_test_data(index: int) -> Tuple[Dict, int]:
     data_file = current_app.config['data_explorer']["data_file"]
-    if data_file == "dummy":
+    if data_file == UNDEFINED:
         return {QUESTION_FIELD: "", ANSWER_FIELD: ""}, 0
     with open(data_file) as file:
         tests = file.readlines()

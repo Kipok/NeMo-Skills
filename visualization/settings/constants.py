@@ -32,6 +32,7 @@ STATS_KEYS = [
     'question_index',
     'question',
 ]
+UNDEFINED = "undefined"
 WHOLE_DATASET_MODE = "whole_dataset"
 MODEL_SELECTOR_ID = '{{"type": "model_selector", "id": {}}}'
 LABEL = "labels"
