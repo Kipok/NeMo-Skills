@@ -1,11 +1,15 @@
 This is a tool for data analysis. It has two pages: "Run model" and "Analyze".
-## Run Prompt page:
+## Run model page
 This page allows for the analysis of model answers depending on different parameters we set up. It has three modes: "Complete", "Run one test", and "Run whole dataset".
+
 **Complete** mode allows for a conversation with the model. It has the minimum parameters to set up.
+
 **Run one test** mode allows you to send a single question to the model. It can be a question from the dataset (parameters `data_file` or `dataset` and `split_name` determine the dataset) or your custom question. The answer is also validated by comparing it with the `expected_answer` field.
+
 **Run whole dataset** mode allows you to launch the model with chosen parameters on the whole dataset. It will save results in an `output_file` and `save_metrics` paths if specified, or by default paths: `results/output-greedy.jsonl` and `results/metrics-greedy.jsonl`. If the "use random seed range" flag is turned on, the dataset will be launched for random seeds in the range from `start_random_seed` to `random_seed`. All results can then be analyzed on the "Analyze" page (you do not need to relaunch the program), and the parameters you used to launch the dataset can be found in the `results/parameters.jsonl` file and on the "Analyze" page as well.
-## Analyze page:
-To use the Analyze page, you need to specify paths to the datasets you want to analyze (if you did not get the data through the web). You can pass parameters via command line  `++visualization_params.model_prediction.model1='/some_path/model1/output-greedy.jsonl'` or modify `visualization_config.py`.
+
+## Analyze page
+To use the Analyze page, you need to specify paths to the datasets you want to analyze (if you did not get the data through the "run model" page). You can pass parameters via command line  `++visualization_params.model_prediction.model1='/some_path/model1/output-greedy.jsonl'` or modify `visualization_config.yaml`.
 ```yaml
 visualization_params:
   prediction_jsonl_files:
@@ -14,8 +18,9 @@ visualization_params:
 ```
 `model1` and `model2` are the names of the datasets we want to analyze. All files satisfying the given pattern will be taken for analysis.
 On the page itself, you can sort, filter, and compare models. You can also add labels to the data and save your modified, filtered, and sorted dataset by specifying `save_dataset_path`.
-## Getting Started:
-Before using this tool, you first need to download datasets and install requirements:
+
+## Getting Started
+Before using this tool, you first need to do instructions in docs/prerequisites.md, download datasets and install requirements:
 ```
     pip install -r visualization/requirements.txt
     ./datasets/prepare_all.sh

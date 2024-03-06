@@ -23,7 +23,7 @@ build
 *.zip
 *.egg-info
 *.xml
-results*
+visualization/results*
 outputs*
 
 __pycache__

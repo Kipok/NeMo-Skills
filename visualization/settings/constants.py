@@ -26,8 +26,8 @@ METRICS = "metrics"
 OUTPUT = "output"
 OUTPUT_PATH = "{}-{}.jsonl"
 PARAMS_FOR_WHOLE_DATASET_ONLY = ['offset', 'max_samples']
-PARAMETERS_FILE_NAME = "results/parameters.json"
-RESULTS_PATH = "results/{}/"
+PARAMETERS_FILE_NAME = "visualization/results/parameters.json"
+RESULTS_PATH = "visualization/results/{}/"
 STATS_KEYS = [
     'question_index',
     'question',

@@ -20,8 +20,13 @@ from typing import Callable, Dict, Iterable, List, Tuple, Union
 import dash_bootstrap_components as dbc
 from dash import html
 from flask import current_app
-from layouts import get_input_group_layout, get_single_prompt_output_layout, get_switch_layout, get_text_area_layout
-from utils.common import examples
+from layouts import (
+    get_input_group_layout,
+    get_single_prompt_output_layout,
+    get_switch_layout,
+    get_text_area_layout,
+)
+from utils.common import get_examples
 
 from nemo_skills.code_execution.sandbox import get_sandbox
 from nemo_skills.inference.generate_solutions import InferenceConfig
@@ -34,10 +39,6 @@ class ModeStrategies:
     def __init__(self):
         self.sandbox = None
         self.config = deepcopy(current_app.config['data_explorer'])
-
-        self.config['inference']['start_random_seed'] = (
-            self.config['inference']['start_random_seed'] if 'start_random_seed' in self.config['inference'] else 0
-        )
 
     def sandbox_init(self):
         if self.sandbox is None:
@@ -52,12 +53,15 @@ class ModeStrategies:
         disabled: bool = False,
         additional_config_values: List[Tuple[str, Union[str, int, float, bool]]] = [],
     ) -> List[dbc.AccordionItem]:
-        self.config['prompt']['context_templates'] = context_templates[self.config["prompt"]["context_type"]]
+        self.config['prompt']['context_templates'] = context_templates[
+            self.config["prompt"]["context_type"]
+        ]
         input_group_layout = html.Div(
             (
                 [
                     get_input_group_layout(name, value, dbc.Input)
-                    for name, value in list(self.config["inference"].items()) + additional_config_values
+                    for name, value in list(self.config["inference"].items())
+                    + additional_config_values
                     if inference_condition(name, value)
                 ]
                 + [
@@ -89,7 +93,7 @@ class ModeStrategies:
     def get_few_shots_input_layout(self) -> List[dbc.AccordionItem]:
         examples_type = self.config["prompt"]["examples_type"]
         size = len(
-            examples.get(
+            get_examples().get(
                 examples_type,
                 [],
             )
@@ -213,7 +217,9 @@ class ModeStrategies:
         logging.info(f"query's answer: {outputs[0]}")
         color = (
             'green'
-            if self.sandbox.is_output_correct(outputs[0]['predicted_answer'], params["expected_answer"])
+            if self.sandbox.is_output_correct(
+                outputs[0]['predicted_answer'], params["expected_answer"]
+            )
             else "red"
         )
         return html.Div(
@@ -224,10 +230,16 @@ class ModeStrategies:
         )
 
     def get_prompt(self, utils: Dict, question: str) -> str:
-        prompt_config = {key: value for key, value in utils.items() if key in self.config['prompt'].keys()}
+        prompt_config = {
+            key: value
+            for key, value in utils.items()
+            if key in self.config['prompt'].keys()
+        }
 
         prompt_config['context'] = utils['context_templates']
-        prompt_config['examples'] = examples.get(utils['examples_type'] if utils['examples_type'] else "", [])
+        prompt_config['examples'] = get_examples().get(
+            utils['examples_type'] if utils['examples_type'] else "", []
+        )
 
         prompt = get_prompt(
             PromptConfig(**prompt_config),

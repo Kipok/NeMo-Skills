@@ -32,10 +32,14 @@ from settings.constants import (
     WHOLE_DATASET_MODE,
 )
 from settings.templates import compute_metrics_template, evaluate_results_template
-from utils.common import examples, get_available_models, run_subprocess
+from utils.common import get_examples, get_available_models, run_subprocess
 from utils.strategies.base_strategy import ModeStrategies
 
-from nemo_skills.inference.generate_solutions import GenerateSolutionsConfig, InferenceConfig, generate_solutions
+from nemo_skills.inference.generate_solutions import (
+    GenerateSolutionsConfig,
+    InferenceConfig,
+    generate_solutions,
+)
 from nemo_skills.inference.prompt.utils import PromptConfig
 
 
@@ -63,26 +67,48 @@ class WholeDatasetModeStrategy(ModeStrategies):
         run_index = len(runs_storage)
         metrics_directory = RESULTS_PATH.format(run_index)
         output_file = os.path.join(metrics_directory, OUTPUT_PATH.format(OUTPUT, GREEDY))
-        save_metrics_file = os.path.join(metrics_directory, OUTPUT_PATH.format(METRICS, GREEDY))
-        random_seed_start = utils['start_random_seed'] if params['range_random_mode'] else utils['random_seed']
-        random_seed_end = utils['random_seed'] if params['range_random_mode'] else utils['random_seed'] + 1
+        save_metrics_file = os.path.join(
+            metrics_directory, OUTPUT_PATH.format(METRICS, GREEDY)
+        )
+        random_seed_start = (
+            utils['start_random_seed']
+            if params['range_random_mode']
+            else utils['random_seed']
+        )
+        random_seed_end = (
+            utils['end_random_seed']
+            if params['range_random_mode']
+            else utils['random_seed'] + 1
+        )
         generate_solutions_config = GenerateSolutionsConfig(
             output_file=output_file,
             sandbox=self.config['sandbox'],
             server=self.config['server'],
             data_file=self.config['data_file'],
-            **{key: value for key, value in utils.items() if key in current_app.config['data_explorer']},
+            **{
+                key: value
+                for key, value in utils.items()
+                if key in current_app.config['data_explorer']
+            },
         )
         generate_solutions_config.prompt = PromptConfig(
-            **{key: value for key, value in utils.items() if key in current_app.config['data_explorer']['prompt']}
+            **{
+                key: value
+                for key, value in utils.items()
+                if key in current_app.config['data_explorer']['prompt']
+            }
         )
         generate_solutions_config.prompt.context = utils['context_templates']
-        generate_solutions_config.prompt.examples = examples.get(
+        generate_solutions_config.prompt.examples = get_examples().get(
             utils['examples_type'] if utils['examples_type'] else "", []
         )
 
         generate_solutions_config.inference = InferenceConfig(
-            **{key: value for key, value in utils.items() if key in current_app.config['data_explorer']['inference']}
+            **{
+                key: value
+                for key, value in utils.items()
+                if key in current_app.config['data_explorer']['inference']
+            }
         )
         for random_seed in range(random_seed_start, random_seed_end):
             output_file = (
@@ -101,6 +127,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
                     OUTPUT_PATH.format(METRICS, "rs" + str(random_seed)),
                 )
             )
+            generate_solutions_config.output_file = output_file
             generate_solutions_config.inference.random_seed = random_seed
             logging.info("Generate solutions")
             generate_solutions(OmegaConf.structured(generate_solutions_config))
@@ -126,13 +153,15 @@ class WholeDatasetModeStrategy(ModeStrategies):
 
         runs_storage[run_index] = {
             "utils": utils,
-            "examples": examples.get(utils["examples_type"], []),
+            "examples": get_examples().get(utils["examples_type"], []),
         }
 
         with open(PARAMETERS_FILE_NAME, "w") as f:
             f.write(json.dumps(runs_storage))
 
-        return html.Pre(f'Done. Results are in folder\n{"/".join(output_file.split("/")[:-1])}')
+        return html.Pre(
+            f'Done. Results are in folder\n{"/".join(output_file.split("/")[:-1])}'
+        )
 
     def get_prompt(self, utils: Dict, question: str) -> str:
         return super().get_prompt(utils, "***your question***")
