@@ -34,16 +34,14 @@ config = {}
 @hydra.main(version_base=None, config_path=config_path, config_name="config")
 def set_config(cfg: Config) -> None:
     global config
-    cfg.output_file = ""
-    new_prompt = get_prompt_config('code_sfted')
-    for param in fields(new_prompt):
-        try:
-            setattr(new_prompt, param.name, getattr(cfg.prompt, param.name))
-        except MissingMandatoryValue:
-            pass
-    cfg.prompt = new_prompt
+
     if not cfg.data_file and not cfg.dataset and not cfg.split_name:
         cfg.data_file = UNDEFINED
+
+    cfg.output_file = UNDEFINED
+    for key, value in OmegaConf.to_container(cfg.prompt).items():
+        if value == MISSING:
+            setattr(cfg.prompt, key, UNDEFINED)
 
     config['data_explorer'] = asdict(OmegaConf.to_object(cfg))
 

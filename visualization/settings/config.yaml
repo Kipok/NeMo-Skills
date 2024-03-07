@@ -1,5 +1,5 @@
 defaults:
-  - visualization_config
+  # - visualization_config # uncomment to use visualization_config.yaml file to set up model_prediction
   - generation_config
   - _self_
 

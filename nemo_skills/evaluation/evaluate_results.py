@@ -15,9 +15,10 @@
 import logging
 import sys
 from dataclasses import dataclass, field
+from typing import List, Union
 
 import hydra
-from omegaconf import MISSING, OmegaConf
+from omegaconf import II, MISSING, OmegaConf
 
 from nemo_skills.code_execution.sandbox import get_sandbox
 from nemo_skills.utils import get_help_message, setup_logging
@@ -31,7 +32,9 @@ class EvaluateResultsConfig:
 
     # this is really a str | List[str] type, but that's not supported in OmegaConf
     # so keeping as str, since that's what comes from config
-    prediction_jsonl_files: str = MISSING  # can specify multiple patters separated by space
+    prediction_jsonl_files: str = II(
+        MISSING  # can specify multiple patters separated by space
+    )
     sandbox: dict = field(default_factory=lambda: {'sandbox_type': 'local'})
     ignore_cache: bool = False
 

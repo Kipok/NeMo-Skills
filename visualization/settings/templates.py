@@ -12,14 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-evaluate_results_template = """
-python nemo_skills/evaluation/evaluate_results.py \\
-    prediction_jsonl_files={prediction_jsonl_files} \\
-    ++sandbox.host={host} \\
-    ++sandbox.ssh_server={ssh_server} \\
-    ++sandbox.ssh_key_path={ssh_key_path} \\
-"""
-
 compute_metrics_template = """
 python pipeline/compute_metrics.py \\
   --prediction_jsonl_files {prediction_jsonl_files} \\
