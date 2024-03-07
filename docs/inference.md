@@ -40,7 +40,7 @@ Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
 
     from nemo_skills.inference.server.model import get_model
     from nemo_skills.code_execution.sandbox import get_sandbox
-    from nemo_skills.inference.prompt.utils import get_prompt, get_prompt_config
+    from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
     from nemo_skills.inference.generate_solutions import InferenceConfig
 
     sandbox = get_sandbox(
@@ -70,13 +70,13 @@ Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
         "hip-hop dance. What percentage of the entire students enrolled in hip-hop dance?"
     )
     # can provide multiple requests
-    prompts = [get_prompt(prompt_config, input_dict={'question': question})]
+    prompts = [Prompt(prompt_config, input_dict={'question': question})]
 
     # can provide different inference parameters here
     inference_cfg = InferenceConfig(temperature=0)  # greedy
     outputs = llm(
         prompts=prompts,
-        stop_phrases=[prompt_config.delimiter],
+        stop_phrases=[prompt_config.few_shot_examples.delimiter],
         **asdict(inference_cfg),
     )
     print(outputs[0]["generated_solution"])

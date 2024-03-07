@@ -5,6 +5,6 @@ system: ""
 user: "\
     Here are some examples of questions and solutions followed by a new question that you need to solve.\n\
     Make sure to put the answer (and only answer) inside \\boxed{{}}.\n\n\
-    {examples}\n\n\n\n\n\n\
+    {examples}\
     Question:\n{question}\n\n{context}"
 prompt_template: "{system}{user}My solution:\n{generated_solution}"
