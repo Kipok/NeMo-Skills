@@ -189,10 +189,10 @@ class BaseModel(abc.ABC):
 
         # removing original prompt and stop tokens from the end of the generated text
         outputs = []
-        for original_prompt, output in zip(prompts, new_outputs):
+        for output in new_outputs:
             if output['session_id'] is not None:
                 self.sandbox.clear_session(output['session_id'])
-            generated_solution = remove_stop_tokens(output['full_prompt'][len(original_prompt) :], stop_phrases)
+            generated_solution = remove_stop_tokens(output['full_prompt'].generated_solution, stop_phrases)
             outputs.append(
                 {
                     'generated_solution': generated_solution,
@@ -241,8 +241,9 @@ class TensorRTLLMModel(BaseModel):
         random_seed,
         stop_phrases: List[str],
     ):
+        string_prompts = [str(prompt) for prompt in prompts]
         request = {
-            "prompts": prompts,
+            "prompts": string_prompts,
             "tokens_to_generate": tokens_to_generate,
             "temperature": temperature,
             "top_k": top_k,
@@ -274,8 +275,10 @@ class NemoModel(BaseModel):
         random_seed,
         stop_phrases: List[str],
     ):
+        string_prompts = [str(prompt) for prompt in prompts]
+        print(string_prompts)
         request = {
-            "sentences": prompts,
+            "sentences": string_prompts,
             "tokens_to_generate": tokens_to_generate,
             "temperature": temperature,
             "top_k": top_k,
@@ -288,19 +291,22 @@ class NemoModel(BaseModel):
         outputs = outputs['sentences']
         # always returns full prompt, so we need to remove the original prompt
         for idx, output in enumerate(outputs):
-            outputs[idx] = output[len(prompts[idx]) :]
+            outputs[idx] = output[len(string_prompts[idx]) :]
         return outputs
 
 
 class OpenAIModel(BaseModel):
     def __init__(
         self,
-        api_key,
-        model="gpt-3.5-turbo",
+        model,
+        api_key=None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         from openai import OpenAI
+
+        if api_key is None:
+            api_key = os.getenv("OPENAI_API_KEY", api_key)
 
         self.model = model
         self.client = OpenAI(api_key=api_key)
@@ -311,10 +317,10 @@ class OpenAIModel(BaseModel):
         tokens_to_generate,
         temperature,
         top_p,
-        top_k,
         repetition_penalty,
         random_seed,
         stop_phrases: List[str],
+        top_k=0,  # does not supported by OpenAI
     ):
         if top_k != 0:
             raise ValueError("`top_k` is not supported by OpenAI, please set it to default value `0`.")
@@ -353,8 +359,18 @@ class OpenAIModel(BaseModel):
             seed=random_seed,
             stop=stop_phrases,
             messages=messages,
-        )
-        return response.choices[0].message.content
+        ).choices[0]
+        content = response.message.content
+
+        # OpenAI remove stop tokens so we need to add them back
+        if (
+            response.finish_reason == "stop"
+            and content.find(CODE_SEPARATORS[0]) != -1
+            and not content[content.find(CODE_SEPARATORS[0]) :].count(CODE_SEPARATORS[-1])
+        ):
+            content += CODE_SEPARATORS[-1]
+
+        return content
 
 
 models = {
