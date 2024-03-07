@@ -55,7 +55,7 @@ class BaseModel(abc.ABC):
             Only required if handle_code_execution is True.
         ssh_server: Optional[str] = None - SSH server for tunneling requests.
             Useful if server is running on slurm cluster to which there is an ssh access
-            Can also be specified through SSH_SERVER env var..
+            Can also be specified through SSH_SERVER env var.
         ssh_key_path: Optional[str] = None - Path to the ssh key for tunneling.
             Can also be specified through SSH_KEY_PATH env var.
         max_code_output_characters: Optional[int] = 1000 - Maximum number of characters for code execution output.

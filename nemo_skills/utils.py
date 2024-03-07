@@ -158,6 +158,9 @@ Below are the available configuration options and their default values:
     """.strip()
 
     docstring = get_fields_docstring(dataclass_obj)
+    # to handle {} in docstring. Might need to add some other edge-case handling
+    # here, so that formatting does not complain
+    docstring = docstring.replace('{}', '{{}}')
     docstring = docstring.format(**kwargs)
 
     full_help = f"{heading}\n{'-' * 75}\n{docstring}"

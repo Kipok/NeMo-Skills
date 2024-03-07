@@ -33,7 +33,7 @@ LOG = logging.getLogger(__file__)
 
 @dataclass
 class InferenceConfig:
-    temperature: float = 0.0  # temperature of 0 means greedy decoding
+    temperature: float = 0.0  # Temperature of 0 means greedy decoding
     top_k: int = 0
     top_p: float = 0.95
     random_seed: int = 0
@@ -45,25 +45,25 @@ class InferenceConfig:
 class GenerateSolutionsConfig:
     """Top-level parameters for the script"""
 
-    output_file: str  # where to save the generations
-    # inference server configuration {server_params}
+    output_file: str  # Where to save the generations
+    # Inference server configuration {server_params}
     server: dict
-    # sandbox configuration {sandbox_params}
+    # Sandbox configuration {sandbox_params}
     sandbox: dict
-    # prompt configuration.
+    # Prompt configuration.
     # Available pre-configured prompts: {prompt_types}.
     prompt: PromptConfig = field(default_factory=PromptConfig)
     inference: InferenceConfig = field(default_factory=InferenceConfig)  # LLM call parameters
 
-    # can specify one of the existing datasets.
+    # Can specify one of the existing datasets.
     # Choices: {datasets}.
     dataset: Optional[str] = None
-    split_name: Optional[str] = None  # train, validation, test or train_full (train + validation)
-    data_file: Optional[str] = None  # can directly specify a data file, if using a custom dataset
+    split_name: Optional[str] = None  # Can be train, validation, test or train_full (train + validation)
+    data_file: Optional[str] = None  # Can directly specify a data file, if using a custom dataset
 
     batch_size: int = 16
-    max_samples: int = -1  # if > 0, will stop after generating this many samples. Useful for debugging
-    skip_filled: bool = False  # if True, will skip the generations that are already in the output file
+    max_samples: int = -1  # If > 0, will stop after generating this many samples. Useful for debugging
+    skip_filled: bool = False  # If True, will skip the generations that are already in the output file
     # if > 0, will skip this many samples from the beginning of the data file.
     # Useful if need to run multiple slurm jobs on the same data file
     offset: int = 0
