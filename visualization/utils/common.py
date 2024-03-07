@@ -16,6 +16,7 @@ import datetime
 import functools
 import json
 import logging
+from os import path
 import re
 import subprocess
 from collections import defaultdict
@@ -150,7 +151,7 @@ def get_estimated_height(text) -> float:
 
 @functools.lru_cache()
 def get_test_data(index: int, dataset: str) -> Tuple[Dict, int]:
-    if dataset == UNDEFINED:
+    if dataset == UNDEFINED or path.isfile(dataset) is False:
         return {QUESTION_FIELD: "", ANSWER_FIELD: ""}, 0
     with open(dataset) as file:
         tests = file.readlines()

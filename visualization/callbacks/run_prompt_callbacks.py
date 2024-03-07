@@ -362,15 +362,15 @@ def change_mode(run_mode: str, data_file: str) -> Tuple[List[dbc.AccordionItem],
             },
             "value",
         ),
+        Input("data_file", "value"),
     ],
     [
         State("query_search_input", "value"),
-        State("data_file", "value"),
     ],
     prevent_initial_call=True,
 )
 def prompt_search(
-    n_clicks: int, view_mode: str, index: int, data_file: str
+    n_clicks: int, view_mode: str, data_file: str, index: int
 ) -> Tuple[Union[List[str], NoUpdate]]:
     key_values = get_test_data(index, data_file)[0].items()
     return [
