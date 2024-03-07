@@ -112,7 +112,11 @@ def get_filter_layout(id: int = -1, available_filters: List[str] = [], files_onl
     )
     return html.Div(
         [
-            dbc.Button("Filters", id={"type": "set_filter_button", "id": id}),
+            dbc.Button(
+                "Filters",
+                id={"type": "set_filter_button", "id": id},
+                style={'margin-left': '2px'},
+            ),
             dbc.Modal(
                 [
                     header,
@@ -170,7 +174,11 @@ def get_sorting_layout(id: int = -1, available_params: List[str] = []) -> html.D
     )
     return html.Div(
         [
-            dbc.Button("Sort", id={"type": "set_sorting_button", "id": id}),
+            dbc.Button(
+                "Sort",
+                id={"type": "set_sorting_button", "id": id},
+                style={'margin-left': '2px'},
+            ),
             dbc.Modal(
                 [
                     header,
@@ -242,19 +250,27 @@ def get_change_label_layout(id: int = -1) -> html.Div:
                     className="ms-auto",
                     n_clicks=0,
                 ),
+                html.Pre(
+                    " ",
+                    style={'display': 'inline-block', 'font-size': '5px'},
+                ),
                 dbc.Button(
                     children="Apply",
                     id={"type": "apply_label_button", "id": id},
                     className="ms-auto",
                     n_clicks=0,
                 ),
-            ]
+            ],
         ),
         style={'display': 'inline-block'},
     )
     return html.Div(
         [
-            dbc.Button("Labels", id={"type": "set_file_label_button", "id": id}),
+            dbc.Button(
+                "Labels",
+                id={"type": "set_file_label_button", "id": id},
+                style={'margin-left': '2px'},
+            ),
             dbc.Modal(
                 [header, body, footer],
                 size="lg",

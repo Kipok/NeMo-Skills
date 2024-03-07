@@ -17,7 +17,11 @@ from typing import Dict, List
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 from layouts.base_layouts import get_switch_layout
-from layouts.table_layouts import get_filter_layout, get_selector_layout, get_sorting_layout
+from layouts.table_layouts import (
+    get_filter_layout,
+    get_selector_layout,
+    get_sorting_layout,
+)
 from settings.constants import DELETE, GENERAL_STATS
 from utils.common import get_available_models
 
@@ -59,7 +63,11 @@ def get_utils_layout(utils: Dict) -> dbc.AccordionItem:
             [
                 html.Pre(f"{name}: ", className="mr-2"),
                 html.Pre(
-                    (value if value == "" or str(value).strip() != "" else repr(value)[1:-1]),
+                    (
+                        value
+                        if value == "" or str(value).strip() != ""
+                        else repr(value)[1:-1]
+                    ),
                     className="mr-2",
                 ),
             ],
@@ -112,6 +120,7 @@ def get_compare_test_layout() -> html.Div:
                     dbc.Button(
                         "Save dataset",
                         id="save_dataset",
+                        style={'margin-left': '1px', 'border-radius': '5px'},
                     ),
                     dbc.Button(
                         "+",
@@ -119,6 +128,7 @@ def get_compare_test_layout() -> html.Div:
                         outline=True,
                         color="primary",
                         className="me-1",
+                        style={'margin-left': '1px'},
                     ),
                     get_selector_layout(
                         get_available_models().keys(),
@@ -208,7 +218,11 @@ def get_add_stats_layout() -> html.Div:
     )
     return html.Div(
         [
-            dbc.Button("Stats", id="set_new_stats_button"),
+            dbc.Button(
+                "Stats",
+                id="set_new_stats_button",
+                style={'margin-left': '2px'},
+            ),
             dbc.Modal(
                 [
                     modal_header,
