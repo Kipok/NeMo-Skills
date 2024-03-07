@@ -15,6 +15,7 @@
 from dataclasses import fields
 import json
 from copy import deepcopy
+from math import e
 import os
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
@@ -30,6 +31,7 @@ from layouts import (
     get_query_params_layout,
     get_results_content_layout,
     get_single_prompt_output_layout,
+    get_utils_field_representation,
 )
 from settings.constants import (
     ANSWER_FIELD,
@@ -37,6 +39,7 @@ from settings.constants import (
     QUERY_INPUT_ID,
     QUERY_INPUT_TYPE,
     QUESTION_FIELD,
+    UNDEFINED,
 )
 from utils.common import (
     get_examples,
@@ -192,6 +195,38 @@ def update_examples(
 
 
 @app.callback(
+    [
+        Output(field.name, "value")
+        for field in fields(PromptConfig)
+        if field.name not in IGNORE_PROMPT_FIELD
+    ],
+    Input("prompt_type", "value"),
+    prevent_initial_call=True,
+)
+def update_prompt_type(
+    prompt_type: str,
+) -> Union[NoUpdate, dbc.AccordionItem]:
+    prompt_types = [
+        os.path.splitext(file)[0]
+        for file in os.listdir(
+            Path.joinpath(
+                Path(__file__).parents[2].absolute(), "nemo_skills/inference/prompt"
+            )
+        )
+        if os.path.splitext(file)[1] == '.yaml'
+    ]
+    if prompt_type not in prompt_types:
+        return no_update
+    prompt_config = get_prompt_config(prompt_type)
+    prompt_config.examples_type = UNDEFINED
+    return [
+        get_utils_field_representation(getattr(prompt_config, field.name))
+        for field in fields(prompt_config)
+        if field.name not in IGNORE_PROMPT_FIELD
+    ]
+
+
+@app.callback(
     Output("few_shots_div", "children"),
     Input("examples_type", "value"),
 )
@@ -217,36 +252,6 @@ def update_context_type(
     context_type: str,
 ) -> Union[NoUpdate, dbc.AccordionItem]:
     return context_templates.get(context_type, no_update)
-
-
-@app.callback(
-    [
-        Output(field.name, "value")
-        for field in fields(PromptConfig)
-        if field.name not in IGNORE_PROMPT_FIELD
-    ],
-    Input("prompt_type", "value"),
-)
-def update_context_type(
-    prompt_type: str,
-) -> Union[NoUpdate, dbc.AccordionItem]:
-    prompt_types = [
-        os.path.splitext(file)[0]
-        for file in os.listdir(
-            Path.joinpath(
-                Path(__file__).parents[2].absolute(), "nemo_skills/inference/prompt"
-            )
-        )
-        if os.path.splitext(file)[1] == '.yaml'
-    ]
-    if prompt_type not in prompt_types:
-        return no_update
-    prompt_config = get_prompt_config(prompt_type)
-    return [
-        getattr(prompt_config, field.name)
-        for field in fields(prompt_config)
-        if field.name not in IGNORE_PROMPT_FIELD
-    ]
 
 
 @app.callback(

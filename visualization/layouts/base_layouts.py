@@ -120,11 +120,7 @@ def get_input_group_layout(
         [
             dbc.InputGroupText(name),
             input_function(
-                value=(
-                    value
-                    if value == "" or str(value).strip() != ""
-                    else repr(value)[1:-1]
-                ),
+                value=get_utils_field_representation(value),
                 id=name,
                 **additional_params,
                 debounce=True,
@@ -218,3 +214,7 @@ def get_results_content_layout(
         ],
         style=style,
     )
+
+
+def get_utils_field_representation(value) -> str:
+    return value if value == "" or str(value).strip() != "" else repr(value)[1:-1]

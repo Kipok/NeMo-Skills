@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 
 import dash_bootstrap_components as dbc
+from django import conf
 import hydra
 from dash import Dash
 from flask import Flask
@@ -25,6 +26,9 @@ from nemo_skills.inference.prompt.utils import get_prompt, get_prompt_config
 
 from settings.config import Config
 from settings.constants import IGNORE_PROMPT_FIELD, UNDEFINED
+
+from nemo_skills.inference.prompt.few_shot_examples import examples_map
+from nemo_skills.inference.prompt.utils import context_templates
 
 config_path = os.path.join(os.path.abspath(Path(__file__).parents[1]), "settings")
 
@@ -37,15 +41,18 @@ def set_config(cfg: Config) -> None:
 
     prompt_type = UNDEFINED
 
-    prompt_types = os.listdir(
-        Path.joinpath(
-            Path(__file__).parents[2].absolute(), "nemo_skills/inference/prompt"
+    prompt_types = [
+        os.path.splitext(file)[0]
+        for file in os.listdir(
+            Path.joinpath(
+                Path(__file__).parents[2].absolute(), "nemo_skills/inference/prompt"
+            )
         )
-    )
+        if os.path.splitext(file)[1] == '.yaml'
+    ]
 
-    for prompt in prompt_types:
-        name, ext = os.path.splitext(prompt)
-        if ext == ".yaml" and get_prompt_config(name) == cfg.prompt:
+    for name in prompt_types:
+        if get_prompt_config(name) == cfg.prompt:
             prompt_type = name
             break
 
@@ -53,6 +60,7 @@ def set_config(cfg: Config) -> None:
         cfg.data_file = UNDEFINED
 
     cfg.output_file = UNDEFINED
+
     for key, value in OmegaConf.to_container(cfg.prompt).items():
         if value == MISSING:
             setattr(cfg.prompt, key, UNDEFINED)
@@ -67,13 +75,25 @@ def set_config(cfg: Config) -> None:
             config['data_explorer']['sandbox'][param] = config['data_explorer']['server'][
                 param
             ]
+
     config['data_explorer']['prompt']['prompt_type'] = prompt_type
+
+    if not config['data_explorer']['prompt']['examples_type']:
+        config['data_explorer']['prompt']['examples_type'] = UNDEFINED
+
+    config['data_explorer']['types'] = {
+        "prompt_type": prompt_types,
+        "examples_type": list(examples_map.keys()),
+        "context_type": list(context_templates.keys()),
+    }
+
     config['data_explorer']['data_file'] = str(config['data_explorer']['data_file'])
     # All parameters in config can be modified through the application except Server and Sandbox configs
     # Following parameters are not used and should not be modified
     config['data_explorer'].pop('output_file')
     config['data_explorer'].pop('dataset')
     config['data_explorer'].pop('split_name')
+
     for field in IGNORE_PROMPT_FIELD:
         config['data_explorer']['prompt'].pop(field)
 

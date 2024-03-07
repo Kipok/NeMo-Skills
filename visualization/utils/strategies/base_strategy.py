@@ -30,12 +30,13 @@ from layouts import (
     get_text_area_layout,
 )
 from utils.common import get_examples
-from settings.constants import QUERY_INPUT_TYPE
+from settings.constants import QUERY_INPUT_TYPE, UNDEFINED
 
 from nemo_skills.code_execution.sandbox import get_sandbox
 from nemo_skills.inference.generate_solutions import InferenceConfig
 from nemo_skills.inference.prompt.utils import PromptConfig, context_templates, get_prompt
 from nemo_skills.inference.server.model import get_model
+from layouts import get_selector_layout
 
 
 class ModeStrategies:
@@ -68,9 +69,23 @@ class ModeStrategies:
                     if inference_condition(name, value)
                 ]
                 + [
-                    get_input_group_layout(param_name, value, dbc.Textarea)
+                    dbc.InputGroup(
+                        [
+                            dbc.InputGroupText(param_name),
+                            get_selector_layout(
+                                self.config['types'][param_name], param_name, value
+                            ),
+                        ],
+                        style={"margin-bottom": "15px"},
+                    )
                     for param_name, value in self.config["prompt"].items()
                     if prompt_condition(param_name, value)
+                    and param_name in self.config['types'].keys()
+                ]
+                + [
+                    get_input_group_layout(param_name, value, dbc.Textarea)
+                    for param_name, value in self.config["prompt"].items()
+                    if prompt_condition(param_name, value) and 'type' not in param_name
                 ]
             ),
             id="utils_group",
