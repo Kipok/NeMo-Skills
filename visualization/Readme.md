@@ -34,4 +34,4 @@ python visualization/data_explorer.py \
 ++server.ssh_server=<server> \
 ++server.host=<host>
 ```
-For the "Inference" page, you need to specify `ssh_key`, `ssh_server`, and `host` and launch the server with the model (see `docs/inference.md`).
+For the "Inference" page, you need to specify `ssh_key`, `ssh_server`, and `host` and launch the server with the model (see [inference.md](/docs/inference.md)).

@@ -21,6 +21,7 @@ import dash_bootstrap_components as dbc
 from dash import html
 from flask import current_app
 from omegaconf import OmegaConf
+import requests
 from nemo_skills.evaluation.evaluate_results import (
     EvaluateResultsConfig,
     evaluate_results,
@@ -132,19 +133,24 @@ class WholeDatasetModeStrategy(ModeStrategies):
             )
             generate_solutions_config.output_file = output_file
             generate_solutions_config.inference.random_seed = random_seed
-            logging.info("Generate solutions")
-            generate_solutions(OmegaConf.structured(generate_solutions_config))
-            evaluate_results_config = EvaluateResultsConfig(
-                prediction_jsonl_files=output_file,
-                sabdbox=self.config['sandbox'],
-            )
-            logging.info("Evaluate results")
-            evaluate_results(OmegaConf.structured(evaluate_results_config))
+            try:
+                logging.info("Generate solutions")
+                generate_solutions(OmegaConf.structured(generate_solutions_config))
+                evaluate_results_config = EvaluateResultsConfig(
+                    prediction_jsonl_files=output_file,
+                    sabdbox=self.config['sandbox'],
+                )
+                logging.info("Evaluate results")
+                evaluate_results(OmegaConf.structured(evaluate_results_config))
 
-            compute_metrics_command = compute_metrics_template.format(
-                prediction_jsonl_files=output_file,
-                save_metrics_file=save_metrics_file,
-            )
+                compute_metrics_command = compute_metrics_template.format(
+                    prediction_jsonl_files=output_file,
+                    save_metrics_file=save_metrics_file,
+                )
+            except requests.exceptions.ConnectionError as e:
+                return self._get_connection_error_message()
+            except Exception as e:
+                return html.Div(f"Something went wrong\n{e}")
 
             logging.info("Compute metrics")
             _, errors, success = run_subprocess(compute_metrics_command)
