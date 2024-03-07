@@ -63,7 +63,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
             list(self.config.items()),
         )
 
-    def get_query_input_layout(self) -> List[dbc.AccordionItem]:
+    def get_query_input_layout(self, dataset) -> List[dbc.AccordionItem]:
         return []
 
     def run(self, utils: Dict, params: Dict):
@@ -89,7 +89,6 @@ class WholeDatasetModeStrategy(ModeStrategies):
             output_file=output_file,
             sandbox=self.config['sandbox'],
             server=self.config['server'],
-            data_file=self.config['data_file'],
             **{
                 key: value
                 for key, value in utils.items()

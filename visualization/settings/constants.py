@@ -38,4 +38,5 @@ MODEL_SELECTOR_ID = '{{"type": "model_selector", "id": {}}}'
 LABEL = "labels"
 CHOOSE_LABEL = "choose_label"
 DELETE = "delete"
+IGNORE_PROMPT_FIELD = ['context', 'examples']
 GENERAL_STATS = "general_stats"

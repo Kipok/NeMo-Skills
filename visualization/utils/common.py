@@ -149,11 +149,10 @@ def get_estimated_height(text) -> float:
 
 
 @functools.lru_cache()
-def get_test_data(index: int) -> Tuple[Dict, int]:
-    data_file = current_app.config['data_explorer']["data_file"]
-    if data_file == UNDEFINED:
+def get_test_data(index: int, dataset: str) -> Tuple[Dict, int]:
+    if dataset == UNDEFINED:
         return {QUESTION_FIELD: "", ANSWER_FIELD: ""}, 0
-    with open(data_file) as file:
+    with open(dataset) as file:
         tests = file.readlines()
         index = max(min(len(tests), index), 1)
         test = json.loads(tests[index - 1])

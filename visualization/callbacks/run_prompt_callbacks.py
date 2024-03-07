@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dataclasses import fields
 import json
 from copy import deepcopy
+import os
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 from dash import ALL, html, no_update
@@ -30,6 +33,7 @@ from layouts import (
 )
 from settings.constants import (
     ANSWER_FIELD,
+    IGNORE_PROMPT_FIELD,
     QUERY_INPUT_ID,
     QUERY_INPUT_TYPE,
     QUESTION_FIELD,
@@ -41,7 +45,11 @@ from utils.common import (
 )
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
 
-from nemo_skills.inference.prompt.utils import context_templates
+from nemo_skills.inference.prompt.utils import (
+    PromptConfig,
+    context_templates,
+    get_prompt_config,
+)
 
 
 @app.callback(
@@ -212,6 +220,36 @@ def update_context_type(
 
 
 @app.callback(
+    [
+        Output(field.name, "value")
+        for field in fields(PromptConfig)
+        if field.name not in IGNORE_PROMPT_FIELD
+    ],
+    Input("prompt_type", "value"),
+)
+def update_context_type(
+    prompt_type: str,
+) -> Union[NoUpdate, dbc.AccordionItem]:
+    prompt_types = [
+        os.path.splitext(file)[0]
+        for file in os.listdir(
+            Path.joinpath(
+                Path(__file__).parents[2].absolute(), "nemo_skills/inference/prompt"
+            )
+        )
+        if os.path.splitext(file)[1] == '.yaml'
+    ]
+    if prompt_type not in prompt_types:
+        return no_update
+    prompt_config = get_prompt_config(prompt_type)
+    return [
+        getattr(prompt_config, field.name)
+        for field in fields(prompt_config)
+        if field.name not in IGNORE_PROMPT_FIELD
+    ]
+
+
+@app.callback(
     Output("utils_group", "children"),
     Input("range_random_seed_mode", "value"),
     State("utils_group", "children"),
@@ -298,13 +336,12 @@ def get_run_test_results(
         Output("prompt_params_input", "children", allow_duplicate=True),
         Output("results_content", "children", allow_duplicate=True),
     ],
-    [
-        Input("run_mode_options", "value"),
-    ],
+    Input("run_mode_options", "value"),
+    State("data_file", "value"),
     prevent_initial_call=True,
 )
-def change_mode(run_mode: str) -> Tuple[List[dbc.AccordionItem], None]:
-    return get_query_params_layout(run_mode), None
+def change_mode(run_mode: str, data_file: str) -> Tuple[List[dbc.AccordionItem], None]:
+    return get_query_params_layout(run_mode, data_file), None
 
 
 @app.callback(
@@ -323,13 +360,14 @@ def change_mode(run_mode: str) -> Tuple[List[dbc.AccordionItem], None]:
     ],
     [
         State("query_search_input", "value"),
+        State("data_file", "value"),
     ],
     prevent_initial_call=True,
 )
 def prompt_search(
-    n_clicks: int, view_mode: str, index: int
+    n_clicks: int, view_mode: str, index: int, data_file: str
 ) -> Tuple[Union[List[str], NoUpdate]]:
-    key_values = get_test_data(index)[0].items()
+    key_values = get_test_data(index, data_file)[0].items()
     return [
         RunPromptStrategyMaker()
         .get_strategy()
@@ -388,7 +426,4 @@ def preview(
     prevent_initial_call=True,
 )
 def change_results_content_mode(view_mode: bool, text: str) -> html.Pre:
-    import logging
-
-    logging.info(view_mode)
     return get_single_prompt_output_layout(text) if view_mode and len(view_mode) else text

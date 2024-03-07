@@ -16,6 +16,7 @@ from typing import List, Tuple
 
 import dash_bootstrap_components as dbc
 from dash import dcc, html
+from flask import current_app
 
 from layouts.base_layouts import get_text_area_layout
 from settings.constants import (
@@ -53,13 +54,13 @@ def get_few_shots_by_id_layout(
 
 
 def get_query_params_layout(
-    mode: str = ONE_SAMPLE_MODE,
+    mode: str = ONE_SAMPLE_MODE, dataset: str = None
 ) -> List[dbc.AccordionItem]:
     strategy = RunPromptStrategyMaker(mode).get_strategy()
     return (
         strategy.get_utils_input_layout()
         + strategy.get_few_shots_input_layout()
-        + strategy.get_query_input_layout()
+        + strategy.get_query_input_layout(dataset)
     )
 
 
@@ -89,7 +90,9 @@ def get_run_test_layout() -> html.Div:
         [
             get_run_mode_layout(),
             dbc.Accordion(
-                get_query_params_layout(),
+                get_query_params_layout(
+                    dataset=current_app.config['data_explorer']['data_file']
+                ),
                 start_collapsed=True,
                 always_open=True,
                 id="prompt_params_input",

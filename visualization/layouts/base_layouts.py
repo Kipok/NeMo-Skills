@@ -62,10 +62,6 @@ def get_switch_layout(
 ) -> dbc.Checklist:
     if values is None:
         values = labels
-    import logging
-
-    logging.info(values)
-    logging.info(values[0])
     return dbc.Checklist(
         id=id,
         options=[

@@ -43,12 +43,8 @@ class OneTestModeStrategy(ModeStrategies):
             list(self.config.items()),
         )
 
-    def get_query_input_layout(self) -> List[dbc.AccordionItem]:
-        return super().get_query_input_layout(
-            get_test_data(
-                0,
-            )[0].items()
-        )
+    def get_query_input_layout(self, dataset: str) -> List[dbc.AccordionItem]:
+        return super().get_query_input_layout(get_test_data(0, dataset)[0].items())
 
     def run(self, utils: Dict, params: Dict) -> html.Div:
         params['prompts'] = [self.get_prompt(utils, params['question'])]

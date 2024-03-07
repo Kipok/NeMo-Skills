@@ -15,8 +15,8 @@
 from typing import Dict, List
 
 import dash_bootstrap_components as dbc
-from settings.constants import ANSWER_FIELD, ONE_SAMPLE_MODE, QUESTION_FIELD
 
+from visualization.settings.constants import ANSWER_FIELD, ONE_SAMPLE_MODE, QUESTION_FIELD
 from visualization.utils.strategies.base_strategy import ModeStrategies
 
 
@@ -36,7 +36,7 @@ class ChatModeStrategy(ModeStrategies):
     def get_few_shots_input_layout(self) -> List[dbc.AccordionItem]:
         return []
 
-    def get_query_input_layout(self) -> List[dbc.AccordionItem]:
+    def get_query_input_layout(self, dataset) -> List[dbc.AccordionItem]:
         return super().get_query_input_layout(
             [
                 (QUESTION_FIELD, ""),

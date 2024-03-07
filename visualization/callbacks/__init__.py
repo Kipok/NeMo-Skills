@@ -21,9 +21,10 @@ import hydra
 from dash import Dash
 from flask import Flask
 from omegaconf import MISSING, OmegaConf
+from nemo_skills.inference.prompt.utils import get_prompt, get_prompt_config
 
 from settings.config import Config
-from settings.constants import UNDEFINED
+from settings.constants import IGNORE_PROMPT_FIELD, UNDEFINED
 
 config_path = os.path.join(os.path.abspath(Path(__file__).parents[1]), "settings")
 
@@ -33,6 +34,20 @@ config = {}
 @hydra.main(version_base=None, config_path=config_path, config_name="config")
 def set_config(cfg: Config) -> None:
     global config
+
+    prompt_type = UNDEFINED
+
+    prompt_types = os.listdir(
+        Path.joinpath(
+            Path(__file__).parents[2].absolute(), "nemo_skills/inference/prompt"
+        )
+    )
+
+    for prompt in prompt_types:
+        name, ext = os.path.splitext(prompt)
+        if ext == ".yaml" and get_prompt_config(name) == cfg.prompt:
+            prompt_type = name
+            break
 
     if not cfg.data_file and not cfg.dataset and not cfg.split_name:
         cfg.data_file = UNDEFINED
@@ -52,15 +67,15 @@ def set_config(cfg: Config) -> None:
             config['data_explorer']['sandbox'][param] = config['data_explorer']['server'][
                 param
             ]
+    config['data_explorer']['prompt']['prompt_type'] = prompt_type
+    config['data_explorer']['data_file'] = str(config['data_explorer']['data_file'])
     # All parameters in config can be modified through the application except Server and Sandbox configs
     # Following parameters are not used and should not be modified
     config['data_explorer'].pop('output_file')
     config['data_explorer'].pop('dataset')
     config['data_explorer'].pop('split_name')
-    config['data_explorer']['prompt'].pop(
-        "examples"
-    )  # Can be modified separately through Few Shots accordion component
-    config['data_explorer']['prompt'].pop("context")
+    for field in IGNORE_PROMPT_FIELD:
+        config['data_explorer']['prompt'].pop(field)
 
 
 set_config()
