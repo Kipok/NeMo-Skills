@@ -184,7 +184,7 @@ class BaseModel(abc.ABC):
                             session_id=new_outputs[idx]['session_id'],
                         )
                 for idx, output in zip(remaining_ids, outputs):
-                    new_outputs[idx]['full_prompt'] += output
+                    new_outputs[idx]['full_prompt'].generated_solution += output
                     if output.endswith(CODE_SEPARATORS[-1]):
                         result, new_outputs[idx]['session_id'] = futures[idx].result()
                         # for now if there is any error or no output, we stop generation
@@ -200,7 +200,7 @@ class BaseModel(abc.ABC):
                         code_output = (
                             f'\n{CODE_OUTPUT_SEPARATORS[0]}\n{result["result"]}\n{CODE_OUTPUT_SEPARATORS[1]}\n'
                         )
-                        new_outputs[idx]['full_prompt'] += code_output
+                        new_outputs[idx]['full_prompt'].generated_solution += code_output
                         # setting a limit on max code executions to speed things up
                         # (sometimes keeps repeating the same sequence forever)
                         if num_executions >= self.max_code_executions:
@@ -342,7 +342,7 @@ class OpenAIModel(BaseModel):
         repetition_penalty,
         random_seed,
         stop_phrases: List[str],
-        top_k=0,  # does not supported by OpenAI
+        top_k=0,  # is not supported by OpenAI
     ):
         if top_k != 0:
             raise ValueError("`top_k` is not supported by OpenAI, please set it to default value `0`.")
@@ -371,7 +371,7 @@ class OpenAIModel(BaseModel):
         random_seed,
         stop_phrases: List[str],
     ):
-        messages = prompt.build_structured_examples()
+        messages = prompt.build_chat_prompt()
         response = self.client.chat.completions.create(
             model=self.model,
             temperature=temperature,
@@ -384,7 +384,7 @@ class OpenAIModel(BaseModel):
         ).choices[0]
         content = response.message.content
 
-        # OpenAI remove stop tokens so we need to add them back
+        # OpenAI removes stop tokens so we need to add them back
         if (
             response.finish_reason == "stop"
             and content.find(CODE_SEPARATORS[0]) != -1

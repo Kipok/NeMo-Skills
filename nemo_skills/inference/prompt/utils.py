@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from re import M
 from typing import Any, Dict, List, Optional
@@ -40,33 +40,35 @@ datasets = [
 
 @dataclass
 class FewShotExamples:
-    delimiter: str = MISSING
     template: str = MISSING
+    examples_type: str = "gsm8k_text_with_code"
+    num_few_shots: int = 5
 
 
 @dataclass
 class PromptConfig:
-    few_shot_examples: FewShotExamples = MISSING
+    few_shot_examples: FewShotExamples = field(default_factory=FewShotExamples)
     prompt_template: str = MISSING
     user: str = MISSING
     system: str = MISSING
     context_type: str = "empty"
-    examples_type: Optional[str] = None
-    num_few_shots: int = 5
+    stop_phrases: List[str] = field(default_factory=list)
 
 
 @dataclass
 class Prompt:
     config: PromptConfig
     input_dict: Dict[str, Any]
-    example_dicts: List[Dict[str, Any]] = None
+    example_dicts: Optional[List[Dict[str, Any]]] = None
     context_template: Optional[str] = None
-    generated_solution = ""
+    generated_solution: str = ""
 
     def __post_init__(self):
-        """Initialize example_dicts if not provided."""
+        """Initialize example_dicts/context_template if not provided."""
         if self.example_dicts is None:
-            self.example_dicts = examples_map.get(self.config.examples_type, [])[: self.config.num_few_shots]
+            self.example_dicts = examples_map.get(self.config.few_shot_examples.examples_type, [])[
+                : self.config.few_shot_examples.num_few_shots
+            ]
         if self.context_template is None:
             self.context_template = context_templates.get(self.config.context_type, "")
 
@@ -83,29 +85,18 @@ class Prompt:
     def build_examples(self) -> str:
         """Builds all examples string concatenated by delimiter."""
         filled_examples = [self.build_filled_example(example) for example in self.example_dicts]
-        examples = (
-            self.config.few_shot_examples.delimiter.join(filled_examples) + self.config.few_shot_examples.delimiter
-            if filled_examples
-            else ""
-        )
+        examples = "".join(filled_examples)
         context = self.build_context(self.input_dict)
         user = self.config.user.format(examples=examples, context=context, **self.input_dict)
         return user
 
-    def build_structured_examples(self) -> List[Dict[str, str]]:
+    def build_chat_prompt(self) -> List[Dict[str, str]]:
         """Builds a structured representation of the prompt."""
         structured_prompt = [{"role": "system", "content": self.config.system}] if self.config.system else []
         structured_prompt.append({"role": "user", "content": self.build_examples()})
         if self.generated_solution:
             structured_prompt.append({"role": "assistant", "content": self.generated_solution})
         return structured_prompt
-
-    def __add__(self, other: str):
-        return self.generated_solution + other
-
-    def __iadd__(self, other: str):
-        self.generated_solution += other
-        return self
 
     def __str__(self) -> str:
         """Returns the complete prompt string representation."""
@@ -123,7 +114,14 @@ def get_prompt_config(prompt_type: str) -> PromptConfig:
     with open(config_path, "rt", encoding="utf-8") as fin:
         # Load the YAML file using OmegaConf
         loaded_config = OmegaConf.load(fin)
-        prompt_config = OmegaConf.structured(PromptConfig(**loaded_config))
+
+        # Create a default PromptConfig and convert it to a DictConfig
+        default_config = OmegaConf.create(asdict(PromptConfig()))
+
+        # Merge the default config with the loaded config
+        merged_config = OmegaConf.merge(default_config, loaded_config)
+
+        prompt_config = OmegaConf.structured(PromptConfig(**merged_config))
         return prompt_config
 
 
@@ -134,9 +132,3 @@ context_templates = {
     "reference_solution": "Reference solution (do not copy it):\n{reference_solution}\n\n",
     "masked_solution": "Reference solution:\n{reference_masked_solution}\n\n",
 }
-
-
-def get_prompt(prompt_config: PromptConfig, input_dict: Dict[str, Any]) -> Prompt:
-    """Builds and returns a string representation of a few-shot prompt from the provided configuration and input dictionary."""
-    prompt = Prompt(prompt_config, input_dict)
-    return prompt

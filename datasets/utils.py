@@ -27,7 +27,7 @@ def prepare_for_sft(data, prompt_type, dataset):
     # reading prompt format from the yaml file
     prompt_config = get_prompt_config(prompt_type)
     prompt_config.context_type = "empty"
-    prompt_config.num_few_shots = 0
+    prompt_config.few_shot_examples.num_few_shots = 0
 
     prepared_data = []
     for original_elem in data:

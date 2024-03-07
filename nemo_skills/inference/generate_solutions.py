@@ -127,9 +127,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
             if len(prompts) == cfg.batch_size:
                 # batch-computing the outputs
-                outputs = llm(
-                    stop_phrases=[cfg.prompt.few_shot_examples.delimiter], prompts=prompts, **asdict(cfg.inference)
-                )
+                outputs = llm(stop_phrases=list(cfg.prompt.stop_phrases), prompts=prompts, **asdict(cfg.inference))
                 for output, original_data_point in zip(outputs, data_points):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
                     # all of the ground-truth data to the output file alongside the generated solutions
@@ -140,9 +138,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
         # collecting the final batch
         if len(prompts) > 0:
-            outputs = llm(
-                stop_phrases=[cfg.prompt.few_shot_examples.delimiter], prompts=prompts, **asdict(cfg.inference)
-            )
+            outputs = llm(stop_phrases=list(cfg.prompt.stop_phrases), prompts=prompts, **asdict(cfg.inference))
             for output, original_data_point in zip(outputs, data_points):
                 output.update(original_data_point)
                 fout.write(json.dumps(output) + "\n")

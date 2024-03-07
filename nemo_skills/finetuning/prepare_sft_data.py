@@ -50,8 +50,8 @@ def get_default_prompt_config():
     ) as fin:
         prompt_config = PromptConfig(**yaml.safe_load(fin))
     prompt_config.context_type = "empty"
-    prompt_config.examples_type = "gsm8k_text_with_code"  # not used since num_few_shots = 0
-    prompt_config.num_few_shots = 0
+    prompt_config.few_shot_examples.examples_type = "gsm8k_text_with_code"  # not used since num_few_shots = 0
+    prompt_config.few_shot_examples.num_few_shots = 0
     return prompt_config
 
 
