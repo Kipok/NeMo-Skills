@@ -16,15 +16,29 @@ import json
 from copy import deepcopy
 from typing import Dict, List, Optional, Tuple, Union
 
+from dash import ALL, html, no_update
 import dash_bootstrap_components as dbc
-from callbacks import app
-from dash import ALL, dcc, html, no_update
-from dash._callback import NoUpdate
 from dash.dependencies import Input, Output, State
-from layouts import get_few_shots_by_id_layout, get_query_params_layout, get_single_prompt_output_layout
-from layouts.base_layouts import get_switch_layout
-from settings.constants import ANSWER_FIELD, QUERY_INPUT_ID, QUERY_INPUT_TYPE, QUESTION_FIELD
-from utils.common import get_examples, get_test_data, get_values_from_input_group
+from dash._callback import NoUpdate
+
+from callbacks import app
+from layouts import (
+    get_few_shots_by_id_layout,
+    get_query_params_layout,
+    get_results_content_layout,
+    get_single_prompt_output_layout,
+)
+from settings.constants import (
+    ANSWER_FIELD,
+    QUERY_INPUT_ID,
+    QUERY_INPUT_TYPE,
+    QUESTION_FIELD,
+)
+from utils.common import (
+    get_examples,
+    get_test_data,
+    get_values_from_input_group,
+)
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
 
 from nemo_skills.inference.prompt.utils import context_templates
@@ -78,8 +92,14 @@ def add_example(
     if examples_type not in get_examples():
         get_examples()[examples_type] = []
     last_page = len(get_examples()[examples_type])
-    examples_type_keys = list(get_examples().keys())[0] if not len(get_examples()[examples_type]) else examples_type
-    get_examples()[examples_type].append({key: "" for key in get_examples()[examples_type_keys][0].keys()})
+    examples_type_keys = (
+        list(get_examples().keys())[0]
+        if not len(get_examples()[examples_type])
+        else examples_type
+    )
+    get_examples()[examples_type].append(
+        {key: "" for key in get_examples()[examples_type_keys][0].keys()}
+    )
     return (last_page + 1, last_page + 1)
 
 
@@ -105,7 +125,12 @@ def add_example(
 )
 def del_example(
     n_clicks: int, page: int, examples_type: str, view_mode: List[str]
-) -> Tuple[Union[int, NoUpdate], Union[int, NoUpdate], Union[Tuple[html.Div], NoUpdate], Union[int, NoUpdate],]:
+) -> Tuple[
+    Union[int, NoUpdate],
+    Union[int, NoUpdate],
+    Union[Tuple[html.Div], NoUpdate],
+    Union[int, NoUpdate],
+]:
     if not examples_type:
         examples_type = ""
     if examples_type not in get_examples():
@@ -242,8 +267,12 @@ def get_run_test_results(
         utils["examples_type"] = ""
 
     try:
-        question_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD)))
-        answer_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, ANSWER_FIELD)))
+        question_id = query_params_ids.index(
+            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD))
+        )
+        answer_id = query_params_ids.index(
+            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, ANSWER_FIELD))
+        )
         question = query_params[question_id]
         expected_answer = query_params[answer_id]
     except ValueError:
@@ -297,7 +326,9 @@ def change_mode(run_mode: str) -> Tuple[List[dbc.AccordionItem], None]:
     ],
     prevent_initial_call=True,
 )
-def prompt_search(n_clicks: int, view_mode: str, index: int) -> Tuple[Union[List[str], NoUpdate]]:
+def prompt_search(
+    n_clicks: int, view_mode: str, index: int
+) -> Tuple[Union[List[str], NoUpdate]]:
     key_values = get_test_data(index)[0].items()
     return [
         RunPromptStrategyMaker()
@@ -331,43 +362,33 @@ def preview(
 ) -> html.Pre:
     utils = get_values_from_input_group(utils)
     try:
-        question_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD)))
+        question_id = query_params_ids.index(
+            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD))
+        )
         question = query_params[question_id]
     except ValueError:
         question = ""
 
     prompt = RunPromptStrategyMaker(run_mode).get_strategy().get_prompt(utils, question)
-    return html.Div(
-        [
-            get_switch_layout(
-                {
-                    "type": "view_mode",
-                    "id": "preview",
-                },
-                ["view mode"],
-            ),
-            html.Pre(
-                prompt,
-                id="preview_text",
-            ),
-            dcc.Store(data=prompt, id="preview_store"),
-        ]
-    )
+    return get_results_content_layout(prompt)
 
 
 @app.callback(
-    Output("preview_text", "children", allow_duplicate=True),
+    Output("results_content_text", "children", allow_duplicate=True),
     [
         Input(
             {
                 "type": "view_mode",
-                "id": "preview",
+                "id": "results_content",
             },
             "value",
         ),
     ],
-    [State("preview_store", "data")],
+    [State("text_store", "data")],
     prevent_initial_call=True,
 )
-def change_preview_mode(view_mode: bool, text: str) -> html.Pre:
+def change_results_content_mode(view_mode: bool, text: str) -> html.Pre:
+    import logging
+
+    logging.info(view_mode)
     return get_single_prompt_output_layout(text) if view_mode and len(view_mode) else text

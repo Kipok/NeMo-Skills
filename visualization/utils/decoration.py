@@ -17,6 +17,7 @@ import re
 import string
 
 from dash import dcc, html
+
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonLexer
@@ -29,7 +30,11 @@ def design_text_output(text: str, style={}):
             marked_lines = lines
         else:
             marked_lines = [
-                ("$$" + line if i == len(lines) - 1 else line + "$$" if i == 0 else "$$" + line + "$$")
+                (
+                    "$$" + line
+                    if i == len(lines) - 1
+                    else line + "$$" if i == 0 else "$$" + line + "$$"
+                )
                 for i, line in enumerate(lines)
             ]
         return '$$' + '\n'.join(marked_lines) + '$$'

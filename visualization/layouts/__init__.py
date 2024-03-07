@@ -22,6 +22,7 @@ from layouts.analyze_page_layouts import (
 from layouts.base_layouts import (
     get_input_group_layout,
     get_main_page_layout,
+    get_results_content_layout,
     get_single_prompt_output_layout,
     get_switch_layout,
     get_text_area_layout,

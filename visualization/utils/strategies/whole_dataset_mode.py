@@ -22,10 +22,7 @@ from dash import html
 from flask import current_app
 from omegaconf import OmegaConf
 import requests
-from nemo_skills.evaluation.evaluate_results import (
-    EvaluateResultsConfig,
-    evaluate_results,
-)
+
 from settings.constants import (
     GREEDY,
     METRICS,
@@ -39,6 +36,10 @@ from settings.templates import compute_metrics_template
 from utils.common import get_available_models, get_examples, run_subprocess
 from utils.strategies.base_strategy import ModeStrategies
 
+from nemo_skills.evaluation.evaluate_results import (
+    EvaluateResultsConfig,
+    evaluate_results,
+)
 from nemo_skills.inference.generate_solutions import (
     GenerateSolutionsConfig,
     InferenceConfig,

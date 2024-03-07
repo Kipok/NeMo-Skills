@@ -21,19 +21,21 @@ from typing import Callable, Dict, Iterable, List, Tuple, Union
 import dash_bootstrap_components as dbc
 from dash import html
 from flask import current_app
+
 from layouts import (
     get_input_group_layout,
+    get_results_content_layout,
     get_single_prompt_output_layout,
     get_switch_layout,
     get_text_area_layout,
 )
 from utils.common import get_examples
+from settings.constants import QUERY_INPUT_TYPE
 
 from nemo_skills.code_execution.sandbox import get_sandbox
 from nemo_skills.inference.generate_solutions import InferenceConfig
 from nemo_skills.inference.prompt.utils import PromptConfig, context_templates, get_prompt
 from nemo_skills.inference.server.model import get_model
-from visualization.settings.constants import QUERY_INPUT_TYPE
 
 
 class ModeStrategies:
@@ -231,11 +233,13 @@ class ModeStrategies:
         except Exception as e:
             color = 'grey'
 
-        return html.Div(
+        return get_results_content_layout(
+            outputs[0]['generated_solution'],
             get_single_prompt_output_layout(
                 outputs[0]['generated_solution'],
             ),
             style={"border": "2px solid " + color},
+            switch_is_active=True,
         )
 
     def get_prompt(self, utils: Dict, question: str) -> str:

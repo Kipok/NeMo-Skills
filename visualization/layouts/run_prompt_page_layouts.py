@@ -16,8 +16,13 @@ from typing import List, Tuple
 
 import dash_bootstrap_components as dbc
 from dash import dcc, html
+
 from layouts.base_layouts import get_text_area_layout
-from settings.constants import CHAT_MODE, ONE_SAMPLE_MODE, WHOLE_DATASET_MODE
+from settings.constants import (
+    CHAT_MODE,
+    ONE_SAMPLE_MODE,
+    WHOLE_DATASET_MODE,
+)
 from utils.common import get_examples
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
 

@@ -16,10 +16,13 @@ from typing import Dict, List
 
 import dash_bootstrap_components as dbc
 from dash import html
-from settings.constants import ONE_SAMPLE_MODE, PARAMS_FOR_WHOLE_DATASET_ONLY
-from utils.common import get_test_data
 
-from visualization.utils.strategies.base_strategy import ModeStrategies
+from settings.constants import (
+    ONE_SAMPLE_MODE,
+    PARAMS_FOR_WHOLE_DATASET_ONLY,
+)
+from utils.common import get_test_data
+from utils.strategies.base_strategy import ModeStrategies
 
 
 class OneTestModeStrategy(ModeStrategies):
