@@ -119,7 +119,6 @@ def get_prompt_config(prompt_type: str) -> PromptConfig:
     with open(config_path, "rt", encoding="utf-8") as fin:
         # Load the YAML file using OmegaConf
         loaded_config = OmegaConf.load(fin)
-        # Create a PromptConfig dataclass instance from the loaded configuration
         prompt_config = OmegaConf.structured(PromptConfig(**loaded_config))
         return prompt_config
 
