@@ -14,15 +14,11 @@
 
 from typing import Optional
 
-from settings.constants import (
-    CHAT_MODE,
-    ONE_SAMPLE_MODE,
-    WHOLE_DATASET_MODE,
-)
+from settings.constants import CHAT_MODE, ONE_SAMPLE_MODE, WHOLE_DATASET_MODE
+from utils.strategies.base_strategy import ModeStrategies
 from utils.strategies.chat_mode import ChatModeStrategy
 from utils.strategies.one_sample_mode import OneTestModeStrategy
 from utils.strategies.whole_dataset_mode import WholeDatasetModeStrategy
-from utils.strategies.base_strategy import ModeStrategies
 
 
 class RunPromptStrategyMaker:

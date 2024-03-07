@@ -17,12 +17,11 @@ import logging
 import os
 from typing import Dict, List, Tuple
 
+from callbacks import app
 from dash import ALL, callback_context, html, no_update
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from flask import current_app
-
-from callbacks import app
 from layouts import (
     get_detailed_answer_column,
     get_filter_answers_layout,

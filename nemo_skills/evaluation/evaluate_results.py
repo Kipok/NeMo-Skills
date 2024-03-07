@@ -32,9 +32,7 @@ class EvaluateResultsConfig:
 
     # this is really a str | List[str] type, but that's not supported in OmegaConf
     # so keeping as str, since that's what comes from config
-    prediction_jsonl_files: str = II(
-        MISSING  # can specify multiple patters separated by space
-    )
+    prediction_jsonl_files: str = II(MISSING)  # can specify multiple patters separated by space
     sandbox: dict = field(default_factory=lambda: {'sandbox_type': 'local'})
     ignore_cache: bool = False
 

@@ -12,20 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import fields
 import json
-from copy import deepcopy
-from math import e
 import os
+from copy import deepcopy
+from dataclasses import fields
+from math import e
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
-from dash import ALL, html, no_update
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output, State
-from dash._callback import NoUpdate
-
 from callbacks import app
+from dash import ALL, html, no_update
+from dash._callback import NoUpdate
+from dash.dependencies import Input, Output, State
 from layouts import (
     get_few_shots_by_id_layout,
     get_query_params_layout,
@@ -41,18 +40,10 @@ from settings.constants import (
     QUESTION_FIELD,
     UNDEFINED,
 )
-from utils.common import (
-    get_examples,
-    get_test_data,
-    get_values_from_input_group,
-)
+from utils.common import get_examples, get_test_data, get_values_from_input_group
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
 
-from nemo_skills.inference.prompt.utils import (
-    PromptConfig,
-    context_templates,
-    get_prompt_config,
-)
+from nemo_skills.inference.prompt.utils import PromptConfig, context_templates, get_prompt_config
 
 
 @app.callback(
@@ -103,14 +94,8 @@ def add_example(
     if examples_type not in get_examples():
         get_examples()[examples_type] = []
     last_page = len(get_examples()[examples_type])
-    examples_type_keys = (
-        list(get_examples().keys())[0]
-        if not len(get_examples()[examples_type])
-        else examples_type
-    )
-    get_examples()[examples_type].append(
-        {key: "" for key in get_examples()[examples_type_keys][0].keys()}
-    )
+    examples_type_keys = list(get_examples().keys())[0] if not len(get_examples()[examples_type]) else examples_type
+    get_examples()[examples_type].append({key: "" for key in get_examples()[examples_type_keys][0].keys()})
     return (last_page + 1, last_page + 1)
 
 
@@ -136,12 +121,7 @@ def add_example(
 )
 def del_example(
     n_clicks: int, page: int, examples_type: str, view_mode: List[str]
-) -> Tuple[
-    Union[int, NoUpdate],
-    Union[int, NoUpdate],
-    Union[Tuple[html.Div], NoUpdate],
-    Union[int, NoUpdate],
-]:
+) -> Tuple[Union[int, NoUpdate], Union[int, NoUpdate], Union[Tuple[html.Div], NoUpdate], Union[int, NoUpdate],]:
     if not examples_type:
         examples_type = ""
     if examples_type not in get_examples():
@@ -195,11 +175,7 @@ def update_examples(
 
 
 @app.callback(
-    [
-        Output(field.name, "value")
-        for field in fields(PromptConfig)
-        if field.name not in IGNORE_PROMPT_FIELD
-    ],
+    [Output(field.name, "value") for field in fields(PromptConfig) if field.name not in IGNORE_PROMPT_FIELD],
     Input("prompt_type", "value"),
     prevent_initial_call=True,
 )
@@ -208,11 +184,7 @@ def update_prompt_type(
 ) -> Union[NoUpdate, dbc.AccordionItem]:
     prompt_types = [
         os.path.splitext(file)[0]
-        for file in os.listdir(
-            Path.joinpath(
-                Path(__file__).parents[2].absolute(), "nemo_skills/inference/prompt"
-            )
-        )
+        for file in os.listdir(Path.joinpath(Path(__file__).parents[2].absolute(), "nemo_skills/inference/prompt"))
         if os.path.splitext(file)[1] == '.yaml'
     ]
     if prompt_type not in prompt_types:
@@ -310,12 +282,8 @@ def get_run_test_results(
         utils["examples_type"] = ""
 
     try:
-        question_id = query_params_ids.index(
-            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD))
-        )
-        answer_id = query_params_ids.index(
-            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, ANSWER_FIELD))
-        )
+        question_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD)))
+        answer_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, ANSWER_FIELD)))
         question = query_params[question_id]
         expected_answer = query_params[answer_id]
     except ValueError:
@@ -369,9 +337,7 @@ def change_mode(run_mode: str, data_file: str) -> Tuple[List[dbc.AccordionItem],
     ],
     prevent_initial_call=True,
 )
-def prompt_search(
-    n_clicks: int, view_mode: str, data_file: str, index: int
-) -> Tuple[Union[List[str], NoUpdate]]:
+def prompt_search(n_clicks: int, view_mode: str, data_file: str, index: int) -> Tuple[Union[List[str], NoUpdate]]:
     key_values = get_test_data(index, data_file)[0].items()
     return [
         RunPromptStrategyMaker()
@@ -405,9 +371,7 @@ def preview(
 ) -> html.Pre:
     utils = get_values_from_input_group(utils)
     try:
-        question_id = query_params_ids.index(
-            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD))
-        )
+        question_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD)))
         question = query_params[question_id]
     except ValueError:
         question = ""

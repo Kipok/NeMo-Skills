@@ -29,9 +29,7 @@ class ChatModeStrategy(ModeStrategies):
     def get_utils_input_layout(self) -> List[dbc.AccordionItem]:
         inference_condition = lambda name, value: not isinstance(value, dict)
 
-        return super().get_utils_input_layout(
-            inference_condition, lambda name, value: False, True
-        )
+        return super().get_utils_input_layout(inference_condition, lambda name, value: False, True)
 
     def get_few_shots_input_layout(self) -> List[dbc.AccordionItem]:
         return []

@@ -17,7 +17,6 @@ from typing import Dict, List, Optional, Union
 
 import dash_bootstrap_components as dbc
 from dash import dcc, html
-
 from settings.constants import QUERY_INPUT_TYPE
 from utils.common import get_estimated_height, parse_model_answer
 from utils.decoration import design_text_output, highlight_code
@@ -70,9 +69,7 @@ def get_switch_layout(
                 "value": value,
                 "disabled": is_disabled,
             }
-            for label, value, is_disabled in itertools.zip_longest(
-                labels, values, disabled, fillvalue=False
-            )
+            for label, value, is_disabled in itertools.zip_longest(labels, values, disabled, fillvalue=False)
         ],
         value=[values[0]] if is_active else [],
         switch=True,
@@ -104,11 +101,7 @@ def get_input_group_layout(
     if input_function is dbc.Input:
         additional_params = validation_parameters(name, value)
     else:
-        height = (
-            {'height': get_estimated_height(value)}
-            if value != "" and str(value).strip() != ""
-            else {}
-        )
+        height = {'height': get_estimated_height(value)} if value != "" and str(value).strip() != "" else {}
         additional_params = {
             "style": {
                 'width': '100%',
@@ -130,19 +123,13 @@ def get_input_group_layout(
     )
 
 
-def get_text_area_layout(
-    key: str, value: str, view_mode: bool = False
-) -> Union[dbc.Textarea, html.Pre]:
+def get_text_area_layout(key: str, value: str, view_mode: bool = False) -> Union[dbc.Textarea, html.Pre]:
     component = dbc.Textarea
     if view_mode:
         component = html.Pre
 
     return component(
-        **(
-            {'children': get_single_prompt_output_layout(value)}
-            if view_mode
-            else {"value": value}
-        ),
+        **({'children': get_single_prompt_output_layout(value)} if view_mode else {"value": value}),
         id={
             "type": QUERY_INPUT_TYPE,
             "id": key,
@@ -193,9 +180,7 @@ def get_single_prompt_output_layout(answer: str) -> List[html.Div]:
     ]
 
 
-def get_results_content_layout(
-    text: str, content: str = None, style={}, switch_is_active: bool = False
-) -> html.Div:
+def get_results_content_layout(text: str, content: str = None, style={}, switch_is_active: bool = False) -> html.Div:
     return html.Div(
         [
             get_switch_layout(
