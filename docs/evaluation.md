@@ -19,7 +19,7 @@ different GPU types or with different inference frameworks.
      --num_gpus <number of GPUs on your machine/cluster node> \
      --num_nodes 1 \
      +prompt=code_sfted \
-     ++prompt.num_few_shots=0 \
+     ++prompt.few_shot_examples.num_few_shots=0 \
      ++split_name=test
    ```
 
@@ -28,8 +28,8 @@ different GPU types or with different inference frameworks.
 
    ```
    +prompt_type=code_base \
-   ++prompt.examples_type=gsm8k_text_with_code \
-   ++prompt.num_few_shots=5
+   ++prompt.few_shot_examples.examples_type=gsm8k_text_with_code \
+   ++prompt.few_shot_examples.num_few_shots=5
    ```
 
    If you need to, change the batch size with `batch_size=<X>` argument.
@@ -57,9 +57,9 @@ Let's break down what [pipeline/run_eval.py](/pipeline/run_eval.py) is doing.
 - Starts a local [sandbox](/docs/sandbox.md) which will handle code execution requests.
 - Starts an LLM server in a docker container (defined in the `NEMO_SKILLS_CONFIG` file).
 - Waits for the sandbox and server to start.
-- Runs [nemo_skills/inference/generate_solutions.py](nemo_skills/inference/generate_solutions.py) to
+- Runs [nemo_skills/inference/generate_solutions.py](/nemo_skills/inference/generate_solutions.py) to
   generate solutions for all benchmarks requested (potentially running multiple samples per benchmark).
-- Runs [nemo_skills/evaluation/evaluate_results.py](nemo_skills/evaluation/evaluate_results.py) on each
+- Runs [nemo_skills/evaluation/evaluate_results.py](/nemo_skills/evaluation/evaluate_results.py) on each
   of the generated output files.
 - If running in a Slurm cluster, you can parallelize evaluation across multiple nodes. You can also
   customize any of the parameters of evaluation - all extra arguments of the
@@ -84,7 +84,7 @@ the [quick start](#quick-start) section.
    Make sure to run this from the root of the repository. Same as above, this will block your shell.
 
    ```
-   docker run --rm --gpus all --ipc=host -v `pwd`:/code -v <path to the .nemo model>:/model igitman/nemo-skills-sft:0.1.0 \
+   docker run --rm --gpus all --ipc=host -v `pwd`:/code -v <path to the .nemo model>:/model igitman/nemo-skills-sft:0.2.0 \
    bash -c 'PYTHONPATH=/code python /code/nemo_skills/inference/server/serve_nemo.py \
      gpt_model_file=/model \
      trainer.devices=<number of GPUs> \
@@ -97,7 +97,7 @@ the [quick start](#quick-start) section.
    If you want to use TensorRT-LLM server instead, you can run the following command
 
    ```
-   docker run --rm --gpus all --ipc=host -v `pwd`:/code -v <path to the trtllm model>:/model igitman/nemo-skills-trtllm:0.1.0 \
+   docker run --rm --gpus all --ipc=host -v `pwd`:/code -v <path to the trtllm model>:/model igitman/nemo-skills-trtllm:0.2.0 \
    bash -c 'export PYTHONPATH=/code && \
    mpirun -n <number of GPUs> --allow-run-as-root python /code/nemo_skills/inference/server/serve_trt.py --model_path=/model'
    ```
@@ -108,8 +108,8 @@ the [quick start](#quick-start) section.
    python nemo_skills/inference/generate_solutions.py \
      output_file=./test-results/gsm8k/output-greedy.jsonl \
      +prompt=code_sfted \
-     ++prompt.examples_type=null \
-     ++prompt.num_few_shots=0 \
+     ++prompt.few_shot_examples.examples_type=null \
+     ++prompt.few_shot_examples.num_few_shots=0 \
      ++prompt.context_type=empty \
      ++dataset=gsm8k \
      ++split_name=test \
@@ -132,7 +132,7 @@ After this you would typically follow up with the same command to compute metric
 ## Typical customizations
 
 To customize the prompt template for the model, create a new .yaml file inside
-[nemo_skills/inference/prompt](nemo_skills/inference/prompt) folder. Have a look
+[nemo_skills/inference/prompt](/nemo_skills/inference/prompt) folder. Have a look
 at the existing templates there for an example.
 
 You can run `python nemo_skills/inference/generate_solutions.py --help`

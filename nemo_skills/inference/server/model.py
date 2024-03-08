@@ -20,7 +20,7 @@ import os
 import re
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Union
+from typing import List
 
 import requests
 
@@ -32,6 +32,8 @@ from nemo_skills.code_execution import (
 )
 from nemo_skills.code_execution.math_grader import extract_answer
 from nemo_skills.code_execution.sandbox import Sandbox
+from nemo_skills.inference.prompt.utils import Prompt
+from nemo_skills.utils import python_doc_to_cmd_help
 
 LOG = logging.getLogger(__name__)
 
@@ -46,6 +48,27 @@ def remove_stop_tokens(text: str, stop_phrases: List[str]) -> str:
 
 
 class BaseModel(abc.ABC):
+    """Base model class for handling requests to the inference server.
+
+    Args:
+        host: Optional[str] = '127.0.0.1' - Host of the inference server.
+        port: Optional[str] = '5000' - Port of the inference server.
+        sandbox: Optional[Sandbox] = None - Sandbox for executing code.
+            Only required if handle_code_execution is True.
+        ssh_server: Optional[str] = None - SSH server for tunneling requests.
+            Useful if server is running on slurm cluster to which there is an ssh access
+            Can also be specified through SSH_SERVER env var.
+        ssh_key_path: Optional[str] = None - Path to the ssh key for tunneling.
+            Can also be specified through SSH_KEY_PATH env var.
+        max_code_output_characters: Optional[int] = 1000 - Maximum number of characters for code execution output.
+        code_execution_timeout: Optional[float] = 10.0 - Timeout for code execution in seconds.
+        max_code_executions: Optional[int] = 3 - Maximum number of code executions per generation.
+        stop_on_code_error: Optional[bool] = True - Whether to stop generation if code execution fails.
+        handle_code_execution: Optional[bool] = True - Whether to handle code execution in this class
+            or make a single call to the server. If set to False, the server needs to have special logic
+            for communicating with the sandbox.
+    """
+
     def __init__(
         self,
         host='127.0.0.1',
@@ -58,7 +81,7 @@ class BaseModel(abc.ABC):
         max_code_executions=3,
         error_recovery_attempts=0,
         stop_on_code_error=True,
-        handle_code_execution=True,  # for some of the inference types (e.g. nemo), code execution is handled internally
+        handle_code_execution=True,
     ):
         self.server_host = host
         self.server_port = port
@@ -102,13 +125,6 @@ class BaseModel(abc.ABC):
         random_seed,
         stop_phrases: List[str],
     ):
-        # temperature of 0 means greedy, but it's not always supported by the server
-        # so setting explicit greedy parameters instead
-        if temperature == 0:
-            temperature = 1.0
-            top_k = 1
-            top_p = 1.0
-
         if self.handle_code_execution:
             full_stop_phrases = stop_phrases + [CODE_SEPARATORS[-1]]
         else:
@@ -178,23 +194,23 @@ class BaseModel(abc.ABC):
                         if result['error_message']:
                             new_outputs[idx]['error_message'] = result['error_message']
                             if self.stop_on_code_error:
-                                new_outputs[idx]['full_prompt'] += output
+                                new_outputs[idx]['full_prompt'].generate_solutions += output
                                 continue
                             text_only_part = output.split(CODE_SEPARATORS[0])[0]
-                            new_outputs[idx]['full_prompt'] += text_only_part
+                            new_outputs[idx]['full_prompt'].generate_solutions += text_only_part
                             code_output = self.__recover_from_error(request, new_outputs[idx], executor)
                             # if re-generation did not help
                             if code_output is None:
                                 code_output = result["result"]
-                                new_outputs[idx]['full_prompt'] += output[len(text_only_part) :]
+                                new_outputs[idx]['full_prompt'].generate_solutions += output[len(text_only_part) :]
                         else:
-                            new_outputs[idx]['full_prompt'] += output
+                            new_outputs[idx]['full_prompt'].generate_solutions += output
                             new_outputs[idx]['error_message'] = ''
                             code_output = result["result"]
 
                         # adding code output to the prompt
                         code_output = f'\n{CODE_OUTPUT_SEPARATORS[0]}\n{code_output}\n{CODE_OUTPUT_SEPARATORS[1]}\n'
-                        new_outputs[idx]['full_prompt'] += code_output
+                        new_outputs[idx]['full_prompt'].generate_solutions += code_output
                         # setting a limit on max code executions to speed things up
                         # (sometimes keeps repeating the same sequence forever)
                         if num_executions >= self.max_code_executions:
@@ -202,15 +218,15 @@ class BaseModel(abc.ABC):
                         else:
                             new_ids.append(idx)
                     else:
-                        new_outputs[idx]['full_prompt'] += output
+                        new_outputs[idx]['full_prompt'].generate_solutions += output
                 remaining_ids = new_ids
 
         # removing original prompt and stop tokens from the end of the generated text
         outputs = []
-        for original_prompt, output in zip(prompts, new_outputs):
+        for output in new_outputs:
             if output['session_id'] is not None:
                 self.sandbox.clear_session(output['session_id'])
-            generated_solution = remove_stop_tokens(output['full_prompt'][len(original_prompt) :], stop_phrases)
+            generated_solution = remove_stop_tokens(output['full_prompt'].generated_solution, stop_phrases)
             outputs.append(
                 {
                     'generated_solution': generated_solution,
@@ -268,6 +284,13 @@ class BaseModel(abc.ABC):
         return most_common
 
     def _send_request(self, request):
+        # temperature of 0 means greedy, but it's not always supported by the server
+        # so setting explicit greedy parameters instead
+        if request["temperature"] == 0:
+            request["temperature"] = 1.0
+            request["top_k"] = 1
+            request["top_p"] = 1.0
+
         if self.ssh_server and self.ssh_key_path:
             import sshtunnel_requests
 
@@ -299,8 +322,9 @@ class TensorRTLLMModel(BaseModel):
         random_seed,
         stop_phrases: List[str],
     ):
+        string_prompts = [str(prompt) for prompt in prompts]
         request = {
-            "prompts": prompts,
+            "prompts": string_prompts,
             "tokens_to_generate": tokens_to_generate,
             "temperature": temperature,
             "top_k": top_k,
@@ -332,8 +356,9 @@ class NemoModel(BaseModel):
         random_seed,
         stop_phrases: List[str],
     ):
+        string_prompts = [str(prompt) for prompt in prompts]
         request = {
-            "sentences": prompts,
+            "sentences": string_prompts,
             "tokens_to_generate": tokens_to_generate,
             "temperature": temperature,
             "top_k": top_k,
@@ -346,17 +371,102 @@ class NemoModel(BaseModel):
         outputs = outputs['sentences']
         # always returns full prompt, so we need to remove the original prompt
         for idx, output in enumerate(outputs):
-            outputs[idx] = output[len(prompts[idx]) :]
+            outputs[idx] = output[len(string_prompts[idx]) :]
         return outputs
+
+
+class OpenAIModel(BaseModel):
+    def __init__(
+        self,
+        model,
+        api_key=None,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        from openai import OpenAI
+
+        if api_key is None:
+            api_key = os.getenv("OPENAI_API_KEY", api_key)
+
+        self.model = model
+        self.client = OpenAI(api_key=api_key)
+
+    def _single_call(
+        self,
+        prompts,
+        tokens_to_generate,
+        temperature,
+        top_p,
+        repetition_penalty,
+        random_seed,
+        stop_phrases: List[str],
+        top_k=0,  # is not supported by OpenAI
+    ):
+        if top_k != 0:
+            raise ValueError("`top_k` is not supported by OpenAI, please set it to default value `0`.")
+
+        responses = []
+        for prompt in prompts:
+            response = self._send_request(
+                prompt=prompt,
+                tokens_to_generate=tokens_to_generate,
+                temperature=temperature,
+                top_p=top_p,
+                repetition_penalty=repetition_penalty,
+                random_seed=random_seed,
+                stop_phrases=stop_phrases,
+            )
+            responses.append(response)
+        return responses
+
+    def _send_request(
+        self,
+        prompt: Prompt,
+        tokens_to_generate,
+        temperature,
+        top_p,
+        repetition_penalty,
+        random_seed,
+        stop_phrases: List[str],
+    ):
+        messages = prompt.build_chat_prompt()
+        response = self.client.chat.completions.create(
+            model=self.model,
+            temperature=temperature,
+            top_p=top_p,
+            max_tokens=tokens_to_generate,
+            presence_penalty=repetition_penalty,
+            seed=random_seed,
+            stop=stop_phrases,
+            messages=messages,
+        ).choices[0]
+        content = response.message.content
+
+        # OpenAI removes stop tokens so we need to add them back
+        if (
+            response.finish_reason == "stop"
+            and content.find(CODE_SEPARATORS[0]) != -1
+            and not content[content.find(CODE_SEPARATORS[0]) :].count(CODE_SEPARATORS[-1])
+        ):
+            content += CODE_SEPARATORS[-1]
+
+        return content
 
 
 models = {
     'tensorrt_llm': TensorRTLLMModel,
     'nemo': NemoModel,
+    'openai': OpenAIModel,
 }
 
 
 def get_model(server_type, **kwargs):
-    """A helper function to make it easier to set server type through cmd."""
+    """A helper function to make it easier to set server through cmd."""
     model_class = models[server_type.lower()]
     return model_class(**kwargs)
+
+
+def server_params():
+    """Returns server documentation (to include in cmd help)."""
+    prefix = f'\n        server_type: str = MISSING - Choices: {list(models.keys())}'
+    return python_doc_to_cmd_help(BaseModel, docs_prefix=prefix, arg_prefix="server.")
