@@ -134,6 +134,8 @@ def get_compare_test_layout() -> html.Div:
                 children=[],
                 id="compare_models_rows",
             ),
+            dbc.Container(id="js_trigger", style={'display': 'none'}, children=""),
+            dbc.Container(id="js_container"),
         ],
     )
 

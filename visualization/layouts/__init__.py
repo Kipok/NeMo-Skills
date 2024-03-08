@@ -12,13 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from layouts.analyze_page_layouts import (
-    get_compare_test_layout,
-    get_few_shots_layout,
-    get_models_options_layout,
-    get_stats_text,
-    get_utils_layout,
-)
 from layouts.base_layouts import (
     get_input_group_layout,
     get_main_page_layout,
@@ -27,12 +20,6 @@ from layouts.base_layouts import (
     get_switch_layout,
     get_text_area_layout,
     get_utils_field_representation,
-)
-from layouts.run_prompt_page_layouts import (
-    get_few_shots_by_id_layout,
-    get_query_params_layout,
-    get_run_mode_layout,
-    get_run_test_layout,
 )
 from layouts.table_layouts import (
     get_detailed_answer_column,
@@ -49,4 +36,17 @@ from layouts.table_layouts import (
     get_stats_layout,
     get_table_data,
     get_table_detailed_inner_data,
+)
+from layouts.analyze_page_layouts import (
+    get_compare_test_layout,
+    get_few_shots_layout,
+    get_models_options_layout,
+    get_stats_text,
+    get_utils_layout,
+)
+from layouts.run_prompt_page_layouts import (
+    get_few_shots_by_id_layout,
+    get_query_params_layout,
+    get_run_mode_layout,
+    get_run_test_layout,
 )

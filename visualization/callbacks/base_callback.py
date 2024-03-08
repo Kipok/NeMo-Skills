@@ -18,7 +18,7 @@ from callbacks import app
 from dash import html
 from dash.dependencies import Input, Output
 from layouts import get_compare_test_layout, get_run_test_layout
-from utils.common import get_data_from_files
+from utils.common import get_data_from_files, get_height_adjustment
 
 
 @app.callback(
@@ -35,3 +35,12 @@ def nav_click(url: str) -> Tuple[html.Div, bool, bool]:
     elif url == "/analyze":
         get_data_from_files(datetime.now())
         return get_compare_test_layout(), False, True
+
+
+@app.callback(
+    Output("js_container", "children", allow_duplicate=True),
+    [Input("page_content", "children"), Input("js_trigger", "children")],
+    prevent_initial_call=True,
+)
+def adjust_text_area_height(content: html.Div, trigger: str) -> html.Iframe:
+    return get_height_adjustment()

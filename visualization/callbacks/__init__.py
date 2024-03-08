@@ -19,14 +19,16 @@ from pathlib import Path
 import dash_bootstrap_components as dbc
 import hydra
 from dash import Dash
-from django import conf
 from flask import Flask
 from omegaconf import MISSING, OmegaConf
 from settings.config import Config
 from settings.constants import IGNORE_PROMPT_FIELD, UNDEFINED
 
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
-from nemo_skills.inference.prompt.utils import context_templates, get_prompt, get_prompt_config
+from nemo_skills.inference.prompt.utils import (
+    context_templates,
+    get_prompt_config,
+)
 
 config_path = os.path.join(os.path.abspath(Path(__file__).parents[1]), "settings")
 
@@ -41,7 +43,12 @@ def set_config(cfg: Config) -> None:
 
     prompt_types = [
         os.path.splitext(file)[0]
-        for file in os.listdir(Path.joinpath(Path(__file__).parents[2].absolute(), "nemo_skills/inference/prompt"))
+        for file in os.listdir(
+            Path.joinpath(
+                Path(__file__).parents[2].absolute(),
+                "nemo_skills/inference/prompt",
+            )
+        )
         if os.path.splitext(file)[1] == '.yaml'
     ]
 
@@ -62,8 +69,13 @@ def set_config(cfg: Config) -> None:
     config['data_explorer'] = asdict(OmegaConf.to_object(cfg))
 
     for param in ['host', 'ssh_server', 'ssh_key_path']:
-        if param not in config['data_explorer']['sandbox'] and param in config['data_explorer']['server']:
-            config['data_explorer']['sandbox'][param] = config['data_explorer']['server'][param]
+        if (
+            param not in config['data_explorer']['sandbox']
+            and param in config['data_explorer']['server']
+        ):
+            config['data_explorer']['sandbox'][param] = config['data_explorer']['server'][
+                param
+            ]
 
     config['data_explorer']['prompt']['prompt_type'] = prompt_type
 

@@ -105,5 +105,7 @@ def get_run_test_layout() -> html.Div:
                 type='circle',
                 style={'margin-top': '50px'},
             ),
+            dbc.Container(id="js_trigger", style={'display': 'none'}, children=""),
+            dbc.Container(id="js_container"),
         ]
     )

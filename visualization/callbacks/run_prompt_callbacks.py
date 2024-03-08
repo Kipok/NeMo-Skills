@@ -13,10 +13,10 @@
 # limitations under the License.
 
 import json
+from copy import deepcopy
 import os
 from copy import deepcopy
 from dataclasses import fields
-from math import e
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -43,12 +43,31 @@ from settings.constants import (
 from utils.common import get_examples, get_test_data, get_values_from_input_group
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
 
-from nemo_skills.inference.prompt.utils import PromptConfig, context_templates, get_prompt_config
+from nemo_skills.inference.prompt.utils import (
+    PromptConfig,
+    context_templates,
+    get_prompt_config,
+)
+
+
+@app.callback(
+    [
+        Output("js_container", "children", allow_duplicate=True),
+        Output("js_trigger", "children", allow_duplicate=True),
+    ],
+    Input("prompt_params_input", "active_item"),
+    State("js_trigger", "children"),
+    prevent_initial_call=True,
+)
+def trigger_js(active_item: str, js_trigger: str) -> Tuple[str, str]:
+    return "", js_trigger + " "
 
 
 @app.callback(
     [
         Output("few_shots_pagination_content", "children"),
+        Output("js_container", "children", allow_duplicate=True),
+        Output("js_trigger", "children", allow_duplicate=True),
     ],
     [
         Input("few_shots_pagination", "active_page"),
@@ -60,18 +79,22 @@ from nemo_skills.inference.prompt.utils import PromptConfig, context_templates, 
             "value",
         ),
     ],
-    [
-        State('examples_type', "value"),
-    ],
+    [State('examples_type', "value"), State("js_trigger", "children")],
+    prevent_initial_call=True,
 )
 def change_examples_page(
     page: int,
     view_mode: bool,
     examples_type: str,
+    js_trigger: str,
 ) -> Tuple[Tuple[html.Div], int]:
     if not examples_type:
         examples_type = ""
-    return [get_few_shots_by_id_layout(page, examples_type, view_mode and len(view_mode))]
+    return (
+        get_few_shots_by_id_layout(page, examples_type, view_mode and len(view_mode)),
+        '',
+        js_trigger + '',
+    )
 
 
 @app.callback(
@@ -94,8 +117,14 @@ def add_example(
     if examples_type not in get_examples():
         get_examples()[examples_type] = []
     last_page = len(get_examples()[examples_type])
-    examples_type_keys = list(get_examples().keys())[0] if not len(get_examples()[examples_type]) else examples_type
-    get_examples()[examples_type].append({key: "" for key in get_examples()[examples_type_keys][0].keys()})
+    examples_type_keys = (
+        list(get_examples().keys())[0]
+        if not len(get_examples()[examples_type])
+        else examples_type
+    )
+    get_examples()[examples_type].append(
+        {key: "" for key in get_examples()[examples_type_keys][0].keys()}
+    )
     return (last_page + 1, last_page + 1)
 
 
@@ -104,6 +133,8 @@ def add_example(
         Output("few_shots_pagination", "max_value", allow_duplicate=True),
         Output("few_shots_pagination", "active_page", allow_duplicate=True),
         Output("few_shots_pagination_content", "children", allow_duplicate=True),
+        Output("js_container", "children", allow_duplicate=True),
+        Output("js_trigger", "children", allow_duplicate=True),
     ],
     [Input("del_example_button", "n_clicks")],
     [
@@ -116,12 +147,22 @@ def add_example(
             },
             "value",
         ),
+        State("js_trigger", "children"),
     ],
     prevent_initial_call=True,
 )
 def del_example(
-    n_clicks: int, page: int, examples_type: str, view_mode: List[str]
-) -> Tuple[Union[int, NoUpdate], Union[int, NoUpdate], Union[Tuple[html.Div], NoUpdate], Union[int, NoUpdate],]:
+    n_clicks: int,
+    page: int,
+    examples_type: str,
+    view_mode: List[str],
+    js_trigger: str,
+) -> Tuple[
+    Union[int, NoUpdate],
+    Union[int, NoUpdate],
+    Union[Tuple[html.Div], NoUpdate],
+    Union[int, NoUpdate],
+]:
     if not examples_type:
         examples_type = ""
     if examples_type not in get_examples():
@@ -134,12 +175,10 @@ def del_example(
             last_page - 1,
             prev_pagination_page,
             get_few_shots_by_id_layout(prev_pagination_page, examples_type, view_mode),
+            '',
+            js_trigger + ' ',
         )
-    return (
-        no_update,
-        no_update,
-        no_update,
-    )
+    return (no_update, no_update, no_update, no_update, no_update)
 
 
 @app.callback(
@@ -175,16 +214,30 @@ def update_examples(
 
 
 @app.callback(
-    [Output(field.name, "value") for field in fields(PromptConfig) if field.name not in IGNORE_PROMPT_FIELD],
+    [
+        Output(field.name, "value")
+        for field in fields(PromptConfig)
+        if field.name not in IGNORE_PROMPT_FIELD
+    ]
+    + [
+        Output("js_container", "children", allow_duplicate=True),
+        Output("js_trigger", "children", allow_duplicate=True),
+    ],
     Input("prompt_type", "value"),
+    State("js_trigger", "children"),
     prevent_initial_call=True,
 )
 def update_prompt_type(
-    prompt_type: str,
+    prompt_type: str, js_trigger: str
 ) -> Union[NoUpdate, dbc.AccordionItem]:
     prompt_types = [
         os.path.splitext(file)[0]
-        for file in os.listdir(Path.joinpath(Path(__file__).parents[2].absolute(), "nemo_skills/inference/prompt"))
+        for file in os.listdir(
+            Path.joinpath(
+                Path(__file__).parents[2].absolute(),
+                "nemo_skills/inference/prompt",
+            )
+        )
         if os.path.splitext(file)[1] == '.yaml'
     ]
     if prompt_type not in prompt_types:
@@ -195,15 +248,21 @@ def update_prompt_type(
         get_utils_field_representation(getattr(prompt_config, field.name))
         for field in fields(prompt_config)
         if field.name not in IGNORE_PROMPT_FIELD
-    ]
+    ] + ['', js_trigger + " "]
 
 
 @app.callback(
-    Output("few_shots_div", "children"),
+    [
+        Output("few_shots_div", "children"),
+        Output("js_container", "children", allow_duplicate=True),
+        Output("js_trigger", "children", allow_duplicate=True),
+    ],
     Input("examples_type", "value"),
+    State("js_trigger", "children"),
+    prevent_initial_call=True,
 )
 def update_examples_type(
-    examples_type: str,
+    examples_type: str, js_trigger: str
 ) -> Union[NoUpdate, dbc.AccordionItem]:
     if not examples_type:
         examples_type = ""
@@ -213,17 +272,27 @@ def update_examples_type(
             [],
         )
     )
-    return RunPromptStrategyMaker().get_strategy().get_few_shots_div_layout(size)
+    return (
+        RunPromptStrategyMaker().get_strategy().get_few_shots_div_layout(size),
+        "",
+        js_trigger + " ",
+    )
 
 
 @app.callback(
-    Output("context_templates", "value"),
+    [
+        Output("context_templates", "value"),
+        Output("js_container", "children", allow_duplicate=True),
+        Output("js_trigger", "children", allow_duplicate=True),
+    ],
     Input("context_type", "value"),
+    State("js_trigger", "children"),
+    prevent_initial_call=True,
 )
 def update_context_type(
-    context_type: str,
+    context_type: str, js_trigger: str
 ) -> Union[NoUpdate, dbc.AccordionItem]:
-    return context_templates.get(context_type, no_update)
+    return context_templates.get(context_type, no_update), "", js_trigger + " "
 
 
 @app.callback(
@@ -282,8 +351,12 @@ def get_run_test_results(
         utils["examples_type"] = ""
 
     try:
-        question_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD)))
-        answer_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, ANSWER_FIELD)))
+        question_id = query_params_ids.index(
+            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD))
+        )
+        answer_id = query_params_ids.index(
+            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, ANSWER_FIELD))
+        )
         question = query_params[question_id]
         expected_answer = query_params[answer_id]
     except ValueError:
@@ -307,19 +380,30 @@ def get_run_test_results(
 @app.callback(
     [
         Output("prompt_params_input", "children", allow_duplicate=True),
+        Output("js_container", "children", allow_duplicate=True),
+        Output("js_trigger", "children", allow_duplicate=True),
         Output("results_content", "children", allow_duplicate=True),
     ],
     Input("run_mode_options", "value"),
-    State("data_file", "value"),
+    [State("data_file", "value"), State("js_trigger", "children")],
     prevent_initial_call=True,
 )
-def change_mode(run_mode: str, data_file: str) -> Tuple[List[dbc.AccordionItem], None]:
-    return get_query_params_layout(run_mode, data_file), None
+def change_mode(
+    run_mode: str, data_file: str, js_trigger: str
+) -> Tuple[List[dbc.AccordionItem], None]:
+    return (
+        get_query_params_layout(run_mode, data_file),
+        "",
+        js_trigger + ' ',
+        None,
+    )
 
 
 @app.callback(
     [
         Output("query_input_children", "children", allow_duplicate=True),
+        Output("js_container", "children", allow_duplicate=True),
+        Output("js_trigger", "children", allow_duplicate=True),
     ],
     [
         Input("query_search_button", "n_clicks"),
@@ -332,21 +416,23 @@ def change_mode(run_mode: str, data_file: str) -> Tuple[List[dbc.AccordionItem],
         ),
         Input("data_file", "value"),
     ],
-    [
-        State("query_search_input", "value"),
-    ],
+    [State("query_search_input", "value"), State("js_trigger", "children")],
     prevent_initial_call=True,
 )
-def prompt_search(n_clicks: int, view_mode: str, data_file: str, index: int) -> Tuple[Union[List[str], NoUpdate]]:
+def prompt_search(
+    n_clicks: int, view_mode: str, data_file: str, index: int, js_trigger: str
+) -> Tuple[Union[List[str], NoUpdate]]:
     key_values = get_test_data(index, data_file)[0].items()
-    return [
+    return (
         RunPromptStrategyMaker()
         .get_strategy()
         .get_query_input_children_layout(
             key_values,
             view_mode,
-        )
-    ]
+        ),
+        "",
+        js_trigger + " ",
+    )
 
 
 @app.callback(
@@ -371,7 +457,9 @@ def preview(
 ) -> html.Pre:
     utils = get_values_from_input_group(utils)
     try:
-        question_id = query_params_ids.index(json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD)))
+        question_id = query_params_ids.index(
+            json.loads(QUERY_INPUT_ID.format(QUERY_INPUT_TYPE, QUESTION_FIELD))
+        )
         question = query_params[question_id]
     except ValueError:
         question = ""

@@ -29,12 +29,16 @@ from layouts import (
     get_switch_layout,
     get_text_area_layout,
 )
-from settings.constants import QUERY_INPUT_TYPE, UNDEFINED
 from utils.common import get_examples
+from settings.constants import QUERY_INPUT_TYPE
 
 from nemo_skills.code_execution.sandbox import get_sandbox
 from nemo_skills.inference.generate_solutions import InferenceConfig
-from nemo_skills.inference.prompt.utils import PromptConfig, context_templates, get_prompt
+from nemo_skills.inference.prompt.utils import (
+    PromptConfig,
+    context_templates,
+    get_prompt,
+)
 from nemo_skills.inference.server.model import get_model
 
 
@@ -56,24 +60,32 @@ class ModeStrategies:
         disabled: bool = False,
         additional_config_values: List[Tuple[str, Union[str, int, float, bool]]] = [],
     ) -> List[dbc.AccordionItem]:
-        self.config['prompt']['context_templates'] = context_templates[self.config["prompt"]["context_type"]]
+        self.config['prompt']['context_templates'] = context_templates[
+            self.config["prompt"]["context_type"]
+        ]
         input_group_layout = html.Div(
             (
                 [
                     get_input_group_layout(name, value, dbc.Input)
-                    for name, value in list(self.config["inference"].items()) + additional_config_values
+                    for name, value in list(self.config["inference"].items())
+                    + additional_config_values
                     if inference_condition(name, value)
                 ]
                 + [
                     dbc.InputGroup(
                         [
                             dbc.InputGroupText(param_name),
-                            get_selector_layout(self.config['types'][param_name], param_name, value),
+                            get_selector_layout(
+                                self.config['types'][param_name],
+                                param_name,
+                                value,
+                            ),
                         ],
                         style={"margin-bottom": "15px"},
                     )
                     for param_name, value in self.config["prompt"].items()
-                    if prompt_condition(param_name, value) and param_name in self.config['types'].keys()
+                    if prompt_condition(param_name, value)
+                    and param_name in self.config['types'].keys()
                 ]
                 + [
                     get_input_group_layout(param_name, value, dbc.Textarea)
@@ -233,7 +245,9 @@ class ModeStrategies:
         try:
             color = (
                 'green'
-                if self.sandbox.is_output_correct(outputs[0]['predicted_answer'], params["expected_answer"])
+                if self.sandbox.is_output_correct(
+                    outputs[0]['predicted_answer'], params["expected_answer"]
+                )
                 else "red"
             )
         except Exception as e:
@@ -249,10 +263,17 @@ class ModeStrategies:
         )
 
     def get_prompt(self, utils: Dict, question: str) -> str:
-        prompt_config = {key: value for key, value in utils.items() if key in self.config['prompt'].keys()}
+        utils.pop('prompt_type')
+        prompt_config = {
+            key: value
+            for key, value in utils.items()
+            if key in self.config['prompt'].keys()
+        }
 
         prompt_config['context'] = utils['context_templates']
-        prompt_config['examples'] = get_examples().get(utils['examples_type'] if utils['examples_type'] else "", [])
+        prompt_config['examples'] = get_examples().get(
+            utils['examples_type'] if utils['examples_type'] else "", []
+        )
 
         prompt = get_prompt(
             PromptConfig(**prompt_config),
@@ -288,7 +309,8 @@ class ModeStrategies:
         return html.Div(
             html.P(
                 [
-                    "Could not connect to the server. " "Please check that the server is running (look at ",
+                    "Could not connect to the server. "
+                    "Please check that the server is running (look at ",
                     html.A(
                         "inference.md",
                         href="https://github.com/Kipok/NeMo-Skills/blob/main/docs/inference.md",
