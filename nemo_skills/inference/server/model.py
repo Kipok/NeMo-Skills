@@ -194,23 +194,23 @@ class BaseModel(abc.ABC):
                         if result['error_message']:
                             new_outputs[idx]['error_message'] = result['error_message']
                             if self.stop_on_code_error:
-                                new_outputs[idx]['full_prompt'].generate_solutions += output
+                                new_outputs[idx]['full_prompt'].generated_solutions += output
                                 continue
                             text_only_part = output.split(CODE_SEPARATORS[0])[0]
-                            new_outputs[idx]['full_prompt'].generate_solutions += text_only_part
+                            new_outputs[idx]['full_prompt'].generated_solutions += text_only_part
                             code_output = self.__recover_from_error(request, new_outputs[idx], executor)
                             # if re-generation did not help
                             if code_output is None:
                                 code_output = result["result"]
-                                new_outputs[idx]['full_prompt'].generate_solutions += output[len(text_only_part) :]
+                                new_outputs[idx]['full_prompt'].generated_solutions += output[len(text_only_part) :]
                         else:
-                            new_outputs[idx]['full_prompt'].generate_solutions += output
+                            new_outputs[idx]['full_prompt'].generated_solutions += output
                             new_outputs[idx]['error_message'] = ''
                             code_output = result["result"]
 
                         # adding code output to the prompt
                         code_output = f'\n{CODE_OUTPUT_SEPARATORS[0]}\n{code_output}\n{CODE_OUTPUT_SEPARATORS[1]}\n'
-                        new_outputs[idx]['full_prompt'].generate_solutions += code_output
+                        new_outputs[idx]['full_prompt'].generated_solutions += code_output
                         # setting a limit on max code executions to speed things up
                         # (sometimes keeps repeating the same sequence forever)
                         if num_executions >= self.max_code_executions:
@@ -218,7 +218,7 @@ class BaseModel(abc.ABC):
                         else:
                             new_ids.append(idx)
                     else:
-                        new_outputs[idx]['full_prompt'].generate_solutions += output
+                        new_outputs[idx]['full_prompt'].generated_solutions += output
                 remaining_ids = new_ids
 
         # removing original prompt and stop tokens from the end of the generated text
