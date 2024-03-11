@@ -16,6 +16,8 @@ function registerTextarea() {
     var textareas = document.querySelectorAll("textarea");
     textareas.forEach(function(textarea) {
         function updateHeight() {
+            textarea.style.height = 0 + 'px';
+
             var height = Math.max(textarea.scrollHeight, textarea.offsetHeight,
                             textarea.clientHeight);
 

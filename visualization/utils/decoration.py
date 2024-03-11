@@ -16,6 +16,7 @@ import random
 import re
 import string
 
+from ansi2html import Ansi2HTMLConverter
 from dash import dcc, html
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
@@ -23,13 +24,20 @@ from pygments.lexers import PythonLexer
 
 
 def design_text_output(text: str, style={}):
+    conv = Ansi2HTMLConverter()
+    text = conv.convert(text, full=False)
+
     def add_marker_to_lines(match):
         lines = match.group(1).strip().split('\n')
         if len(lines) == 1:
             marked_lines = lines
         else:
             marked_lines = [
-                ("$$" + line if i == len(lines) - 1 else line + "$$" if i == 0 else "$$" + line + "$$")
+                (
+                    "$$" + line
+                    if i == len(lines) - 1
+                    else line + "$$" if i == 0 else "$$" + line + "$$"
+                )
                 for i, line in enumerate(lines)
             ]
         return '$$' + '\n'.join(marked_lines) + '$$'
@@ -51,6 +59,7 @@ def design_text_output(text: str, style={}):
             dcc.Markdown(
                 line,
                 mathjax=True,
+                dangerously_allow_html=True,
             )
             for line in formatted_text.split('\n')
         ],
@@ -66,7 +75,7 @@ def highlight_code(code: str) -> html.Iframe:
         "border": "none",
         "overflow": "hidden",
         "border": "black 1px solid",
-        "background-color": "#CCD1E0",
+        "background-color": "#ebecf0d8",
     }
 
     iframe_id = ''.join(random.choices(string.ascii_letters + string.digits, k=20))

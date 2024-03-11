@@ -41,10 +41,7 @@ datasets = [
 @dataclass
 class FewShotExamples:
     template: str = MISSING
-    context_type: str = "empty"
-    context: Optional[str] = None
     examples_type: Optional[str] = None
-    examples: Optional[List[Dict[str, str]]] = None
     num_few_shots: int = 5
 
 

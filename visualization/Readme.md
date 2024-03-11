@@ -12,7 +12,7 @@ This page allows for the analysis of model answers depending on different parame
 To use the Analyze page, you need to specify paths to the datasets you want to analyze (if you did not get the data through the "Inference" page). You can pass parameters via command line  `++visualization_params.model_prediction.model1='/some_path/model1/output-greedy.jsonl'` or modify [visualization_config.yaml](/visualization/settings/visualization_config.yaml)
 ```yaml
 visualization_params:
-  prediction_jsonl_files:
+  model_prediction:
     model1: /some_path/model1/output-greedy.jsonl
     model2: /some_path/model2/output-rs*.jsonl
 ```

@@ -17,7 +17,7 @@ import logging
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional
 
 import hydra
 from omegaconf import OmegaConf
@@ -71,6 +71,7 @@ class GenerateSolutionsConfig:
     data_file: Optional[str] = (
         None  # Can directly specify a data file, if using a custom dataset
     )
+    example_dicts: Optional[List[Dict]] = None
 
     batch_size: int = 16
     max_samples: int = (
@@ -150,7 +151,9 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
             if idx == cfg.max_samples:
                 break
 
-            prompts.append(Prompt(cfg.prompt, data_point, context_template=cfg.context))
+            prompts.append(
+                Prompt(cfg.prompt, data_point, example_dicts=cfg.example_dicts)
+            )
 
             data_points.append(data_point)
 

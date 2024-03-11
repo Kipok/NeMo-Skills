@@ -23,7 +23,7 @@ from flask import Flask
 import hydra
 from omegaconf import MISSING, OmegaConf, DictConfig
 
-from visualization.settings.config import Config
+from settings.config import Config
 from settings.constants import UNDEFINED
 
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
@@ -119,4 +119,4 @@ app = Dash(
 
 from callbacks.base_callback import nav_click
 from callbacks.run_prompt_callbacks import add_example
-from callbacks.table_callbacks import choose_base_model
+from callbacks.analyze_callbacks import choose_base_model

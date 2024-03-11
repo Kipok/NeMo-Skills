@@ -281,7 +281,7 @@ def apply_new_stat(
     if base_model == CHOOSE_MODEL:
         return []
     calculate_metrics_for_whole_data(get_table_data(), base_model)
-    return get_model_answers_table_layout(base_model=base_model, use_current=True)
+    return (get_model_answers_table_layout(base_model=base_model, use_current=True),)
 
 
 @app.callback(
