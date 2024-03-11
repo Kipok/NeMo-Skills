@@ -17,11 +17,18 @@ from typing import Dict, List, Optional, Union
 
 import dash_bootstrap_components as dbc
 from dash import dcc, html
+<<<<<<< HEAD
 from settings.constants import QUERY_INPUT_TYPE
 from utils.common import (
     parse_model_answer,
 )
 from utils.decoration import design_text_output, highlight_code
+=======
+from utils.common import get_estimated_height, parse_model_answer
+from utils.decoration import design_text_output, highlight_code
+
+from visualization.settings.constants import QUERY_INPUT_TYPE
+>>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
 
 
 def get_main_page_layout() -> html.Div:
@@ -71,9 +78,13 @@ def get_switch_layout(
                 "value": value,
                 "disabled": is_disabled,
             }
+<<<<<<< HEAD
             for label, value, is_disabled in itertools.zip_longest(
                 labels, values, disabled, fillvalue=False
             )
+=======
+            for label, values, is_disabled in itertools.zip_longest(labels, values, disabled, fillvalue=False)
+>>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
         ],
         value=[values[0]] if is_active else [],
         switch=True,
@@ -105,6 +116,10 @@ def get_input_group_layout(
     if input_function is dbc.Input:
         additional_params = validation_parameters(name, value)
     else:
+<<<<<<< HEAD
+=======
+        height = {'height': get_estimated_height(value)} if value != "" and str(value).strip() != "" else {}
+>>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
         additional_params = {
             "style": {
                 'width': '100%',
@@ -115,7 +130,11 @@ def get_input_group_layout(
         [
             dbc.InputGroupText(name),
             input_function(
+<<<<<<< HEAD
                 value=get_utils_field_representation(value),
+=======
+                value=(value if value == "" or str(value).strip() != "" else repr(value)[1:-1]),
+>>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
                 id=name,
                 **additional_params,
                 debounce=True,
@@ -125,19 +144,13 @@ def get_input_group_layout(
     )
 
 
-def get_text_area_layout(
-    key: str, value: str, view_mode: bool = False
-) -> Union[dbc.Textarea, html.Pre]:
+def get_text_area_layout(key: str, value: str, view_mode: bool = False) -> Union[dbc.Textarea, html.Pre]:
     component = dbc.Textarea
     if view_mode:
         component = html.Pre
 
     return component(
-        **(
-            {'children': get_single_prompt_output_layout(value)}
-            if view_mode
-            else {"value": value}
-        ),
+        **({'children': get_single_prompt_output_layout(value)} if view_mode else {"value": value}),
         id={
             "type": QUERY_INPUT_TYPE,
             "id": key,

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+=======
+>>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
 import datetime
 import functools
 import json
@@ -123,18 +126,14 @@ def parse_model_answer(answer: str) -> List[Dict]:
             parsed_results.append(
                 {
                     'explanation': trailing_text[0:code_start_index].strip(),
-                    'code': trailing_text[
-                        code_start_index + len(code_start.replace("\\", "")) :
-                    ],
+                    'code': trailing_text[code_start_index + len(code_start.replace("\\", "")) :],
                     'output': "code_block was not finished",
                     'wrong_code_block': True,
                 }
             )
             trailing_text = None
         if trailing_text:
-            parsed_results.append(
-                {'explanation': trailing_text, 'code': None, 'output': None}
-            )
+            parsed_results.append({'explanation': trailing_text, 'code': None, 'output': None})
     return parsed_results
 
 
@@ -174,10 +173,7 @@ def get_values_from_input_group(children: Iterable) -> Dict:
     values = {}
     for child in children:
         for input_group_child in child["props"]["children"]:
-            if (
-                "id" in input_group_child["props"].keys()
-                and "value" in input_group_child["props"].keys()
-            ):
+            if "id" in input_group_child["props"].keys() and "value" in input_group_child["props"].keys():
                 type_function = str
                 value = input_group_child["props"]["value"]
 
@@ -186,9 +182,7 @@ def get_values_from_input_group(children: Iterable) -> Dict:
                 elif str(value).replace(".", "", 1).replace("-", "", 1).isdigit():
                     type_function = float
 
-                values[input_group_child["props"]["id"]] = type_function(
-                    str(value).replace('\\n', '\n')
-                )
+                values[input_group_child["props"]["id"]] = type_function(str(value).replace('\\n', '\n'))
 
     return values
 
@@ -281,9 +275,7 @@ def custom_deepcopy(data) -> List:
     for item in data:
         new_item = {}
         for key, value_list in item.items():
-            new_value_list = [
-                {k: v for k, v in sub_item.items()} for sub_item in value_list
-            ]
+            new_value_list = [{k: v for k, v in sub_item.items()} for sub_item in value_list]
             new_item[key] = new_value_list
         new_data.append(new_item)
     return new_data
@@ -351,8 +343,7 @@ def get_filtered_files(
     array_to_filter: List,
 ) -> List:
     filter_lambda_functions = [
-        get_eval_function(func.strip())
-        for func in (filter_function if filter_function else "True").split('&&')
+        get_eval_function(func.strip()) for func in (filter_function if filter_function else "True").split('&&')
     ]
     filtered_data = list(
         filter(
@@ -360,9 +351,7 @@ def get_filtered_files(
             [
                 list(
                     filter(
-                        lambda data: catch_eval_exception(
-                            get_available_models(), function, data, False
-                        ),
+                        lambda data: catch_eval_exception(get_available_models(), function, data, False),
                         array_to_filter,
                     )
                 )
@@ -374,9 +363,7 @@ def get_filtered_files(
     if sorting_function:
         sorting_lambda_function = get_eval_function(sorting_function.strip())
         filtered_data.sort(
-            key=lambda data: catch_eval_exception(
-                get_available_models(), sorting_lambda_function, data, 0
-            )
+            key=lambda data: catch_eval_exception(get_available_models(), sorting_lambda_function, data, 0)
         )
 
     return filtered_data

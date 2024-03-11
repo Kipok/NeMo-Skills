@@ -16,6 +16,7 @@ from typing import List, Tuple
 
 import dash_bootstrap_components as dbc
 from dash import dcc, html
+<<<<<<< HEAD
 from flask import current_app
 from layouts.base_layouts import get_text_area_layout
 from settings.constants import CHAT_MODE, ONE_SAMPLE_MODE, WHOLE_DATASET_MODE
@@ -27,6 +28,16 @@ def get_few_shots_by_id_layout(
     page: int, examples_type: str, view_mode: bool
 ) -> Tuple[html.Div]:
     examples_list = get_examples().get(
+=======
+from layouts.base_layouts import get_text_area_layout
+from settings.constants import COMPLETE_MODE, ONE_TEST_MODE, WHOLE_DATASET_MODE
+from utils.common import examples
+from utils.strategies.strategy_maker import RunPromptStrategyMaker
+
+
+def get_few_shots_by_id_layout(page: int, examples_type: str, view_mode: bool) -> Tuple[html.Div]:
+    examples_list = examples.get(
+>>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
         examples_type,
         [{}],
     )
@@ -53,9 +64,13 @@ def get_query_params_layout(
 ) -> List[dbc.AccordionItem]:
     strategy = RunPromptStrategyMaker(mode).get_strategy()
     return (
+<<<<<<< HEAD
         strategy.get_utils_input_layout()
         + strategy.get_few_shots_input_layout()
         + strategy.get_query_input_layout(dataset)
+=======
+        strategy.get_utils_input_layout() + strategy.get_few_shots_input_layout() + strategy.get_query_input_layout()
+>>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
     )
 
 

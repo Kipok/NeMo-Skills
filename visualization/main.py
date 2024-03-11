@@ -1,10 +1,12 @@
 import logging
-from pathlib import Path
 import sys
+from pathlib import Path
 
 import hydra
 
 sys.path.append(str(Path(__file__).parent.parent))
+
+import signal
 
 from callbacks import app
 from layouts import get_main_page_layout

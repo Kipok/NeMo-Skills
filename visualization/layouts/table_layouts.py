@@ -20,6 +20,7 @@ from typing import Iterable, List
 import dash_bootstrap_components as dbc
 from dash import dash_table, html
 from layouts.base_layouts import get_single_prompt_output_layout, get_switch_layout
+<<<<<<< HEAD
 from settings.constants import (
     CHOOSE_MODEL,
     DATA_PAGE_SIZE,
@@ -27,6 +28,9 @@ from settings.constants import (
     MODEL_SELECTOR_ID,
     STATS_KEYS,
 )
+=======
+from settings.constants import CHOOSE_MODEL, DATA_PAGE_SIZE, ERROR_MESSAGE_TEMPLATE, MODEL_SELECTOR_ID, STATS_KEYS
+>>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
 from utils.common import (
     catch_eval_exception,
     custom_deepcopy,
@@ -52,9 +56,7 @@ def get_labels() -> List:
     return labels
 
 
-def get_selector_layout(
-    options: Iterable, id: str, default_value: str = CHOOSE_MODEL
-) -> dbc.Select:
+def get_selector_layout(options: Iterable, id: str, default_value: str = CHOOSE_MODEL) -> dbc.Select:
     if default_value not in options:
         options = [default_value] + list(options)
     return dbc.Select(
@@ -70,9 +72,7 @@ def get_selector_layout(
     )
 
 
-def get_filter_layout(
-    id: int = -1, available_filters: List[str] = [], files_only: bool = False
-) -> html.Div:
+def get_filter_layout(id: int = -1, available_filters: List[str] = [], files_only: bool = False) -> html.Div:
     available_filters = list(
         get_table_data()[0][list(get_available_models())[0]][0].keys()
         if len(get_table_data()) and not available_filters
@@ -86,16 +86,18 @@ def get_filter_layout(
         else "For example:\ndata['correct_responses'] > 0.5 && data['no_response'] < 0.2\n\n"
     )
     text = (
-        "Write an expression to filter the data\n"
-        + inner_text
-        + "The function has to return bool.\n\n"
+        "Write an expression to filter the data\n" + inner_text + "The function has to return bool.\n\n"
         "Available parameters to filter data:\n"
+<<<<<<< HEAD
         + '\n'.join(
             [
                 ', '.join(available_filters[start : start + 5])
                 for start in range(0, len(available_filters), 5)
             ]
         )
+=======
+        + '\n'.join([', '.join(available_filters[start : start + 5]) for start in range(0, len(available_filters), 5)])
+>>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
     )
     header = dbc.ModalHeader(dbc.ModalTitle("Set Up Your Filter"), close_button=True)
     body = dbc.ModalBody(
@@ -161,12 +163,7 @@ def get_sorting_layout(id: int = -1, available_params: List[str] = []) -> html.D
         "For example: len(data['question'])\n\n"
         "The function has to return sortable type\n\n"
         "Available parameters to sort data:\n"
-        + '\n'.join(
-            [
-                ', '.join(available_params[start : start + 5])
-                for start in range(0, len(available_params), 5)
-            ]
-        )
+        + '\n'.join([', '.join(available_params[start : start + 5]) for start in range(0, len(available_params), 5)])
     )
     header = dbc.ModalHeader(
         dbc.ModalTitle("Set Up Your Sorting Parameters"),
@@ -287,11 +284,15 @@ def get_change_label_layout(id: int = -1) -> html.Div:
     )
     return html.Div(
         [
+<<<<<<< HEAD
             dbc.Button(
                 "Labels",
                 id={"type": "set_file_label_button", "id": id},
                 style={'margin-left': '2px'},
             ),
+=======
+            dbc.Button("Labels", id={"type": "set_file_label_button", "id": id}),
+>>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
             dbc.Modal(
                 [header, body, footer],
                 size="lg",
@@ -356,9 +357,7 @@ def get_stats_layout() -> List[dbc.Row]:
     ]
 
 
-def get_models_selector_table_cell(
-    models: List[str], name: str, id: int, add_del_button: bool = False
-) -> dbc.Col:
+def get_models_selector_table_cell(models: List[str], name: str, id: int, add_del_button: bool = False) -> dbc.Col:
     del_model_layout = (
         [
             dbc.Button(
@@ -429,9 +428,13 @@ def get_detailed_answer_column(id: int, file_id=None) -> dbc.Col:
     return dbc.Col(
         html.Div(
             children=(
+<<<<<<< HEAD
                 get_selector_layout([], {"type": "file_selector", "id": file_id}, "")
                 if file_id is not None
                 else ""
+=======
+                get_selector_layout([], {"type": "file_selector", "id": file_id}, "") if file_id is not None else ""
+>>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
             ),
             id={
                 'type': 'detailed_models_answers',
@@ -474,10 +477,7 @@ def get_detailed_answers_rows(keys: List[str], colums_number: int) -> List[dbc.R
                     class_name='mt-1 bg-light font-monospace text-break small rounded border',
                 )
             ]
-            + [
-                get_detailed_answer_column(j * len(keys) + i)
-                for j in range(colums_number)
-            ],
+            + [get_detailed_answer_column(j * len(keys) + i) for j in range(colums_number)],
             id={"type": "detailed_answers_row", "id": i},
         )
         for i, key in enumerate(keys)
@@ -488,9 +488,7 @@ def get_table_answers_detailed_data_layout(
     models: List[str],
     keys: List[str],
 ) -> List[dbc.Row]:
-    return get_models_selector_table_header(models) + get_detailed_answers_rows(
-        keys, len(models)
-    )
+    return get_models_selector_table_header(models) + get_detailed_answers_rows(keys, len(models))
 
 
 def get_row_detailed_inner_data(
@@ -577,24 +575,19 @@ def get_general_stats_layout(
         if len(errors_dict):
             logging.error(ERROR_MESSAGE_TEMPLATE.format(name, errors_dict))
     stats = {
-        "overall number of runs": sum(
-            len(question_data) for question_data in data_for_base_model
-        ),
+        "overall number of runs": sum(len(question_data) for question_data in data_for_base_model),
         **custom_stats,
     }
     return [html.Div([html.Div(f'{name}: {value}') for name, value in stats.items()])]
 
 
-def get_sorting_answers_layout(
-    base_model: str, sorting_function: str, models: List[str]
-) -> List[html.Tr]:
+def get_sorting_answers_layout(base_model: str, sorting_function: str, models: List[str]) -> List[html.Tr]:
     errors_dict = {}
     global table_data
     if sorting_function:
         sortting_eval_function = get_eval_function(sorting_function.strip())
         available_models = {
-            model_name: model_info["file_paths"]
-            for model_name, model_info in get_available_models().items()
+            model_name: model_info["file_paths"] for model_name, model_info in get_available_models().items()
         }
 
         for question_id in range(len(table_data)):
@@ -625,7 +618,11 @@ def get_sorting_answers_layout(
         )
     if len(errors_dict):
         logging.error(ERROR_MESSAGE_TEMPLATE.format("sorting", errors_dict))
+<<<<<<< HEAD
 
+=======
+    logging.info(f'Sorting time: {datetime.datetime.now() - start_time_sorting}')
+>>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
     return (
         get_stats_layout()
         + get_general_stats_layout(base_model)
@@ -667,17 +664,11 @@ def get_filter_answers_layout(
     errors_dict = {}
     if filtering_function:
         available_models = {
-            model_name: model_info["file_paths"]
-            for model_name, model_info in get_available_models().items()
+            model_name: model_info["file_paths"] for model_name, model_info in get_available_models().items()
         }
 
         filtering_functions = (
-            list(
-                [
-                    get_eval_function(func.strip())
-                    for func in filtering_function.split('&&')
-                ]
-            )
+            list([get_eval_function(func.strip()) for func in filtering_function.split('&&')])
             if filtering_function
             else []
         )

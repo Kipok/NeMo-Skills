@@ -20,15 +20,25 @@ import dash_bootstrap_components as dbc
 import hydra
 from dash import Dash
 from flask import Flask
+<<<<<<< HEAD
 from omegaconf import MISSING, OmegaConf
+=======
+from omegaconf import OmegaConf
+>>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
 from settings.config import Config
 from settings.constants import IGNORE_PROMPT_FIELD, UNDEFINED
 
+<<<<<<< HEAD
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
 from nemo_skills.inference.prompt.utils import (
     context_templates,
     get_prompt_config,
 )
+=======
+from nemo_skills.utils import unroll_files
+
+config_path = os.path.join(os.path.abspath(Path(__file__).parent.parent), "settings")
+>>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
 
 config_path = os.path.join(os.path.abspath(Path(__file__).parents[1]), "settings")
 
@@ -39,6 +49,7 @@ config = {}
 def set_config(cfg: Config) -> None:
     global config
 
+<<<<<<< HEAD
     prompt_type = UNDEFINED
 
     prompt_types = [
@@ -86,6 +97,18 @@ def set_config(cfg: Config) -> None:
         "prompt_type": prompt_types,
         "examples_type": list(examples_map.keys()),
         "context_type": list(context_templates.keys()),
+=======
+    config['prompt_explorer']['inference']['start_random_seed'] = (
+        config['prompt_explorer']['inference']['start_random_seed']
+        if 'start_random_seed' in config['prompt_explorer']['inference']
+        else 0
+    )
+    config['prompt_explorer']['visualization_params']['prediction_jsonl_files'] = {
+        model_name: list(unroll_files(file_path.split(" ")))
+        for model_name, file_path in config['prompt_explorer']['visualization_params'][
+            'prediction_jsonl_files'
+        ].items()
+>>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
     }
 
     config['data_explorer']['data_file'] = str(config['data_explorer']['data_file'])
