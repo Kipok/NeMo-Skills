@@ -45,7 +45,7 @@ LOG = logging.getLogger(__name__)
 
 
 @dataclass
-class ErrorRecoveryArgs:
+class ErrorRecoveryConfig:
     # Number of attempts to recover from code execution error
     recovery_attempts: int = 0
     # If true, take code block based on majority voting of `recovery_attempts` code outputs.
@@ -96,7 +96,7 @@ class BaseModel(abc.ABC):
         max_code_output_characters=1000,
         code_execution_timeout=10.0,
         max_code_executions=3,
-        error_recovery_args: ErrorRecoveryArgs = None,
+        error_recovery_args={},
         stop_on_code_error=True,
         handle_code_execution=True,
     ):
@@ -107,7 +107,7 @@ class BaseModel(abc.ABC):
         self.max_code_output_characters = max_code_output_characters
         self.code_execution_timeout = code_execution_timeout
         self.max_code_executions = max_code_executions
-        self.error_recovery_args = error_recovery_args or ErrorRecoveryArgs()
+        self.error_recovery_args = ErrorRecoveryConfig(**error_recovery_args)
         self.handle_code_execution = handle_code_execution
         self.stop_on_code_error = stop_on_code_error
         if self.handle_code_execution and sandbox is None:
@@ -116,7 +116,6 @@ class BaseModel(abc.ABC):
             # TODO: same warning for other ignored parameters
             LOG.warning("When code execution is not handled here, stop_on_code_error is ignored.")
         self.sandbox = sandbox
-        self.num_requests = 0
 
     @abc.abstractmethod
     def _single_call(
@@ -308,8 +307,6 @@ class BaseModel(abc.ABC):
         return most_common
 
     def _send_request(self, request):
-        print(f'Request {self.num_requests}')
-        self.num_requests += 1
         # temperature of 0 means greedy, but it's not always supported by the server
         # so setting explicit greedy parameters instead
         if request["temperature"] == 0:
