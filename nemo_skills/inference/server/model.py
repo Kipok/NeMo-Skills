@@ -20,6 +20,7 @@ import os
 import re
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from typing import List
 
 import requests
@@ -41,6 +42,22 @@ LOG = logging.getLogger(__name__)
 #       requests and getting new prompts in a queue to make sure we can always
 #       pack full batches, instead of only resubmitting a small set of prompts
 #       that require additional code executions
+
+
+@dataclass
+class ErrorRecoveryArgs:
+    # Number of attempts to recover from code execution error
+    recovery_attempts: int = 0
+    # If true, take code block based on majority voting of `recovery_attempts` code outputs.
+    # Otherwise take the first valid code output.
+    # So `majority_voting=False` is potentially faster.
+    majority_voting: bool = True
+    # Temperature for recovery requests
+    temperature: float = 0.7
+    # Top-p for recovery requests
+    top_p: float = 0.95
+    # Top-k for recovery requests
+    top_k: int = 0
 
 
 def remove_stop_tokens(text: str, stop_phrases: List[str]) -> str:
@@ -79,7 +96,7 @@ class BaseModel(abc.ABC):
         max_code_output_characters=1000,
         code_execution_timeout=10.0,
         max_code_executions=3,
-        error_recovery_attempts=0,
+        error_recovery_args: ErrorRecoveryArgs = None,
         stop_on_code_error=True,
         handle_code_execution=True,
     ):
@@ -90,7 +107,7 @@ class BaseModel(abc.ABC):
         self.max_code_output_characters = max_code_output_characters
         self.code_execution_timeout = code_execution_timeout
         self.max_code_executions = max_code_executions
-        self.error_recovery_attempts = error_recovery_attempts
+        self.error_recovery_args = error_recovery_args or ErrorRecoveryArgs()
         self.handle_code_execution = handle_code_execution
         self.stop_on_code_error = stop_on_code_error
         if self.handle_code_execution and sandbox is None:
@@ -99,6 +116,7 @@ class BaseModel(abc.ABC):
             # TODO: same warning for other ignored parameters
             LOG.warning("When code execution is not handled here, stop_on_code_error is ignored.")
         self.sandbox = sandbox
+        self.num_requests = 0
 
     @abc.abstractmethod
     def _single_call(
@@ -198,7 +216,7 @@ class BaseModel(abc.ABC):
                                 continue
                             text_only_part = output.split(CODE_SEPARATORS[0])[0]
                             new_outputs[idx]['full_prompt'].generated_solution += text_only_part
-                            code_output = self.__recover_from_error(request, new_outputs[idx], executor)
+                            code_output = self._recover_from_error(request, new_outputs[idx], executor)
                             # if re-generation did not help
                             if code_output is None:
                                 code_output = result["result"]
@@ -236,19 +254,18 @@ class BaseModel(abc.ABC):
             )
         return outputs
 
-    def __recover_from_error(self, request, new_output, executor):
+    def _recover_from_error(self, request, new_output, executor):
         recovery_request = {key: value for key, value in request.items() if key != 'prompts'}
         recovery_request['prompts'] = [new_output['full_prompt']]
 
-        # if greedy, setting parameters to random
-        if request['temperature'] == 0 or request['top_k'] == 1:
-            recovery_request['temperature'] = 0.7
-            recovery_request['top_p'] = 0.95
-            recovery_request['top_k'] = 0
+        recovery_request['temperature'] = self.error_recovery_args.temperature
+        recovery_request['top_p'] = self.error_recovery_args.top_p
+        recovery_request['top_k'] = self.error_recovery_args.top_k
 
         outputs = []
-        futures = [None] * self.error_recovery_attempts
-        for rs in range(self.error_recovery_attempts):
+        futures = [None] * self.error_recovery_args.recovery_attempts
+        results = [None] * self.error_recovery_args.recovery_attempts
+        for rs in range(self.error_recovery_args.recovery_attempts):
             recovery_request['random_seed'] = rs
             output = self._single_call(**recovery_request)[0]
             outputs.append(output)
@@ -261,9 +278,15 @@ class BaseModel(abc.ABC):
                     session_id=new_output['session_id'],
                 )
 
-        results = [None] * self.error_recovery_attempts
+            if not self.error_recovery_args.majority_voting:
+                result, _ = futures[rs].result()
+                # quit on first correct output if not majority voting
+                if not result['error_message']:
+                    results[rs] = result['result']
+                    break
+
         for idx, output in enumerate(outputs):
-            if not output.endswith(CODE_SEPARATORS[-1]):
+            if not output.endswith(CODE_SEPARATORS[-1]) or not self.error_recovery_args.majority_voting:
                 continue
             result, _ = futures[idx].result()
             if result['error_message']:
@@ -271,6 +294,7 @@ class BaseModel(abc.ABC):
             results[idx] = result['result']
 
         # majority voting on valid code output results
+        # if majority voting is disabled, we just take the first valid output
         counts = Counter(res for res in results if res)
         # all errors
         if not counts:
@@ -284,6 +308,8 @@ class BaseModel(abc.ABC):
         return most_common
 
     def _send_request(self, request):
+        print(f'Request {self.num_requests}')
+        self.num_requests += 1
         # temperature of 0 means greedy, but it's not always supported by the server
         # so setting explicit greedy parameters instead
         if request["temperature"] == 0:
@@ -343,6 +369,11 @@ class NemoModel(BaseModel):
     ):
         # nemo inference handles code execution directly
         kwargs['handle_code_execution'] = False
+        if kwargs.get('error_recovery_args', None) is not None:
+            raise ValueError("Error recovery is not supported by NemoModel.")
+        if kwargs.get('stop_on_code_error', None) not in (None, True):
+            raise ValueError("`stop_on_code_error=False` is not supported by NemoModel.")
+
         super().__init__(**kwargs)
 
     def _single_call(
