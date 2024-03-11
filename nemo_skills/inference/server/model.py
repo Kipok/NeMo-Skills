@@ -96,7 +96,7 @@ class BaseModel(abc.ABC):
         max_code_output_characters=1000,
         code_execution_timeout=10.0,
         max_code_executions=3,
-        error_recovery_args={},
+        error_recovery_config={},
         stop_on_code_error=True,
         handle_code_execution=True,
     ):
@@ -107,7 +107,7 @@ class BaseModel(abc.ABC):
         self.max_code_output_characters = max_code_output_characters
         self.code_execution_timeout = code_execution_timeout
         self.max_code_executions = max_code_executions
-        self.error_recovery_args = ErrorRecoveryConfig(**error_recovery_args)
+        self.error_recovery_args = ErrorRecoveryConfig(**error_recovery_config)
         self.handle_code_execution = handle_code_execution
         self.stop_on_code_error = stop_on_code_error
         if self.handle_code_execution and sandbox is None:
