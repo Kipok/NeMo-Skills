@@ -58,28 +58,21 @@ class GenerateSolutionsConfig:
     # Prompt configuration.
     # Available pre-configured prompts: {prompt_types}.
     prompt: PromptConfig = field(default_factory=PromptConfig)
-    inference: InferenceConfig = field(
-        default_factory=InferenceConfig
-    )  # LLM call parameters
+    inference: InferenceConfig = field(default_factory=InferenceConfig)
 
     # Can specify one of the existing datasets.
     # Choices: {datasets}.
     dataset: Optional[str] = None
-    split_name: Optional[str] = (
-        None  # Can be train, validation, test or train_full (train + validation)
-    )
-    data_file: Optional[str] = (
-        None  # Can directly specify a data file, if using a custom dataset
-    )
+
+    split_name: Optional[str] = None  # Can be train, validation, test or train_full (train + validation)
+    data_file: Optional[str] = None  # Can directly specify a data file, if using a custom dataset
+
     example_dicts: Optional[List[Dict]] = None
 
     batch_size: int = 16
-    max_samples: int = (
-        -1
-    )  # If > 0, will stop after generating this many samples. Useful for debugging
-    skip_filled: bool = (
-        False  # If True, will skip the generations that are already in the output file
-    )
+    max_samples: int = -1  # If > 0, will stop after generating this many samples. Useful for debugging
+    skip_filled: bool = False  # If True, will skip the generations that are already in the output file
+
     # if > 0, will skip this many samples from the beginning of the data file.
     # Useful if need to run multiple slurm jobs on the same data file
     offset: int = 0
@@ -151,19 +144,15 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
             if idx == cfg.max_samples:
                 break
 
-            prompts.append(
-                Prompt(cfg.prompt, data_point, example_dicts=cfg.example_dicts)
-            )
+            prompts.append(Prompt(cfg.prompt, data_point, example_dicts=cfg.example_dicts))
 
             data_points.append(data_point)
 
             if len(prompts) == cfg.batch_size:
                 # batch-computing the outputs
-                outputs = llm(
-                    stop_phrases=list(cfg.prompt.stop_phrases),
-                    prompts=prompts,
-                    **asdict(cfg.inference),
-                )
+
+                outputs = llm(stop_phrases=list(cfg.prompt.stop_phrases), prompts=prompts, **asdict(cfg.inference))
+
                 for output, original_data_point in zip(outputs, data_points):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
                     # all of the ground-truth data to the output file alongside the generated solutions
@@ -174,11 +163,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
         # collecting the final batch
         if len(prompts) > 0:
-            outputs = llm(
-                stop_phrases=list(cfg.prompt.stop_phrases),
-                prompts=prompts,
-                **asdict(cfg.inference),
-            )
+            outputs = llm(stop_phrases=list(cfg.prompt.stop_phrases), prompts=prompts, **asdict(cfg.inference))
             for output, original_data_point in zip(outputs, data_points):
                 output.update(original_data_point)
                 fout.write(json.dumps(output) + "\n")

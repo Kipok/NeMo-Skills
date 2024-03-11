@@ -15,7 +15,6 @@
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
 from omegaconf import OmegaConf
 
 # guarding import to allow prompt_types to be used in scripts without extra packages required
@@ -66,9 +65,9 @@ class Prompt:
     def __post_init__(self):
         """Initialize example_dicts/context_template if not provided."""
         if self.example_dicts is None:
-            self.example_dicts = examples_map.get(
-                self.config.few_shot_examples.examples_type, []
-            )[: self.config.few_shot_examples.num_few_shots]
+            self.example_dicts = examples_map.get(self.config.few_shot_examples.examples_type, [])[
+                : self.config.few_shot_examples.num_few_shots
+            ]
         if self.context_template is None:
             self.context_template = context_templates.get(self.config.context_type, "")
 
@@ -80,34 +79,22 @@ class Prompt:
     def build_filled_example(self, example_dict: Dict[str, Any]) -> str:
         """Builds a filled example string based on the example dictionary."""
         context = self.build_context(example_dict)
-        return self.config.few_shot_examples.template.format(
-            context=context, **example_dict
-        )
+        return self.config.few_shot_examples.template.format(context=context, **example_dict)
 
     def build_examples(self) -> str:
         """Builds all examples string concatenated by delimiter."""
-        filled_examples = [
-            self.build_filled_example(example) for example in self.example_dicts
-        ]
+        filled_examples = [self.build_filled_example(example) for example in self.example_dicts]
         examples = "".join(filled_examples)
         context = self.build_context(self.input_dict)
-        user = self.config.user.format(
-            examples=examples, context=context, **self.input_dict
-        )
+        user = self.config.user.format(examples=examples, context=context, **self.input_dict)
         return user
 
     def build_chat_prompt(self) -> List[Dict[str, str]]:
         """Builds a structured representation of the prompt."""
-        structured_prompt = (
-            [{"role": "system", "content": self.config.system}]
-            if self.config.system
-            else []
-        )
+        structured_prompt = [{"role": "system", "content": self.config.system}] if self.config.system else []
         structured_prompt.append({"role": "user", "content": self.build_examples()})
         if self.generated_solution:
-            structured_prompt.append(
-                {"role": "assistant", "content": self.generated_solution}
-            )
+            structured_prompt.append({"role": "assistant", "content": self.generated_solution})
         return structured_prompt
 
     def __str__(self) -> str:
