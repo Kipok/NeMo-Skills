@@ -39,7 +39,9 @@ class BaseVisualizationConfig:
 
 @dataclass
 class Config(GenerateSolutionsConfig):
-    visualization_params: BaseVisualizationConfig = field(default_factory=BaseVisualizationConfig)
+    visualization_params: BaseVisualizationConfig = field(
+        default_factory=BaseVisualizationConfig
+    )
 
 
 cs = hydra.core.config_store.ConfigStore.instance()

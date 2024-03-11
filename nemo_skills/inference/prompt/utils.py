@@ -32,7 +32,9 @@ prompt_types = [cfg.stem for cfg in Path(__file__).parent.glob("*.yaml")]
 # listing all dataset folders available - note this will not be available
 # if using from installed package but you need to have data files available anyway
 datasets = [
-    d.name for d in (Path(__file__).parents[3] / 'datasets').glob("*") if d.is_dir() and d.name != "__pycache__"
+    d.name
+    for d in (Path(__file__).parents[3] / 'datasets').glob("*")
+    if d.is_dir() and d.name != "__pycache__"
 ]
 
 
@@ -64,9 +66,9 @@ class Prompt:
     def __post_init__(self):
         """Initialize example_dicts/context_template if not provided."""
         if self.example_dicts is None:
-            self.example_dicts = examples_map.get(self.config.few_shot_examples.examples_type, [])[
-                : self.config.few_shot_examples.num_few_shots
-            ]
+            self.example_dicts = examples_map.get(
+                self.config.few_shot_examples.examples_type, []
+            )[: self.config.few_shot_examples.num_few_shots]
         if self.context_template is None:
             self.context_template = context_templates.get(self.config.context_type, "")
 
@@ -78,22 +80,34 @@ class Prompt:
     def build_filled_example(self, example_dict: Dict[str, Any]) -> str:
         """Builds a filled example string based on the example dictionary."""
         context = self.build_context(example_dict)
-        return self.config.few_shot_examples.template.format(context=context, **example_dict)
+        return self.config.few_shot_examples.template.format(
+            context=context, **example_dict
+        )
 
     def build_examples(self) -> str:
         """Builds all examples string concatenated by delimiter."""
-        filled_examples = [self.build_filled_example(example) for example in self.example_dicts]
+        filled_examples = [
+            self.build_filled_example(example) for example in self.example_dicts
+        ]
         examples = "".join(filled_examples)
         context = self.build_context(self.input_dict)
-        user = self.config.user.format(examples=examples, context=context, **self.input_dict)
+        user = self.config.user.format(
+            examples=examples, context=context, **self.input_dict
+        )
         return user
 
     def build_chat_prompt(self) -> List[Dict[str, str]]:
         """Builds a structured representation of the prompt."""
-        structured_prompt = [{"role": "system", "content": self.config.system}] if self.config.system else []
+        structured_prompt = (
+            [{"role": "system", "content": self.config.system}]
+            if self.config.system
+            else []
+        )
         structured_prompt.append({"role": "user", "content": self.build_examples()})
         if self.generated_solution:
-            structured_prompt.append({"role": "assistant", "content": self.generated_solution})
+            structured_prompt.append(
+                {"role": "assistant", "content": self.generated_solution}
+            )
         return structured_prompt
 
     def __str__(self) -> str:
@@ -130,31 +144,3 @@ context_templates = {
     "reference_solution": "Reference solution (do not copy it):\n{reference_solution}\n\n",
     "masked_solution": "Reference solution:\n{reference_masked_solution}\n\n",
 }
-<<<<<<< HEAD
-
-
-def get_prompt(
-    prompt_config: PromptConfig,
-    input_dict: dict,
-):
-    """Will build few-shot prompt from the provided pieces of information."""
-    if prompt_config.num_few_shots != 0:
-        examples = (
-            prompt_config.examples[: prompt_config.num_few_shots]
-            if prompt_config.examples is not None
-            else examples_map[prompt_config.examples_type][: prompt_config.num_few_shots]
-        )
-    else:
-        examples = []
-    context = (
-        prompt_config.context if prompt_config.context is not None else context_templates[prompt_config.context_type]
-    )
-    filled_examples = []
-    for example_dict in examples:
-        filled_examples.append(prompt_config.template.format(context=context.format(**example_dict), **example_dict))
-    filled_examples.append(
-        prompt_config.template.format(context=context.format(**input_dict), **input_dict, generated_solution="")
-    )
-    return prompt_config.prefix + prompt_config.delimiter.join(filled_examples)
-=======
->>>>>>> e676b28 (Openai model + prompt api redesign (#10))

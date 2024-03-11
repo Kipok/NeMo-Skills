@@ -413,7 +413,6 @@ def get_available_models(cache_indicator=None) -> Dict:
             "examples": {},
             "file_paths": files,
         }
-
     return runs_storage
 
 

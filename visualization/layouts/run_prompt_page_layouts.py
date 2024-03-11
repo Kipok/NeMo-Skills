@@ -23,7 +23,9 @@ from utils.common import get_examples
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
 
 
-def get_few_shots_by_id_layout(page: int, examples_type: str, view_mode: bool) -> Tuple[html.Div]:
+def get_few_shots_by_id_layout(
+    page: int, examples_type: str, view_mode: bool
+) -> Tuple[html.Div]:
     examples_list = get_examples().get(
         examples_type,
         [{}],
@@ -46,7 +48,9 @@ def get_few_shots_by_id_layout(page: int, examples_type: str, view_mode: bool) -
     )
 
 
-def get_query_params_layout(mode: str = ONE_SAMPLE_MODE, dataset: str = None) -> List[dbc.AccordionItem]:
+def get_query_params_layout(
+    mode: str = ONE_SAMPLE_MODE, dataset: str = None
+) -> List[dbc.AccordionItem]:
     strategy = RunPromptStrategyMaker(mode).get_strategy()
     return (
         strategy.get_utils_input_layout()
@@ -81,7 +85,9 @@ def get_run_test_layout() -> html.Div:
         [
             get_run_mode_layout(),
             dbc.Accordion(
-                get_query_params_layout(dataset=current_app.config['data_explorer']['data_file']),
+                get_query_params_layout(
+                    dataset=current_app.config['data_explorer']['data_file']
+                ),
                 start_collapsed=True,
                 always_open=True,
                 id="prompt_params_input",
