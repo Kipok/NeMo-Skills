@@ -96,7 +96,7 @@ class BaseModel(abc.ABC):
         max_code_output_characters=1000,
         code_execution_timeout=10.0,
         max_code_executions=3,
-        error_recovery_config={},
+        error_recovery=None,
         stop_on_code_error=True,
         handle_code_execution=True,
     ):
@@ -107,7 +107,9 @@ class BaseModel(abc.ABC):
         self.max_code_output_characters = max_code_output_characters
         self.code_execution_timeout = code_execution_timeout
         self.max_code_executions = max_code_executions
-        self.error_recovery_config = ErrorRecoveryConfig(**error_recovery_config)
+        if error_recovery is None:
+            error_recovery = {}
+        self.error_recovery = ErrorRecoveryConfig(**error_recovery)
         self.handle_code_execution = handle_code_execution
         self.stop_on_code_error = stop_on_code_error
         if self.handle_code_execution and sandbox is None:
@@ -257,14 +259,14 @@ class BaseModel(abc.ABC):
         recovery_request = {key: value for key, value in request.items() if key != 'prompts'}
         recovery_request['prompts'] = [new_output['full_prompt']]
 
-        recovery_request['temperature'] = self.error_recovery_config.temperature
-        recovery_request['top_p'] = self.error_recovery_config.top_p
-        recovery_request['top_k'] = self.error_recovery_config.top_k
+        recovery_request['temperature'] = self.error_recovery.temperature
+        recovery_request['top_p'] = self.error_recovery.top_p
+        recovery_request['top_k'] = self.error_recovery.top_k
 
         outputs = []
-        futures = [None] * self.error_recovery_config.recovery_attempts
-        results = [None] * self.error_recovery_config.recovery_attempts
-        for rs in range(self.error_recovery_config.recovery_attempts):
+        futures = [None] * self.error_recovery.recovery_attempts
+        results = [None] * self.error_recovery.recovery_attempts
+        for rs in range(self.error_recovery.recovery_attempts):
             recovery_request['random_seed'] = rs
             output = self._single_call(**recovery_request)[0]
             outputs.append(output)
@@ -277,7 +279,7 @@ class BaseModel(abc.ABC):
                     session_id=new_output['session_id'],
                 )
 
-            if not self.error_recovery_config.majority_voting:
+            if not self.error_recovery.majority_voting:
                 result, _ = futures[rs].result()
                 # quit on first correct output if not majority voting
                 if not result['error_message']:
@@ -285,7 +287,7 @@ class BaseModel(abc.ABC):
                     break
 
         for idx, output in enumerate(outputs):
-            if not output.endswith(CODE_SEPARATORS[-1]) or not self.error_recovery_config.majority_voting:
+            if not output.endswith(CODE_SEPARATORS[-1]) or not self.error_recovery.majority_voting:
                 continue
             result, _ = futures[idx].result()
             if result['error_message']:
@@ -365,11 +367,19 @@ class NemoModel(BaseModel):
         **kwargs,
     ):
         # nemo inference handles code execution directly
-        kwargs['handle_code_execution'] = False
-        if kwargs.get('error_recovery_config', None) is not None:
-            raise ValueError("Error recovery is not supported by NemoModel.")
-        if kwargs.get('stop_on_code_error', None) not in (None, True):
-            raise ValueError("`stop_on_code_error=False` is not supported by NemoModel.")
+        if 'handle_code_execution' not in kwargs:
+            kwargs['handle_code_execution'] = False
+        if not kwargs['handle_code_execution']:
+            unsupported_arguments = [
+                'max_code_output_characters',
+                'code_execution_timeout',
+                'max_code_executions',
+                'error_recovery',
+                'stop_on_code_error',
+            ]
+            for arg in unsupported_arguments:
+                if arg in kwargs:
+                    raise ValueError(f"`{arg}` is not supported by NemoModel.")
 
         super().__init__(**kwargs)
 
