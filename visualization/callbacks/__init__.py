@@ -119,4 +119,4 @@ app = Dash(
 
 from callbacks.base_callback import nav_click
 from callbacks.run_prompt_callbacks import add_example
-from callbacks.run_prompt_callbacks import choose_base_model
+from callbacks.table_callbacks import choose_base_model

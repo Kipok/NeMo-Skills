@@ -15,13 +15,15 @@
 import json
 import logging
 import os
+import re
 from typing import Dict, List
 
+from dash import html
 import dash_bootstrap_components as dbc
 import requests
-from dash import html
 from flask import current_app
 from omegaconf import OmegaConf
+
 from settings.constants import (
     GREEDY,
     METRICS,
@@ -44,7 +46,7 @@ from nemo_skills.inference.generate_solutions import (
     InferenceConfig,
     generate_solutions,
 )
-from nemo_skills.inference.prompt.utils import PromptConfig
+from nemo_skills.inference.prompt.utils import FewShotExamples, PromptConfig
 
 
 class WholeDatasetModeStrategy(ModeStrategies):
@@ -53,27 +55,15 @@ class WholeDatasetModeStrategy(ModeStrategies):
     def __init__(self):
         super().__init__()
 
-    def get_utils_input_layout(self) -> List[dbc.AccordionItem]:
-        inference_condition = lambda name, value: isinstance(value, (str, int, float))
-        return super().get_utils_input_layout(
-            inference_condition,
-            lambda name, value: True,
-            False,
-            list(self.config.items()),
-        )
-
     def get_query_input_layout(self, dataset) -> List[dbc.AccordionItem]:
         return []
 
-    def run(self, utils: Dict, params: Dict):
+    def run(self, utils: Dict, params: Dict) -> html.Div:
+        self.sandbox_init()
         runs_storage = get_available_models()
 
         run_index = len(runs_storage)
         metrics_directory = RESULTS_PATH.format(run_index)
-        output_file = os.path.join(metrics_directory, OUTPUT_PATH.format(OUTPUT, GREEDY))
-        save_metrics_file = os.path.join(
-            metrics_directory, OUTPUT_PATH.format(METRICS, GREEDY)
-        )
         random_seed_start = (
             utils['start_random_seed']
             if params['range_random_mode']
@@ -84,51 +74,55 @@ class WholeDatasetModeStrategy(ModeStrategies):
             if params['range_random_mode']
             else utils['random_seed'] + 1
         )
-        generate_solutions_config = GenerateSolutionsConfig(
-            output_file=output_file,
-            sandbox=self.config['sandbox'],
-            server=self.config['server'],
-            **{
-                key: value
-                for key, value in utils.items()
-                if key in current_app.config['data_explorer']
+
+        generate_solutions_config = self._get_config(
+            GenerateSolutionsConfig,
+            utils,
+            current_app.config['data_explorer'],
+            {
+                "output_file": "dummy",  # will be set up later
+                "example_dicts": get_examples().get(
+                    utils['examples_type'],
+                    [],
+                ),
             },
         )
-        generate_solutions_config.prompt = PromptConfig(
-            **{
-                key: value
-                for key, value in utils.items()
-                if key in current_app.config['data_explorer']['prompt']
-            }
-        )
-        generate_solutions_config.prompt.context = utils['context_templates']
-        generate_solutions_config.prompt.examples = get_examples().get(
-            utils['examples_type'] if utils['examples_type'] else "", []
+
+        generate_solutions_config.prompt = self._get_config(
+            PromptConfig,
+            utils,
+            current_app.config['data_explorer']['prompt'],
         )
 
-        generate_solutions_config.inference = InferenceConfig(
-            **{
-                key: value
-                for key, value in utils.items()
-                if key in current_app.config['data_explorer']['inference']
-            }
+        generate_solutions_config.prompt.few_shot_examples = self._get_config(
+            FewShotExamples,
+            utils,
+            current_app.config['data_explorer']['prompt']['few_shot_examples'],
         )
+
+        generate_solutions_config.inference = self._get_config(
+            InferenceConfig,
+            utils,
+            current_app.config['data_explorer']['inference'],
+        )
+
         for random_seed in range(random_seed_start, random_seed_end):
-            output_file = (
-                output_file
-                if not params['range_random_mode']
-                else os.path.join(
-                    metrics_directory,
-                    OUTPUT_PATH.format(OUTPUT, "rs" + str(random_seed)),
-                )
+            file_name = (
+                GREEDY if not params['range_random_mode'] else "rs" + str(random_seed)
             )
-            save_metrics_file = (
-                save_metrics_file
-                if not params['range_random_mode']
-                else os.path.join(
-                    metrics_directory,
-                    OUTPUT_PATH.format(METRICS, "rs" + str(random_seed)),
-                )
+            output_file = os.path.join(
+                metrics_directory,
+                OUTPUT_PATH.format(
+                    OUTPUT,
+                    file_name,
+                ),
+            )
+            save_metrics_file = os.path.join(
+                metrics_directory,
+                OUTPUT_PATH.format(
+                    METRICS,
+                    file_name,
+                ),
             )
             generate_solutions_config.output_file = output_file
             generate_solutions_config.inference.random_seed = random_seed
@@ -137,7 +131,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
                 generate_solutions(OmegaConf.structured(generate_solutions_config))
                 evaluate_results_config = EvaluateResultsConfig(
                     prediction_jsonl_files=output_file,
-                    sabdbox=self.config['sandbox'],
+                    sandbox=current_app.config['data_explorer']['sandbox'],
                 )
                 logging.info("Evaluate results")
                 evaluate_results(OmegaConf.structured(evaluate_results_config))
@@ -149,12 +143,12 @@ class WholeDatasetModeStrategy(ModeStrategies):
             except requests.exceptions.ConnectionError as e:
                 return self._get_connection_error_message()
             except Exception as e:
-                return html.Div(f"Something went wrong\n{e}")
+                return html.Pre(f"Something went wrong\n{e}")
 
             logging.info("Compute metrics")
             _, errors, success = run_subprocess(compute_metrics_command)
             if not success:
-                return html.Div(f"Something went wrong\n{errors}")
+                return html.Pre(f"Something went wrong\n{errors}")
 
         runs_storage[run_index] = {
             "utils": utils,
@@ -168,5 +162,12 @@ class WholeDatasetModeStrategy(ModeStrategies):
             f'Done. Results are in folder\n{"/".join(output_file.split("/")[:-1])}'
         )
 
-    def get_prompt(self, utils: Dict, question: str) -> str:
-        return super().get_prompt(utils, "***your question***")
+    def get_prompt(self, utils: Dict, input_dict: Dict[str, str]) -> str:
+        pattern = r'\{([^}]*)\}'
+        keys = []
+        for value in utils.values():
+            if isinstance(value, str):
+                keys.extend(re.findall(pattern, value))
+        keys = filter(lambda x: x not in ['examples', 'context'], keys)
+        input_dict = {**{key: f"***your {key}***" for key in keys}}
+        return super().get_prompt(utils, input_dict)

@@ -30,8 +30,7 @@ class OneTestModeStrategy(ModeStrategies):
 
     def get_utils_input_layout(self) -> List[dbc.AccordionItem]:
         inference_condition = (
-            lambda name, value: isinstance(value, (str, int, float))
-            and name not in PARAMS_FOR_WHOLE_DATASET_ONLY
+            lambda name, value: isinstance(value, (str, int, float)) and name not in PARAMS_FOR_WHOLE_DATASET_ONLY
         )
         return super().get_utils_input_layout(
             inference_condition,
