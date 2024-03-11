@@ -13,22 +13,16 @@
 # limitations under the License.
 
 import itertools
-from typing import Dict, List, Optional, Union
+from typing import Dict, Iterable, List, Optional, Union
 
 import dash_bootstrap_components as dbc
 from dash import dcc, html
-<<<<<<< HEAD
-from settings.constants import QUERY_INPUT_TYPE
+from flask import current_app
+from settings.constants import UNDEFINED
 from utils.common import (
     parse_model_answer,
 )
 from utils.decoration import design_text_output, highlight_code
-=======
-from utils.common import get_estimated_height, parse_model_answer
-from utils.decoration import design_text_output, highlight_code
-
-from visualization.settings.constants import QUERY_INPUT_TYPE
->>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
 
 
 def get_main_page_layout() -> html.Div:
@@ -54,8 +48,10 @@ def get_main_page_layout() -> html.Div:
                 dark=True,
                 class_name="mb-2",
             ),
-            html.Div(id='dummy_output', style={'display': 'none'}, children=""),
             dbc.Container(id="page_content"),
+            dbc.Container(id="js_trigger", style={'display': 'none'}, children=""),
+            dbc.Container(id="js_container"),
+            dbc.Container(id='dummy_output', style={'display': 'none'}, children=""),
         ]
     )
 
@@ -78,13 +74,9 @@ def get_switch_layout(
                 "value": value,
                 "disabled": is_disabled,
             }
-<<<<<<< HEAD
             for label, value, is_disabled in itertools.zip_longest(
                 labels, values, disabled, fillvalue=False
             )
-=======
-            for label, values, is_disabled in itertools.zip_longest(labels, values, disabled, fillvalue=False)
->>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
         ],
         value=[values[0]] if is_active else [],
         switch=True,
@@ -92,69 +84,36 @@ def get_switch_layout(
     )
 
 
-def validation_parameters(name: str, value: Union[str, int, float]) -> Dict[str, str]:
-    parameters = {"type": "text"}
-    if str(value).replace(".", "", 1).replace("-", "", 1).isdigit():
-        parameters["type"] = "number"
-
-    if str(value).isdigit():
-        parameters["min"] = 0
-
-    if "." in str(value) and str(value).replace(".", "", 1).isdigit():
-        parameters["min"] = 0
-        parameters["max"] = 1 if name != "temperature" else 100
-        parameters["step"] = 0.1
-
-    return parameters
-
-
-def get_input_group_layout(
-    name: str,
-    value: Union[str, int, float, bool],
-    input_function: Union[dbc.Input, dbc.Textarea],
-) -> dbc.InputGroup:
-    if input_function is dbc.Input:
-        additional_params = validation_parameters(name, value)
-    else:
-<<<<<<< HEAD
-=======
-        height = {'height': get_estimated_height(value)} if value != "" and str(value).strip() != "" else {}
->>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
-        additional_params = {
-            "style": {
-                'width': '100%',
+def get_selector_layout(options: Iterable, id: str, value: str = "") -> dbc.Select:
+    if value not in options:
+        options = [value] + list(options)
+    return dbc.Select(
+        id=id,
+        options=[
+            {
+                "label": str(value),
+                "value": value,
             }
-        }
-
-    return dbc.InputGroup(
-        [
-            dbc.InputGroupText(name),
-            input_function(
-<<<<<<< HEAD
-                value=get_utils_field_representation(value),
-=======
-                value=(value if value == "" or str(value).strip() != "" else repr(value)[1:-1]),
->>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
-                id=name,
-                **additional_params,
-                debounce=True,
-            ),
+            for value in options
         ],
-        className="mb-3",
+        value=value,
     )
 
 
-def get_text_area_layout(key: str, value: str, view_mode: bool = False) -> Union[dbc.Textarea, html.Pre]:
+def get_text_area_layout(
+    id: str, value: str, view_mode: bool = False
+) -> Union[dbc.Textarea, html.Pre]:
     component = dbc.Textarea
     if view_mode:
         component = html.Pre
 
     return component(
-        **({'children': get_single_prompt_output_layout(value)} if view_mode else {"value": value}),
-        id={
-            "type": QUERY_INPUT_TYPE,
-            "id": key,
-        },
+        **(
+            {'children': get_single_prompt_output_layout(value)}
+            if view_mode
+            else {"value": value}
+        ),
+        id=id,
         style={
             'width': '100%',
             'border': "1px solid #dee2e6",
@@ -182,13 +141,15 @@ def get_single_prompt_output_layout(answer: str) -> List[html.Div]:
                     style=(
                         {
                             "border": "1px solid black",
-                            "background-color": "#9CADF0",
+                            "background-color": "#cdd4f1c8",
                             "marginBottom": "10px",
+                            "marginTop": "-6px",
                         }
                         if 'wrong_code_block' not in parsed_answer
                         else {
                             "border": "1px solid red",
                             "marginBottom": "10px",
+                            "marginTop": "-6px",
                         }
                     ),
                 )
@@ -224,5 +185,63 @@ def get_results_content_layout(
     )
 
 
-def get_utils_field_representation(value) -> str:
-    return value if value == "" or str(value).strip() != "" else repr(value)[1:-1]
+def validation_parameters(name: str, value: Union[str, int, float]) -> Dict[str, str]:
+    parameters = {"type": "text"}
+    if str(value).replace(".", "", 1).replace("-", "", 1).isdigit():
+        parameters["type"] = "number"
+
+    if str(value).isdigit():
+        parameters["min"] = 0
+
+    if "." in str(value) and str(value).replace(".", "", 1).isdigit():
+        parameters["min"] = 0
+        parameters["max"] = 1 if name != "temperature" else 100
+        parameters["step"] = 0.1
+
+    return parameters
+
+
+def get_input_group_layout(
+    name: str,
+    value: Union[str, int, float, bool],
+) -> dbc.InputGroup:
+    input_function = dbc.Textarea
+    additional_params = {
+        "style": {
+            'width': '100%',
+        },
+        "debounce": True,
+    }
+    if name in current_app.config['data_explorer']['types'].keys():
+        input_function = get_selector_layout
+        additional_params = {
+            "options": current_app.config['data_explorer']['types'][name],
+        }
+        if value is None:
+            value = UNDEFINED
+    elif isinstance(value, (float, int, bool)):
+        input_function = dbc.Input
+        additional_params = validation_parameters(name, value)
+        additional_params["debounce"] = True
+
+    return dbc.InputGroup(
+        [
+            dbc.InputGroupText(name),
+            input_function(
+                value=get_utils_field_representation(value),
+                id=name,
+                **additional_params,
+            ),
+        ],
+        className="mb-3",
+    )
+
+
+def get_utils_field_representation(
+    value: Union[str, int, float, bool], key: Optional[str] = None
+) -> str:
+    return (
+        UNDEFINED
+        if value is None and key in current_app.config['data_explorer']['types']
+        else value if value == "" or str(value).strip() != "" else repr(value)[1:-1]
+    )

@@ -15,30 +15,22 @@
 import os
 from dataclasses import asdict
 from pathlib import Path
+from typing import Dict
 
-import dash_bootstrap_components as dbc
-import hydra
 from dash import Dash
+import dash_bootstrap_components as dbc
 from flask import Flask
-<<<<<<< HEAD
-from omegaconf import MISSING, OmegaConf
-=======
-from omegaconf import OmegaConf
->>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
-from settings.config import Config
-from settings.constants import IGNORE_PROMPT_FIELD, UNDEFINED
+import hydra
+from omegaconf import MISSING, OmegaConf, DictConfig
 
-<<<<<<< HEAD
+from visualization.settings.config import Config
+from settings.constants import UNDEFINED
+
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
 from nemo_skills.inference.prompt.utils import (
     context_templates,
     get_prompt_config,
 )
-=======
-from nemo_skills.utils import unroll_files
-
-config_path = os.path.join(os.path.abspath(Path(__file__).parent.parent), "settings")
->>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
 
 config_path = os.path.join(os.path.abspath(Path(__file__).parents[1]), "settings")
 
@@ -49,8 +41,7 @@ config = {}
 def set_config(cfg: Config) -> None:
     global config
 
-<<<<<<< HEAD
-    prompt_type = UNDEFINED
+    prompt_type = UNDEFINED  # TODO detect prompt_type
 
     prompt_types = [
         os.path.splitext(file)[0]
@@ -73,9 +64,15 @@ def set_config(cfg: Config) -> None:
 
     cfg.output_file = UNDEFINED
 
-    for key, value in OmegaConf.to_container(cfg.prompt).items():
-        if value == MISSING:
-            setattr(cfg.prompt, key, UNDEFINED)
+    def set_undefined(dict_cfg: Dict, cfg: DictConfig):
+        for key, value in dict_cfg.items():
+            if isinstance(value, Dict):
+                setattr(cfg, key, set_undefined(value, getattr(cfg, key)))
+            if value == MISSING:
+                setattr(cfg, key, UNDEFINED)
+        return cfg
+
+    cfg.prompt = set_undefined(OmegaConf.to_container(cfg.prompt), cfg.prompt)
 
     config['data_explorer'] = asdict(OmegaConf.to_object(cfg))
 
@@ -90,25 +87,14 @@ def set_config(cfg: Config) -> None:
 
     config['data_explorer']['prompt']['prompt_type'] = prompt_type
 
-    if not config['data_explorer']['prompt']['examples_type']:
-        config['data_explorer']['prompt']['examples_type'] = UNDEFINED
+    config['data_explorer']['prompt']['context_template'] = context_templates[
+        config['data_explorer']["prompt"]["context_type"]
+    ]
 
     config['data_explorer']['types'] = {
-        "prompt_type": prompt_types,
-        "examples_type": list(examples_map.keys()),
-        "context_type": list(context_templates.keys()),
-=======
-    config['prompt_explorer']['inference']['start_random_seed'] = (
-        config['prompt_explorer']['inference']['start_random_seed']
-        if 'start_random_seed' in config['prompt_explorer']['inference']
-        else 0
-    )
-    config['prompt_explorer']['visualization_params']['prediction_jsonl_files'] = {
-        model_name: list(unroll_files(file_path.split(" ")))
-        for model_name, file_path in config['prompt_explorer']['visualization_params'][
-            'prediction_jsonl_files'
-        ].items()
->>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
+        "prompt_type": [UNDEFINED] + prompt_types,
+        "examples_type": [UNDEFINED] + list(examples_map.keys()),
+        "context_type": [UNDEFINED] + list(context_templates.keys()),
     }
 
     config['data_explorer']['data_file'] = str(config['data_explorer']['data_file'])
@@ -117,9 +103,7 @@ def set_config(cfg: Config) -> None:
     config['data_explorer'].pop('output_file')
     config['data_explorer'].pop('dataset')
     config['data_explorer'].pop('split_name')
-
-    for field in IGNORE_PROMPT_FIELD:
-        config['data_explorer']['prompt'].pop(field)
+    config['data_explorer'].pop('example_dicts')
 
 
 set_config()
@@ -135,4 +119,4 @@ app = Dash(
 
 from callbacks.base_callback import nav_click
 from callbacks.run_prompt_callbacks import add_example
-from callbacks.table_callbacks import choose_base_model
+from callbacks.run_prompt_callbacks import choose_base_model

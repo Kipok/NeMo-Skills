@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-=======
->>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
 import datetime
 import functools
 import json
@@ -126,14 +123,18 @@ def parse_model_answer(answer: str) -> List[Dict]:
             parsed_results.append(
                 {
                     'explanation': trailing_text[0:code_start_index].strip(),
-                    'code': trailing_text[code_start_index + len(code_start.replace("\\", "")) :],
+                    'code': trailing_text[
+                        code_start_index + len(code_start.replace("\\", "")) :
+                    ],
                     'output': "code_block was not finished",
                     'wrong_code_block': True,
                 }
             )
             trailing_text = None
         if trailing_text:
-            parsed_results.append({'explanation': trailing_text, 'code': None, 'output': None})
+            parsed_results.append(
+                {'explanation': trailing_text, 'code': None, 'output': None}
+            )
     return parsed_results
 
 
@@ -173,7 +174,10 @@ def get_values_from_input_group(children: Iterable) -> Dict:
     values = {}
     for child in children:
         for input_group_child in child["props"]["children"]:
-            if "id" in input_group_child["props"].keys() and "value" in input_group_child["props"].keys():
+            if (
+                "id" in input_group_child["props"].keys()
+                and "value" in input_group_child["props"].keys()
+            ):
                 type_function = str
                 value = input_group_child["props"]["value"]
 
@@ -182,9 +186,33 @@ def get_values_from_input_group(children: Iterable) -> Dict:
                 elif str(value).replace(".", "", 1).replace("-", "", 1).isdigit():
                     type_function = float
 
-                values[input_group_child["props"]["id"]] = type_function(str(value).replace('\\n', '\n'))
+                values[input_group_child["props"]["id"]] = type_function(
+                    str(value).replace('\\n', '\n')
+                )
 
     return values
+
+
+def extract_query_params(query_params_ids: List[Dict], query_params: List[Dict]) -> Dict:
+    try:
+        query_params_extracted = {
+            param_id['id']: param
+            for param_id, param in zip(query_params_ids, query_params)
+        }
+    except ValueError:
+        query_params_extracted = {"question": "", "expected_answer": ""}
+
+    return query_params_extracted
+
+
+def get_utils_from_config(cfg: Dict):
+    config = {}
+    for key, value in sorted(cfg.items()):
+        if isinstance(value, Dict):
+            config = {**config, **get_utils_from_config(value)}
+        elif not isinstance(value, List):
+            config[key] = value
+    return config
 
 
 def get_stats(all_files_data: List[Dict], is_correct: bool = True) -> float:
@@ -275,7 +303,9 @@ def custom_deepcopy(data) -> List:
     for item in data:
         new_item = {}
         for key, value_list in item.items():
-            new_value_list = [{k: v for k, v in sub_item.items()} for sub_item in value_list]
+            new_value_list = [
+                {k: v for k, v in sub_item.items()} for sub_item in value_list
+            ]
             new_item[key] = new_value_list
         new_data.append(new_item)
     return new_data
@@ -293,7 +323,7 @@ def get_data_from_files(cache_indicator=None) -> List:
 
     available_models = {
         model_name: model_info["file_paths"]
-        for model_name, model_info in get_available_models(cache_indicator).items()
+        for model_name, model_info in get_available_models().items()
     }
 
     all_models_data_array = []
@@ -343,27 +373,30 @@ def get_filtered_files(
     array_to_filter: List,
 ) -> List:
     filter_lambda_functions = [
-        get_eval_function(func.strip()) for func in (filter_function if filter_function else "True").split('&&')
+        get_eval_function(func.strip())
+        for func in (filter_function if filter_function else "True").split('&&')
     ]
-    filtered_data = list(
-        filter(
-            lambda data: data != [],
-            [
-                list(
-                    filter(
-                        lambda data: catch_eval_exception(get_available_models(), function, data, False),
-                        array_to_filter,
-                    )
-                )
-                for function in filter_lambda_functions
-            ],
+    available_models = get_available_models()
+    filtered_data = [
+        list(
+            filter(
+                lambda data: catch_eval_exception(
+                    available_models, function, data, False
+                ),
+                array_to_filter,
+            )
         )
-    )
+        for function in filter_lambda_functions
+    ]
+
+    filtered_data = list(filter(lambda data: data != [], filtered_data))
     filtered_data = filtered_data[0] if len(filtered_data) > 0 else array_to_filter
     if sorting_function:
         sorting_lambda_function = get_eval_function(sorting_function.strip())
         filtered_data.sort(
-            key=lambda data: catch_eval_exception(get_available_models(), sorting_lambda_function, data, 0)
+            key=lambda data: catch_eval_exception(
+                available_models, sorting_lambda_function, data, 0
+            )
         )
 
     return filtered_data
@@ -381,7 +414,7 @@ def is_detailed_answers_rows_key(key: str) -> bool:
 @functools.lru_cache(maxsize=1)
 def get_available_models(cache_indicator=None) -> Dict:
     if cache_indicator is not None:
-        return []
+        return {}
     try:
         with open(PARAMETERS_FILE_NAME) as f:
             runs_storage = json.load(f)
@@ -400,6 +433,7 @@ def get_available_models(cache_indicator=None) -> Dict:
             "examples": {},
             "file_paths": files,
         }
+
     return runs_storage
 
 

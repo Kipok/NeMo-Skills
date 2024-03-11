@@ -17,7 +17,10 @@ from typing import Dict, Optional, Tuple
 
 import hydra
 
-from nemo_skills.code_execution.utils import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS
+from nemo_skills.code_execution.utils import (
+    CODE_OUTPUT_SEPARATORS,
+    CODE_SEPARATORS,
+)
 from nemo_skills.inference.generate_solutions import GenerateSolutionsConfig
 from nemo_skills.utils import unroll_files
 

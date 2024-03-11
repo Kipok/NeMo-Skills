@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+<<<<<<< HEAD
+=======
+from copy import deepcopy
+>>>>>>> 248c175 (fix pull request issues)
 import logging
 from copy import deepcopy
 from dataclasses import asdict

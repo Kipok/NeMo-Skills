@@ -16,18 +16,10 @@ from typing import Dict, List
 
 import dash_bootstrap_components as dbc
 from dash import dcc, html
-from layouts.base_layouts import get_switch_layout
-<<<<<<< HEAD
-from layouts.table_layouts import (
-    get_filter_layout,
-    get_selector_layout,
-    get_sorting_layout,
-)
-=======
-from layouts.table_layouts import get_filter_layout, get_selector_layout, get_sorting_layout
->>>>>>> 0035808 ([pre-commit.ci] auto fixes from pre-commit.com hooks)
-from settings.constants import DELETE, GENERAL_STATS
-from utils.common import get_available_models
+from layouts.base_layouts import get_switch_layout, get_selector_layout
+from layouts.table_layouts import get_filter_layout, get_sorting_layout
+from settings.constants import CHOOSE_MODEL, DELETE, GENERAL_STATS
+from utils.common import get_available_models, get_custom_stats, get_general_custom_stats
 
 
 def get_models_options_layout() -> dbc.Accordion:
@@ -67,7 +59,11 @@ def get_utils_layout(utils: Dict) -> dbc.AccordionItem:
             [
                 html.Pre(f"{name}: ", className="mr-2"),
                 html.Pre(
-                    (value if value == "" or str(value).strip() != "" else repr(value)[1:-1]),
+                    (
+                        value
+                        if value == "" or str(value).strip() != ""
+                        else repr(value)[1:-1]
+                    ),
                     className="mr-2",
                 ),
             ],
@@ -108,6 +104,29 @@ def get_few_shots_layout(examples: List[Dict]) -> dbc.AccordionItem:
     )
 
 
+def get_save_dataset_layout() -> html.Div:
+    return html.Div(
+        [
+            dbc.Button("Save dataset", id="save_dataset"),
+            dbc.Modal(
+                [
+                    dbc.ModalBody(
+                        "dataset saved",
+                    ),
+                ],
+                id="save_dataset_modal",
+                is_open=False,
+                style={
+                    'text-align': 'center',
+                    "margin-top": "10px",
+                    "margin-bottom": "10px",
+                },
+            ),
+        ],
+        style={'margin-left': '1px'},
+    )
+
+
 def get_compare_test_layout() -> html.Div:
     return html.Div(
         [
@@ -117,11 +136,7 @@ def get_compare_test_layout() -> html.Div:
                     get_sorting_layout(),
                     get_filter_layout(),
                     get_add_stats_layout(),
-                    dbc.Button(
-                        "Save dataset",
-                        id="save_dataset",
-                        style={'margin-left': '1px', 'border-radius': '5px'},
-                    ),
+                    get_save_dataset_layout(),
                     dbc.Button(
                         "+",
                         id="add_model",
@@ -133,17 +148,23 @@ def get_compare_test_layout() -> html.Div:
                     get_selector_layout(
                         get_available_models().keys(),
                         'base_model_answers_selector',
+                        value=CHOOSE_MODEL,
                     ),
                 ]
             ),
             html.Pre(id="filtering_container"),
             html.Pre(id="sorting_container"),
-            html.Div(  # TODO spinner
+            dcc.Loading(
+                children=dbc.Container(
+                    id="loading_container", style={'display': 'none'}, children=""
+                ),
+                type='circle',
+                style={'margin-top': '50px'},
+            ),
+            html.Div(
                 children=[],
                 id="compare_models_rows",
             ),
-            dbc.Container(id="js_trigger", style={'display': 'none'}, children=""),
-            dbc.Container(id="js_container"),
         ],
     )
 
@@ -189,6 +210,29 @@ def get_stats_text(general_stats: bool = False, delete: bool = False):
             )
 
 
+def get_stats_input(modes: List[str] = []) -> List:
+    options = list(
+        get_general_custom_stats().keys()
+        if GENERAL_STATS in modes
+        else get_custom_stats().keys()
+    )
+    stats_input = (
+        dbc.Textarea(id="stats_input")
+        if not DELETE in modes
+        else get_selector_layout(
+            options,
+            "stats_input",
+            options[0] if options else "",
+        )
+    )
+    return [
+        html.Pre(
+            get_stats_text(GENERAL_STATS in modes, DELETE in modes), id="stats_text"
+        ),
+        stats_input,
+    ]
+
+
 def get_add_stats_layout() -> html.Div:
     modal_header = dbc.ModalHeader(
         [
@@ -204,10 +248,8 @@ def get_add_stats_layout() -> html.Div:
     )
     modal_body = dbc.ModalBody(
         html.Div(
-            [
-                html.Pre(get_stats_text(), id="stats_text"),
-                dbc.Textarea(id="new_stats_input"),
-            ]
+            get_stats_input(),
+            id="stats_input_container",
         )
     )
     modal_footer = dbc.ModalFooter(

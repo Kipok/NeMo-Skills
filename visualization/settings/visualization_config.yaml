@@ -1,4 +1,4 @@
 visualization_params:
-  prediction_jsonl_files:
-    our_script: /home/dgitman/visualization/llm-skill-improvement/results/math_tora_70b/output-tora-correct_predictions.jsonl
-    tora_script: /home/dgitman/visualization/llm-skill-improvement/results/math_tora_70b/output-tora.jsonl
+  model_prediction:
+    model1: ???
+    model2: ???
