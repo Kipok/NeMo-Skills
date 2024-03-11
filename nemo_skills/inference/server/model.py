@@ -107,7 +107,7 @@ class BaseModel(abc.ABC):
         self.max_code_output_characters = max_code_output_characters
         self.code_execution_timeout = code_execution_timeout
         self.max_code_executions = max_code_executions
-        self.error_recovery_args = ErrorRecoveryConfig(**error_recovery_config)
+        self.error_recovery_config = ErrorRecoveryConfig(**error_recovery_config)
         self.handle_code_execution = handle_code_execution
         self.stop_on_code_error = stop_on_code_error
         if self.handle_code_execution and sandbox is None:
@@ -257,14 +257,14 @@ class BaseModel(abc.ABC):
         recovery_request = {key: value for key, value in request.items() if key != 'prompts'}
         recovery_request['prompts'] = [new_output['full_prompt']]
 
-        recovery_request['temperature'] = self.error_recovery_args.temperature
-        recovery_request['top_p'] = self.error_recovery_args.top_p
-        recovery_request['top_k'] = self.error_recovery_args.top_k
+        recovery_request['temperature'] = self.error_recovery_config.temperature
+        recovery_request['top_p'] = self.error_recovery_config.top_p
+        recovery_request['top_k'] = self.error_recovery_config.top_k
 
         outputs = []
-        futures = [None] * self.error_recovery_args.recovery_attempts
-        results = [None] * self.error_recovery_args.recovery_attempts
-        for rs in range(self.error_recovery_args.recovery_attempts):
+        futures = [None] * self.error_recovery_config.recovery_attempts
+        results = [None] * self.error_recovery_config.recovery_attempts
+        for rs in range(self.error_recovery_config.recovery_attempts):
             recovery_request['random_seed'] = rs
             output = self._single_call(**recovery_request)[0]
             outputs.append(output)
@@ -277,7 +277,7 @@ class BaseModel(abc.ABC):
                     session_id=new_output['session_id'],
                 )
 
-            if not self.error_recovery_args.majority_voting:
+            if not self.error_recovery_config.majority_voting:
                 result, _ = futures[rs].result()
                 # quit on first correct output if not majority voting
                 if not result['error_message']:
@@ -285,7 +285,7 @@ class BaseModel(abc.ABC):
                     break
 
         for idx, output in enumerate(outputs):
-            if not output.endswith(CODE_SEPARATORS[-1]) or not self.error_recovery_args.majority_voting:
+            if not output.endswith(CODE_SEPARATORS[-1]) or not self.error_recovery_config.majority_voting:
                 continue
             result, _ = futures[idx].result()
             if result['error_message']:
@@ -366,7 +366,7 @@ class NemoModel(BaseModel):
     ):
         # nemo inference handles code execution directly
         kwargs['handle_code_execution'] = False
-        if kwargs.get('error_recovery_args', None) is not None:
+        if kwargs.get('error_recovery_config', None) is not None:
             raise ValueError("Error recovery is not supported by NemoModel.")
         if kwargs.get('stop_on_code_error', None) not in (None, True):
             raise ValueError("`stop_on_code_error=False` is not supported by NemoModel.")
