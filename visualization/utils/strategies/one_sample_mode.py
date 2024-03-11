@@ -28,9 +28,7 @@ class OneTestModeStrategy(ModeStrategies):
         super().__init__()
 
     def get_utils_input_layout(self) -> List[dbc.AccordionItem]:
-        return super().get_utils_input_layout(
-            lambda key, value: key not in PARAMS_FOR_WHOLE_DATASET_ONLY, True
-        )
+        return super().get_utils_input_layout(lambda key, value: key not in PARAMS_FOR_WHOLE_DATASET_ONLY, True)
 
     def get_query_input_layout(self, dataset: str) -> List[dbc.AccordionItem]:
         return super().get_query_input_layout(get_test_data(0, dataset)[0])

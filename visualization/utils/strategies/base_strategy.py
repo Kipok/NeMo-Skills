@@ -17,12 +17,10 @@ from copy import deepcopy
 from dataclasses import asdict, fields
 from typing import Callable, Dict, List, Union
 
-from flask import current_app
-import requests
-
-from dash import html, dcc
 import dash_bootstrap_components as dbc
-
+import requests
+from dash import dcc, html
+from flask import current_app
 from layouts import (
     get_input_group_layout,
     get_results_content_layout,
@@ -30,19 +28,12 @@ from layouts import (
     get_switch_layout,
     get_text_area_layout,
 )
-from utils.common import get_examples, get_utils_from_config
 from settings.constants import FEW_SHOTS_INPUT, QUERY_INPUT_TYPE
+from utils.common import get_examples, get_utils_from_config
 
 from nemo_skills.code_execution.sandbox import get_sandbox
-from nemo_skills.inference.generate_solutions import (
-    GenerateSolutionsConfig,
-    InferenceConfig,
-)
-from nemo_skills.inference.prompt.utils import (
-    FewShotExamples,
-    Prompt,
-    PromptConfig,
-)
+from nemo_skills.inference.generate_solutions import GenerateSolutionsConfig, InferenceConfig
+from nemo_skills.inference.prompt.utils import FewShotExamples, Prompt, PromptConfig
 from nemo_skills.inference.server.model import get_model
 
 
@@ -63,12 +54,9 @@ class ModeStrategies:
 
     def get_utils_input_layout(
         self,
-        condition: Callable[
-            [str, Union[str, int, float, bool]], bool
-        ] = lambda key, value: True,
+        condition: Callable[[str, Union[str, int, float, bool]], bool] = lambda key, value: True,
         disabled: bool = False,
     ) -> List[dbc.AccordionItem]:
-
         input_group_layout = html.Div(
             (
                 [
@@ -78,7 +66,9 @@ class ModeStrategies:
                         key=lambda item: (
                             1
                             if item[0] in current_app.config['data_explorer']['types']
-                            else 0 if not isinstance(item[1], str) else 2
+                            else 0
+                            if not isinstance(item[1], str)
+                            else 2
                         ),
                     )
                     if condition(name, value)
@@ -219,16 +209,12 @@ class ModeStrategies:
 
         logging.info(f"query to process: {params['prompts'][0]}")
 
-        inference_cfg = self._get_config(
-            InferenceConfig, utils, current_app.config['data_explorer']['inference']
-        )
+        inference_cfg = self._get_config(InferenceConfig, utils, current_app.config['data_explorer']['inference'])
 
         try:
             outputs = llm(
                 prompts=params['prompts'],
-                stop_phrases=current_app.config['data_explorer']['prompt'][
-                    'stop_phrases'
-                ],
+                stop_phrases=current_app.config['data_explorer']['prompt']['stop_phrases'],
                 **asdict(inference_cfg),
             )
         except requests.exceptions.ConnectionError as e:
@@ -243,9 +229,7 @@ class ModeStrategies:
         try:
             color, background, is_correct = (
                 ('#d4edda', '#d4edda', "correct")
-                if self.sandbox.is_output_correct(
-                    outputs[0]['predicted_answer'], params["expected_answer"]
-                )
+                if self.sandbox.is_output_correct(outputs[0]['predicted_answer'], params["expected_answer"])
                 else ("#fecccb", "#fecccb", "incorrect")
             )
         except Exception as e:
@@ -272,9 +256,7 @@ class ModeStrategies:
         )
 
     def get_prompt(self, utils: Dict, input_dict: Dict[str, str]) -> str:
-        prompt_config = self._get_config(
-            PromptConfig, utils, current_app.config['data_explorer']['prompt']
-        )
+        prompt_config = self._get_config(PromptConfig, utils, current_app.config['data_explorer']['prompt'])
 
         prompt_config.few_shot_examples = self._get_config(
             FewShotExamples,
@@ -319,8 +301,7 @@ class ModeStrategies:
         return html.Div(
             html.P(
                 [
-                    "Could not connect to the server. "
-                    "Please check that the server is running (look at ",
+                    "Could not connect to the server. " "Please check that the server is running (look at ",
                     html.A(
                         "inference.md",
                         href="https://github.com/Kipok/NeMo-Skills/blob/main/docs/inference.md",
@@ -333,9 +314,7 @@ class ModeStrategies:
 
     def _get_config(
         self,
-        config_class: Union[
-            GenerateSolutionsConfig, PromptConfig, InferenceConfig, FewShotExamples
-        ],
+        config_class: Union[GenerateSolutionsConfig, PromptConfig, InferenceConfig, FewShotExamples],
         utils: Dict[str, str],
         config: Dict,
         params: Dict = {},

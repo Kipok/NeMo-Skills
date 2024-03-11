@@ -19,9 +19,7 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html
 from flask import current_app
 from settings.constants import UNDEFINED
-from utils.common import (
-    parse_model_answer,
-)
+from utils.common import parse_model_answer
 from utils.decoration import design_text_output, highlight_code
 
 
@@ -74,9 +72,7 @@ def get_switch_layout(
                 "value": value,
                 "disabled": is_disabled,
             }
-            for label, value, is_disabled in itertools.zip_longest(
-                labels, values, disabled, fillvalue=False
-            )
+            for label, value, is_disabled in itertools.zip_longest(labels, values, disabled, fillvalue=False)
         ],
         value=[values[0]] if is_active else [],
         switch=True,
@@ -100,19 +96,13 @@ def get_selector_layout(options: Iterable, id: str, value: str = "") -> dbc.Sele
     )
 
 
-def get_text_area_layout(
-    id: str, value: str, view_mode: bool = False
-) -> Union[dbc.Textarea, html.Pre]:
+def get_text_area_layout(id: str, value: str, view_mode: bool = False) -> Union[dbc.Textarea, html.Pre]:
     component = dbc.Textarea
     if view_mode:
         component = html.Pre
 
     return component(
-        **(
-            {'children': get_single_prompt_output_layout(value)}
-            if view_mode
-            else {"value": value}
-        ),
+        **({'children': get_single_prompt_output_layout(value)} if view_mode else {"value": value}),
         id=id,
         style={
             'width': '100%',
@@ -161,9 +151,7 @@ def get_single_prompt_output_layout(answer: str) -> List[html.Div]:
     ]
 
 
-def get_results_content_layout(
-    text: str, content: str = None, style={}, switch_is_active: bool = False
-) -> html.Div:
+def get_results_content_layout(text: str, content: str = None, style={}, switch_is_active: bool = False) -> html.Div:
     return html.Div(
         [
             get_switch_layout(
@@ -237,11 +225,11 @@ def get_input_group_layout(
     )
 
 
-def get_utils_field_representation(
-    value: Union[str, int, float, bool], key: Optional[str] = None
-) -> str:
+def get_utils_field_representation(value: Union[str, int, float, bool], key: Optional[str] = None) -> str:
     return (
         UNDEFINED
         if value is None and key in current_app.config['data_explorer']['types']
-        else value if value == "" or str(value).strip() != "" else repr(value)[1:-1]
+        else value
+        if value == "" or str(value).strip() != ""
+        else repr(value)[1:-1]
     )

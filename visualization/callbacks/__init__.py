@@ -17,29 +17,23 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Dict
 
-from dash import Dash
 import dash_bootstrap_components as dbc
-from flask import Flask
 import hydra
-from omegaconf import MISSING, OmegaConf, DictConfig
-
-from visualization.settings.visualization_config import VisualizationConfig
+from dash import Dash
+from flask import Flask
+from omegaconf import MISSING, DictConfig, OmegaConf
 from settings.constants import UNDEFINED
 
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
-from nemo_skills.inference.prompt.utils import (
-    context_templates,
-    get_prompt_config,
-)
+from nemo_skills.inference.prompt.utils import context_templates, get_prompt_config
+from visualization.settings.visualization_config import VisualizationConfig
 
 config_path = os.path.join(os.path.abspath(Path(__file__).parents[1]), "settings")
 
 config = {}
 
 
-@hydra.main(
-    version_base=None, config_path=config_path, config_name="visualization_config"
-)
+@hydra.main(version_base=None, config_path=config_path, config_name="visualization_config")
 def set_config(cfg: VisualizationConfig) -> None:
     global config
 
@@ -79,13 +73,8 @@ def set_config(cfg: VisualizationConfig) -> None:
     config['data_explorer'] = asdict(OmegaConf.to_object(cfg))
 
     for param in ['host', 'ssh_server', 'ssh_key_path']:
-        if (
-            param not in config['data_explorer']['sandbox']
-            and param in config['data_explorer']['server']
-        ):
-            config['data_explorer']['sandbox'][param] = config['data_explorer']['server'][
-                param
-            ]
+        if param not in config['data_explorer']['sandbox'] and param in config['data_explorer']['server']:
+            config['data_explorer']['sandbox'][param] = config['data_explorer']['server'][param]
 
     config['data_explorer']['prompt']['prompt_type'] = prompt_type
 
@@ -119,6 +108,6 @@ app = Dash(
     server=server,
 )
 
+from callbacks.analyze_callbacks import choose_base_model
 from callbacks.base_callback import nav_click
 from callbacks.run_prompt_callbacks import add_example
-from callbacks.analyze_callbacks import choose_base_model

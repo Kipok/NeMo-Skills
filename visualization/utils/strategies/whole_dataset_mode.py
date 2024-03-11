@@ -18,12 +18,11 @@ import os
 import re
 from typing import Dict, List
 
-from dash import html
 import dash_bootstrap_components as dbc
 import requests
+from dash import html
 from flask import current_app
 from omegaconf import OmegaConf
-
 from settings.constants import (
     GREEDY,
     METRICS,
@@ -37,15 +36,8 @@ from settings.templates import compute_metrics_template
 from utils.common import get_available_models, get_examples, run_subprocess
 from utils.strategies.base_strategy import ModeStrategies
 
-from nemo_skills.evaluation.evaluate_results import (
-    EvaluateResultsConfig,
-    evaluate_results,
-)
-from nemo_skills.inference.generate_solutions import (
-    GenerateSolutionsConfig,
-    InferenceConfig,
-    generate_solutions,
-)
+from nemo_skills.evaluation.evaluate_results import EvaluateResultsConfig, evaluate_results
+from nemo_skills.inference.generate_solutions import GenerateSolutionsConfig, InferenceConfig, generate_solutions
 from nemo_skills.inference.prompt.utils import FewShotExamples, PromptConfig
 
 
@@ -64,16 +56,8 @@ class WholeDatasetModeStrategy(ModeStrategies):
 
         run_index = len(runs_storage)
         metrics_directory = RESULTS_PATH.format(run_index)
-        random_seed_start = (
-            utils['start_random_seed']
-            if params['range_random_mode']
-            else utils['random_seed']
-        )
-        random_seed_end = (
-            utils['end_random_seed']
-            if params['range_random_mode']
-            else utils['random_seed'] + 1
-        )
+        random_seed_start = utils['start_random_seed'] if params['range_random_mode'] else utils['random_seed']
+        random_seed_end = utils['end_random_seed'] if params['range_random_mode'] else utils['random_seed'] + 1
 
         generate_solutions_config = self._get_config(
             GenerateSolutionsConfig,
@@ -107,9 +91,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
         )
 
         for random_seed in range(random_seed_start, random_seed_end):
-            file_name = (
-                GREEDY if not params['range_random_mode'] else "rs" + str(random_seed)
-            )
+            file_name = GREEDY if not params['range_random_mode'] else "rs" + str(random_seed)
             output_file = os.path.join(
                 metrics_directory,
                 OUTPUT_PATH.format(
@@ -158,9 +140,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
         with open(PARAMETERS_FILE_NAME, "w") as f:
             f.write(json.dumps(runs_storage))
 
-        return html.Pre(
-            f'Done. Results are in folder\n{"/".join(output_file.split("/")[:-1])}'
-        )
+        return html.Pre(f'Done. Results are in folder\n{"/".join(output_file.split("/")[:-1])}')
 
     def get_prompt(self, utils: Dict, input_dict: Dict[str, str]) -> str:
         pattern = r'\{([^}]*)\}'

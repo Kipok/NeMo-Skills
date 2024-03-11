@@ -15,6 +15,7 @@
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
 from omegaconf import OmegaConf
 
 # guarding import to allow prompt_types to be used in scripts without extra packages required
@@ -31,9 +32,7 @@ prompt_types = [cfg.stem for cfg in Path(__file__).parent.glob("*.yaml")]
 # listing all dataset folders available - note this will not be available
 # if using from installed package but you need to have data files available anyway
 datasets = [
-    d.name
-    for d in (Path(__file__).parents[3] / 'datasets').glob("*")
-    if d.is_dir() and d.name != "__pycache__"
+    d.name for d in (Path(__file__).parents[3] / 'datasets').glob("*") if d.is_dir() and d.name != "__pycache__"
 ]
 
 

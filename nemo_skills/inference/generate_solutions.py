@@ -24,12 +24,7 @@ from omegaconf import OmegaConf
 from tqdm import tqdm
 
 from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
-from nemo_skills.inference.prompt.utils import (
-    Prompt,
-    PromptConfig,
-    datasets,
-    prompt_types,
-)
+from nemo_skills.inference.prompt.utils import Prompt, PromptConfig, datasets, prompt_types
 from nemo_skills.inference.server.model import get_model, server_params
 from nemo_skills.utils import get_help_message, setup_logging
 
@@ -81,20 +76,11 @@ class GenerateSolutionsConfig:
         """Building data_file from dataset/split_name if not provided directly."""
         if self.data_file is not None:
             if self.dataset is not None or self.split_name is not None:
-                raise ValueError(
-                    "Either `data_file` or `dataset` and `split_name` should be provided, but not both"
-                )
+                raise ValueError("Either `data_file` or `dataset` and `split_name` should be provided, but not both")
         else:
             if self.dataset is None or self.split_name is None:
-                raise ValueError(
-                    "Either `data_file` or `dataset` and `split_name` should be provided"
-                )
-            self.data_file = (
-                Path(__file__).parents[2]
-                / "datasets"
-                / self.dataset
-                / f"{self.split_name}.jsonl"
-            )
+                raise ValueError("Either `data_file` or `dataset` and `split_name` should be provided")
+            self.data_file = Path(__file__).parents[2] / "datasets" / self.dataset / f"{self.split_name}.jsonl"
 
 
 cs = hydra.core.config_store.ConfigStore.instance()
@@ -133,14 +119,10 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
     data = data[starting_idx:]
 
     # setting buffering=1 to force to dump the output after every line, so that we can see intermediate generations
-    with open(
-        cfg.output_file, "at" if cfg.skip_filled else "wt", encoding="utf-8", buffering=1
-    ) as fout:
+    with open(cfg.output_file, "at" if cfg.skip_filled else "wt", encoding="utf-8", buffering=1) as fout:
         prompts = []
         data_points = []
-        for idx, data_point in tqdm(
-            enumerate(data), initial=starting_idx, total=len(data) + starting_idx
-        ):
+        for idx, data_point in tqdm(enumerate(data), initial=starting_idx, total=len(data) + starting_idx):
             if idx == cfg.max_samples:
                 break
 
