@@ -29,6 +29,7 @@ logging.getLogger().setLevel(logging.INFO)
 
 
 if __name__ == "__main__":
+    app.title = "Data Explorer"
     app.layout = get_main_page_layout()
     app.run(
         host='localhost',

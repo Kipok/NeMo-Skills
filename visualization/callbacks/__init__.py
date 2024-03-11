@@ -23,7 +23,7 @@ from flask import Flask
 import hydra
 from omegaconf import MISSING, OmegaConf, DictConfig
 
-from settings.config import Config
+from visualization.settings.visualization_config import VisualizationConfig
 from settings.constants import UNDEFINED
 
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
@@ -37,8 +37,10 @@ config_path = os.path.join(os.path.abspath(Path(__file__).parents[1]), "settings
 config = {}
 
 
-@hydra.main(version_base=None, config_path=config_path, config_name="config")
-def set_config(cfg: Config) -> None:
+@hydra.main(
+    version_base=None, config_path=config_path, config_name="visualization_config"
+)
+def set_config(cfg: VisualizationConfig) -> None:
     global config
 
     prompt_type = UNDEFINED  # TODO detect prompt_type

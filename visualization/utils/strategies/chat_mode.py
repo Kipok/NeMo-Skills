@@ -66,7 +66,7 @@ class ChatModeStrategy(ModeStrategies):
             },
         }
         utils_updated['user'] = '{question}'
-        utils_updated['prompt_template'] = '{user}'
+        utils_updated['prompt_template'] = '{user}\n{generated_solution}'
         return super().get_prompt(
             utils_updated,
             params,

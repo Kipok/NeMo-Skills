@@ -9,7 +9,7 @@ This page allows for the analysis of model answers depending on different parame
 **Run whole dataset** mode allows you to launch the model with chosen parameters on the whole dataset. It will save results in `visualization/results/output-greedy.jsonl` and `visualization/results/metrics-greedy.jsonl`. If the "use random seed range" flag is turned on, the dataset will be launched for random seeds in the range from `start_random_seed` to `end_random_seed`. All results can then be analyzed on the "Analyze" page (you do not need to relaunch the program), and the parameters you used to launch the dataset can be found in the `visualization/results/parameters.jsonl` file and on the "Analyze" page as well.
 
 ## Analyze page
-To use the Analyze page, you need to specify paths to the datasets you want to analyze (if you did not get the data through the "Inference" page). You can pass parameters via command line  `++visualization_params.model_prediction.model1='/some_path/model1/output-greedy.jsonl'` or modify [visualization_config.yaml](/visualization/settings/visualization_config.yaml)
+To use the Analyze page, you need to specify paths to the datasets you want to analyze (if you did not get the data through the "Inference" page). You can pass parameters via command line  `++visualization_params.model_prediction.model1='/some_path/model1/output-greedy.jsonl'` or add additional config file
 ```yaml
 visualization_params:
   model_prediction:
@@ -26,7 +26,7 @@ Before using this tool, you first need to do instructions in [prerequisites.md](
     ./datasets/prepare_all.sh
 ```
 
-You can change parameters in the [config.yaml](/visualization/settings/config.yaml) file, in [visualization_config.yaml](/visualization/settings/visualization_config.yaml), or through the command line.
+You can change parameters in the [config.yaml](/visualization/settings/visualization_config.yaml) file, or through the command line.
 Command to launch the program (all parameters are optional):
 ```
 python visualization/data_explorer.py \
