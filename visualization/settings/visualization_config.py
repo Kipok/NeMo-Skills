@@ -28,7 +28,7 @@ class BaseVisualizationConfig:
 
     code_separators: Tuple[str, str] = CODE_SEPARATORS
     code_output_separators: Tuple[str, str] = CODE_OUTPUT_SEPARATORS
-    save_dataset_path: Optional[str] = "results/saved_dataset"
+    save_dataset_path: Optional[str] = "visualization/results/saved_dataset"
 
     def __post_init__(self):
         self.model_prediction = {
