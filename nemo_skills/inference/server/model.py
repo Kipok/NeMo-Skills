@@ -280,12 +280,12 @@ class BaseModel(abc.ABC):
                     session_id=new_output['session_id'],
                 )
 
-            if not self.error_recovery.majority_voting:
-                result, _ = futures[rs].result()
-                # quit on first correct output if not majority voting
-                if not result['error_message']:
-                    results[rs] = result['result']
-                    break
+                if not self.error_recovery.majority_voting:
+                    result, _ = futures[rs].result()
+                    # quit on first correct output if not majority voting
+                    if not result['error_message']:
+                        results[rs] = result['result']
+                        break
 
         for idx, output in enumerate(outputs):
             if not output.endswith(CODE_SEPARATORS[-1]) or not self.error_recovery.majority_voting:
