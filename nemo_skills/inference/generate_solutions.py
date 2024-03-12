@@ -53,16 +53,15 @@ class GenerateSolutionsConfig:
     # Prompt configuration.
     # Available pre-configured prompts: {prompt_types}.
     prompt: PromptConfig = field(default_factory=PromptConfig)
-    inference: InferenceConfig = field(default_factory=InferenceConfig)
+    inference: InferenceConfig = field(default_factory=InferenceConfig)  # LLM call parameters
 
     # Can specify one of the existing datasets.
     # Choices: {datasets}.
     dataset: Optional[str] = None
-
     split_name: Optional[str] = None  # Can be train, validation, test or train_full (train + validation)
     data_file: Optional[str] = None  # Can directly specify a data file, if using a custom dataset
 
-    example_dicts: Optional[List[Dict]] = None
+    example_dicts: Optional[List[Dict]] = None # A list of few-shot demonstrations to be shown in the prompt
 
     batch_size: int = 16
     max_samples: int = -1  # If > 0, will stop after generating this many samples. Useful for debugging

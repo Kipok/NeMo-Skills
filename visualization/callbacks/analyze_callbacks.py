@@ -46,7 +46,6 @@ from utils.common import (
     calculate_metrics_for_whole_data,
     get_available_models,
     get_custom_stats,
-    get_data_from_files,
     get_deleted_stats,
     get_excluded_row,
     get_filtered_files,

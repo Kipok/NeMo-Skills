@@ -23,7 +23,8 @@ build
 *.zip
 *.egg-info
 *.xml
-visualization/results*
+*results*
+*.DS_Store
 outputs*
 
 __pycache__

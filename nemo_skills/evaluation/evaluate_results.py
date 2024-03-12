@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import hydra
-from omegaconf import II, MISSING, OmegaConf
+from omegaconf import MISSING, OmegaConf
 
 from nemo_skills.code_execution.sandbox import get_sandbox
 from nemo_skills.utils import get_help_message, setup_logging
