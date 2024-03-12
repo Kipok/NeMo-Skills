@@ -84,6 +84,7 @@ class BaseModel(abc.ABC):
         handle_code_execution: Optional[bool] = True - Whether to handle code execution in this class
             or make a single call to the server. If set to False, the server needs to have special logic
             for communicating with the sandbox.
+        error_recovery: Optional[dict] = None - Configuration for error recovery.
     """
 
     def __init__(
@@ -96,9 +97,9 @@ class BaseModel(abc.ABC):
         max_code_output_characters=1000,
         code_execution_timeout=10.0,
         max_code_executions=3,
-        error_recovery=None,
         stop_on_code_error=True,
         handle_code_execution=True,
+        error_recovery=None,
     ):
         self.server_host = host
         self.server_port = port
@@ -379,7 +380,9 @@ class NemoModel(BaseModel):
             ]
             for arg in unsupported_arguments:
                 if arg in kwargs:
-                    raise ValueError(f"`{arg}` is not supported by NemoModel.")
+                    raise ValueError(
+                        f"`{arg}` is not supported by NemoModel if handle_code_execution=False. To use it, set handle_code_execution=True."
+                    )
 
         super().__init__(**kwargs)
 
