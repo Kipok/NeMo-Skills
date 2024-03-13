@@ -27,7 +27,7 @@ from utils.common import get_data_from_files, get_height_adjustment
         Output("run_mode_link", "active"),
         Output("analyze_link", "active"),
     ],
-    [Input("url", "pathname")],
+    Input("url", "pathname"),
 )
 def nav_click(url: str) -> Tuple[html.Div, bool, bool]:
     if url == "/":
@@ -39,7 +39,10 @@ def nav_click(url: str) -> Tuple[html.Div, bool, bool]:
 
 @app.callback(
     Output("js_container", "children", allow_duplicate=True),
-    [Input("page_content", "children"), Input("js_trigger", "children")],
+    [
+        Input("page_content", "children"),
+        Input("js_trigger", "children"),
+    ],
     prevent_initial_call=True,
 )
 def adjust_text_area_height(content: html.Div, trigger: str) -> html.Iframe:

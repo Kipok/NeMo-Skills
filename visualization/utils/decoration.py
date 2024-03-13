@@ -25,40 +25,49 @@ from pygments.lexers import PythonLexer
 
 def design_text_output(text: str, style={}):
     conv = Ansi2HTMLConverter()
-    text = conv.convert(text, full=False)
+    ansi_escape = re.compile(r'\x1b\[[0-9;]*m')
 
-    def add_marker_to_lines(match):
-        lines = match.group(1).strip().split('\n')
-        if len(lines) == 1:
-            marked_lines = lines
-        else:
-            marked_lines = [
-                ("$$" + line if i == len(lines) - 1 else line + "$$" if i == 0 else "$$" + line + "$$")
-                for i, line in enumerate(lines)
-            ]
-        return '$$' + '\n'.join(marked_lines) + '$$'
+    if bool(ansi_escape.search(text)):
+        text = conv.convert(text, full=False)
 
-    display_math_pattern = re.compile(r'\$\$(.*?)\$\$', re.DOTALL)
+    def preprocess_latex(text):
+        # Replace \[ and \] with $$ $$
+        text = re.sub(r'\\\[', '\n$$', text)
+        text = re.sub(r'\\\]', '$$\n', text)
 
-    formatted_text = re.sub(
-        display_math_pattern,
-        add_marker_to_lines,
-        text.replace("*", "\*")
-        .replace("#", "\#")
-        .replace("_", "\_")
-        .replace("[", "\[")
-        .replace("]", "\]")
-        .replace("\\\\", "\\"),
-    )
+        # Extract blocks inside $$ $$ and $ $
+        math_blocks = re.findall(r'(\$\$.*?\$\$|\$.*?\$)', text, flags=re.DOTALL)
+
+        # Replace the math blocks with placeholders
+        for i, block in enumerate(math_blocks):
+            text = text.replace(block, f'__MATH_BLOCK_{i}__')
+
+        # Add $$ $$ around \begin{} and \end{} blocks
+        text = re.sub(r'\\begin\{(.*?)\}', r'\n$$\\begin{\1}', text)
+        text = re.sub(r'\\end\{(.*?)\}', r'\\end{\1}$$\n', text)
+
+        # Replace the placeholders with the original math blocks
+        for i, block in enumerate(math_blocks):
+            text = text.replace(f'__MATH_BLOCK_{i}__', block)
+
+        # Extract all blocks (including our custom blocks) inside $$ $$ and $ $
+        math_blocks = re.findall(r'(\$\$.*?\$\$|\$.*?\$)', text, flags=re.DOTALL)
+
+        # Replace the math blocks with placeholders
+        for i, block in enumerate(math_blocks):
+            text = text.replace(block, f'__MATH_BLOCK_{i}__')
+
+        # Escape plain text outside of math blocks
+        text = re.sub(r'([*_{}[\]()#+\-\.!])', r'\\\1', text)
+
+        # Replace the placeholders with the original math blocks
+        for i, block in enumerate(math_blocks):
+            text = text.replace(f'\_\_MATH\_BLOCK\_{i}\_\_', block)
+
+        return text.replace('\n', '\n\n')
+
     return html.Div(
-        [
-            dcc.Markdown(
-                line,
-                mathjax=True,
-                dangerously_allow_html=True,
-            )
-            for line in formatted_text.split('\n')
-        ],
+        dcc.Markdown(preprocess_latex(text), mathjax=True),
         style=style,
     )
 

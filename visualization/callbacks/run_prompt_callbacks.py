@@ -41,7 +41,12 @@ from utils.common import (
 )
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
 
-from nemo_skills.inference.prompt.utils import FewShotExamples, PromptConfig, context_templates, get_prompt_config
+from nemo_skills.inference.prompt.utils import (
+    FewShotExamples,
+    PromptConfig,
+    context_templates,
+    get_prompt_config,
+)
 
 
 @app.callback(
@@ -67,7 +72,9 @@ def trigger_js(active_item: str, js_trigger: str) -> Tuple[str, str]:
     State("js_trigger", "children"),
     prevent_initial_call=True,
 )
-def update_examples_type(examples_type: str, js_trigger: str) -> Union[NoUpdate, dbc.AccordionItem]:
+def update_examples_type(
+    examples_type: str, js_trigger: str
+) -> Union[NoUpdate, dbc.AccordionItem]:
     if not examples_type:
         examples_type = ""
     size = len(
@@ -123,10 +130,8 @@ def change_examples_page(
         Output("few_shots_pagination", "max_value", allow_duplicate=True),
         Output("few_shots_pagination", "active_page", allow_duplicate=True),
     ],
-    [Input("add_example_button", "n_clicks")],
-    [
-        State('examples_type', "value"),
-    ],
+    Input("add_example_button", "n_clicks"),
+    State('examples_type', "value"),
     prevent_initial_call=True,
 )
 def add_example(
@@ -138,8 +143,14 @@ def add_example(
     if examples_type not in get_examples():
         get_examples()[examples_type] = []
     last_page = len(get_examples()[examples_type])
-    examples_type_keys = list(get_examples().keys())[0] if not len(get_examples()[examples_type]) else examples_type
-    get_examples()[examples_type].append({key: "" for key in get_examples()[examples_type_keys][0].keys()})
+    examples_type_keys = (
+        list(get_examples().keys())[0]
+        if not len(get_examples()[examples_type])
+        else examples_type
+    )
+    get_examples()[examples_type].append(
+        {key: "" for key in get_examples()[examples_type_keys][0].keys()}
+    )
     return (last_page + 1, last_page + 1)
 
 
@@ -151,7 +162,7 @@ def add_example(
         Output("js_container", "children", allow_duplicate=True),
         Output("js_trigger", "children", allow_duplicate=True),
     ],
-    [Input("del_example_button", "n_clicks")],
+    Input("del_example_button", "n_clicks"),
     [
         State("few_shots_pagination", "active_page"),
         State('examples_type', "value"),
@@ -172,7 +183,12 @@ def del_example(
     examples_type: str,
     view_mode: List[str],
     js_trigger: str,
-) -> Tuple[Union[int, NoUpdate], Union[int, NoUpdate], Union[Tuple[html.Div], NoUpdate], Union[int, NoUpdate],]:
+) -> Tuple[
+    Union[int, NoUpdate],
+    Union[int, NoUpdate],
+    Union[Tuple[html.Div], NoUpdate],
+    Union[int, NoUpdate],
+]:
     if not n_clicks:
         return no_update, no_update, no_update, no_update, no_update
     if not examples_type:
@@ -237,7 +253,10 @@ def update_examples(
 
 
 @app.callback(
-    [Output(field, "value") for field in get_utils_from_config(asdict(PromptConfig(FewShotExamples()))).keys()]
+    [
+        Output(field, "value")
+        for field in get_utils_from_config(asdict(PromptConfig(FewShotExamples()))).keys()
+    ]
     + [
         Output("js_container", "children", allow_duplicate=True),
         Output("js_trigger", "children", allow_duplicate=True),
@@ -246,7 +265,9 @@ def update_examples(
     State("js_trigger", "children"),
     prevent_initial_call=True,
 )
-def update_prompt_type(prompt_type: str, js_trigger: str) -> Union[NoUpdate, dbc.AccordionItem]:
+def update_prompt_type(
+    prompt_type: str, js_trigger: str
+) -> Union[NoUpdate, dbc.AccordionItem]:
     prompt_types = [
         os.path.splitext(file)[0]
         for file in os.listdir(
@@ -258,12 +279,17 @@ def update_prompt_type(prompt_type: str, js_trigger: str) -> Union[NoUpdate, dbc
         if os.path.splitext(file)[1] == '.yaml'
     ]
     if prompt_type not in prompt_types:
-        return no_update
+        output_len = len(
+            get_utils_from_config(asdict(PromptConfig(FewShotExamples()))).keys()
+        )
+        return [no_update] * output_len, no_update, no_update
     prompt_config = get_prompt_config(prompt_type)
 
     return [
         get_utils_field_representation(value, key)
-        for key, value in get_utils_from_config(OmegaConf.to_container(prompt_config)).items()
+        for key, value in get_utils_from_config(
+            OmegaConf.to_container(prompt_config)
+        ).items()
     ] + ['', js_trigger + " "]
 
 
@@ -277,7 +303,9 @@ def update_prompt_type(prompt_type: str, js_trigger: str) -> Union[NoUpdate, dbc
     State("js_trigger", "children"),
     prevent_initial_call=True,
 )
-def update_context_type(context_type: str, js_trigger: str) -> Union[NoUpdate, dbc.AccordionItem]:
+def update_context_type(
+    context_type: str, js_trigger: str
+) -> Union[NoUpdate, dbc.AccordionItem]:
     return context_templates.get(context_type, no_update), "", js_trigger + " "
 
 
@@ -314,7 +342,7 @@ def update_random_seed_mode(
         Output("results_content", "children"),
         Output("loading_container", "children", allow_duplicate=True),
     ],
-    [Input("run_button", "n_clicks")],
+    Input("run_button", "n_clicks"),
     [
         State("utils_group", "children"),
         State("range_random_seed_mode", "value"),
@@ -363,10 +391,15 @@ def get_run_test_results(
         Output("results_content", "children", allow_duplicate=True),
     ],
     Input("run_mode_options", "value"),
-    [State("utils_group", "children"), State("js_trigger", "children")],
+    [
+        State("utils_group", "children"),
+        State("js_trigger", "children"),
+    ],
     prevent_initial_call=True,
 )
-def change_mode(run_mode: str, utils: List[Dict], js_trigger: str) -> Tuple[List[dbc.AccordionItem], None]:
+def change_mode(
+    run_mode: str, utils: List[Dict], js_trigger: str
+) -> Tuple[List[dbc.AccordionItem], None]:
     utils = get_values_from_input_group(utils)
     return (
         get_query_params_layout(run_mode, utils.get('data_file', UNDEFINED)),
@@ -386,6 +419,7 @@ def change_mode(run_mode: str, utils: List[Dict], js_trigger: str) -> Tuple[List
     [
         Input("query_search_button", "n_clicks"),
         Input("data_file", "value"),
+        Input("run_mode_options", "value"),
     ],
     [
         State("query_search_input", "value"),
@@ -393,10 +427,9 @@ def change_mode(run_mode: str, utils: List[Dict], js_trigger: str) -> Tuple[List
     ],
     prevent_initial_call=True,
 )
-def prompt_search(n_clicks: int, data_file: str, index: int, js_trigger: str) -> Tuple[Union[List[str], NoUpdate]]:
-    if not n_clicks:
-        return no_update, no_update, no_update, no_update
-
+def prompt_search(
+    n_clicks: int, data_file: str, run_mode: str, index: int, js_trigger: str
+) -> Tuple[Union[List[str], NoUpdate]]:
     query_data = get_test_data(index, data_file)[0]
     return (
         RunPromptStrategyMaker()
@@ -460,9 +493,7 @@ def change_prompt_search_mode(
 
 @app.callback(
     Output("results_content", "children", allow_duplicate=True),
-    [
-        Input("preview_button", "n_clicks"),
-    ],
+    Input("preview_button", "n_clicks"),
     [
         State("run_mode_options", "value"),
         State("utils_group", "children"),
@@ -490,16 +521,14 @@ def preview(
 
 @app.callback(
     Output("results_content_text", "children", allow_duplicate=True),
-    [
-        Input(
-            {
-                "type": "view_mode",
-                "id": "results_content",
-            },
-            "value",
-        ),
-    ],
-    [State("text_store", "data")],
+    Input(
+        {
+            "type": "view_mode",
+            "id": "results_content",
+        },
+        "value",
+    ),
+    State("text_store", "data"),
     prevent_initial_call=True,
 )
 def change_results_content_mode(view_mode: List[str], text: str) -> html.Pre:

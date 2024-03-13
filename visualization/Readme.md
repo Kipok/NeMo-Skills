@@ -5,7 +5,7 @@ Before using this tool, follow the instructions in [prerequisites.md](/docs/prer
 ```shell
 pip install -r visualization/requirements.txt
 ```
-You can adjust parameters in the [visualization_config.yaml](/visualization/settings/visualization_config.yaml)  file or via the command line. Use the following command to launch the program (all parameters are optional):
+You can adjust parameters in the [visualization_config.yaml](/visualization/settings/visualization_config.yaml) file or via the command line. Use the following command to launch the program (all parameters are optional):
 ```shell
 python visualization/data_explorer.py \
 ++server.host=<host>
