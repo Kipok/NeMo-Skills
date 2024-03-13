@@ -86,9 +86,7 @@ def parse_model_answer(answer: str) -> List[Dict]:
     )
     output_start, output_end = map(
         re.escape,
-        current_app.config['data_explorer']["visualization_params"][
-            "code_output_separators"
-        ],
+        current_app.config['data_explorer']["visualization_params"]["code_output_separators"],
     )
     code_pattern = re.compile(fr'{code_start}(.*?){code_end}', re.DOTALL)
     code_output_pattern = re.compile(
@@ -123,18 +121,14 @@ def parse_model_answer(answer: str) -> List[Dict]:
             parsed_results.append(
                 {
                     'explanation': trailing_text[0:code_start_index].strip(),
-                    'code': trailing_text[
-                        code_start_index + len(code_start.replace("\\", "")) :
-                    ],
+                    'code': trailing_text[code_start_index + len(code_start.replace("\\", "")) :],
                     'output': "code_block was not finished",
                     'wrong_code_block': True,
                 }
             )
             trailing_text = None
         if trailing_text:
-            parsed_results.append(
-                {'explanation': trailing_text, 'code': None, 'output': None}
-            )
+            parsed_results.append({'explanation': trailing_text, 'code': None, 'output': None})
     return parsed_results
 
 
@@ -174,10 +168,7 @@ def get_values_from_input_group(children: Iterable) -> Dict:
     values = {}
     for child in children:
         for input_group_child in child["props"]["children"]:
-            if (
-                "id" in input_group_child["props"].keys()
-                and "value" in input_group_child["props"].keys()
-            ):
+            if "id" in input_group_child["props"].keys() and "value" in input_group_child["props"].keys():
                 type_function = str
                 value = input_group_child["props"]["value"]
 
@@ -186,19 +177,14 @@ def get_values_from_input_group(children: Iterable) -> Dict:
                 elif str(value).replace(".", "", 1).replace("-", "", 1).isdigit():
                     type_function = float
 
-                values[input_group_child["props"]["id"]] = type_function(
-                    str(value).replace('\\n', '\n')
-                )
+                values[input_group_child["props"]["id"]] = type_function(str(value).replace('\\n', '\n'))
 
     return values
 
 
 def extract_query_params(query_params_ids: List[Dict], query_params: List[Dict]) -> Dict:
     try:
-        query_params_extracted = {
-            param_id['id']: param
-            for param_id, param in zip(query_params_ids, query_params)
-        }
+        query_params_extracted = {param_id['id']: param for param_id, param in zip(query_params_ids, query_params)}
     except ValueError:
         query_params_extracted = {"question": "", "expected_answer": ""}
 
@@ -319,8 +305,7 @@ def get_data_from_files(cache_indicator=None) -> List:
             dataset = [json.loads(line) for line in f]
 
     available_models = {
-        model_name: model_info["file_paths"]
-        for model_name, model_info in get_available_models().items()
+        model_name: model_info["file_paths"] for model_name, model_info in get_available_models().items()
     }
 
     all_models_data_array = []
@@ -370,16 +355,13 @@ def get_filtered_files(
     array_to_filter: List,
 ) -> List:
     filter_lambda_functions = [
-        get_eval_function(func.strip())
-        for func in (filter_function if filter_function else "True").split('&&')
+        get_eval_function(func.strip()) for func in (filter_function if filter_function else "True").split('&&')
     ]
     available_models = get_available_models()
     filtered_data = [
         list(
             filter(
-                lambda data: catch_eval_exception(
-                    available_models, function, data, False
-                ),
+                lambda data: catch_eval_exception(available_models, function, data, False),
                 array_to_filter,
             )
         )
@@ -390,11 +372,7 @@ def get_filtered_files(
     filtered_data = filtered_data[0] if len(filtered_data) > 0 else [{"file_name": ""}]
     if sorting_function and filtered_data != [{"file_name": ""}]:
         sorting_lambda_function = get_eval_function(sorting_function.strip())
-        filtered_data.sort(
-            key=lambda data: catch_eval_exception(
-                available_models, sorting_lambda_function, data, 0
-            )
-        )
+        filtered_data.sort(key=lambda data: catch_eval_exception(available_models, sorting_lambda_function, data, 0))
 
     return filtered_data
 
@@ -422,9 +400,7 @@ def get_available_models(cache_indicator=None) -> Dict:
         runs_storage[model_name]["file_paths"] = list(
             unroll_files([RESULTS_PATH.format(model_name) + f"{OUTPUT}*.jsonl"])
         )
-    for model_name, files in current_app.config['data_explorer']["visualization_params"][
-        "model_prediction"
-    ].items():
+    for model_name, files in current_app.config['data_explorer']["visualization_params"]["model_prediction"].items():
         runs_storage[model_name] = {
             "utils": {},
             "examples": {},
