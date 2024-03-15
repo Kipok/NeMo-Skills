@@ -49,7 +49,7 @@ if __name__ == "__main__":
     benchmarks = glob.glob(f'{args.results_folder}/*')
 
     if args.benchmarks:
-        for benchmark in benchmarks[::]:
+        for benchmark in benchmarks.copy():
             if Path(benchmark).name not in args.benchmarks:
                 benchmarks.remove(benchmark)
 
@@ -69,7 +69,9 @@ if __name__ == "__main__":
                 f'    --save_metrics_file={benchmark_path}/metrics-greedy.json '
             )
             subprocess.run(cmd, shell=True, check=True)
-            with open(f'{benchmark_path}/metrics-greedy.json', 'rt', encoding="utf-8") as fin:
+            with open(
+                f'{benchmark_path}/metrics-greedy.json', 'rt', encoding="utf-8"
+            ) as fin:
                 results[benchmark]['greedy'] = json.load(fin)
         sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
         if len(sampling_outputs) > 0:
@@ -81,7 +83,9 @@ if __name__ == "__main__":
                 f'    --aggregation_mode=majority '
             )
             subprocess.run(cmd, shell=True, check=True)
-            with open(f'{benchmark_path}/metrics-majority.json', 'rt', encoding="utf-8") as fin:
+            with open(
+                f'{benchmark_path}/metrics-majority.json', 'rt', encoding="utf-8"
+            ) as fin:
                 results[benchmark][f'majority@{len(sampling_outputs)}'] = json.load(fin)
             LOG.info(f"pass@{len(sampling_outputs)} results")
             cmd = (
@@ -91,7 +95,9 @@ if __name__ == "__main__":
                 f'    --aggregation_mode=best '
             )
             subprocess.run(cmd, shell=True, check=True)
-            with open(f'{benchmark_path}/metrics-pass.json', 'rt', encoding="utf-8") as fin:
+            with open(
+                f'{benchmark_path}/metrics-pass.json', 'rt', encoding="utf-8"
+            ) as fin:
                 results[benchmark][f'pass@{len(sampling_outputs)}'] = json.load(fin)
 
     # summarizing results in a .csv file

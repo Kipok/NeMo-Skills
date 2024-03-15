@@ -10,7 +10,7 @@ You can adjust parameters in the [visualization_config.yaml](/visualization/sett
 python visualization/data_explorer.py \
 ++server.host=<host>
 ```
-For the "Inference" page, launch the server with the model (see [inference.md](/docs/inference.md)), specify `host` and, if not launching locally, `ssh_key` and `ssh_server`.
+For the "Inference" page, launch the server with the model (see [inference.md](/docs/inference.md)), specify `host` and, if necessary, `ssh_key` and `ssh_server`.
 
 ## Inference page
 This page enables the analysis of model answers based on different parameters. It offers three modes: "Chat", "Run one sample", and "Run whole dataset".
