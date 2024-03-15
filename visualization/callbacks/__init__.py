@@ -22,7 +22,6 @@ import hydra
 from dash import Dash
 from flask import Flask
 from omegaconf import MISSING, DictConfig, OmegaConf
-
 from settings.constants import UNDEFINED
 from settings.visualization_config import VisualizationConfig
 
@@ -36,9 +35,7 @@ config_path = os.path.join(os.path.abspath(Path(__file__).parents[1]), "settings
 config = {}
 
 
-@hydra.main(
-    version_base=None, config_path=config_path, config_name="visualization_config"
-)
+@hydra.main(version_base=None, config_path=config_path, config_name="visualization_config")
 def set_config(cfg: VisualizationConfig) -> None:
     global config
 
@@ -78,13 +75,8 @@ def set_config(cfg: VisualizationConfig) -> None:
     config['data_explorer'] = asdict(OmegaConf.to_object(cfg))
 
     for param in ['host', 'ssh_server', 'ssh_key_path']:
-        if (
-            param not in config['data_explorer']['sandbox']
-            and param in config['data_explorer']['server']
-        ):
-            config['data_explorer']['sandbox'][param] = config['data_explorer']['server'][
-                param
-            ]
+        if param not in config['data_explorer']['sandbox'] and param in config['data_explorer']['server']:
+            config['data_explorer']['sandbox'][param] = config['data_explorer']['server'][param]
 
     config['data_explorer']['prompt']['prompt_type'] = prompt_type
 

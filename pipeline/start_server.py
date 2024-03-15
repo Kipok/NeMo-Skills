@@ -54,9 +54,7 @@ if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser()
     parser.add_argument("--model_path", required=True)
-    parser.add_argument(
-        "--server_type", choices=('nemo', 'tensorrt_llm'), default='tensorrt_llm'
-    )
+    parser.add_argument("--server_type", choices=('nemo', 'tensorrt_llm'), default='tensorrt_llm')
     parser.add_argument("--num_gpus", type=int, required=True)
     parser.add_argument(
         "--partition",
