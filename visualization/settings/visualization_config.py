@@ -28,7 +28,8 @@ class BaseVisualizationConfig:
 
     code_separators: Tuple[str, str] = CODE_SEPARATORS
     code_output_separators: Tuple[str, str] = CODE_OUTPUT_SEPARATORS
-    save_dataset_path: Optional[str] = "visualization/results/saved_dataset"
+    save_dataset_path: str = "visualization/results/saved_dataset"
+    results_path: str = "visualization/results/"
 
     def __post_init__(self):
         self.model_prediction = {
@@ -39,7 +40,9 @@ class BaseVisualizationConfig:
 
 @dataclass
 class VisualizationConfig(GenerateSolutionsConfig):
-    visualization_params: BaseVisualizationConfig = field(default_factory=BaseVisualizationConfig)
+    visualization_params: BaseVisualizationConfig = field(
+        default_factory=BaseVisualizationConfig
+    )
 
 
 cs = hydra.core.config_store.ConfigStore.instance()

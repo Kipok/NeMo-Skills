@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-compute_metrics_template = """
-python pipeline/compute_metrics.py \\
-  --prediction_jsonl_files {prediction_jsonl_files} \\
-  --save_metrics_file {save_metrics_file}
-"""
+import sys
+
+summarize_results_template = (
+    sys.executable
+    + """ pipeline/summarize_results.py {results_path} \\
+    --benchmarks {benchmarks}"""
+)

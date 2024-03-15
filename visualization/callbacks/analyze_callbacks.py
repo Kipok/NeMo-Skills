@@ -38,8 +38,10 @@ from settings.constants import (
     CHOOSE_MODEL,
     DELETE,
     ERROR_MESSAGE_TEMPLATE,
+    EXTRA_FIELDS,
     GENERAL_STATS,
     LABEL,
+    LABEL_SELECTOR_ID,
     MODEL_SELECTOR_ID,
 )
 from utils.common import (
@@ -93,11 +95,15 @@ def choose_base_model(
 def save_dataset(n_click: int, base_model: str) -> Tuple[List, bool]:
     if (
         not n_click
-        or not current_app.config['data_explorer']['visualization_params']['save_dataset_path']
+        or not current_app.config['data_explorer']['visualization_params'][
+            'save_dataset_path'
+        ]
         or not base_model
     ):
         return no_update
-    path = current_app.config['data_explorer']['visualization_params']['save_dataset_path']
+    path = current_app.config['data_explorer']['visualization_params'][
+        'save_dataset_path'
+    ]
     if not os.path.exists(path):
         os.mkdir(path)
 
@@ -108,13 +114,15 @@ def save_dataset(n_click: int, base_model: str) -> Tuple[List, bool]:
             file_name = file_data['file_name']
             if file_name not in new_data:
                 new_data[file_name] = []
+            for field in EXTRA_FIELDS:
+                file_data.pop(field)
             new_data[file_name].append(file_data)
 
     for file_name, data in new_data.items():
         with open(os.path.join(path, file_name + '.jsonl'), 'w') as file:
             file.write("\n".join([json.dumps(line) for line in data]))
 
-    return f'dataset saved by path {path}', True
+    return f'dataset is saved into {path}', True
 
 
 @app.callback(
@@ -194,7 +202,7 @@ def toggle_modal_label(n1: int, n2: int, n3: int, is_open: bool) -> bool:
     if not ctx.triggered:
         return [no_update] * len(is_open)
 
-    button_id = json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']
+    button_id = json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id'] + 1
     if not ctx.triggered[0]['value']:
         return [no_update] * len(is_open)
 
@@ -222,7 +230,9 @@ def toggle_modal_label(n1: int, n2: int, n3: int, is_open: bool) -> bool:
     ],
     prevent_initial_call=True,
 )
-def toggle_modal_stats(n1: int, n2: int, is_open: bool, modes: List[str], js_trigger: str) -> bool:
+def toggle_modal_stats(
+    n1: int, n2: int, is_open: bool, modes: List[str], js_trigger: str
+) -> bool:
     if not n1 and not n2:
         return no_update, no_update, no_update, no_update
 
@@ -436,7 +446,9 @@ def change_page(page_current: int, page_size: int, base_model: str) -> List[Dict
         return no_update
     return [
         data[base_model][0]
-        for data in get_table_data()[page_current * page_size : (page_current + 1) * page_size]
+        for data in get_table_data()[
+            page_current * page_size : (page_current + 1) * page_size
+        ]
         if base_model in data.keys()
     ]
 
@@ -461,6 +473,7 @@ def change_page(page_current: int, page_size: int, base_model: str) -> List[Dict
         State({"type": "row_name", "id": ALL}, "children"),
         State('datatable', "page_current"),
         State('datatable', "page_size"),
+        State({"type": 'file_selector', "id": ALL}, 'value'),
     ],
     prevent_initial_call=True,
 )
@@ -473,14 +486,22 @@ def show_item(
     rows_names: List[str],
     current_page: int,
     page_size: int,
+    file_names: List[str],
 ) -> List[str]:
     if not idx:
         raise PreventUpdate
+    question_id = current_page * page_size + idx[0]
+    file_ids = [0] * len(models)
+    for model_id, name in enumerate(file_names):
+        for file_id, file in enumerate(get_table_data()[question_id][models[model_id]]):
+            if file['file_name'] == name:
+                file_ids[model_id] = file_id
+
     return get_table_detailed_inner_data(
-        question_id=current_page * page_size + idx[0],
+        question_id=question_id,
         rows_names=rows_names,
         models=models,
-        files_id=[0] * len(models),
+        files_id=file_ids,
         filter_functions=filter_functions[1:],
         sorting_functions=sorting_functions[1:],
     )
@@ -510,18 +531,22 @@ def change_stats_mode(modes: List[str], js_trigger: str) -> str:
             allow_duplicate=True,
         ),
     ],
-    Input({"type": "apply_label_button", "id": ALL}, "n_clicks"),
+    [
+        Input({"type": "apply_label_button", "id": ALL}, "n_clicks"),
+        Input({"type": "delete_label_button", "id": ALL}, "n_clicks"),
+    ],
     [
         State(
             {"type": "aplly_for_all_files", "id": ALL},
             "value",
         ),
         State({"type": "label_selector", "id": ALL}, 'value'),
-        State({"type": "model_selector", "id": ALL}, "id"),
+        State({"type": "label_selector", "id": ALL}, "id"),
         State('datatable', "page_current"),
         State('datatable', "page_size"),
         State('datatable', 'selected_rows'),
         State({"type": "model_selector", "id": ALL}, "value"),
+        State("base_model_answers_selector", "value"),
         State({"type": 'file_selector', "id": ALL}, 'value'),
         State({"type": 'file_selector', "id": ALL}, 'options'),
         State(
@@ -531,97 +556,94 @@ def change_stats_mode(modes: List[str], js_trigger: str) -> str:
     ],
     prevent_initial_call=True,
 )
-def apply_new_label(
-    n_click: List[int],
+def change_label(
+    n_click_apply: List[int],
+    n_click_del: List[int],
     apply_for_all: List[bool],
     labels: List[str],
-    model_ids: List[int],
+    label_ids: List[int],
     current_page: int,
     page_size: int,
     idx: List[int],
     models: List[str],
+    base_model: str,
     file_names: List[str],
     file_options: List[str],
     dummy_data: str,
 ) -> List[List[str]]:
     ctx = callback_context
-    if not ctx.triggered or not idx:
+    if not ctx.triggered:
         return [no_update]
 
-    button_id = model_ids.index(
-        json.loads(MODEL_SELECTOR_ID.format(json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']))
+    button_id = label_ids.index(
+        json.loads(
+            LABEL_SELECTOR_ID.format(
+                json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']
+            )
+        )
     )
-    if not ctx.triggered[0]['value'] or button_id == -1 or labels[button_id] == CHOOSE_LABEL:
+    is_apply = (
+        json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['type']
+        == "apply_label_button"
+    )
+    if not ctx.triggered[0]['value'] or labels[button_id] == CHOOSE_LABEL:
         return [no_update]
 
-    model = models[button_id]
-    question_id = current_page * page_size + idx[0]
-    for i, file in enumerate(file_options[button_id]):
-        if (apply_for_all[button_id] and len(apply_for_all[button_id])) or file['value'] == file_names[button_id]:
-            if labels[button_id] not in get_table_data()[question_id][model][i][LABEL]:
-                get_table_data()[question_id][model][i][LABEL].append(labels[button_id])
+    ALL_FILES = "ALL_FILES"
+    if button_id == 0:
+        files = [ALL_FILES]
+        file = [ALL_FILES]
+        models_to_process = [(base_model, files, file)]
+        apply_for_all = [[True] * len(models)]
+        question_ids = list(range(len(get_table_data())))
+    else:
+        if not idx:
+            return [no_update]
+        models_to_process = [
+            (
+                models[button_id - 1],
+                file_options[button_id - 1],
+                file_names[button_id - 1],
+            )
+        ]
+        question_ids = [current_page * page_size + idx[0]]
+
+    apply_for_all_files = bool(len(apply_for_all[button_id - 1]))
+    for question_id in question_ids:
+        for model, current_file_options, current_file in models_to_process:
+            options = (
+                current_file_options
+                if button_id != 0
+                else [
+                    {'value': file['file_name']}
+                    for file in get_table_data()[question_id][model]
+                ]
+            )
+            for file in options:
+                if not apply_for_all_files and not file['value'] == current_file:
+                    continue
+
+                file_id = 0
+                for i, model_file in enumerate(get_table_data()[question_id][model]):
+                    if model_file['file_name'] == file['value']:
+                        file_id = i
+                        break
+
+                if (
+                    labels[button_id]
+                    not in get_table_data()[question_id][model][file_id][LABEL]
+                ):
+                    if is_apply:
+                        get_table_data()[question_id][model][file_id][LABEL].append(
+                            labels[button_id]
+                        )
+
+                elif not is_apply:
+                    get_table_data()[question_id][model][file_id][LABEL].remove(
+                        labels[button_id]
+                    )
 
     return [dummy_data + "1"]
-
-
-@app.callback(
-    [
-        Output(
-            {"type": 'file_selector', "id": ALL},
-            'value',
-            allow_duplicate=True,
-        ),
-    ],
-    [
-        Input({"type": "delete_label_button", "id": ALL}, "n_clicks"),
-    ],
-    [
-        State(
-            {"type": "aplly_for_all_files", "id": ALL},
-            "value",
-        ),
-        State({"type": "label_selector", "id": ALL}, 'value'),
-        State({"type": "model_selector", "id": ALL}, "id"),
-        State('datatable', "page_current"),
-        State('datatable', "page_size"),
-        State('datatable', 'selected_rows'),
-        State({"type": "model_selector", "id": ALL}, "value"),
-        State({"type": 'file_selector', "id": ALL}, 'value'),
-        State({"type": 'file_selector', "id": ALL}, 'options'),
-    ],
-    prevent_initial_call=True,
-)
-def delete_label(
-    n_click: List[int],
-    apply_for_all: List[bool],
-    labels: List[str],
-    model_ids: List[int],
-    current_page: int,
-    page_size: int,
-    idx: List[int],
-    models: List[str],
-    file_names: List[str],
-    file_options: List[str],
-) -> List[List[str]]:
-    ctx = callback_context
-    if not ctx.triggered or not idx:
-        return [no_update] * len(file_names)
-
-    button_id = model_ids.index(
-        json.loads(MODEL_SELECTOR_ID.format(json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']))
-    )
-
-    if not ctx.triggered[0]['value'] or button_id == -1:
-        return [no_update] * len(file_names)
-
-    model = models[button_id]
-    question_id = current_page * page_size + idx[0]
-    for i, file in enumerate(file_options[button_id]):
-        if apply_for_all[button_id] and len(apply_for_all[button_id]) or file['value'] == file_names[button_id]:
-            if labels[button_id] in get_table_data()[question_id][model][i][LABEL]:
-                get_table_data()[question_id][model][i][LABEL].remove(labels[button_id])
-
-    return [[file_name] for file_name in file_names]
 
 
 @app.callback(
@@ -673,7 +695,11 @@ def change_file(
     question_id = page_size * current_page + idx[0]
     try:
         button_id = model_ids.index(
-            json.loads(MODEL_SELECTOR_ID.format(json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']))
+            json.loads(
+                MODEL_SELECTOR_ID.format(
+                    json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']
+                )
+            )
         )
     except ValueError:
         return [no_update] * len(table_data)
@@ -692,15 +718,19 @@ def change_file(
             break
 
     question_id = current_page * page_size + idx[0]
-    table_data[button_id * len(rows_names) : (button_id + 1) * len(rows_names)] = get_row_detailed_inner_data(
-        question_id=question_id,
-        model=model,
-        file_id=file_id,
-        rows_names=rows_names,
-        col_id=button_id,
-        filter_function=filter_functions[button_id + 1],
-        sorting_function=sorting_functions[button_id + 1],
-        plain_text=(plain_text_switch[button_id] and len(plain_text_switch[button_id])),
+    table_data[button_id * len(rows_names) : (button_id + 1) * len(rows_names)] = (
+        get_row_detailed_inner_data(
+            question_id=question_id,
+            model=model,
+            file_id=file_id,
+            rows_names=rows_names,
+            col_id=button_id,
+            filter_function=filter_functions[button_id + 1],
+            sorting_function=sorting_functions[button_id + 1],
+            plain_text=(
+                plain_text_switch[button_id] and len(plain_text_switch[button_id])
+            ),
+        )
     )
     return table_data
 
@@ -716,30 +746,39 @@ def change_file(
         State({"type": "new_label_input", "id": ALL}, "value"),
         State({"type": "label_selector", "id": ALL}, "options"),
         State({"type": "label_selector", "id": ALL}, 'value'),
-        State({"type": "model_selector", "id": ALL}, "id"),
+        State({"type": "label_selector", "id": ALL}, "id"),
     ],
 )
 def add_new_label(
     n_click: int,
-    new_labels: str,
+    new_labels: List[str],
     options: List[List[str]],
     values: List[str],
-    model_ids: List[int],
+    label_ids: List[int],
 ) -> Tuple[List[List[str]], List[str]]:
     ctx = callback_context
     no_updates = [no_update] * len(new_labels)
     if not ctx.triggered:
         return no_updates, no_updates, no_updates
 
-    button_id = model_ids.index(
-        json.loads(MODEL_SELECTOR_ID.format(json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']))
+    button_id = label_ids.index(
+        json.loads(
+            LABEL_SELECTOR_ID.format(
+                json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']
+            )
+        )
     )
 
-    if not ctx.triggered[0]['value'] or button_id == -1:
+    if not ctx.triggered[0]['value']:
         return no_updates, no_updates, no_updates
 
     if new_labels[button_id] and new_labels[button_id] not in options[button_id]:
-        options[button_id].append({'label': new_labels[button_id], 'value': new_labels[button_id]})
+        for i in range(len(options)):
+            new_label = {'label': new_labels[button_id], 'value': new_labels[button_id]}
+            if new_label not in options[i]:
+                options[i].append(
+                    {'label': new_labels[button_id], 'value': new_labels[button_id]}
+                )
         values[button_id] = new_labels[button_id]
     else:
         return no_updates, no_updates, no_updates
@@ -754,26 +793,32 @@ def add_new_label(
     Output({"type": "chosen_label", "id": ALL}, "children"),
     Input({"type": "label_selector", "id": ALL}, "value"),
     [
-        State({"type": "model_selector", "id": ALL}, "id"),
+        State({"type": "label_selector", "id": ALL}, "id"),
         State({"type": "chosen_label", "id": ALL}, "children"),
     ],
 )
 def choose_label(
-    label: List[str], model_ids: List[int], chosen_labels: List[str]
+    label: List[str], label_ids: List[int], chosen_labels: List[str]
 ) -> Tuple[List[List[str]], List[str]]:
     ctx = callback_context
     if not ctx.triggered:
-        return [[no_update] * len(chosen_labels)]
+        return [no_update] * len(chosen_labels)
 
-    button_id = model_ids.index(
-        json.loads(MODEL_SELECTOR_ID.format(json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']))
-    )
+    for trigger in ctx.triggered:
+        button_id = label_ids.index(
+            json.loads(
+                LABEL_SELECTOR_ID.format(
+                    json.loads(trigger['prop_id'].split('.')[0])['id']
+                )
+            )
+        )
 
-    if not ctx.triggered[0]['value'] or button_id == -1 or label[button_id] == CHOOSE_LABEL:
-        chosen_labels[button_id] = ""
-    else:
-        chosen_labels[button_id] = f"chosen label: {label[button_id]}"
-    return [chosen_labels]
+        if not ctx.triggered[0]['value'] or label[button_id] == CHOOSE_LABEL:
+            chosen_labels[button_id] = ""
+        else:
+            chosen_labels[button_id] = f"chosen label: {label[button_id]}"
+
+    return chosen_labels
 
 
 @app.callback(
@@ -809,7 +854,11 @@ def add_model(
         return no_update, [no_update] * len(rows)
     available_models = list(get_available_models().keys())
     last_header_id = selectors_ids[-1]['id'] if selectors_ids != [] else -1
-    header.append(get_models_selector_table_cell(available_models, available_models[0], last_header_id + 1, True))
+    header.append(
+        get_models_selector_table_cell(
+            available_models, available_models[0], last_header_id + 1, True
+        )
+    )
     last_cell_id = rows[-1][-1]["props"]["children"]["props"]['id']['id']
     for i, row in enumerate(rows):
         row.append(
@@ -909,7 +958,11 @@ def change_files_order(
 
     try:
         button_id = model_ids.index(
-            json.loads(MODEL_SELECTOR_ID.format(json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']))
+            json.loads(
+                MODEL_SELECTOR_ID.format(
+                    json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']
+                )
+            )
         )
     except ValueError:
         return no_updates, no_updates
@@ -923,7 +976,8 @@ def change_files_order(
         if not apply_on_filtered_data or not apply_on_filtered_data[button_id]
         else list(
             filter(
-                lambda data: data['file_name'] in [file_name['label'] for file_name in file_selector_options],
+                lambda data: data['file_name']
+                in [file_name['label'] for file_name in file_selector_options],
                 get_table_data()[question_id][model],
             )
         )

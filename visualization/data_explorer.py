@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 import sys
 from pathlib import Path
 
@@ -24,8 +23,6 @@ from callbacks import app
 from layouts import get_main_page_layout
 
 signal.signal(signal.SIGALRM, signal.SIG_IGN)
-
-logging.getLogger().setLevel(logging.INFO)
 
 
 if __name__ == "__main__":

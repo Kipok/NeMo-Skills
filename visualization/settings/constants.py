@@ -13,8 +13,9 @@
 # limitations under the License.
 
 ANSWER_FIELD = "expected_answer"
+EXTRA_FIELDS = ["page_index", "file_name"]
 CHAT_MODE = "chat_mode"
-CHOOSE_MODEL = "choose_model"
+CHOOSE_MODEL = "choose_generation"
 DATA_PAGE_SIZE = 10
 ERROR_MESSAGE_TEMPLATE = "When applying {} function\ngot errors\n{}"
 FEW_SHOTS_INPUT = "few_shots_input"
@@ -27,16 +28,19 @@ METRICS = "metrics"
 OUTPUT = "output"
 OUTPUT_PATH = "{}-{}.jsonl"
 PARAMS_FOR_WHOLE_DATASET_ONLY = ['offset', 'max_samples']
+PARAMS_FOR_RUN_ONE_SAMPLE_ONLY = ['data_file']
 PARAMETERS_FILE_NAME = "visualization/results/parameters.json"
-RESULTS_PATH = "visualization/results/{}/"
 STATS_KEYS = [
     'question_index',
     'question',
 ]
+SEPARATOR_DISPLAY = '.'
+SEPARATOR_ID = '->'
 UNDEFINED = "undefined"
 WHOLE_DATASET_MODE = "whole_dataset"
 MODEL_SELECTOR_ID = '{{"type": "model_selector", "id": {}}}'
+LABEL_SELECTOR_ID = '{{"type": "label_selector", "id": {}}}'
 LABEL = "labels"
-CHOOSE_LABEL = "choose_label"
+CHOOSE_LABEL = "choose label"
 DELETE = "delete"
 GENERAL_STATS = "general_stats"

@@ -17,7 +17,11 @@ from typing import Dict, List
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 from layouts.base_layouts import get_selector_layout, get_switch_layout
-from layouts.table_layouts import get_filter_layout, get_sorting_layout
+from layouts.table_layouts import (
+    get_change_label_layout,
+    get_filter_layout,
+    get_sorting_layout,
+)
 from settings.constants import CHOOSE_MODEL, DELETE, GENERAL_STATS
 from utils.common import get_available_models, get_custom_stats, get_general_custom_stats
 
@@ -59,7 +63,11 @@ def get_utils_layout(utils: Dict) -> dbc.AccordionItem:
             [
                 html.Pre(f"{name}: ", className="mr-2"),
                 html.Pre(
-                    (value if value == "" or str(value).strip() != "" else repr(value)[1:-1]),
+                    (
+                        value
+                        if value == "" or str(value).strip() != ""
+                        else repr(value)[1:-1]
+                    ),
                     className="mr-2",
                 ),
             ],
@@ -132,6 +140,7 @@ def get_compare_test_layout() -> html.Div:
                     get_sorting_layout(),
                     get_filter_layout(),
                     get_add_stats_layout(),
+                    get_change_label_layout(apply_for_all_files=False),
                     get_save_dataset_layout(),
                     dbc.Button(
                         "+",
@@ -151,7 +160,9 @@ def get_compare_test_layout() -> html.Div:
             html.Pre(id="filtering_container"),
             html.Pre(id="sorting_container"),
             dcc.Loading(
-                children=dbc.Container(id="loading_container", style={'display': 'none'}, children=""),
+                children=dbc.Container(
+                    id="loading_container", style={'display': 'none'}, children=""
+                ),
                 type='circle',
                 style={'margin-top': '50px'},
             ),
@@ -205,7 +216,11 @@ def get_stats_text(general_stats: bool = False, delete: bool = False):
 
 
 def get_stats_input(modes: List[str] = []) -> List:
-    options = list(get_general_custom_stats().keys() if GENERAL_STATS in modes else get_custom_stats().keys())
+    options = list(
+        get_general_custom_stats().keys()
+        if GENERAL_STATS in modes
+        else get_custom_stats().keys()
+    )
     stats_input = (
         dbc.Textarea(id="stats_input")
         if not DELETE in modes
@@ -216,7 +231,9 @@ def get_stats_input(modes: List[str] = []) -> List:
         )
     )
     return [
-        html.Pre(get_stats_text(GENERAL_STATS in modes, DELETE in modes), id="stats_text"),
+        html.Pre(
+            get_stats_text(GENERAL_STATS in modes, DELETE in modes), id="stats_text"
+        ),
         stats_input,
     ]
 
