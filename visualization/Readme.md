@@ -1,6 +1,12 @@
+# Data Explorer tool
+
+## Demo
 This is a tool for data analysis, consisting of two pages: "Inference" and "Analyze".
 
-### Getting Started
+[![Demo of the tool](/visualization/images/demo.png)](https://youtu.be/SWKNovw55HQ)
+
+
+## Getting Started
 Before using this tool, follow the instructions in [prerequisites.md](/docs/prerequisites.md), and install requirements:
 ```shell
 pip install -r visualization/requirements.txt

@@ -29,7 +29,6 @@ from settings.constants import (
     OUTPUT,
     OUTPUT_PATH,
     PARAMETERS_FILE_NAME,
-    PARAMS_FOR_RUN_ONE_SAMPLE_ONLY,
     SEPARATOR_ID,
     WHOLE_DATASET_MODE,
 )
@@ -37,8 +36,15 @@ from settings.templates import summarize_results_template
 from utils.common import get_available_models, get_examples, run_subprocess
 from utils.strategies.base_strategy import ModeStrategies
 
-from nemo_skills.evaluation.evaluate_results import EvaluateResultsConfig, evaluate_results
-from nemo_skills.inference.generate_solutions import GenerateSolutionsConfig, InferenceConfig, generate_solutions
+from nemo_skills.evaluation.evaluate_results import (
+    EvaluateResultsConfig,
+    evaluate_results,
+)
+from nemo_skills.inference.generate_solutions import (
+    GenerateSolutionsConfig,
+    InferenceConfig,
+    generate_solutions,
+)
 from nemo_skills.inference.prompt.utils import FewShotExamples, PromptConfig
 
 
@@ -51,21 +57,28 @@ class WholeDatasetModeStrategy(ModeStrategies):
     def get_query_input_layout(self, dataset) -> List[dbc.AccordionItem]:
         return []
 
-    def get_utils_input_layout(self) -> List[dbc.AccordionItem]:
-        return super().get_utils_input_layout(lambda key, value: key not in PARAMS_FOR_RUN_ONE_SAMPLE_ONLY)
-
     def run(self, utils: Dict, params: Dict) -> html.Div:
         utils = {key.split(SEPARATOR_ID)[-1]: value for key, value in utils.items()}
         self.sandbox_init()
         runs_storage = get_available_models()
-        results_path = current_app.config['data_explorer']['visualization_params']['results_path']
+        results_path = current_app.config['data_explorer']['visualization_params'][
+            'results_path'
+        ]
         run_index = len(runs_storage)
         metrics_directory = os.path.join(
             results_path,
             str(run_index),
         )
-        random_seed_start = utils['start_random_seed'] if params['range_random_mode'] else utils['random_seed']
-        random_seed_end = utils['end_random_seed'] if params['range_random_mode'] else utils['random_seed'] + 1
+        random_seed_start = (
+            utils['start_random_seed']
+            if params['range_random_mode']
+            else utils['random_seed']
+        )
+        random_seed_end = (
+            utils['end_random_seed']
+            if params['range_random_mode']
+            else utils['random_seed'] + 1
+        )
 
         generate_solutions_config = self._get_config(
             GenerateSolutionsConfig,
@@ -99,7 +112,9 @@ class WholeDatasetModeStrategy(ModeStrategies):
         )
 
         for random_seed in range(random_seed_start, random_seed_end):
-            file_name = GREEDY if not params['range_random_mode'] else "rs" + str(random_seed)
+            file_name = (
+                GREEDY if not params['range_random_mode'] else "rs" + str(random_seed)
+            )
             output_file = os.path.join(
                 metrics_directory,
                 OUTPUT_PATH.format(
@@ -147,7 +162,9 @@ class WholeDatasetModeStrategy(ModeStrategies):
             [
                 html.Div(
                     [
-                        html.Pre(f'Done. Results are in folder\n{"/".join(output_file.split("/")[:-1])}'),
+                        html.Pre(
+                            f'Done. Results are in folder\n{"/".join(output_file.split("/")[:-1])}'
+                        ),
                         dash_table.DataTable(
                             id='table',
                             columns=[{"name": i, "id": i} for i in df.columns],

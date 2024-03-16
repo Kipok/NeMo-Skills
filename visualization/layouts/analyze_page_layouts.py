@@ -46,7 +46,7 @@ def get_models_options_layout() -> dbc.Accordion:
     return dbc.Accordion(
         dbc.AccordionItem(
             models_options,
-            title="Generations parameters",
+            title="Generation parameters",
         ),
         start_collapsed=True,
         always_open=True,
