@@ -568,12 +568,7 @@ def get_general_stats_layout(
         )
         if len(errors_dict):
             logging.error(ERROR_MESSAGE_TEMPLATE.format(name, errors_dict))
-    stats = {
-        "overall number of samples": sum(
-            len(question_data) for question_data in data_for_base_model
-        ),
-        **custom_stats,
-    }
+
     overall_samples = sum(len(question_data) for question_data in data_for_base_model)
     dataset_size = len(data_for_base_model)
     stats = {
