@@ -371,7 +371,6 @@ def sorting_data(
 ) -> Tuple[List[html.Tr], bool]:
     if base_model == CHOOSE_MODEL or not sorting_function:
         return no_update, no_update, no_update
-
     return (
         get_sorting_answers_layout(
             base_model=base_model,
