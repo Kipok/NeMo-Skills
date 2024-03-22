@@ -72,7 +72,9 @@ def get_switch_layout(
                 "value": value,
                 "disabled": is_disabled,
             }
-            for label, value, is_disabled in itertools.zip_longest(labels, values, disabled, fillvalue=False)
+            for label, value, is_disabled in itertools.zip_longest(
+                labels, values, disabled, fillvalue=False
+            )
         ],
         value=[values[0]] if is_active else [],
         switch=True,
@@ -96,13 +98,19 @@ def get_selector_layout(options: Iterable, id: str, value: str = "") -> dbc.Sele
     )
 
 
-def get_text_area_layout(id: str, value: str, view_mode: bool = False) -> Union[dbc.Textarea, html.Pre]:
+def get_text_area_layout(
+    id: str, value: str, view_mode: bool = False
+) -> Union[dbc.Textarea, html.Pre]:
     component = dbc.Textarea
     if view_mode:
         component = html.Pre
 
     return component(
-        **({'children': get_single_prompt_output_layout(value)} if view_mode else {"value": value}),
+        **(
+            {'children': get_single_prompt_output_layout(value)}
+            if view_mode
+            else {"value": value}
+        ),
         id=id,
         style={
             'width': '100%',
@@ -151,7 +159,9 @@ def get_single_prompt_output_layout(answer: str) -> List[html.Div]:
     ]
 
 
-def get_results_content_layout(text: str, content: str = None, style={}, switch_is_active: bool = False) -> html.Div:
+def get_results_content_layout(
+    text: str, content: str = None, style={}, switch_is_active: bool = False
+) -> html.Div:
     return html.Div(
         [
             get_switch_layout(
@@ -165,6 +175,7 @@ def get_results_content_layout(text: str, content: str = None, style={}, switch_
             html.Pre(
                 content if content else text,
                 id="results_content_text",
+                className="pre-class",
                 style={'margin-bottom': '10px'},
             ),
             dcc.Store(data=text, id="text_store"),
@@ -200,10 +211,15 @@ def get_input_group_layout(
         },
         "debounce": True,
     }
-    if name.split(SEPARATOR_DISPLAY)[-1] in current_app.config['data_explorer']['types'].keys():
+    if (
+        name.split(SEPARATOR_DISPLAY)[-1]
+        in current_app.config['data_explorer']['types'].keys()
+    ):
         input_function = get_selector_layout
         additional_params = {
-            "options": current_app.config['data_explorer']['types'][name.split(SEPARATOR_DISPLAY)[-1]],
+            "options": current_app.config['data_explorer']['types'][
+                name.split(SEPARATOR_DISPLAY)[-1]
+            ],
         }
         if value is None:
             value = UNDEFINED
@@ -225,11 +241,12 @@ def get_input_group_layout(
     )
 
 
-def get_utils_field_representation(value: Union[str, int, float, bool], key: Optional[str] = None) -> str:
+def get_utils_field_representation(
+    value: Union[str, int, float, bool], key: Optional[str] = None
+) -> str:
     return (
         UNDEFINED
-        if value is None and key.split(SEPARATOR_ID)[-1] in current_app.config['data_explorer']['types']
-        else value
-        if value == "" or str(value).strip() != ""
-        else repr(value)[1:-1]
+        if value is None
+        and key.split(SEPARATOR_ID)[-1] in current_app.config['data_explorer']['types']
+        else value if value == "" or str(value).strip() != "" else repr(value)[1:-1]
     )

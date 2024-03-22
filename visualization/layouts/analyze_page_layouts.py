@@ -69,6 +69,7 @@ def get_utils_layout(utils: Dict) -> dbc.AccordionItem:
                         else repr(value)[1:-1]
                     ),
                     className="mr-2",
+                    style={"overflow-x": "scroll"},
                 ),
             ],
             className="mb-3",
@@ -86,7 +87,7 @@ def get_few_shots_layout(examples: List[Dict]) -> dbc.AccordionItem:
         html.Div(
             [
                 dcc.Markdown(f'**{name}**'),
-                html.Pre(value),
+                html.Pre(value, className="pre-class"),
             ]
         )
         for name, value in example.items()

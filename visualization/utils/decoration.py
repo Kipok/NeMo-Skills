@@ -15,12 +15,14 @@
 import random
 import re
 import string
+from typing import Dict
 
 from ansi2html import Ansi2HTMLConverter
-from dash import dcc, html
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonLexer
+
+from dash import dcc, html
 
 
 def design_text_output(text: str, style={}):
@@ -29,6 +31,13 @@ def design_text_output(text: str, style={}):
 
     if bool(ansi_escape.search(text)):
         text = conv.convert(text, full=False)
+        return html.Div(
+            iframe_template(
+                '<link rel="stylesheet" type="text/css" href="assets/ansi_styles.css">',
+                text,
+            ),
+            style=style,
+        )
 
     def preprocess_latex(text):
         # Replace \[ and \] with $$ $$
@@ -67,50 +76,69 @@ def design_text_output(text: str, style={}):
         return text.replace('\n', '\n\n')
 
     return html.Div(
-        dcc.Markdown(preprocess_latex(text), mathjax=True),
+        dcc.Markdown(preprocess_latex(text), mathjax=True, dangerously_allow_html=True),
         style=style,
     )
 
 
-def highlight_code(code: str) -> html.Iframe:
-    highlighted_code = highlight(code, PythonLexer(), HtmlFormatter())
+def update_height_js(iframe_id: str) -> str:
+    return f"""
+        function updateHeight() {{
+            var body = document.body,
+                html = document.documentElement;
+            
+            var height = Math.max(body.scrollHeight, body.offsetHeight,
+                                    html.clientHeight, html.scrollHeight, html.offsetHeight);
+            
+            parent.postMessage({{ frameHeight: height, frameId: '{iframe_id}' }}, '*');
+        }}
+        window.onload = updateHeight;
+        window.onresize = updateHeight;
+    """
+
+
+def iframe_template(
+    header: str, content: str, style: Dict = {}, iframe_id: str = None
+) -> html.Iframe:
+    if not iframe_id:
+        iframe_id = get_random_id()
 
     iframe_style = {
         "width": "100%",
         "border": "none",
         "overflow": "hidden",
-        "border": "black 1px solid",
-        "background-color": "#ebecf0d8",
     }
 
-    iframe_id = ''.join(random.choices(string.ascii_letters + string.digits, k=20))
+    iframe_style.update(style)
+
     return html.Iframe(
         id=iframe_id,
         srcDoc=f"""
         <!DOCTYPE html>
         <html>
         <head>
-            <style>
-                {HtmlFormatter().get_style_defs()}
-            </style>
+            {header}
         </head>
         <body>
-            <pre class="highlight">{highlighted_code}</pre>
-            <script>
-                function updateHeight() {{
-                    var body = document.body,
-                        html = document.documentElement;
-                    
-                    var height = Math.max(body.scrollHeight, body.offsetHeight,
-                                          html.clientHeight, html.scrollHeight, html.offsetHeight);
-                    
-                    parent.postMessage({{ frameHeight: height, frameId: '{iframe_id}' }}, '*');
-                }}
-                window.onload = updateHeight;
-                window.onresize = updateHeight;
-            </script>
+            {content}
         </body>
         </html>
         """,
         style=iframe_style,
+    )
+
+
+def get_random_id() -> str:
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=20))
+
+
+def highlight_code(code: str) -> html.Iframe:
+    highlighted_code = highlight(code, PythonLexer(), HtmlFormatter())
+    iframe_id = get_random_id()
+    return iframe_template(
+        header=f"<style>{HtmlFormatter().get_style_defs()}</style>",
+        content=f"""<pre class='highlight'>{highlighted_code}</pre>
+        <script>{update_height_js(iframe_id)}</script>""",
+        iframe_id=iframe_id,
+        style={"border": "black 1px solid", "background-color": "#ebecf0d8"},
     )

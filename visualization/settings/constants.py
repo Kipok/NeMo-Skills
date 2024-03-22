@@ -27,7 +27,7 @@ ONE_SAMPLE_MODE = "one_sample"
 METRICS = "metrics"
 OUTPUT = "output"
 OUTPUT_PATH = "{}-{}.jsonl"
-PARAMS_FOR_WHOLE_DATASET_ONLY = ['offset', 'max_samples']
+PARAMS_FOR_WHOLE_DATASET_ONLY = ['offset', 'max_samples', 'batch_size']
 PARAMETERS_FILE_NAME = "visualization/results/parameters.json"
 STATS_KEYS = [
     'question_index',
@@ -35,6 +35,7 @@ STATS_KEYS = [
 ]
 SEPARATOR_DISPLAY = '.'
 SEPARATOR_ID = '->'
+STATISTICS_FOR_WHOLE_DATASET = ["correct_answer", "wrong_answer", "no_answer"]
 UNDEFINED = "undefined"
 WHOLE_DATASET_MODE = "whole_dataset"
 MODEL_SELECTOR_ID = '{{"type": "model_selector", "id": {}}}'

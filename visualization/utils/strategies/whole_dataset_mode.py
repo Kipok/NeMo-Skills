@@ -30,6 +30,7 @@ from settings.constants import (
     OUTPUT_PATH,
     PARAMETERS_FILE_NAME,
     SEPARATOR_ID,
+    STATISTICS_FOR_WHOLE_DATASET,
     WHOLE_DATASET_MODE,
 )
 from settings.templates import summarize_results_template
@@ -137,7 +138,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
             except requests.exceptions.ConnectionError as e:
                 return self._get_connection_error_message()
             except Exception as e:
-                return html.Pre(f"Something went wrong\n{e}")
+                return html.Pre(f"Something went wrong\n{e}", className="pre-class")
 
         logging.info("Summarize results")
         summarize_results = summarize_results_template.format(
@@ -147,7 +148,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
 
         _, errors, success = run_subprocess(summarize_results)
         if not success:
-            return html.Pre(f"Something went wrong\n{errors}")
+            return html.Pre(f"Something went wrong\n{errors}", className="pre-class")
 
         runs_storage[str(run_index)] = {
             "utils": utils,
@@ -158,6 +159,8 @@ class WholeDatasetModeStrategy(ModeStrategies):
             f.write(json.dumps(runs_storage))
 
         df = pd.read_csv(os.path.join(results_path, "results.csv"))
+        for statistic in STATISTICS_FOR_WHOLE_DATASET:
+            df[statistic] = df[statistic].map(lambda x: '{:.2f}%'.format(x))
         return html.Div(
             [
                 html.Div(
