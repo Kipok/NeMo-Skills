@@ -18,6 +18,7 @@ from typing import Dict, Iterable, List, Optional, Union
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 from flask import current_app
+
 from settings.constants import SEPARATOR_DISPLAY, SEPARATOR_ID, UNDEFINED
 from utils.common import parse_model_answer
 from utils.decoration import design_text_output, highlight_code

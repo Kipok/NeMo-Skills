@@ -44,8 +44,10 @@ def design_text_output(text: str, style={}):
         text = re.sub(r'\\\[', '\n$$', text)
         text = re.sub(r'\\\]', '$$\n', text)
 
+        reg_exp = r'(?:\$\$(?:.|\n)*?\$\$|\$(?!\s)(?:[^$\n]|\\\$)*?(?<!\s)\$)'
+
         # Extract blocks inside $$ $$ and $ $
-        math_blocks = re.findall(r'(\$\$.*?\$\$|\$.*?\$)', text, flags=re.DOTALL)
+        math_blocks = re.findall(reg_exp, text, flags=re.DOTALL)
 
         # Replace the math blocks with placeholders
         for i, block in enumerate(math_blocks):
@@ -60,7 +62,7 @@ def design_text_output(text: str, style={}):
             text = text.replace(f'__MATH_BLOCK_{i}__', block)
 
         # Extract all blocks (including our custom blocks) inside $$ $$ and $ $
-        math_blocks = re.findall(r'(\$\$.*?\$\$|\$.*?\$)', text, flags=re.DOTALL)
+        math_blocks = re.findall(reg_exp, text, flags=re.DOTALL)
 
         # Replace the math blocks with placeholders
         for i, block in enumerate(math_blocks):

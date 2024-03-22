@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 import hydra
 
@@ -40,7 +40,9 @@ class BaseVisualizationConfig:
 
 @dataclass
 class VisualizationConfig(GenerateSolutionsConfig):
-    visualization_params: BaseVisualizationConfig = field(default_factory=BaseVisualizationConfig)
+    visualization_params: BaseVisualizationConfig = field(
+        default_factory=BaseVisualizationConfig
+    )
 
 
 cs = hydra.core.config_store.ConfigStore.instance()
