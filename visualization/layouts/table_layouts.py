@@ -28,7 +28,10 @@ from layouts.base_layouts import (
 from settings.constants import (
     DATA_PAGE_SIZE,
     ERROR_MESSAGE_TEMPLATE,
+    FILES_FILTERING,
+    FILES_ONLY,
     MODEL_SELECTOR_ID,
+    QUESTIONS_FILTERING,
     STATS_KEYS,
 )
 from utils.common import (
@@ -56,38 +59,81 @@ def get_labels() -> List:
     return labels
 
 
-def get_filter_layout(
-    id: int = -1, available_filters: List[str] = [], files_only: bool = False
-) -> html.Div:
+def get_filter_text(
+    available_filters: List[str] = [], mode: str = FILES_FILTERING
+) -> str:
     available_filters = list(
         get_table_data()[0][list(get_table_data()[0].keys())[0]][0].keys()
         if len(get_table_data()) and not available_filters
         else STATS_KEYS + list(get_metrics([]).keys()) + ["+ all fields in json"]
     )
-
-    inner_text = (
-        "Separate expressions for different models with &&\n\n"
-        + "For example:\ndata['model1']['correct_responses'] > 0.5 && data['model2']['no_response'] < 0.2\n\n"
-        if not files_only
-        else "For example:\ndata['correct_responses'] > 0.5 and data['no_response'] < 0.2\n\n"
-    )
-    text = (
-        "Write an expression to filter the data\n"
-        + inner_text
-        + "The function has to return bool.\n\n"
-        "Available parameters to filter data:\n"
-        + '\n'.join(
-            [
-                ', '.join(available_filters[start : start + 5])
-                for start in range(0, len(available_filters), 5)
-            ]
+    if mode == FILES_ONLY:
+        return (
+            "Write an expression to filter the data\n\n"
+            + "For example:\ndata['correct_responses'] > 0.5 and data['no_response'] < 0.2\n\n"
+            + "The function has to return bool.\n\n"
+            + "Available parameters to filter data:\n"
+            + '\n'.join(
+                [
+                    ', '.join(available_filters[start : start + 5])
+                    for start in range(0, len(available_filters), 5)
+                ]
+            ),
         )
+    elif mode == FILES_FILTERING:
+        return (
+            "Write an expression to filter the data\n"
+            + "Separate expressions for different generations with &&\n\n"
+            + "For example:\ndata['generation1']['correct_responses'] > 0.5 && data['generation2']['no_response'] < 0.2\n\n"
+            + "The function has to return bool.\n\n"
+            + "Available parameters to filter data:\n"
+            + '\n'.join(
+                [
+                    ', '.join(available_filters[start : start + 5])
+                    for start in range(0, len(available_filters), 5)
+                ]
+            ),
+        )
+    elif mode == QUESTIONS_FILTERING:
+        return (
+            "Write an function to filter the data\n"
+            + "The function should work with a dictionary with keys as generation name\n"
+            "and values as a list of samples\n\n"
+            + "For example:\ndata['generation1'][0]['is_correct'] != data['generation2'][0]['is_correct']\n\n"
+            + "The function has to return bool.\n\n"
+            + "Available parameters to filter data:\n"
+            + '\n'.join(
+                [
+                    ', '.join(available_filters[start : start + 5])
+                    for start in range(0, len(available_filters), 5)
+                ]
+            ),
+        )
+
+
+def get_filter_layout(
+    id: int = -1, available_filters: List[str] = [], mode: str = FILES_FILTERING
+) -> html.Div:
+    text = get_filter_text(available_filters, mode)
+
+    header = dbc.ModalHeader(
+        [
+            dbc.ModalTitle(
+                "Set Up Your Filter",
+            ),
+            get_switch_layout(
+                id={"type": "filter_mode", "id": id},
+                labels=["filter files"],
+                is_active=True,
+                additional_params={"inline": True, "style": {"margin-left": "10px"}},
+            ),
+        ],
+        close_button=True,
     )
-    header = dbc.ModalHeader(dbc.ModalTitle("Set Up Your Filter"), close_button=True)
     body = dbc.ModalBody(
         html.Div(
             [
-                html.Pre(text),
+                html.Pre(text, id={"type": "filter_text", "id": id}),
                 dbc.Textarea(
                     id={
                         "type": "filter_function_input",
@@ -103,6 +149,7 @@ def get_filter_layout(
             "id": id,
         },
         ["Apply for filtered data"],
+        additional_params={"style": {"margin-left": "10px"}},
     )
     footer = dbc.ModalFooter(
         dbc.Button(
@@ -215,6 +262,7 @@ def get_change_label_layout(id: int = -1, apply_for_all_files: bool = True) -> h
                     "id": id,
                 },
                 ["Apply for all files"],
+                additional_params={"style": {"margin-left": "10px"}},
             )
         ]
         if apply_for_all_files
@@ -376,7 +424,7 @@ def get_models_selector_table_cell(
                     ),
                 ),
                 get_sorting_layout(id),
-                get_filter_layout(id, files_only=True),
+                get_filter_layout(id, mode=FILES_ONLY),
                 get_change_label_layout(id),
             ]
             + del_model_layout
@@ -543,7 +591,7 @@ def get_table_detailed_inner_data(
                 for file in get_filtered_files(
                     filter_function,
                     sorting_function,
-                    get_table_data()[question_id][model],
+                    get_table_data()[question_id][model] if len(get_table_data()) else [],
                 )
             ],
             file_id=file_id,
@@ -646,6 +694,7 @@ def get_filter_answers_layout(
     filtering_function: str,
     apply_on_filtered_data: bool,
     models: List[str],
+    filter_mode: str,
 ) -> List[html.Tr]:
     global table_data
     clean_table_data = []
@@ -678,45 +727,59 @@ def get_filter_answers_layout(
             if filtering_function
             else []
         )
-        for question_id in range(len(table_data)):
-            good_data = True
 
-            for model_id in table_data[question_id].keys():
+        if filter_mode == FILES_FILTERING:
+            for question_id in range(len(table_data)):
+                good_data = True
+                for model_id in table_data[question_id].keys():
 
-                def filtering_key_function(file_dict):
-                    data = {model_id: file_dict}
-                    return all(
-                        [
-                            catch_eval_exception(
-                                available_models,
-                                filter_function,
-                                data,
-                                True,
-                                errors_dict,
-                            )
-                            for filter_function in filtering_functions
-                        ],
+                    def filtering_key_function(file_dict):
+                        data = {model_id: file_dict}
+                        return all(
+                            [
+                                catch_eval_exception(
+                                    available_models,
+                                    filter_function,
+                                    data,
+                                    True,
+                                    errors_dict,
+                                )
+                                for filter_function in filtering_functions
+                            ],
+                        )
+
+                    table_data[question_id][model_id] = list(
+                        filter(
+                            filtering_key_function,
+                            table_data[question_id][model_id],
+                        )
+                    )
+                    stats = get_metrics(table_data[question_id][model_id])
+                    table_data[question_id][model_id] = list(
+                        map(
+                            lambda data: {**data, **stats},
+                            table_data[question_id][model_id],
+                        )
                     )
 
-                table_data[question_id][model_id] = list(
-                    filter(
-                        filtering_key_function,
-                        table_data[question_id][model_id],
-                    )
+                    if table_data[question_id][model_id] == []:
+                        good_data = False
+                if good_data:
+                    clean_table_data.append(table_data[question_id])
+        else:
+            func = get_eval_function(filtering_function.strip())
+            clean_table_data = list(
+                filter(
+                    lambda data: catch_eval_exception(
+                        available_models=[],
+                        eval_func=func,
+                        data=data,
+                        default_answer=True,
+                        errors_dict=errors_dict,
+                    ),
+                    table_data,
                 )
-                stats = get_metrics(table_data[question_id][model_id])
-                table_data[question_id][model_id] = list(
-                    map(
-                        lambda data: {**data, **stats},
-                        table_data[question_id][model_id],
-                    )
-                )
-
-                if table_data[question_id][model_id] == []:
-                    good_data = False
-            if good_data:
-                clean_table_data.append(table_data[question_id])
-
+            )
         table_data = clean_table_data
     if len(errors_dict):
         logging.error(ERROR_MESSAGE_TEMPLATE.format("filtering", errors_dict))

@@ -15,10 +15,13 @@
 ANSWER_FIELD = "expected_answer"
 EXTRA_FIELDS = ["page_index", "file_name"]
 CHAT_MODE = "chat_mode"
-CHOOSE_MODEL = "choose_generation"
+CHOOSE_MODEL = "choose generation"
 DATA_PAGE_SIZE = 10
 ERROR_MESSAGE_TEMPLATE = "When applying {} function\ngot errors\n{}"
 FEW_SHOTS_INPUT = "few_shots_input"
+FILES_ONLY = "files_only"
+FILES_FILTERING = "add_files_filtering"
+QUESTIONS_FILTERING = "questions_filtering"
 GREEDY = "greedy"
 QUERY_INPUT_TYPE = "query_input"
 QUERY_INPUT_ID = '{{"type": "{}", "id": "{}"}}'
