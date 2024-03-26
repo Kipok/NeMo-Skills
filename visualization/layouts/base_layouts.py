@@ -176,7 +176,6 @@ def get_results_content_layout(
             html.Pre(
                 content if content else text,
                 id="results_content_text",
-                className="pre-class",
                 style={'margin-bottom': '10px'},
             ),
             dcc.Store(data=text, id="text_store"),

@@ -83,8 +83,8 @@ def get_filter_text(
     elif mode == FILES_FILTERING:
         return (
             "Write an expression to filter the data\n"
-            + "Separate expressions for different generations with &&\n\n"
-            + "For example:\ndata['generation1']['correct_responses'] > 0.5 && data['generation2']['no_response'] < 0.2\n\n"
+            + "Separate expressions for different datasets with &&\n\n"
+            + "For example:\ndata['dataset1']['correct_responses'] > 0.5 && data['dataset2']['no_response'] < 0.2\n\n"
             + "The function has to return bool.\n\n"
             + "Available parameters to filter data:\n"
             + '\n'.join(
@@ -96,10 +96,10 @@ def get_filter_text(
         )
     elif mode == QUESTIONS_FILTERING:
         return (
-            "Write an function to filter the data\n"
-            + "The function should work with a dictionary with keys as generation name\n"
-            "and values as a list of samples\n\n"
-            + "For example:\ndata['generation1'][0]['is_correct'] != data['generation2'][0]['is_correct']\n\n"
+            "Write a function to filter the data\n"
+            + "The function should take a dictionary containing keys representing dataset names\n"
+            + "and a list of values as JSON data from your dataset from each file.\n\n"
+            + "For example:\ndata['dataset1'][0]['is_correct'] != data['dataset2'][0]['is_correct']\n\n"
             + "The function has to return bool.\n\n"
             + "Available parameters to filter data:\n"
             + '\n'.join(
@@ -116,18 +116,31 @@ def get_filter_layout(
 ) -> html.Div:
     text = get_filter_text(available_filters, mode)
 
-    header = dbc.ModalHeader(
+    filter_mode = (
         [
-            dbc.ModalTitle(
-                "Set Up Your Filter",
-            ),
             get_switch_layout(
                 id={"type": "filter_mode", "id": id},
                 labels=["filter files"],
                 is_active=True,
-                additional_params={"inline": True, "style": {"margin-left": "10px"}},
-            ),
-        ],
+                additional_params={
+                    "inline": True,
+                    "style": {"margin-left": "10px"},
+                },
+            )
+        ]
+        if mode != FILES_ONLY
+        else []
+    )
+
+    header = dbc.ModalHeader(
+        (
+            [
+                dbc.ModalTitle(
+                    "Set Up Your Filter",
+                ),
+            ]
+            + filter_mode
+        ),
         close_button=True,
     )
     body = dbc.ModalBody(
@@ -716,14 +729,17 @@ def get_filter_answers_layout(
             model_name: model_info["file_paths"]
             for model_name, model_info in get_available_models().items()
         }
-
+        filter_lines = filtering_function.strip().split('\n')
+        common_expressions, splitted_filters = (
+            "\n".join(filter_lines[:-1]),
+            filter_lines[-1],
+        )
+        full_splitted_filters = [
+            common_expressions + "\n" + single_filter
+            for single_filter in splitted_filters.split('&&')
+        ]
         filtering_functions = (
-            list(
-                [
-                    get_eval_function(func.strip())
-                    for func in filtering_function.split('&&')
-                ]
-            )
+            list([get_eval_function(func) for func in full_splitted_filters])
             if filtering_function
             else []
         )

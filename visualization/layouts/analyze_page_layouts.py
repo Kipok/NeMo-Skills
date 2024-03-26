@@ -88,7 +88,7 @@ def get_few_shots_layout(examples: List[Dict]) -> dbc.AccordionItem:
         html.Div(
             [
                 dcc.Markdown(f'**{name}**'),
-                html.Pre(value, className="pre-class"),
+                html.Pre(value),
             ]
         )
         for name, value in example.items()

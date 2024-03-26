@@ -138,7 +138,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
             except requests.exceptions.ConnectionError as e:
                 return self._get_connection_error_message()
             except Exception as e:
-                return html.Pre(f"Something went wrong\n{e}", className="pre-class")
+                return html.Pre(f"Something went wrong\n{e}")
 
         logging.info("Summarize results")
         summarize_results = summarize_results_template.format(
@@ -148,7 +148,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
 
         _, errors, success = run_subprocess(summarize_results)
         if not success:
-            return html.Pre(f"Something went wrong\n{errors}", className="pre-class")
+            return html.Pre(f"Something went wrong\n{errors}")
 
         runs_storage[str(run_index)] = {
             "utils": utils,

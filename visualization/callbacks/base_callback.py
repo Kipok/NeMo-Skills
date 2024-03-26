@@ -19,7 +19,7 @@ from dash.dependencies import Input, Output
 
 from callbacks import app
 from layouts import get_compare_test_layout, get_run_test_layout
-from utils.common import get_data_from_files, get_height_adjustment
+from utils.common import get_available_models, get_data_from_files, get_height_adjustment
 
 
 @app.callback(
@@ -35,6 +35,7 @@ def nav_click(url: str) -> Tuple[html.Div, bool, bool]:
         return get_run_test_layout(), True, False
     elif url == "/analyze":
         get_data_from_files(datetime.now())
+        get_available_models(datetime.now())
         return get_compare_test_layout(), False, True
 
 

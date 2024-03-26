@@ -348,7 +348,7 @@ def filter_data(
             models=models,
         ),
         (
-            html.Pre(f"Filtering function:\n{filter_function}", className="pre-class")
+            html.Pre(f"Filtering function:\n{filter_function}")
             if not apply_on_filtered_data or not filtering_functions
             else filtering_functions
         ),
@@ -386,7 +386,7 @@ def sorting_data(
             sorting_function=sorting_function,
             models=models,
         ),
-        html.Pre(f'Sorting function:\n{sorting_function}', className="pre-class"),
+        html.Pre(f'Sorting function:\n{sorting_function}'),
         loading_container + " ",
     )
 
