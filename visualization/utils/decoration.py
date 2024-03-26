@@ -18,11 +18,10 @@ import string
 from typing import Dict
 
 from ansi2html import Ansi2HTMLConverter
+from dash import dcc, html
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonLexer
-
-from dash import dcc, html
 
 
 def design_text_output(text: str, style={}):
@@ -99,9 +98,7 @@ def update_height_js(iframe_id: str) -> str:
     """
 
 
-def iframe_template(
-    header: str, content: str, style: Dict = {}, iframe_id: str = None
-) -> html.Iframe:
+def iframe_template(header: str, content: str, style: Dict = {}, iframe_id: str = None) -> html.Iframe:
     if not iframe_id:
         iframe_id = get_random_id()
 

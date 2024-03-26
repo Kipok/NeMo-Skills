@@ -14,10 +14,9 @@
 from datetime import datetime
 from typing import Tuple
 
+from callbacks import app
 from dash import html
 from dash.dependencies import Input, Output
-
-from callbacks import app
 from layouts import get_compare_test_layout, get_run_test_layout
 from utils.common import get_available_models, get_data_from_files, get_height_adjustment
 

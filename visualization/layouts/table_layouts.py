@@ -19,12 +19,7 @@ from typing import List
 
 import dash_bootstrap_components as dbc
 from dash import dash_table, html
-
-from layouts.base_layouts import (
-    get_selector_layout,
-    get_single_prompt_output_layout,
-    get_switch_layout,
-)
+from layouts.base_layouts import get_selector_layout, get_single_prompt_output_layout, get_switch_layout
 from settings.constants import (
     DATA_PAGE_SIZE,
     ERROR_MESSAGE_TEMPLATE,
@@ -59,9 +54,7 @@ def get_labels() -> List:
     return labels
 
 
-def get_filter_text(
-    available_filters: List[str] = [], mode: str = FILES_FILTERING
-) -> str:
+def get_filter_text(available_filters: List[str] = [], mode: str = FILES_FILTERING) -> str:
     available_filters = list(
         get_table_data()[0][list(get_table_data()[0].keys())[0]][0].keys()
         if len(get_table_data()) and not available_filters
@@ -74,10 +67,7 @@ def get_filter_text(
             + "The function has to return bool.\n\n"
             + "Available parameters to filter data:\n"
             + '\n'.join(
-                [
-                    ', '.join(available_filters[start : start + 5])
-                    for start in range(0, len(available_filters), 5)
-                ]
+                [', '.join(available_filters[start : start + 5]) for start in range(0, len(available_filters), 5)]
             ),
         )
     elif mode == FILES_FILTERING:
@@ -88,10 +78,7 @@ def get_filter_text(
             + "The function has to return bool.\n\n"
             + "Available parameters to filter data:\n"
             + '\n'.join(
-                [
-                    ', '.join(available_filters[start : start + 5])
-                    for start in range(0, len(available_filters), 5)
-                ]
+                [', '.join(available_filters[start : start + 5]) for start in range(0, len(available_filters), 5)]
             ),
         )
     elif mode == QUESTIONS_FILTERING:
@@ -103,17 +90,12 @@ def get_filter_text(
             + "The function has to return bool.\n\n"
             + "Available parameters to filter data:\n"
             + '\n'.join(
-                [
-                    ', '.join(available_filters[start : start + 5])
-                    for start in range(0, len(available_filters), 5)
-                ]
+                [', '.join(available_filters[start : start + 5]) for start in range(0, len(available_filters), 5)]
             ),
         )
 
 
-def get_filter_layout(
-    id: int = -1, available_filters: List[str] = [], mode: str = FILES_FILTERING
-) -> html.Div:
+def get_filter_layout(id: int = -1, available_filters: List[str] = [], mode: str = FILES_FILTERING) -> html.Div:
     text = get_filter_text(available_filters, mode)
 
     filter_mode = (
@@ -207,12 +189,7 @@ def get_sorting_layout(id: int = -1, available_params: List[str] = []) -> html.D
         "For example: len(data['question'])\n\n"
         "The function has to return sortable type\n\n"
         "Available parameters to sort data:\n"
-        + '\n'.join(
-            [
-                ', '.join(available_params[start : start + 5])
-                for start in range(0, len(available_params), 5)
-            ]
-        )
+        + '\n'.join([', '.join(available_params[start : start + 5]) for start in range(0, len(available_params), 5)])
     )
     header = dbc.ModalHeader(
         dbc.ModalTitle("Set Up Your Sorting Parameters"),
@@ -410,9 +387,7 @@ def get_stats_layout() -> List[dbc.Row]:
     ]
 
 
-def get_models_selector_table_cell(
-    models: List[str], name: str, id: int, add_del_button: bool = False
-) -> dbc.Col:
+def get_models_selector_table_cell(models: List[str], name: str, id: int, add_del_button: bool = False) -> dbc.Col:
     del_model_layout = (
         [
             dbc.Button(
@@ -483,9 +458,7 @@ def get_detailed_answer_column(id: int, file_id=None) -> dbc.Col:
     return dbc.Col(
         html.Div(
             children=(
-                get_selector_layout([], {"type": "file_selector", "id": file_id}, "")
-                if file_id is not None
-                else ""
+                get_selector_layout([], {"type": "file_selector", "id": file_id}, "") if file_id is not None else ""
             ),
             id={
                 'type': 'detailed_models_answers',
@@ -528,10 +501,7 @@ def get_detailed_answers_rows(keys: List[str], colums_number: int) -> List[dbc.R
                     class_name='mt-1 bg-light font-monospace text-break small rounded border',
                 )
             ]
-            + [
-                get_detailed_answer_column(j * len(keys) + i)
-                for j in range(colums_number)
-            ],
+            + [get_detailed_answer_column(j * len(keys) + i) for j in range(colums_number)],
             id={"type": "detailed_answers_row", "id": i},
         )
         for i, key in enumerate(keys)
@@ -542,9 +512,7 @@ def get_table_answers_detailed_data_layout(
     models: List[str],
     keys: List[str],
 ) -> List[dbc.Row]:
-    return get_models_selector_table_header(models) + get_detailed_answers_rows(
-        keys, len(models)
-    )
+    return get_models_selector_table_header(models) + get_detailed_answers_rows(keys, len(models))
 
 
 def get_row_detailed_inner_data(
@@ -642,16 +610,13 @@ def get_general_stats_layout(
     return [html.Div([html.Div(f'{name}: {value}') for name, value in stats.items()])]
 
 
-def get_sorting_answers_layout(
-    base_model: str, sorting_function: str, models: List[str]
-) -> List[html.Tr]:
+def get_sorting_answers_layout(base_model: str, sorting_function: str, models: List[str]) -> List[html.Tr]:
     errors_dict = {}
     global table_data
     if sorting_function:
         sortting_eval_function = get_eval_function(sorting_function.strip())
         available_models = {
-            model_name: model_info["file_paths"]
-            for model_name, model_info in get_available_models().items()
+            model_name: model_info["file_paths"] for model_name, model_info in get_available_models().items()
         }
 
         for question_id in range(len(table_data)):
@@ -726,8 +691,7 @@ def get_filter_answers_layout(
     errors_dict = {}
     if filtering_function:
         available_models = {
-            model_name: model_info["file_paths"]
-            for model_name, model_info in get_available_models().items()
+            model_name: model_info["file_paths"] for model_name, model_info in get_available_models().items()
         }
         filter_lines = filtering_function.strip().split('\n')
         common_expressions, splitted_filters = (
@@ -735,13 +699,10 @@ def get_filter_answers_layout(
             filter_lines[-1],
         )
         full_splitted_filters = [
-            common_expressions + "\n" + single_filter
-            for single_filter in splitted_filters.split('&&')
+            common_expressions + "\n" + single_filter for single_filter in splitted_filters.split('&&')
         ]
         filtering_functions = (
-            list([get_eval_function(func) for func in full_splitted_filters])
-            if filtering_function
-            else []
+            list([get_eval_function(func) for func in full_splitted_filters]) if filtering_function else []
         )
 
         if filter_mode == FILES_FILTERING:

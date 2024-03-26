@@ -18,12 +18,11 @@ import os
 from typing import Dict, List, Tuple
 
 import dash_bootstrap_components as dbc
+from callbacks import app
 from dash import ALL, callback_context, html, no_update
 from dash.dependencies import Input, Output, State
 from dash.exceptions import PreventUpdate
 from flask import current_app
-
-from callbacks import app
 from layouts import (
     get_detailed_answer_column,
     get_filter_answers_layout,
@@ -329,9 +328,7 @@ def filter_data(
     get_filter_answers_layout(
         base_model=base_model,
         filtering_function=filter_function,
-        filter_mode=(
-            FILES_FILTERING if filter_mode and len(filter_mode) else QUESTIONS_FILTERING
-        ),
+        filter_mode=(FILES_FILTERING if filter_mode and len(filter_mode) else QUESTIONS_FILTERING),
         apply_on_filtered_data=(apply_on_filtered_data if apply_on_filtered_data else 0),
         models=models,
     )
@@ -495,9 +492,7 @@ def show_item(
     file_ids = [0] * len(models)
     for model_id, name in enumerate(file_names):
         for file_id, file in enumerate(
-            get_table_data()[question_id][models[model_id]]
-            if len(get_table_data())
-            else []
+            get_table_data()[question_id][models[model_id]] if len(get_table_data()) else []
         ):
             if file['file_name'] == name:
                 file_ids[model_id] = file_id

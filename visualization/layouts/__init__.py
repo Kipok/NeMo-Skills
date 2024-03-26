@@ -39,8 +39,8 @@ from layouts.run_prompt_page_layouts import (
 from layouts.table_layouts import (
     get_detailed_answer_column,
     get_filter_answers_layout,
-    get_filter_text,
     get_filter_layout,
+    get_filter_text,
     get_labels,
     get_model_answers_table_layout,
     get_models_selector_table_cell,
