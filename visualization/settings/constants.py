@@ -15,7 +15,7 @@
 ANSWER_FIELD = "expected_answer"
 EXTRA_FIELDS = ["page_index", "file_name"]
 CHAT_MODE = "chat_mode"
-CHOOSE_MODEL = "choose dataset"
+CHOOSE_MODEL = "choose generation"
 DATA_PAGE_SIZE = 10
 ERROR_MESSAGE_TEMPLATE = "When applying {} function\ngot errors\n{}"
 FEW_SHOTS_INPUT = "few_shots_input"
