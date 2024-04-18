@@ -100,6 +100,8 @@ class BaseModel(abc.ABC):
         stop_on_code_error=True,
         handle_code_execution=True,
         error_recovery=None,
+        add_special_tokens=False,
+        process_output=False
     ):
         self.server_host = host
         self.server_port = port
@@ -108,6 +110,8 @@ class BaseModel(abc.ABC):
         self.max_code_output_characters = max_code_output_characters
         self.code_execution_timeout = code_execution_timeout
         self.max_code_executions = max_code_executions
+        self.add_special_tokens = add_special_tokens
+        self.process_output = process_output
         if error_recovery is None:
             error_recovery = {}
         self.error_recovery = ErrorRecoveryConfig(**error_recovery)
@@ -165,14 +169,15 @@ class BaseModel(abc.ABC):
         if not self.handle_code_execution:
             request["prompts"] = prompts
             outputs = self._single_call(**request)
-            outputs = [
-                {
-                    'generated_solution': remove_stop_tokens(output, stop_phrases),
-                    'predicted_answer': extract_answer(output),
-                    'error_message': extract_error_message(output),
-                }
-                for output in outputs
-            ]
+            if self.process_output:
+                outputs = [
+                    {
+                        'generated_solution': remove_stop_tokens(output, stop_phrases),
+                        'predicted_answer': extract_answer(output),
+                        'error_message': extract_error_message(output),
+                    }
+                    for output in outputs
+                ]
             return outputs
 
         # making requests to LLM and iterating on prompts that produce code tokens
@@ -358,6 +363,7 @@ class TensorRTLLMModel(BaseModel):
             "random_seed": random_seed,
             "repetition_penalty": repetition_penalty,
             "stop_words_list": stop_phrases,
+            "add_special_tokens": self.add_special_tokens,
         }
         return self._send_request(request)
 
@@ -407,6 +413,7 @@ class NemoModel(BaseModel):
             "random_seed": random_seed,
             "repetition_penalty": repetition_penalty,
             "end_strings": ["<|endoftext|>"] + stop_phrases,
+            "add_BOS": self.add_special_tokens
         }
         outputs = self._send_request(request)
         outputs = outputs['sentences']
