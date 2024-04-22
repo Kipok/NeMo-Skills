@@ -169,7 +169,10 @@ class BaseModel(abc.ABC):
         if not self.handle_code_execution:
             request["prompts"] = prompts
             outputs = self._single_call(**request)
+            # if process_output is False, return the raw outputs
+            # this makes the code generic and allows to use it with any dataset
             if self.process_output:
+                # apply math reasoning postprocessing logic
                 outputs = [
                     {
                         'generated_solution': remove_stop_tokens(output, stop_phrases),

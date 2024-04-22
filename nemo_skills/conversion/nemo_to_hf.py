@@ -128,11 +128,12 @@ def convert(input_nemo_path, output_hf_path, hf_model_name, max_shard_size, prec
     heads_per_group = head_num // num_query_groups
     qkv_total_dim = head_num + 2 * num_query_groups
 
-    for weight_base_name in ['model', 'model.module']:
-        if f'{weight_base_name}.embedding.word_embeddings.weight' in model.state_dict():
-            break
+    if 'model.embedding.word_embeddings.weight' in model.state_dict():
+        weight_base_name = 'model'
+    elif 'model.module.embedding.word_embeddings.weight' in model.state_dict():
+        weight_base_name = 'model.module'
     # Embedding
-    embed_weight = model.state_dict()[f'{weight_base_name}.embed_tokens.weight']
+    embed_weight = model.state_dict()[f'{weight_base_name}.embedding.word_embeddings.weight']
     embed_weights_base_name = f'model.embed_tokens.weight'
     checkpoint[embed_weights_base_name] = param_to_weights(embed_weight)
 
