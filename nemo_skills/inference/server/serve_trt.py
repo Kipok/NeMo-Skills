@@ -46,7 +46,6 @@ class TritonServerGenerate(Resource):
         repetition_penalty,
         random_seed,
         stop_words_list,
-        add_special_tokens=False,
     ):
         output = self.model.forward(
             prompts,
@@ -57,7 +56,6 @@ class TritonServerGenerate(Resource):
             repetition_penalty=repetition_penalty,
             random_seed=random_seed,
             stop_words_list=stop_words_list,
-            add_special_tokens=add_special_tokens,
         )
         return output
 
@@ -75,7 +73,6 @@ class TritonServerGenerate(Resource):
         stop_words_list = input_request.get("stop_words_list")
         random_seed = input_request.get("random_seed", 0)
         prompts = input_request["prompts"]
-        add_special_tokens = input_request.get("add_special_tokens", False)
 
         data = dict(
             prompts=prompts,
@@ -86,7 +83,6 @@ class TritonServerGenerate(Resource):
             repetition_penalty=repetition_penalty,
             random_seed=random_seed,
             stop_words_list=stop_words_list,
-            add_special_tokens=add_special_tokens,
         )
         self.comm.Barrier()
         data = self.comm.bcast(data, root=0)
@@ -95,11 +91,10 @@ class TritonServerGenerate(Resource):
         return jsonify(out)
 
 
-def parse_input(input_texts: str, tokenizer, add_special_tokens=False):
+def parse_input(input_texts: str, tokenizer):
     batch_input_ids = [
         tokenizer.encode(
             input_text,
-            add_special_tokens=add_special_tokens,
         )
         for input_text in input_texts
     ]
@@ -211,9 +206,8 @@ class TensorRTLLM:
         repetition_penalty,
         random_seed,
         stop_words_list,
-        add_special_tokens=False,
     ):
-        batch_input_ids, input_lengths = parse_input(input_texts, self.tokenizer, add_special_tokens=add_special_tokens)
+        batch_input_ids, input_lengths = parse_input(input_texts, self.tokenizer)
 
         stop_words_list = [stop_words_list for _ in range(len(input_texts))]
         stop_words_list = prepare_stop_words(stop_words_list, self.tokenizer)

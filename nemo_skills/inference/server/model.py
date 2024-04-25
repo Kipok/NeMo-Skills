@@ -100,7 +100,6 @@ class BaseModel(abc.ABC):
         stop_on_code_error=True,
         handle_code_execution=True,
         error_recovery=None,
-        add_special_tokens=False,
         process_output=False
     ):
         self.server_host = host
@@ -110,7 +109,6 @@ class BaseModel(abc.ABC):
         self.max_code_output_characters = max_code_output_characters
         self.code_execution_timeout = code_execution_timeout
         self.max_code_executions = max_code_executions
-        self.add_special_tokens = add_special_tokens
         self.process_output = process_output
         if error_recovery is None:
             error_recovery = {}
@@ -366,7 +364,6 @@ class TensorRTLLMModel(BaseModel):
             "random_seed": random_seed,
             "repetition_penalty": repetition_penalty,
             "stop_words_list": stop_phrases,
-            "add_special_tokens": self.add_special_tokens,
         }
         return self._send_request(request)
 
@@ -416,7 +413,6 @@ class NemoModel(BaseModel):
             "random_seed": random_seed,
             "repetition_penalty": repetition_penalty,
             "end_strings": ["<|endoftext|>"] + stop_phrases,
-            "add_BOS": self.add_special_tokens
         }
         outputs = self._send_request(request)
         outputs = outputs['sentences']
