@@ -190,11 +190,15 @@ def convert(input_nemo_path, output_hf_path, hf_model_name, max_shard_size, prec
         checkpoint[mlp_up_proj_base_name] = param_to_weights(mlp_up_proj_weight)
 
         # layernorm
-        input_ln_weight = model.state_dict()[f'{weight_base_name}.decoder.layers.{l}.self_attention.linear_qkv.layer_norm_weight']
+        input_ln_weight = model.state_dict()[
+            f'{weight_base_name}.decoder.layers.{l}.self_attention.linear_qkv.layer_norm_weight'
+        ]
         input_ln_base_name = f'model.layers.{l}.input_layernorm.weight'
         checkpoint[input_ln_base_name] = param_to_weights(input_ln_weight)
 
-        post_attn_ln_weight = model.state_dict()[f'{weight_base_name}.decoder.layers.{l}.mlp.linear_fc1.layer_norm_weight']
+        post_attn_ln_weight = model.state_dict()[
+            f'{weight_base_name}.decoder.layers.{l}.mlp.linear_fc1.layer_norm_weight'
+        ]
         post_attn_ln_base_name = f'model.layers.{l}.post_attention_layernorm.weight'
         checkpoint[post_attn_ln_base_name] = param_to_weights(post_attn_ln_weight)
 
