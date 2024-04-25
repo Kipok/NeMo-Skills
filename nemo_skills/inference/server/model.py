@@ -100,7 +100,7 @@ class BaseModel(abc.ABC):
         stop_on_code_error=True,
         handle_code_execution=True,
         error_recovery=None,
-        process_output=False
+        process_output=True
     ):
         self.server_host = host
         self.server_port = port
