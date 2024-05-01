@@ -350,7 +350,7 @@ class PistonSandbox(Sandbox):
             "args": [],
             "run_timeout": timeout * 1000.0,  # milliseconds
             "compile_memory_limit": -1,
-            "run_memory_limit": -1
+            "run_memory_limit": -1,
         }
 
 

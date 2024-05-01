@@ -45,9 +45,7 @@ def execute():
     timeout = request.json['timeout']
     # running in a separate process to ensure any kind of crashes are properly handled
     queue = multiprocessing.Queue()
-    process = multiprocessing.Process(
-        target=execute_code_subprocess, args=(generated_code, queue)
-    )
+    process = multiprocessing.Process(target=execute_code_subprocess, args=(generated_code, queue))
     process.start()
     process.join(timeout=timeout)
     if process.is_alive():  # didn't finish successfully
