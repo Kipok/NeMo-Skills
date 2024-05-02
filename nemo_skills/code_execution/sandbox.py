@@ -401,5 +401,4 @@ def get_sandbox(sandbox_type, **kwargs):
 def sandbox_params():
     """Returns sandbox documentation (to include in cmd help)."""
     prefix = f'\n        sandbox_type: str = MISSING - Choices: {list(sandboxes.keys())}'
-    # only exposing docs for local sandbox for now. Need to change when we support other types
-    return python_doc_to_cmd_help(LocalSandbox, docs_prefix=prefix, arg_prefix="sandbox.")
+    return python_doc_to_cmd_help(Sandbox, docs_prefix=prefix, arg_prefix="sandbox.")
