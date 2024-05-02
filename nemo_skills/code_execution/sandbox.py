@@ -231,7 +231,7 @@ print(json.dumps(to_return))
             session_id = None
         return output, session_id
 
-    def is_output_correct(self, pred_output, gt_output, include_percentage=True, tolerance=1e-4, timeout=3.0):
+    def is_output_correct(self, pred_output, gt_output, include_percentage=True, tolerance=1e-4, timeout=10.0):
         import requests
 
         # embedding the full math grader code here to send to server for execution

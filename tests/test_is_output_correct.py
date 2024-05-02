@@ -25,6 +25,7 @@ from test_code_execution import _get_sandbox
         ("1/2", 0.5),
         ("\\frac{1}{2}", 0.5),
         ("x^2+2x+1", "x^2 + 2*x + 1"),
+        ("x^2+2x+1", "x^2 + 2*x - (-1)"),
         ("x^2+2x+1", "2x+ 1+x^2"),
     ],
     ids=str,
@@ -44,7 +45,7 @@ def test_correct_examples(sandbox_type, output_pair):
     [
         (5, 5.001),
         (0, None),
-        ("x^2+2x+1", "2x+ 1+x**3"),
+        ("x^2+2x+1", "x^3+2x+1"),
     ],
     ids=str,
 )
