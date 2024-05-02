@@ -93,7 +93,7 @@ def test_no_output(sandbox_type):
 
     output, session_id = sandbox.execute_code(code)
     assert output == {'result': '', 'error_message': Sandbox.RESULT_NOT_DEFINED_ERROR}
-    assert session_id is not None
+    assert session_id is None  # we are clearing the sessions on error, so it should be None here
 
 
 @pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
@@ -113,7 +113,7 @@ def test_execution_error(sandbox_type):
         ),
         'error_message': f'{Sandbox.EXECUTION_ERROR} division by zero',
     }
-    assert session_id is not None
+    assert session_id is None  # we are clearing the sessions on error, so it should be None here
 
 
 @pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
@@ -129,5 +129,26 @@ def test_syntax_error(sandbox_type):
             'b = 3\x1b[0m\n\x1b[0m    ^\x1b[0m\n\x1b[0;31mIndentationError\x1b[0m\x1b[0;31m:\x1b[0m unexpected indent'
         ),
         'error_message': f'{Sandbox.SYNTAX_ERROR} unexpected indent (<ipython-input-1-ff73a4eb1351>, line 2)',
+    }
+    assert session_id is None  # we are clearing the sessions on error, so it should be None here
+
+
+@pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
+def test_timeout_error(sandbox_type):
+    sandbox = _get_sandbox(sandbox_type)
+
+    code = """import time\ntime.sleep(3)\nprint("done")"""
+
+    output, session_id = sandbox.execute_code(code, timeout=3)
+    assert output == {
+        'result': None,
+        'error_message': Sandbox.TIMEOUT_ERROR,
+    }
+    assert session_id is None  # we are clearing the sessions on error, so it should be None here
+
+    output, session_id = sandbox.execute_code(code, timeout=4, session_id=session_id)
+    assert output == {
+        'result': "done",
+        'error_message': "",
     }
     assert session_id is not None

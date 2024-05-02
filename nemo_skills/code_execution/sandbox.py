@@ -227,6 +227,7 @@ print(json.dumps(to_return))
         # resetting state to not re-execute code with errors
         if output['error_message']:
             self.clear_session(session_id)
+            session_id = None
         return output, session_id
 
     def is_output_correct(self, pred_output, gt_output, include_percentage=True, tolerance=1e-4, timeout=10.0):
