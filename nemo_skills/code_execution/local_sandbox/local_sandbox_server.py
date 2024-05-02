@@ -18,9 +18,7 @@ import resource
 import sys
 from io import StringIO
 
-from flask import Flask, jsonify, request
-
-from nemo_skills.code_execution.math_grader import math_equal
+from flask import Flask, request
 
 app = Flask(__name__)
 
@@ -35,7 +33,7 @@ def execute_code_subprocess(generated_code, queue):
     resource.setrlimit(resource.RLIMIT_STACK, (limit, limit))
 
     sys.stdout = StringIO()
-    exec(generated_code)
+    exec(generated_code, {})
     queue.put(sys.stdout.getvalue())
 
 
@@ -52,13 +50,3 @@ def execute():
         process.kill()
         return '{"result": None, "error_message": Sandbox.TIMEOUT_ERROR}'
     return queue.get()
-
-
-@app.route("/is_output_correct", methods=["POST"])
-def is_output_correct():
-    pred_output = request.json["pred_output"]
-    gt_output = request.json["gt_output"]
-    include_percentage = request.json["include_percentage"]
-    tolerance = request.json["tolerance"]
-    timeout = request.json["timeout"]
-    return jsonify(math_equal(pred_output, gt_output, include_percentage, tolerance, timeout))

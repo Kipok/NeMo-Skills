@@ -20,6 +20,7 @@ import os
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from itertools import zip_longest
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from nemo_skills.utils import python_doc_to_cmd_help, unroll_files
@@ -230,21 +231,51 @@ print(json.dumps(to_return))
             session_id = None
         return output, session_id
 
-    def is_output_correct(self, pred_output, gt_output, include_percentage=True, tolerance=1e-4, timeout=10.0):
+    def is_output_correct(self, pred_output, gt_output, include_percentage=True, tolerance=1e-4, timeout=3.0):
         import requests
 
-        request = {
-            "pred_output": pred_output,
-            "gt_output": gt_output,
-            "include_percentage": include_percentage,
-            "tolerance": tolerance,
-            "timeout": timeout,
-        }
+        # embedding the full math grader code here to send to server for execution
+        with open(Path(__file__).absolute().parent / "math_grader.py", "rt") as fin:
+            math_grader_code = fin.read()
+
+        TO_EXECUTE = f"""
+import os
+import sys
+import json
+from io import StringIO
+os.environ['OPENBLAS_NUM_THREADS'] = '16'
+
+{math_grader_code}
+
+stdout = sys.stdout
+# removing all output to not capture that
+sys.stdout = sys.stderr = StringIO()
+try:
+    output = math_equal(
+        r"{pred_output}",
+        r"{gt_output}",
+        {include_percentage},
+        {tolerance},
+        {timeout},
+    )
+    error_message = ""
+except Exception as e:
+    output = False
+    error_message = str(e)
+# restoring the output to get the print
+sys.stdout = stdout
+print(json.dumps({{"result": output, "error_message": error_message}}))
+"""
+        request = self._prepare_request(TO_EXECUTE, timeout)
         try:
-            output = self._send_request(request, timeout, "is_output_correct").json()
+            output = self._send_request(request, timeout)
         except requests.exceptions.Timeout:
-            output = False
-        return output
+            output = {'result': False, 'error_message': Sandbox.TIMEOUT_ERROR}
+        if output['error_message']:
+            # logging the error
+            LOG.warning("Error during correctness check: %s", output['error_message'])
+
+        return output['result']
 
     def batch_evaluate_results(
         self,

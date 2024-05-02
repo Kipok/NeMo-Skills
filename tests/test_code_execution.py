@@ -139,16 +139,16 @@ def test_syntax_error(sandbox_type):
 def test_timeout_error(sandbox_type):
     sandbox = _get_sandbox(sandbox_type)
 
-    code = """import time\ntime.sleep(3)\nprint("done")"""
+    code = """import time\ntime.sleep(1)\nprint("done")"""
 
-    output, session_id = sandbox.execute_code(code, timeout=3)
+    output, session_id = sandbox.execute_code(code, timeout=1)
     assert output == {
         'result': None,
         'error_message': Sandbox.TIMEOUT_ERROR,
     }
     assert session_id is None  # we are clearing the sessions on error, so it should be None here
 
-    output, session_id = sandbox.execute_code(code, timeout=4, session_id=session_id)
+    output, session_id = sandbox.execute_code(code, timeout=2, session_id=session_id)
     assert output == {
         'result': "done",
         'error_message': "",
