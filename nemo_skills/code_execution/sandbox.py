@@ -366,7 +366,10 @@ class PistonSandbox(Sandbox):
         return f"{self.host}/execute"
 
     def _parse_request_output(self, output):
-        return json.loads(output.json()['run']['output'])
+        output = output.json()
+        if output['run']['signal'] == "SIGKILL":
+            return {'result': None, 'error_message': 'Unknown error: SIGKILL'}
+        return json.loads(output['run']['output'])
 
     def _prepare_request(self, generated_code, timeout):
         return {
