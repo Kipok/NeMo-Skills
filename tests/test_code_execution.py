@@ -1,0 +1,133 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import os
+
+import pytest
+
+from nemo_skills.code_execution.sandbox import Sandbox, get_sandbox
+
+
+def _get_sandbox(sandbox_type):
+    if sandbox_type == 'local':
+        host = os.getenv('NEMO_SKILLS_SANDBOX_HOST')
+        if not host:
+            pytest.skip("Define NEMO_SKILLS_SANDBOX_HOST to run this test")
+
+    if sandbox_type == 'piston':
+        host = os.getenv('NEMO_SKILLS_PISTON_SANDBOX_URL')
+        if not host:
+            pytest.skip("Define NEMO_SKILLS_PISTON_SANDBOX_URL to run this test")
+
+    return get_sandbox(sandbox_type, host=host)
+
+
+@pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
+def test_multiple_code_blocks(sandbox_type):
+    sandbox = _get_sandbox(sandbox_type)
+
+    code = """
+    a = 1
+    a
+    """
+
+    output, session_id = sandbox.execute_code(code)
+    assert output == {'result': '1', 'error_message': ''}
+    assert session_id is not None
+
+    code = "a + 5"
+    output, session_id2 = sandbox.execute_code(code, session_id=session_id)
+    assert output == {'result': '6', 'error_message': ''}
+    assert session_id == session_id2
+
+
+@pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
+def test_triple_quotes(sandbox_type):
+    sandbox = _get_sandbox(sandbox_type)
+    code = '''
+    def my_func():
+        """Test function"""
+        print("asdf")
+    my_func()
+'''
+    output, session_id = sandbox.execute_code(code)
+    assert output == {'result': 'asdf', 'error_message': ''}
+    assert session_id is not None
+
+
+@pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
+def test_multiple_prints(sandbox_type):
+    sandbox = _get_sandbox(sandbox_type)
+
+    code = """
+    print("1")
+    print("2x3")
+    """
+
+    output, session_id = sandbox.execute_code(code)
+    assert output == {'result': '1\n2x3', 'error_message': ''}
+    assert session_id is not None
+
+    code = "print(2)\n15"
+    output, session_id2 = sandbox.execute_code(code, session_id=session_id)
+    assert output == {'result': '2\n15', 'error_message': ''}
+    assert session_id == session_id2
+
+
+@pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
+def test_no_output(sandbox_type):
+    sandbox = _get_sandbox(sandbox_type)
+
+    code = """a = 2"""
+
+    output, session_id = sandbox.execute_code(code)
+    assert output == {'result': '', 'error_message': Sandbox.RESULT_NOT_DEFINED_ERROR}
+    assert session_id is not None
+
+
+@pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
+def test_execution_error(sandbox_type):
+    sandbox = _get_sandbox(sandbox_type)
+
+    code = """1 / 0"""
+
+    output, session_id = sandbox.execute_code(code)
+    assert output == {
+        'result': (
+            '\x1b[0;31m---------------------------------------------------------------------------\x1b[0m\n\x1b[0;31m'
+            'ZeroDivisionError\x1b[0m                         Traceback (most recent call last)\nFile \x1b[0;32m'
+            '<ipython-input-1-bc757c3fda29>:1\x1b[0m\n\x1b[0;32m----> 1\x1b[0m \x1b[38;5;241;43m1\x1b[39;49m\x1b[43m '
+            '\x1b[49m\x1b[38;5;241;43m/\x1b[39;49m\x1b[43m \x1b[49m\x1b[38;5;241;43m0\x1b[39;49m\n\n\x1b[0;31m'
+            'ZeroDivisionError\x1b[0m: division by zero'
+        ),
+        'error_message': f'{Sandbox.EXECUTION_ERROR} division by zero',
+    }
+    assert session_id is not None
+
+
+@pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
+def test_syntax_error(sandbox_type):
+    sandbox = _get_sandbox(sandbox_type)
+
+    code = """a = 2\n b = 3"""
+
+    output, session_id = sandbox.execute_code(code)
+    assert output == {
+        'result': (
+            '\x1b[0;36m  File \x1b[0;32m<ipython-input-1-ff73a4eb1351>:2\x1b[0;36m\x1b[0m\n\x1b[0;31m    '
+            'b = 3\x1b[0m\n\x1b[0m    ^\x1b[0m\n\x1b[0;31mIndentationError\x1b[0m\x1b[0;31m:\x1b[0m unexpected indent'
+        ),
+        'error_message': f'{Sandbox.SYNTAX_ERROR} unexpected indent (<ipython-input-1-ff73a4eb1351>, line 2)',
+    }
+    assert session_id is not None
