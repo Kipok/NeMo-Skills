@@ -157,6 +157,39 @@ def test_timeout_error(sandbox_type):
 
 
 @pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
+def test_real_generations(sandbox_type):
+    sandbox = _get_sandbox(sandbox_type)
+
+    code = """
+# height of bamboo in inches
+height_in_inches = 20 * 12
+# height of bamboo in inches after x days
+height_after_x_days = height_in_inches + 30 * x
+# solve for x
+x = (600 - height_in_inches) / 30
+x
+"""
+
+    output, session_id = sandbox.execute_code(code)
+    assert output == {
+        'result': (
+            "\x1b[0;31m---------------------------------------------------------------------------\x1b[0m\n\x1b[0;31m"
+            "NameError\x1b[0m                                 Traceback (most recent call last)\nFile \x1b[0;32m"
+            "<ipython-input-1-2d264478936f>:4\x1b[0m\n\x1b[1;32m      2\x1b[0m height_in_inches \x1b[38;5;241m=\x1b"
+            "[39m \x1b[38;5;241m20\x1b[39m \x1b[38;5;241m*\x1b[39m \x1b[38;5;241m12\x1b[39m\n\x1b[1;32m      3\x1b[0m"
+            " \x1b[38;5;66;03m# height of bamboo in inches after x days\x1b[39;00m\n\x1b[0;32m----> 4\x1b[0m "
+            "height_after_x_days \x1b[38;5;241m=\x1b[39m height_in_inches \x1b[38;5;241m+\x1b[39m \x1b[38;5;241m30"
+            "\x1b[39m \x1b[38;5;241m*\x1b[39m \x1b[43mx\x1b[49m\n\x1b[1;32m      5\x1b[0m \x1b[38;5;66;03m"
+            "# solve for x\x1b[39;00m\n\x1b[1;32m      6\x1b[0m x \x1b[38;5;241m=\x1b[39m (\x1b[38;5;241m600\x1b[39m "
+            "\x1b[38;5;241m-\x1b[39m height_in_inches) \x1b[38;5;241m/\x1b[39m \x1b[38;5;241m30\x1b[39m\n\n\x1b[0;31m"
+            "NameError\x1b[0m: name 'x' is not defined"
+        ),
+        'error_message': f"{Sandbox.EXECUTION_ERROR} name 'x' is not defined",
+    }
+    assert session_id is None  # we are clearing the sessions on error, so it should be None here
+
+
+@pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
 def test_few_shots(sandbox_type):
     sandbox = _get_sandbox(sandbox_type)
 

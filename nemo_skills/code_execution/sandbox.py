@@ -175,13 +175,14 @@ class Sandbox(abc.ABC):
         if session_id is None:  # creating a new session with empty state
             session_id = uuid.uuid4()
             self.sessions[session_id] = []
-
         generated_code = generated_code.replace('"""', r'\"\"\"')
         self.sessions[session_id].append(generated_code)
         TO_EXECUTE = """
 import traceback
 import json
 import os
+import warnings
+warnings.filterwarnings('ignore')
 os.environ['OPENBLAS_NUM_THREADS'] = '16'
 
 from IPython.core.interactiveshell import InteractiveShell
@@ -365,9 +366,7 @@ class PistonSandbox(Sandbox):
         return f"{self.host}/execute"
 
     def _parse_request_output(self, output):
-        output = output.json()['run']['output']
-        output = json.loads('{"result":' + output.split('{"result":', 2)[1])
-        return output
+        return json.loads(output.json()['run']['output'])
 
     def _prepare_request(self, generated_code, timeout):
         return {
