@@ -23,6 +23,9 @@ from itertools import zip_longest
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+import backoff
+import requests
+
 from nemo_skills.utils import python_doc_to_cmd_help, unroll_files
 
 LOG = logging.getLogger(__file__)
@@ -128,6 +131,7 @@ class Sandbox(abc.ABC):
     def clear_session(self, session_id):
         del self.sessions[session_id]
 
+    @backoff.on_exception(backoff.constant, requests.exceptions.Timeout, interval=1, max_tries=3)
     def _send_request(self, request, timeout):
         if self.ssh_server and self.ssh_key_path:
             import sshtunnel_requests
@@ -140,8 +144,6 @@ class Sandbox(abc.ABC):
                 headers={"Content-Type": "application/json"},
             )
         else:
-            import requests
-
             output = requests.post(
                 url=self._get_execute_url(),
                 data=json.dumps(request),
@@ -170,8 +172,6 @@ class Sandbox(abc.ABC):
         max_output_characters: int = 1000,
         session_id: Optional[str] = None,
     ) -> Tuple[Dict, str]:
-        import requests
-
         if session_id is None:  # creating a new session with empty state
             session_id = uuid.uuid4()
             self.sessions[session_id] = []
@@ -233,8 +233,6 @@ print(json.dumps(to_return))
         return output, session_id
 
     def is_output_correct(self, pred_output, gt_output, include_percentage=True, tolerance=1e-4, timeout=10.0):
-        import requests
-
         # embedding the full math grader code here to send to server for execution
         with open(Path(__file__).absolute().parent / "math_grader.py", "rt") as fin:
             math_grader_code = fin.read()

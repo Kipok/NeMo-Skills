@@ -65,12 +65,15 @@ BENCHMARKS = {
     "math": 4,
 }
 
+# TODO: remove backoff installation after it gets into docker
+
 SLURM_CMD = """
 nvidia-smi && \
 cd /code && \
 export PYTHONPATH=$PYTHONPATH:/code && \
 {server_start_cmd} && \
 if [ $SLURM_LOCALID -eq 0 ]; then \
+    pip install backoff && \
     echo "Waiting for the server to start" && \
     tail -n0 -f /tmp/server_logs.txt | sed '/Running on all addresses/ q' && \
     {eval_cmds} \
