@@ -21,7 +21,13 @@ sys.path.append(str(Path(__file__).absolute().parents[1]))
 
 from launcher import CLUSTER_CONFIG, NEMO_SKILLS_CODE, WRAPPER_HELP, get_server_command, launch_job
 
-from nemo_skills.inference.generate_solutions import HELP_MESSAGE
+try:
+    from nemo_skills.inference.generate_solutions import HELP_MESSAGE
+except ImportError:
+    HELP_MESSAGE = """
+To see all supported agruments, nemo_skills package needs to be installed.
+Please note that it is not recommended to install Python packages on a slurm cluster login node.
+"""
 from nemo_skills.utils import setup_logging
 
 SCRIPT_HELP = """

@@ -21,7 +21,6 @@ sys.path.append(str(Path(__file__).absolute().parents[1]))
 
 from launcher import CLUSTER_CONFIG, NEMO_SKILLS_CODE, get_server_command, launch_job
 
-from nemo_skills.inference.prompt.utils import context_templates, datasets, examples_map, prompt_types
 from nemo_skills.utils import setup_logging
 
 SLURM_CMD = """
