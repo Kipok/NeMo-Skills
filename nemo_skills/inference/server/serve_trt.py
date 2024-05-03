@@ -185,6 +185,7 @@ def read_model_name(engine_dir: str):
         'MistralForCausalLM'.lower(): 'mistral',
         'LlamaForCausalLM'.lower(): 'llama',
         'MixtralForCausalLM'.lower(): 'mixtral',
+        'gptforcausallm'.lower(): 'llama',
     }
     return name_map[name]
 
