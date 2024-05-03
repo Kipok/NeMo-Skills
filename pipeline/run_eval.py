@@ -142,7 +142,8 @@ if __name__ == "__main__":
         for rs in range(args.starting_seed, args.starting_seed + rs_num)
     ]
     if args.num_nodes == -1:
-        args.num_nodes = len(eval_cmds)
+        # TODO: change to num_jobs
+        args.num_nodes = len(eval_cmds) * args.num_server_nodes
     if args.num_nodes % args.num_server_nodes != 0:
         raise ValueError("Number of nodes should be divisible by number of server nodes")
     args.num_nodes //= args.num_server_nodes
