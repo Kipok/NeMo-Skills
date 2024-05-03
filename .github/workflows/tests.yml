@@ -35,7 +35,7 @@ jobs:
         python -m pytest tests/ --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=nemo_skills --durations=30 -rs -vvv | tee pytest-coverage.txt
     - name: Check help message
       run: |
-        python tests/check_help.py --all
+        NEMO_SKILLS_CONFIG=cluster_configs/slurm.yaml python tests/check_help.py --all
 
   cluster-tests:
     runs-on: ubuntu-latest
@@ -53,4 +53,4 @@ jobs:
         pip install --user pyyaml
     - name: Run help
       run: |
-        python tests/check_help.py
+        NEMO_SKILLS_CONFIG=cluster_configs/slurm.yaml python tests/check_help.py
