@@ -42,7 +42,7 @@ if [ $SLURM_LOCALID -eq 0 ]; then \
         output_file=/results/output-rs{random_seed}.jsonl \
         {extra_arguments} && \
     python nemo_skills/evaluation/evaluate_results.py \
-        prediction_jsonl_files=/results/output-rs{random_seed}.jsonl && \
+        prediction_jsonl_files=/results/output-rs{random_seed}.jsonl {extra_eval_args} && \
     kill %1; \
 else \
     sleep infinity; \
@@ -104,6 +104,11 @@ if __name__ == "__main__":
         required=False,
         help="Can specify if need interactive jobs or a specific non-default partition",
     )
+    parser.add_argument(
+        "--extra_eval_args",
+        default="",
+        help="Any extra arguments to pass to nemo_skills/evaluation/evaluate_results.py",
+    )
     args, unknown = parser.parse_known_args()
 
     args.model_path = Path(args.model_path).absolute()
@@ -121,6 +126,7 @@ if __name__ == "__main__":
         "server_start_cmd": server_start_cmd,
         "num_tasks": num_tasks,
         "server_type": args.server_type,
+        "extra_eval_args": args.extra_eval_args,
         "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
     }
 
