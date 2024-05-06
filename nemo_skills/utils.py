@@ -22,29 +22,31 @@ import tokenize
 import typing
 from dataclasses import MISSING, dataclass, fields, is_dataclass
 
+from omegaconf.dictconfig import DictConfig
+
 
 def nested_dataclass(*args, **kwargs):
     """Decorator that will recursively instantiate all nested dataclasses.
 
-    From https://www.geeksforgeeks.org/creating-nested-dataclass-objects-in-python/.
+    Adapted from https://www.geeksforgeeks.org/creating-nested-dataclass-objects-in-python/.
     """
 
     def wrapper(check_class):
 
         # passing class to investigate
         check_class = dataclass(check_class, **kwargs)
-        o_init = check_class.__init__
+        orig_init = check_class.__init__
 
-        def __init__(self, *args, **kwargs):
+        def __init__(self, *, _strict_check=False, **kwargs):
+            if _strict_check:
+                for name, value in kwargs.items():
+                    # getting field type
+                    ft = check_class.__annotations__.get(name, None)
 
-            for name, value in kwargs.items():
-                # getting field type
-                ft = check_class.__annotations__.get(name, None)
-
-                if is_dataclass(ft) and isinstance(value, dict):
-                    obj = ft(**value)
-                    kwargs[name] = obj
-                o_init(self, *args, **kwargs)
+                    if is_dataclass(ft) and isinstance(value, (dict, DictConfig)):
+                        obj = ft(**value, _strict_check=_strict_check)
+                        kwargs[name] = obj
+            orig_init(self, **kwargs)
 
         check_class.__init__ = __init__
 

@@ -147,7 +147,7 @@ cs.store(name="base_prepare_sft_data_config", node=PrepareSFTDataConfig)
 
 @hydra.main(version_base=None, config_name="base_prepare_sft_data_config")
 def prepare_sft_data(cfg: PrepareSFTDataConfig):
-    cfg = PrepareSFTDataConfig(**cfg)
+    cfg = PrepareSFTDataConfig(_strict_check=True, **cfg)
     LOG.info("Config used: %s", cfg)
 
     data_size = None
@@ -176,7 +176,7 @@ def prepare_sft_data(cfg: PrepareSFTDataConfig):
             # including all fields in case they are useful for training
             elem = sample.copy()
             # NeMo requires input/output fields
-            elem["input"] = str(Prompt(cfg.prompt, {"question": question}))
+            elem["input"] = str(Prompt(config=cfg.prompt, input_dict={"question": question}))
             elem["output"] = elem.pop("generated_solution")
             elem.update(cfg.metadata)
             prepared_data.append(elem)

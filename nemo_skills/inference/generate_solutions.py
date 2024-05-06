@@ -87,8 +87,7 @@ cs.store(name="base_generation_config", node=GenerateSolutionsConfig)
 
 @hydra.main(version_base=None, config_name='generation_config', config_path='.')
 def generate_solutions(cfg: GenerateSolutionsConfig):
-    print(cfg)
-    cfg = GenerateSolutionsConfig(**cfg)
+    cfg = GenerateSolutionsConfig(_strict_check=True, **cfg)
 
     LOG.info("Config used: %s", cfg)
     sandbox = get_sandbox(**cfg.sandbox) if cfg.sandbox is not None else None
@@ -125,7 +124,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
             if idx == cfg.max_samples:
                 break
 
-            prompts.append(Prompt(cfg.prompt, data_point, example_dicts=cfg.example_dicts))
+            prompts.append(Prompt(config=cfg.prompt, input_dict=data_point, example_dicts=cfg.example_dicts))
 
             data_points.append(data_point)
 
