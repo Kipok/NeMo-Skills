@@ -100,7 +100,6 @@ class BaseModel(abc.ABC):
         stop_on_code_error=True,
         handle_code_execution=True,
         error_recovery=None,
-        process_output=True,
     ):
         self.server_host = host
         self.server_port = port
@@ -169,16 +168,15 @@ class BaseModel(abc.ABC):
             outputs = self._single_call(**request)
             # if process_output is False, return the raw outputs
             # this makes the code generic and allows to use it with any dataset
-            if self.process_output:
-                # apply math reasoning postprocessing logic
-                outputs = [
-                    {
-                        'generated_solution': remove_stop_tokens(output, stop_phrases),
-                        'predicted_answer': extract_answer(output),
-                        'error_message': extract_error_message(output),
-                    }
-                    for output in outputs
-                ]
+            # apply math reasoning postprocessing logic
+            outputs = [
+                {
+                    'generated_solution': remove_stop_tokens(output, stop_phrases),
+                    'predicted_answer': extract_answer(output),
+                    'error_message': extract_error_message(output),
+                }
+                for output in outputs
+            ]
             return outputs
 
         # making requests to LLM and iterating on prompts that produce code tokens
