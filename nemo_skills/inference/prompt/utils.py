@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional
 from omegaconf import MISSING, OmegaConf
 
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
+from nemo_skills.utils import nested_dataclass
 
 # listing all available configs here
 prompt_types = [cfg.stem for cfg in Path(__file__).parent.glob("*.yaml")]
@@ -30,14 +31,14 @@ datasets = [
 ]
 
 
-@dataclass
+@nested_dataclass
 class FewShotExamples:
     template: str = MISSING
     examples_type: Optional[str] = None
     num_few_shots: int = 5
 
 
-@dataclass
+@nested_dataclass
 class PromptConfig:
     few_shot_examples: FewShotExamples = field(default_factory=FewShotExamples)
     prompt_template: str = MISSING
@@ -47,7 +48,7 @@ class PromptConfig:
     stop_phrases: List[str] = field(default_factory=list)
 
 
-@dataclass
+@nested_dataclass
 class Prompt:
     config: PromptConfig
     input_dict: Dict[str, Any]

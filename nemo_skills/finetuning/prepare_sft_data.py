@@ -18,7 +18,7 @@ import os
 import random
 import sys
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import field
 from itertools import zip_longest
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -27,18 +27,18 @@ import hydra
 import numpy as np
 import tqdm
 import yaml
-from omegaconf import MISSING, OmegaConf
+from omegaconf import MISSING
 
 sys.path.append(str(Path(__file__).absolute().parents[2]))
 
 from nemo_skills.finetuning.filtering_utils import downsample_data, process_bad_solutions
 from nemo_skills.inference.prompt.utils import Prompt, PromptConfig
-from nemo_skills.utils import get_help_message, setup_logging, unroll_files
+from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging, unroll_files
 
 LOG = logging.getLogger(__file__)
 
 # TODO: this should be done as a pipeline with different filterings / downsampling
-#       ideally directly use SDP for this
+#       ideally directly use nemo curator for this
 
 
 def get_default_prompt_config():
@@ -55,7 +55,7 @@ def get_default_prompt_config():
     return prompt_config
 
 
-@dataclass
+@nested_dataclass
 class PrepareSFTDataConfig:
     """Top-level parameters for the script"""
 
@@ -147,7 +147,7 @@ cs.store(name="base_prepare_sft_data_config", node=PrepareSFTDataConfig)
 
 @hydra.main(version_base=None, config_name="base_prepare_sft_data_config")
 def prepare_sft_data(cfg: PrepareSFTDataConfig):
-    cfg = OmegaConf.to_object(cfg)
+    cfg = PrepareSFTDataConfig(**cfg)
     LOG.info("Config used: %s", cfg)
 
     data_size = None
