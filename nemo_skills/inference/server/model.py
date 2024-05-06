@@ -108,7 +108,6 @@ class BaseModel(abc.ABC):
         self.max_code_output_characters = max_code_output_characters
         self.code_execution_timeout = code_execution_timeout
         self.max_code_executions = max_code_executions
-        self.process_output = process_output
         if error_recovery is None:
             error_recovery = {}
         self.error_recovery = ErrorRecoveryConfig(**error_recovery)
