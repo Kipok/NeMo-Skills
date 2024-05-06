@@ -117,7 +117,7 @@ if __name__ == "__main__":
     args.model_path = Path(args.model_path).absolute()
     args.output_dir = Path(args.output_dir).absolute()
 
-    server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus)
+    server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus, args.num_server_nodes)
 
     format_dict = {
         "model_path": args.model_path,

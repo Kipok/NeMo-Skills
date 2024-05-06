@@ -44,12 +44,16 @@ def fill_env_vars(format_dict, env_vars):
         format_dict[env_var] = env_var_value
 
 
-def get_server_command(server_type, num_gpus):
+def get_server_command(server_type, num_gpus, num_nodes=1):
     num_tasks = num_gpus
     if server_type == 'nemo':
         server_start_cmd = (
-            f"(python /code/nemo_skills/inference/server/serve_nemo.py gpt_model_file=/model trainer.devices={num_gpus} "
-            f"tensor_model_parallel_size={num_gpus} > /tmp/server_logs.txt &)"
+            f"(python /code/nemo_skills/inference/server/serve_nemo.py gpt_model_file=/model "
+            f"trainer.devices={num_gpus} "
+            f"trainer.num_nodes={num_nodes} "
+            f"tensor_model_parallel_size={num_gpus} "
+            f"pipeline_model_parallel_size={num_nodes} "
+            "> /tmp/server_logs.txt &)"
         )
         # somehow on slurm nemo needs multiple tasks, but locally only 1
         if CLUSTER_CONFIG["cluster"] == "local":
