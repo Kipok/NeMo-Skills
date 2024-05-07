@@ -57,7 +57,7 @@ cs.store(name="base_evaluate_results_config", node=EvaluateResultsConfig)
 
 @hydra.main(version_base=None, config_name="base_evaluate_results_config")
 def evaluate_results(cfg: EvaluateResultsConfig):
-    cfg = EvaluateResultsConfig(_strict_check=True, **cfg)
+    cfg = EvaluateResultsConfig(_init_nested=True, **cfg)
     LOG.info("Config used: %s", cfg)
 
     sandbox = get_sandbox(**cfg.sandbox)

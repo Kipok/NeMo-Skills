@@ -111,7 +111,7 @@ cs.store(name="base_prepare_masked_data_config", node=PrepareMaskedDataConfig)
 
 @hydra.main(version_base=None, config_name="base_prepare_masked_data_config")
 def prepare_masked_data(cfg: PrepareMaskedDataConfig):
-    cfg = PrepareMaskedDataConfig(_strict_check=True, **cfg)
+    cfg = PrepareMaskedDataConfig(_init_nested=True, **cfg)
     LOG.info("Config used: %s", cfg)
 
     original_data_folder = Path(__file__).parents[2] / "datasets" / cfg.dataset

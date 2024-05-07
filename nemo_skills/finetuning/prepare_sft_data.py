@@ -48,7 +48,7 @@ def get_default_prompt_config():
         "rt",
         encoding="utf-8",
     ) as fin:
-        prompt_config = PromptConfig(**yaml.safe_load(fin))
+        prompt_config = PromptConfig(_init_nested=True, **yaml.safe_load(fin))
     prompt_config.context_type = "empty"
     prompt_config.few_shot_examples.examples_type = "gsm8k_text_with_code"  # not used since num_few_shots = 0
     prompt_config.few_shot_examples.num_few_shots = 0
@@ -147,7 +147,7 @@ cs.store(name="base_prepare_sft_data_config", node=PrepareSFTDataConfig)
 
 @hydra.main(version_base=None, config_name="base_prepare_sft_data_config")
 def prepare_sft_data(cfg: PrepareSFTDataConfig):
-    cfg = PrepareSFTDataConfig(_strict_check=True, **cfg)
+    cfg = PrepareSFTDataConfig(_init_nested=True, **cfg)
     LOG.info("Config used: %s", cfg)
 
     data_size = None

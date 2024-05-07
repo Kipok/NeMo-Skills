@@ -87,7 +87,7 @@ cs.store(name="base_generation_config", node=GenerateSolutionsConfig)
 
 @hydra.main(version_base=None, config_name='generation_config', config_path='.')
 def generate_solutions(cfg: GenerateSolutionsConfig):
-    cfg = GenerateSolutionsConfig(_strict_check=True, **cfg)
+    cfg = GenerateSolutionsConfig(_init_nested=True, **cfg)
 
     LOG.info("Config used: %s", cfg)
     sandbox = get_sandbox(**cfg.sandbox) if cfg.sandbox is not None else None

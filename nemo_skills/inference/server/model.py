@@ -109,7 +109,7 @@ class BaseModel(abc.ABC):
         self.max_code_executions = max_code_executions
         if error_recovery is None:
             error_recovery = {}
-        self.error_recovery = ErrorRecoveryConfig(**error_recovery)
+        self.error_recovery = ErrorRecoveryConfig(_init_nested=True, **error_recovery)
         self.handle_code_execution = handle_code_execution
         self.stop_on_code_error = stop_on_code_error
         if self.handle_code_execution and sandbox is None:

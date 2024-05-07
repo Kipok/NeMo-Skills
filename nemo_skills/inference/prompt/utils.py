@@ -114,7 +114,7 @@ def get_prompt_config(prompt_type: str) -> PromptConfig:
         # Merge the default config with the loaded config
         merged_config = OmegaConf.merge(default_config, loaded_config)
 
-        prompt_config = OmegaConf.structured(PromptConfig(**merged_config))
+        prompt_config = OmegaConf.structured(PromptConfig(_init_nested=True, **merged_config))
         return prompt_config
 
 

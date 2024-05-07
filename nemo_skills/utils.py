@@ -37,14 +37,14 @@ def nested_dataclass(*args, **kwargs):
         check_class = dataclass(check_class, **kwargs)
         orig_init = check_class.__init__
 
-        def __init__(self, *, _strict_check=False, **kwargs):
-            if _strict_check:
+        def __init__(self, *, _init_nested=False, **kwargs):
+            if _init_nested:
                 for name, value in kwargs.items():
                     # getting field type
                     ft = check_class.__annotations__.get(name, None)
 
                     if is_dataclass(ft) and isinstance(value, (dict, DictConfig)):
-                        obj = ft(**value, _strict_check=_strict_check)
+                        obj = ft(**value, _init_nested=_init_nested)
                         kwargs[name] = obj
             orig_init(self, **kwargs)
 
