@@ -33,7 +33,7 @@ def test_error_on_extra_params():
     try:
         subprocess.run(cmd, shell=True, check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
-        assert "AttributeError: 'GenerateSolutionsConfig' object has no attribute 'test'" in e.stderr.decode()
+        assert "got an unexpected keyword argument 'test'" in e.stderr.decode()
 
     # inside nested dataclass
     # prompt.num_few_shots is not supported
@@ -51,7 +51,7 @@ def test_error_on_extra_params():
     try:
         subprocess.run(cmd, shell=True, check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
-        assert "AttributeError: 'PromptConfig' object has no attribute 'num_few_shots'" in e.stderr.decode()
+        assert "got an unexpected keyword argument 'num_few_shots'" in e.stderr.decode()
 
     # sandbox.sandbox_host is not supported
     cmd = """python nemo_skills/evaluation/evaluate_results.py \
@@ -60,4 +60,4 @@ def test_error_on_extra_params():
     try:
         subprocess.run(cmd, shell=True, check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
-        assert "TypeError: __init__() got an unexpected keyword argument 'sandbox_host'" in e.stderr.decode()
+        assert "got an unexpected keyword argument 'sandbox_host'" in e.stderr.decode()
