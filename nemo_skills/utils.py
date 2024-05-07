@@ -22,8 +22,6 @@ import tokenize
 import typing
 from dataclasses import MISSING, dataclass, fields, is_dataclass
 
-from omegaconf.dictconfig import DictConfig
-
 
 def nested_dataclass(*args, **kwargs):
     """Decorator that will recursively instantiate all nested dataclasses.
@@ -32,6 +30,7 @@ def nested_dataclass(*args, **kwargs):
     """
 
     def wrapper(check_class):
+        from omegaconf.dictconfig import DictConfig
 
         # passing class to investigate
         check_class = dataclass(check_class, **kwargs)
