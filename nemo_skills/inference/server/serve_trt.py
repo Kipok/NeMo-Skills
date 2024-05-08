@@ -28,7 +28,7 @@ from flask import Flask, jsonify, request
 from flask_restful import Api, Resource
 from mpi4py import MPI
 from tensorrt_llm.runtime import ModelRunnerCpp
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, T5Tokenizer
 
 
 class TritonServerGenerate(Resource):
@@ -159,6 +159,13 @@ def prepare_stop_words(stop_words_list, tokenizer):
 
 
 def load_tokenizer(tokenizer_dir: str, model_name: str):
+    if model_name == 'gpt-next':
+        tokenizer = T5Tokenizer(
+            vocab_file=str(Path(tokenizer_dir) / 'tokenizer.model'),
+            padding_side='left',
+            truncation_side='left',
+            legacy=False,
+        )
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_dir,
         tokenizer_type=model_name,
@@ -185,7 +192,7 @@ def read_model_name(engine_dir: str):
         'MistralForCausalLM'.lower(): 'mistral',
         'LlamaForCausalLM'.lower(): 'llama',
         'MixtralForCausalLM'.lower(): 'mixtral',
-        'gptforcausallm'.lower(): 'llama',
+        'GPTForCausalLM'.lower(): 'gpt-next',
     }
     return name_map[name]
 
