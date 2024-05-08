@@ -166,14 +166,15 @@ def load_tokenizer(tokenizer_dir: str, model_name: str):
             truncation_side='left',
             legacy=False,
         )
-    tokenizer = AutoTokenizer.from_pretrained(
-        tokenizer_dir,
-        tokenizer_type=model_name,
-        legacy=False,
-        padding_side='left',
-        truncation_side='left',
-        trust_remote_code=True,
-    )
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(
+            tokenizer_dir,
+            tokenizer_type=model_name,
+            legacy=False,
+            padding_side='left',
+            truncation_side='left',
+            trust_remote_code=True,
+        )
 
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token_id = tokenizer.eos_token_id
