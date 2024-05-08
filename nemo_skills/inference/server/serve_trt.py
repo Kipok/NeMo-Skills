@@ -117,7 +117,7 @@ def get_output(output_ids, input_lengths, max_output_len, tokenizer, eos_token):
         if len(eos_ids) > 0:
             outputs = outputs[: eos_ids[0]]
         outputs = outputs.tolist()
-        output_texts.append(tokenizer.decode(outputs))
+        output_texts.append(tokenizer.decode(outputs, skip_special_tokens=True))
     return output_texts
 
 
