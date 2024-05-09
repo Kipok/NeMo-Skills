@@ -142,6 +142,7 @@ def get_output(output_ids, input_lengths, max_output_len, tokenizer, eos_token):
         if len(eos_ids) > 0:
             outputs = outputs[: eos_ids[0]]
         outputs = outputs.tolist()
+        outputs = [elem if elem < tokenizer.vocab_size else tokenizer.vocab_size - 1 for elem in outputs]
         output_texts.append(tokenizer.decode(outputs))
     return output_texts
 
