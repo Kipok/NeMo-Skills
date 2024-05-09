@@ -60,7 +60,7 @@ class ErrorRecoveryConfig:
 
 
 def remove_stop_tokens(text: str, stop_phrases: List[str]) -> str:
-    return re.split("|".join(stop_phrases), text, maxsplit=1)[0]
+    return re.split("|".join([sp.replace('|', '\\|') for sp in stop_phrases]), text, maxsplit=1)[0]
 
 
 class BaseModel(abc.ABC):
@@ -145,9 +145,10 @@ class BaseModel(abc.ABC):
         stop_phrases: List[str],
     ):
         if self.handle_code_execution:
-            full_stop_phrases = stop_phrases + [CODE_SEPARATORS[-1]]
+            full_stop_phrases = stop_phrases + [CODE_SEPARATORS[-1] + '\n']
         else:
             full_stop_phrases = stop_phrases
+
         # prompts are added later
         request = {
             "tokens_to_generate": tokens_to_generate,
@@ -187,17 +188,17 @@ class BaseModel(abc.ABC):
         ]
         remaining_ids = list(range(len(new_outputs)))
         num_executions = 0
+
         with ThreadPoolExecutor(max_workers=len(prompts)) as executor:
             while len(remaining_ids) > 0:
                 num_executions += 1
                 request["prompts"] = [new_outputs[idx]['full_prompt'] for idx in remaining_ids]
-
                 outputs = self._single_call(**request)
                 new_ids = []
                 # checking if any of the outputs need code execution and submitting requests in parallel
                 futures = [None] * len(prompts)
                 for idx, output in zip(remaining_ids, outputs):
-                    if output.endswith(CODE_SEPARATORS[-1]):
+                    if output.strip().endswith(CODE_SEPARATORS[-1]):
                         futures[idx] = executor.submit(
                             self.sandbox.execute_code,
                             generated_code=extract_code_to_execute(output),
@@ -206,7 +207,7 @@ class BaseModel(abc.ABC):
                             session_id=new_outputs[idx]['session_id'],
                         )
                 for idx, output in zip(remaining_ids, outputs):
-                    if output.endswith(CODE_SEPARATORS[-1]):
+                    if output.strip().endswith(CODE_SEPARATORS[-1]):
                         result, new_outputs[idx]['session_id'] = futures[idx].result()
                         # for now if there is any error or no output, we stop generation
                         # might revise in the future to allow LLM to recover
@@ -270,7 +271,7 @@ class BaseModel(abc.ABC):
             recovery_request['random_seed'] = rs
             output = self._single_call(**recovery_request)[0]
             outputs.append(output)
-            if output.endswith(CODE_SEPARATORS[-1]):
+            if output.strip().endswith(CODE_SEPARATORS[-1]):
                 futures[rs] = executor.submit(
                     self.sandbox.execute_code,
                     generated_code=extract_code_to_execute(output),
@@ -287,7 +288,7 @@ class BaseModel(abc.ABC):
                         break
 
         for idx, output in enumerate(outputs):
-            if not output.endswith(CODE_SEPARATORS[-1]) or not self.error_recovery.majority_voting:
+            if not output.strip().endswith(CODE_SEPARATORS[-1]) or not self.error_recovery.majority_voting:
                 continue
             result, _ = futures[idx].result()
             if result['error_message']:

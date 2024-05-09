@@ -31,6 +31,31 @@ from tensorrt_llm.runtime import ModelRunnerCpp
 from transformers import AutoTokenizer, T5Tokenizer
 
 
+class CustomSentencePieceTokenizer(T5Tokenizer):
+    """
+    Adapted from https://github.com/NVIDIA/Megatron-LM/blob/db3a3f79d1cda60ea4b3db0ceffcf20c5760e11d/examples/inference/trtllm_text_generation.py
+    """
+
+    def __init__(self, model):
+        super().__init__(model, extra_ids=0, bos_token="<s>", pad_token="<pad>")
+
+    def encode(self, text, add_special_tokens: bool = True, **kwargs):
+        return torch.Tensor(self.sp_model.encode_as_ids(text))
+
+    def batch_encode_plus(self, batch_text_or_text_pairs, add_special_tokens: bool = True, **kwargs):
+        return {'input_ids': self.sp_model.encode_as_ids(batch_text_or_text_pairs)}
+
+    def batch_decode(self, sequences, skip_special_tokens: bool = False, **kwargs):
+        if isinstance(sequences, np.ndarray) or torch.is_tensor(sequences):
+            sequences = sequences.tolist()
+        return self.sp_model.decode(sequences)
+
+    def decode(self, token_ids, skip_special_tokens: bool = False, **kwargs):
+        if torch.is_tensor(token_ids):
+            token_ids = token_ids.tolist()
+        return self.sp_model.decode([token_ids])[0]
+
+
 class TritonServerGenerate(Resource):
     def __init__(self, model):
         self.model = model
@@ -117,7 +142,7 @@ def get_output(output_ids, input_lengths, max_output_len, tokenizer, eos_token):
         if len(eos_ids) > 0:
             outputs = outputs[: eos_ids[0]]
         outputs = outputs.tolist()
-        output_texts.append(tokenizer.decode(outputs, skip_special_tokens=True))
+        output_texts.append(tokenizer.decode(outputs))
     return output_texts
 
 
@@ -160,7 +185,7 @@ def prepare_stop_words(stop_words_list, tokenizer):
 
 def load_tokenizer(tokenizer_dir: str, model_name: str):
     if model_name == 'gpt-next':
-        tokenizer = T5Tokenizer(
+        tokenizer = CustomSentencePieceTokenizer(
             vocab_file=str(Path(tokenizer_dir) / 'tokenizer.model'),
             padding_side='left',
             truncation_side='left',

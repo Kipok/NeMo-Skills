@@ -60,7 +60,7 @@ def get_server_command(server_type, num_gpus, num_nodes=1):
             num_tasks = 1
     else:
         server_start_cmd = (
-            f"(python /code/nemo_skills/inference/server/serve_trt.py " "--model_path /model > /tmp/server_logs.txt &)"
+            f"(python /code/nemo_skills/inference/server/serve_trt.py --model_path /model > /tmp/server_logs.txt &)"
         )
         num_tasks = num_gpus  # we launch via mpirun directly
 
@@ -115,6 +115,7 @@ def launch_local_job(
     cmd = (
         f"export CUDA_VISIBLE_DEVICES={','.join(map(str, range(gpus_per_node)))} && "
         f"export SLURM_LOCALID={'$OMPI_COMM_WORLD_LOCAL_RANK' if tasks_per_node > 1 else 0} && "
+        f"export SLURM_PROCID={'$OMPI_COMM_WORLD_LOCAL_RANK' if tasks_per_node > 1 else 0} && "
         f"{cmd}"
     )
 

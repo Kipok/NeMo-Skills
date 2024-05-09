@@ -12,6 +12,6 @@ user: |-
 
     {context}
 
-prompt_template: "<|begin_of_text|>{user}My solution:\n"
+prompt_template: "<|begin_of_text|>{user}My solution:\n{generated_solution}"
 
 stop_phrases: ["\n\n\n\n\n\n"]

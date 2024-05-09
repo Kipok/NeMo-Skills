@@ -21,6 +21,6 @@ prompt_template: |-
 
   {system}<|eot_id|><|start_header_id|>user<|end_header_id|>
 
-  {user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+  {user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>{generated_solution}
 
 stop_phrases: ["<|eot_id|>"]
