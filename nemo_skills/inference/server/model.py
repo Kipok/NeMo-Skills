@@ -145,7 +145,7 @@ class BaseModel(abc.ABC):
         stop_phrases: List[str],
     ):
         if self.handle_code_execution:
-            full_stop_phrases = stop_phrases + [CODE_SEPARATORS[-1] + '\n']
+            full_stop_phrases = stop_phrases + ['\n' + CODE_SEPARATORS[-1]]
         else:
             full_stop_phrases = stop_phrases
 
@@ -247,6 +247,7 @@ class BaseModel(abc.ABC):
             if output['session_id'] is not None:
                 self.sandbox.clear_session(output['session_id'])
             generated_solution = remove_stop_tokens(output['full_prompt'].generated_solution, stop_phrases)
+            # generated_solution = output['full_prompt'].generated_solution
             outputs.append(
                 {
                     'generated_solution': generated_solution,

@@ -161,8 +161,8 @@ def prepare_stop_words(stop_words_list, tokenizer):
             # words as well as newlines that we commonly use. But note that it's not a universal fix, so this might
             # require refactoring if different stop words are used in the future.
             # Eventually, this needs to be fixed inside TensorRT-LLM itself.
-            ids = tokenizer.encode('magic' + word)
-            ids = ids[2:]  # skipping "magic"
+            ids = tokenizer.encode(word)
+            ids = ids[1:]
 
             if len(ids) == 0:
                 continue
