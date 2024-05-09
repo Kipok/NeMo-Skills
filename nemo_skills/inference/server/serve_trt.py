@@ -185,12 +185,7 @@ def prepare_stop_words(stop_words_list, tokenizer):
 
 def load_tokenizer(tokenizer_dir: str, model_name: str):
     if model_name == 'gpt-next':
-        tokenizer = CustomSentencePieceTokenizer(
-            vocab_file=str(Path(tokenizer_dir) / 'tokenizer.model'),
-            padding_side='left',
-            truncation_side='left',
-            legacy=False,
-        )
+        tokenizer = CustomSentencePieceTokenizer(str(Path(tokenizer_dir) / 'tokenizer.model'))
     else:
         tokenizer = AutoTokenizer.from_pretrained(
             tokenizer_dir,
