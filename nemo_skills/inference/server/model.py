@@ -195,9 +195,9 @@ class BaseModel(abc.ABC):
                 request["prompts"] = [new_outputs[idx]['full_prompt'] for idx in remaining_ids]
                 outputs = self._single_call(**request)
                 # TODO: remove this when trtllm is fixed
-                for output in outputs:
-                    if output.endswith('>>>>'):
-                        output = re.sub(r">{3,}", ">", output)
+                for i in range(len(outputs)):
+                    if '>>>>' in outputs[i]:
+                        outputs[i] = re.sub(r">{3,}", ">", outputs[i])
                 new_ids = []
                 # checking if any of the outputs need code execution and submitting requests in parallel
                 futures = [None] * len(prompts)
