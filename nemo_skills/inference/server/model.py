@@ -145,7 +145,7 @@ class BaseModel(abc.ABC):
         stop_phrases: List[str],
     ):
         if self.handle_code_execution:
-            full_stop_phrases = stop_phrases + ['\n' + CODE_SEPARATORS[-1]]
+            full_stop_phrases = stop_phrases + ['\n' + CODE_SEPARATORS[-1] + '\n']
         else:
             full_stop_phrases = stop_phrases
 

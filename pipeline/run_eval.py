@@ -70,7 +70,6 @@ BENCHMARKS = {
     "math": 4,
 }
 
-# TODO: remove backoff installation after it gets into docker
 
 SLURM_CMD = """
 nvidia-smi && \

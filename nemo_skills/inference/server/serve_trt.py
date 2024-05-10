@@ -143,6 +143,7 @@ def get_output(output_ids, input_lengths, max_output_len, tokenizer, eos_token):
             outputs = outputs[: eos_ids[0]]
         outputs = outputs.tolist()
         outputs = [elem if elem < tokenizer.vocab_size else tokenizer.vocab_size - 1 for elem in outputs]
+        outputs = [elem if 0 <= elem else 0 for elem in outputs]
         output_texts.append(tokenizer.decode(outputs))
     return output_texts
 
