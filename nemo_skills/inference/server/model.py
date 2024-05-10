@@ -145,7 +145,7 @@ class BaseModel(abc.ABC):
         stop_phrases: List[str],
     ):
         if self.handle_code_execution:
-            full_stop_phrases = stop_phrases + ['\n' + CODE_SEPARATORS[-1] + '\n']
+            full_stop_phrases = stop_phrases + ['\n' + CODE_SEPARATORS[-1]]
         else:
             full_stop_phrases = stop_phrases
 
@@ -194,6 +194,10 @@ class BaseModel(abc.ABC):
                 num_executions += 1
                 request["prompts"] = [new_outputs[idx]['full_prompt'] for idx in remaining_ids]
                 outputs = self._single_call(**request)
+                # TODO: remove this when trtllm is fixed
+                for output in outputs:
+                    if output.endswith('>>>>'):
+                        output = re.sub(r">{3,}", ">", output)
                 new_ids = []
                 # checking if any of the outputs need code execution and submitting requests in parallel
                 futures = [None] * len(prompts)
