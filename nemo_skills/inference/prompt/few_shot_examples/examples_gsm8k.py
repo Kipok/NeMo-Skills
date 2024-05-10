@@ -117,14 +117,14 @@ only_text = [
         "question": "Missy had a giant piggy bank in her bedroom.  Every day she would search the house for change to put in her bank.  After 4 years, the bank was opened and it contained $450 in change.  If the second, third, and fourth-year she doubled the amount of money she put in the bank from the amount she had put in the previous year, how much money, in dollars, did she put in the bank the first year?",
         "reference_solution": "We let x be the amount of money she put in the bank the first year.\nThen the second year was 2*x, \nand the third year was 2*2*x=4*x,\nand the fourth year was 2*2*2*x=8*x.\nAnd the total amount she put in the bank, $450, is the sum of all four years, or $450 = x+(2*x)+(4*x)+(8*x).\nThis simplifies to $450=15*x.\nAnd therefore, the amount of money she put in the bank the first year was x=$30.",
         "generated_solution": """
-Let x be the amount of money Missy put in the bank the first year.
+Let $x$ be the amount of money Missy put in the bank the first year.
 She was then doubling the amount of money every year for 4 years.
-So in the second year she put 2*x amount in her bank.
-In the third year she put 2*2*x = 4*x amount in her bank.
-And in the fourth year she put 2*4*x = 8*x amount in her bank.
-So the total amount she put in the bank is x+(2*x)+(4*x)+(8*x)=15*x.
+So in the second year she put $2*x$ amount in her bank.
+In the third year she put $2*2*x = 4*x$ amount in her bank.
+And in the fourth year she put $2*4*x = 8*x$ amount in her bank.
+So the total amount she put in the bank is $x + (2*x) + (4*x) + (8*x) = 15*x$.
 As the problem states, this total amounts to $450.
-So 450=15*x which implies x=30.
+So $450 = 15*x$ which implies $x = 30$.
 Thus, Missy put \\boxed{30} dollars in the bank the first year.
 """.strip(),
     },
@@ -132,7 +132,7 @@ Thus, Missy put \\boxed{30} dollars in the bank the first year.
         "question": "Pete has to take a 10-minute walk down to the train station and then board a 1hr 20-minute train to LA. When should he leave if he cannot get to LA later than 0900 hours? (24-hr time)",
         "reference_solution": "There are 60 minutes in an hour so 1 hour 20 minutes = (60+20) minutes = 80 minutes\nHe will spend a total of 80+10 = 90 minutes\n90 minutes is = (60/60) hours and 30 minutes = 1 hour 30 minutes = 0130 in 24-hr time\nHe has to leave 0130 hours earlier than 0900 i.e. 0900-0130 = 0730 hours",
         "generated_solution": """
-Since Pete needs to take a 10 minutes walk and then a 1 hour 20 minutes train ride, he will spend a total of 1 hour and 30 minutes.
+Since Pete needs to take a $0 minutes walk and then a 1 hour 20 minutes train ride, he will spend a total of 1 hour and 30 minutes.
 This means that he needs to leave 1 hour and 30 minutes earlier than 09:00 hours.
 Subtracting 1 hour and 30 minutes from 0900 hours we get \\boxed{07:30} hours.
 """.strip(),
@@ -141,8 +141,8 @@ Subtracting 1 hour and 30 minutes from 0900 hours we get \\boxed{07:30} hours.
         "question": "Mark deposited $88 in a bank. Bryan deposited $40 less than five times as much as Mark. How much did Bryan deposit in the bank?",
         "reference_solution": "Five times the amount Mark deposited is $88 x 5 = $440.\nSo, Bryan deposited $440 - $40 = $400.",
         "generated_solution": """
-Five times of what Mark deposited is $88*5=$440.
-Bryan deposited $440-$40=$400.
+Five times of what Mark deposited is $88 * 5 = 440$.
+Bryan deposited $440 - 40 = 400$.
 So Bryan deposited \\boxed{400} dollars in the bank.
 """.strip(),
     },
@@ -151,8 +151,8 @@ So Bryan deposited \\boxed{400} dollars in the bank.
         "reference_solution": "The amount of the discount is $120 x 0.2 = $24.\nThe new price will be $120 \u2013 $24 = $96.",
         "generated_solution": """
 The lamp was originally priced at $120.
-A 20% discount amounts to $120*20/100=$24.
-So the discount reduces the price of the lamp to $120-$24=$96.
+A 20% discount amounts to $120 * 20 / 100 = 24$.
+So the discount reduces the price of the lamp to $120 - 24 = 96$.
 So the new price of the lamp is \\boxed{96} dollars.
 """.strip(),
     },
@@ -163,12 +163,12 @@ So the new price of the lamp is \\boxed{96} dollars.
 The store expense consist of rent, utilities, and employee salaries.
 Let's compute each of these expenses separately at a week timescale and then add them up.
 The expense due to rent is $1200.
-The expense due to utilities is 20% of rent expense. Thus, it is $1200*20/100=$240.
+The expense due to utilities is 20% of rent expense. Thus, it is $1200 * 20 / 100 = 240$.
 Now we calculate the expense due to employee salaries.
 Each employee works 16*5=80 hours per week.
-For each employee the cost per week based on hourly wage of $12.5/hr is 12.5*80=$1000 per week.
-For two employees, this amounts to 2*$1000=$2000.
-Adding the cost of rent, utilities, and employee salaries amounts to $1200+$240+$2000=$3440.
+For each employee the cost per week based on hourly wage of $12.5/hr is $12.5 * 80 = 1000$ per week.
+For two employees, this amounts to $2 * 1000 = 2000$.
+Adding the cost of rent, utilities, and employee salaries amounts to $1200 + 240 + 2000 = 3440$.
 Thus James's weekly expenses to run the store add up to \\boxed{3440} dollars.
 """.strip(),
     },
