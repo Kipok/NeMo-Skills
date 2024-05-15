@@ -125,6 +125,8 @@ class Prompt:
             # filtering exact match if it's there
             if example_dicts[0][self.config.few_shot_examples.retrieval_field] == reference:
                 example_dicts = example_dicts[1:]
+            else:  # removing the last one to match desired number of examples
+                example_dicts = example_dicts[:-1]
             # if still has a match, let's error out for now
             for example_dict in example_dicts:
                 if example_dict[self.config.few_shot_examples.retrieval_field] == reference:
