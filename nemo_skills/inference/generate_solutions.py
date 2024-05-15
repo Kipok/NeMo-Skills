@@ -15,6 +15,7 @@
 import json
 import logging
 import sys
+import random
 from dataclasses import asdict, field
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -90,6 +91,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
     cfg = GenerateSolutionsConfig(_init_nested=True, **cfg)
 
     LOG.info("Config used: %s", cfg)
+    # llm = lambda **x: [{"prompt": str(prompt)} for prompt in x["prompts"]]
     sandbox = get_sandbox(**cfg.sandbox) if cfg.sandbox is not None else None
     llm = get_model(**cfg.server, sandbox=sandbox)
 
@@ -115,7 +117,9 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
     # additionally, skipping whatever is pre-filled, assuming offset didn't change
     data = data[starting_idx:]
-
+    example_dicts = cfg.example_dicts or []
+    if cfg.prompt.few_shot_examples.examples_type == "previous":
+        example_dicts = data[cfg.batch_size : cfg.batch_size + cfg.prompt.few_shot_examples.num_few_shots]
     # setting buffering=1 to force to dump the output after every line, so that we can see intermediate generations
     with open(cfg.output_file, "at" if cfg.skip_filled else "wt", encoding="utf-8", buffering=1) as fout:
         prompts = []
@@ -124,7 +128,17 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
             if idx == cfg.max_samples:
                 break
 
-            prompts.append(Prompt(config=cfg.prompt, input_dict=data_point, example_dicts=cfg.example_dicts))
+            if cfg.prompt.few_shot_examples.examples_type == "random":
+                example_dicts = []
+                while len(example_dicts) < (cfg.prompt.few_shot_examples.num_few_shots):
+                    index = random.randint(0, len(data) - 1)
+                    if data[index] not in example_dicts and data[index]["generated_solution"] and index != idx + starting_idx:
+                        example = dict(data[index])
+                        example["generated_solution"] = example["generated_solution"] + "So the answer is $\\boxed{{{}}}$".format(example["expected_answer"])
+                        example_dicts.append(example)
+
+
+            prompts.append(Prompt(config=cfg.prompt, input_dict=data_point, example_dicts=example_dicts))
 
             data_points.append(data_point)
 
@@ -132,10 +146,17 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                 # batch-computing the outputs
 
                 outputs = llm(stop_phrases=list(cfg.prompt.stop_phrases), prompts=prompts, **asdict(cfg.inference))
+                if cfg.prompt.few_shot_examples.examples_type == "previous":
+                    for point in data_points:
+                        example = dict(point)
+                        example["generated_solution"] = example["generated_solution"] + "The answer is $\\boxed{{{}}}$".format(example["expected_answer"])
+                        example_dicts.pop(0)
+                        example_dicts.append(example)
 
                 for output, original_data_point in zip(outputs, data_points):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
                     # all of the ground-truth data to the output file alongside the generated solutions
+                    original_data_point["solution"] = original_data_point.pop("generated_solution")
                     output.update(original_data_point)
                     fout.write(json.dumps(output) + "\n")
                 prompts = []
@@ -145,6 +166,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
         if len(prompts) > 0:
             outputs = llm(stop_phrases=list(cfg.prompt.stop_phrases), prompts=prompts, **asdict(cfg.inference))
             for output, original_data_point in zip(outputs, data_points):
+                original_data_point["solution"] = original_data_point.pop("generated_solution")
                 output.update(original_data_point)
                 fout.write(json.dumps(output) + "\n")
 
