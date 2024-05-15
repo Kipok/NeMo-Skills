@@ -28,8 +28,7 @@ nvidia-smi && \
 cd /code && \
 export PYTHONPATH=$PYTHONPATH:/code && \
 {server_start_cmd} && \
-if [ $SLURM_LOCALID -eq 0 ]; then \
-    pip install backoff && \
+if [ $SLURM_PROCID -eq 0 ]; then \
     echo "Waiting for the server to start" && \
     tail -n0 -f /tmp/server_logs.txt | sed '/Running on all addresses/ q' && \
     python nemo_skills/inference/generate_solutions.py \
@@ -58,7 +57,7 @@ LOGS = "{output_dir}/slurm_logs-rs{random_seed}.txt"
 JOB_NAME = "labelling-{model_name}-rs{random_seed}"
 
 
-def run_script(format_dict, seed, extra_arguments, partition=None, dependency=None):
+def run_script(format_dict, seed, extra_arguments, partition=None, dependency=None, num_server_nodes=1):
     format_dict["random_seed"] = seed
     format_dict["extra_arguments"] = extra_arguments
 
@@ -69,7 +68,7 @@ def run_script(format_dict, seed, extra_arguments, partition=None, dependency=No
 
     job_id = launch_job(
         cmd=SLURM_CMD.format(**format_dict),
-        num_nodes=1,
+        num_nodes=num_server_nodes,
         tasks_per_node=format_dict["num_tasks"],
         gpus_per_node=format_dict["num_gpus"],
         job_name=JOB_NAME.format(**format_dict),
@@ -91,6 +90,12 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", required=True)
     parser.add_argument("--num_runs", type=int, default=1)
     parser.add_argument("--num_gpus", type=int, required=True)
+    parser.add_argument(
+        "--num_server_nodes",
+        type=int,
+        default=1,
+        help="Number of nodes required for hosting LLM server.",
+    )
     parser.add_argument(
         "--dependent_jobs",
         type=int,
@@ -116,7 +121,7 @@ if __name__ == "__main__":
 
     extra_arguments = f'{" ".join(unknown)}'
 
-    server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus)
+    server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus, args.num_server_nodes)
 
     format_dict = {
         "model_path": args.model_path,
@@ -133,8 +138,15 @@ if __name__ == "__main__":
     Path(args.output_dir).mkdir(exist_ok=True, parents=True)
 
     for seed in range(args.starting_seed, args.starting_seed + args.num_runs):
-        job_id = run_script(format_dict, seed, extra_arguments, args.partition)
+        job_id = run_script(format_dict, seed, extra_arguments, args.partition, num_server_nodes=args.num_server_nodes)
         print(f"Submitted batch job {job_id}")
         for _ in range(args.dependent_jobs):
-            job_id = run_script(format_dict, seed, extra_arguments, args.partition, dependency=job_id)
+            job_id = run_script(
+                format_dict,
+                seed,
+                extra_arguments,
+                args.partition,
+                dependency=job_id,
+                num_server_nodes=args.num_server_nodes,
+            )
             print(f"Submitted batch job {job_id}")

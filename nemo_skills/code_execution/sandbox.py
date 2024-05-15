@@ -251,8 +251,8 @@ stdout = sys.stdout
 sys.stdout = sys.stderr = StringIO()
 try:
     output = math_equal(
-        r"{pred_output}",
-        r"{gt_output}",
+        r'''{pred_output}''',
+        r'''{gt_output}''',
         {include_percentage},
         {tolerance},
         {timeout},
@@ -319,6 +319,8 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     data[-1][-1] = json.dumps(line_dict)
 
                     predicted_answer = line_dict.get("predicted_answer", Sandbox.NOT_EXECUTED)
+                    if (predicted_answer, gt_answer) in map_to_future:
+                        continue
 
                     if ignore_cache or line_dict.get("is_correct") is None:
                         map_to_future[(predicted_answer, gt_answer)] = executor.submit(

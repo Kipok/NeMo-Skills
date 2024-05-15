@@ -28,7 +28,32 @@ from flask import Flask, jsonify, request
 from flask_restful import Api, Resource
 from mpi4py import MPI
 from tensorrt_llm.runtime import ModelRunnerCpp
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, T5Tokenizer
+
+
+class CustomSentencePieceTokenizer(T5Tokenizer):
+    """
+    Adapted from https://github.com/NVIDIA/Megatron-LM/blob/db3a3f79d1cda60ea4b3db0ceffcf20c5760e11d/examples/inference/trtllm_text_generation.py
+    """
+
+    def __init__(self, model):
+        super().__init__(model, extra_ids=0, bos_token="<s>", pad_token="<pad>")
+
+    def encode(self, text, add_special_tokens: bool = True, **kwargs):
+        return torch.Tensor(self.sp_model.encode_as_ids(text))
+
+    def batch_encode_plus(self, batch_text_or_text_pairs, add_special_tokens: bool = True, **kwargs):
+        return {'input_ids': self.sp_model.encode_as_ids(batch_text_or_text_pairs)}
+
+    def batch_decode(self, sequences, skip_special_tokens: bool = False, **kwargs):
+        if isinstance(sequences, np.ndarray) or torch.is_tensor(sequences):
+            sequences = sequences.tolist()
+        return self.sp_model.decode(sequences)
+
+    def decode(self, token_ids, skip_special_tokens: bool = False, **kwargs):
+        if torch.is_tensor(token_ids):
+            token_ids = token_ids.tolist()
+        return self.sp_model.decode([token_ids])[0]
 
 
 class TritonServerGenerate(Resource):
@@ -117,6 +142,8 @@ def get_output(output_ids, input_lengths, max_output_len, tokenizer, eos_token):
         if len(eos_ids) > 0:
             outputs = outputs[: eos_ids[0]]
         outputs = outputs.tolist()
+        outputs = [elem if elem < tokenizer.vocab_size else tokenizer.vocab_size - 1 for elem in outputs]
+        outputs = [elem if 0 <= elem else 0 for elem in outputs]
         output_texts.append(tokenizer.decode(outputs))
     return output_texts
 
@@ -136,8 +163,8 @@ def prepare_stop_words(stop_words_list, tokenizer):
             # words as well as newlines that we commonly use. But note that it's not a universal fix, so this might
             # require refactoring if different stop words are used in the future.
             # Eventually, this needs to be fixed inside TensorRT-LLM itself.
-            ids = tokenizer.encode('magic' + word)
-            ids = ids[2:]  # skipping "magic"
+            ids = tokenizer.encode(word)
+            ids = ids[1:]
 
             if len(ids) == 0:
                 continue
@@ -159,14 +186,17 @@ def prepare_stop_words(stop_words_list, tokenizer):
 
 
 def load_tokenizer(tokenizer_dir: str, model_name: str):
-    tokenizer = AutoTokenizer.from_pretrained(
-        tokenizer_dir,
-        tokenizer_type=model_name,
-        legacy=False,
-        padding_side='left',
-        truncation_side='left',
-        trust_remote_code=True,
-    )
+    if model_name == 'gpt-next':
+        tokenizer = CustomSentencePieceTokenizer(str(Path(tokenizer_dir) / 'tokenizer.model'))
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(
+            tokenizer_dir,
+            tokenizer_type=model_name,
+            legacy=False,
+            padding_side='left',
+            truncation_side='left',
+            trust_remote_code=True,
+        )
 
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token_id = tokenizer.eos_token_id
@@ -185,6 +215,7 @@ def read_model_name(engine_dir: str):
         'MistralForCausalLM'.lower(): 'mistral',
         'LlamaForCausalLM'.lower(): 'llama',
         'MixtralForCausalLM'.lower(): 'mixtral',
+        'GPTForCausalLM'.lower(): 'gpt-next',
     }
     return name_map[name]
 

@@ -13,6 +13,9 @@
 # limitations under the License.
 
 # a helper script to check that running --help works on all scripts
+# not launching via pytest since it needs a different environment
+# (no packages installed) than other tests
+
 import argparse
 import subprocess
 import sys

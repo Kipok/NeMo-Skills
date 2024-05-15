@@ -44,22 +44,25 @@ def fill_env_vars(format_dict, env_vars):
         format_dict[env_var] = env_var_value
 
 
-def get_server_command(server_type, num_gpus):
+def get_server_command(server_type, num_gpus, num_nodes=1):
     num_tasks = num_gpus
     if server_type == 'nemo':
         server_start_cmd = (
-            f"(python /code/nemo_skills/inference/server/serve_nemo.py gpt_model_file=/model trainer.devices={num_gpus} "
-            f"tensor_model_parallel_size={num_gpus} > /tmp/server_logs.txt &)"
+            f"(python /code/nemo_skills/inference/server/serve_nemo.py gpt_model_file=/model "
+            f"trainer.devices={num_gpus} "
+            f"trainer.num_nodes={num_nodes} "
+            f"tensor_model_parallel_size={num_gpus} "
+            f"pipeline_model_parallel_size={num_nodes} "
+            "> /tmp/server_logs.txt &)"
         )
         # somehow on slurm nemo needs multiple tasks, but locally only 1
         if CLUSTER_CONFIG["cluster"] == "local":
             num_tasks = 1
     else:
         server_start_cmd = (
-            f"(mpirun -np {num_gpus} --allow-run-as-root --oversubscribe python /code/nemo_skills/inference/server/serve_trt.py "
-            "--model_path /model > /tmp/server_logs.txt &)"
+            f"(python /code/nemo_skills/inference/server/serve_trt.py --model_path /model > /tmp/server_logs.txt &)"
         )
-        num_tasks = 1  # we launch via mpirun directly
+        num_tasks = num_gpus  # we launch via mpirun directly
 
     return server_start_cmd, num_tasks
 
@@ -112,6 +115,7 @@ def launch_local_job(
     cmd = (
         f"export CUDA_VISIBLE_DEVICES={','.join(map(str, range(gpus_per_node)))} && "
         f"export SLURM_LOCALID={'$OMPI_COMM_WORLD_LOCAL_RANK' if tasks_per_node > 1 else 0} && "
+        f"export SLURM_PROCID={'$OMPI_COMM_WORLD_LOCAL_RANK' if tasks_per_node > 1 else 0} && "
         f"{cmd}"
     )
 

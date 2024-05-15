@@ -70,15 +70,13 @@ BENCHMARKS = {
     "math": 4,
 }
 
-# TODO: remove backoff installation after it gets into docker
 
 SLURM_CMD = """
 nvidia-smi && \
 cd /code && \
 export PYTHONPATH=$PYTHONPATH:/code && \
 {server_start_cmd} && \
-if [ $SLURM_LOCALID -eq 0 ]; then \
-    pip install backoff && \
+if [ $SLURM_PROCID -eq 0 ]; then \
     echo "Waiting for the server to start" && \
     tail -n0 -f /tmp/server_logs.txt | sed '/Running on all addresses/ q' && \
     {eval_cmds} \
@@ -108,6 +106,12 @@ if __name__ == "__main__":
         "Use <benchmark>:0 to only run greedy decoding.",
     )
     wrapper_args.add_argument(
+        "--num_server_nodes",
+        type=int,
+        default=1,
+        help="Number of nodes required for hosting LLM server.",
+    )
+    wrapper_args.add_argument(
         "--num_nodes",
         type=int,
         default=-1,
@@ -130,7 +134,7 @@ if __name__ == "__main__":
     args.model_path = Path(args.model_path).absolute()
     args.output_dir = Path(args.output_dir).absolute()
 
-    server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus)
+    server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus, args.num_server_nodes)
 
     format_dict = {
         "model_path": args.model_path,
@@ -158,7 +162,11 @@ if __name__ == "__main__":
         for rs in range(args.starting_seed, args.starting_seed + rs_num)
     ]
     if args.num_nodes == -1:
-        args.num_nodes = len(eval_cmds)
+        # TODO: change to num_jobs
+        args.num_nodes = len(eval_cmds) * args.num_server_nodes
+    if args.num_nodes % args.num_server_nodes != 0:
+        raise ValueError("Number of nodes should be divisible by number of server nodes")
+    args.num_nodes //= args.num_server_nodes
 
     # splitting eval cmds equally across num_nodes nodes
     eval_cmds = [" ".join(eval_cmds[i :: args.num_nodes]) for i in range(args.num_nodes)]
@@ -167,7 +175,7 @@ if __name__ == "__main__":
         extra_sbatch_args = ["--parsable", f"--output={args.output_dir}/slurm_logs_eval{idx}.log"]
         launch_job(
             cmd=SLURM_CMD.format(**format_dict, eval_cmds=eval_cmd.format(**format_dict)),
-            num_nodes=1,
+            num_nodes=args.num_server_nodes,
             tasks_per_node=num_tasks,
             gpus_per_node=format_dict["num_gpus"],
             job_name=JOB_NAME.format(**format_dict),
