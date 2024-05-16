@@ -24,12 +24,10 @@ import urllib.request
 from collections import defaultdict
 from pathlib import Path
 
-from normalizer import normalize_answer_string
-
 sys.path.append(str(Path(__file__).parents[1]))
 from utils import prepare_for_sft
 
-from nemo_skills.code_execution.math_grader import extract_answer
+from nemo_skills.code_execution.math_grader import extract_answer, normalize_answer_string
 
 # utils is adding main package to path already
 from nemo_skills.inference.prompt.utils import prompt_types
@@ -60,6 +58,33 @@ def _post_fix(problem_id, soln_string):
     """Post fixing some answer strings"""
     if problem_id == "test/intermediate_algebra/78.json":
         soln_string = re.sub(r"\\(\d+)", r"\1", soln_string)
+
+    if problem_id == "train/number_theory/7115.json":
+        return "A"
+
+    if problem_id == "train/number_theory/1012.json":
+        return "E"
+
+    if problem_id == "train/prealgebra/666.json":
+        return "125"
+
+    if problem_id == "train/intermediate_algebra/172.json":
+        return "two lines"
+
+    if problem_id == "train/prealgebra/1691.json":
+        return "1.85"
+
+    if problem_id == "train/geometry/6177.json":
+        return "C"
+
+    if problem_id == "train/number_theory/7117.json":
+        return "A"
+
+    if problem_id == "train/geometry/6202.json":
+        return "D"
+
+    if problem_id == "train/precalculus/268.json":
+        return "A"
 
     return soln_string
 
