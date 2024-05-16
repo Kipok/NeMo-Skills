@@ -117,23 +117,26 @@ class Prompt:
         if self.example_dicts:
             example_dicts = self.example_dicts
         else:
-            example_dicts = self.config.few_shot_examples.retriever.retrieve(
-                query=self.input_dict[self.config.few_shot_examples.retrieval_field],
-                top_k=self.config.few_shot_examples.num_few_shots + 1,
-            )
-            reference = self.input_dict[self.config.few_shot_examples.retrieval_field]
-            # filtering exact match if it's there
-            if example_dicts[0][self.config.few_shot_examples.retrieval_field] == reference:
-                example_dicts = example_dicts[1:]
-            else:  # removing the last one to match desired number of examples
-                example_dicts = example_dicts[:-1]
-            # if still has a match, let's error out for now
-            for example_dict in example_dicts:
-                if example_dict[self.config.few_shot_examples.retrieval_field] == reference:
-                    raise ValueError("Exact match found in retrieved examples")
+            if self.config.few_shot_examples.num_few_shots > 0:
+                example_dicts = self.config.few_shot_examples.retriever.retrieve(
+                    query=self.input_dict[self.config.few_shot_examples.retrieval_field],
+                    top_k=self.config.few_shot_examples.num_few_shots + 1,
+                )
+                reference = self.input_dict[self.config.few_shot_examples.retrieval_field]
+                # filtering exact match if it's there
+                if example_dicts[0][self.config.few_shot_examples.retrieval_field] == reference:
+                    example_dicts = example_dicts[1:]
+                else:  # removing the last one to match desired number of examples
+                    example_dicts = example_dicts[:-1]
+                # if still has a match, let's error out for now
+                for example_dict in example_dicts:
+                    if example_dict[self.config.few_shot_examples.retrieval_field] == reference:
+                        raise ValueError("Exact match found in retrieved examples")
 
-            # let's reverse the order to show the most relevant last
-            example_dicts = example_dicts[::-1]
+                # let's reverse the order to show the most relevant last
+                example_dicts = example_dicts[::-1]
+            else:
+                example_dicts = []
 
         filled_examples = [self.build_filled_example(example) for example in example_dicts]
         examples = "".join(filled_examples)
