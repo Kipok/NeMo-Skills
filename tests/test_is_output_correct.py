@@ -31,6 +31,9 @@ from test_code_execution import _get_sandbox
         ("E", "\\mathrm{E}"),
         ("B", "\\mathcal{B}"),
         ("A", "\\textbf{A}"),
+        ("185", "185\\"),
+        ("185\\", "185\\"),
+        (".185", "0.185"),
     ],
     ids=str,
 )

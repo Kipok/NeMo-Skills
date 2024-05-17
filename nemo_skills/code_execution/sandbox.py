@@ -237,6 +237,17 @@ print(json.dumps(to_return))
         with open(Path(__file__).absolute().parent / "math_grader.py", "rt") as fin:
             math_grader_code = fin.read()
 
+        # corner cases
+        if isinstance(pred_output, str):
+            pred_output = pred_output.replace("'''", r'\'\'\'')
+            while pred_output.endswith('\\'):
+                pred_output = pred_output[:-1]
+
+        if isinstance(gt_output, str):
+            gt_output = gt_output.replace("'''", r'\'\'\'')
+            while gt_output.endswith('\\'):
+                gt_output = gt_output[:-1]
+
         TO_EXECUTE = f"""
 import os
 import sys
