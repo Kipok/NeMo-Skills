@@ -17,6 +17,7 @@ import logging
 import sys
 import random
 from dataclasses import asdict, field
+from copy import deepcopy
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -133,7 +134,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                 while len(example_dicts) < (cfg.prompt.few_shot_examples.num_few_shots):
                     index = random.randint(0, len(data) - 1)
                     if data[index] not in example_dicts and data[index]["generated_solution"] and index != idx + starting_idx:
-                        example = dict(data[index])
+                        example = deepcopy(data[index])
                         example["generated_solution"] = example["generated_solution"] + "So the answer is $\\boxed{{{}}}$".format(example["expected_answer"])
                         example_dicts.append(example)
 
@@ -148,7 +149,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                 outputs = llm(stop_phrases=list(cfg.prompt.stop_phrases), prompts=prompts, **asdict(cfg.inference))
                 if cfg.prompt.few_shot_examples.examples_type == "previous":
                     for point in data_points:
-                        example = dict(point)
+                        example = deepcopy(point)
                         example["generated_solution"] = example["generated_solution"] + "The answer is $\\boxed{{{}}}$".format(example["expected_answer"])
                         example_dicts.pop(0)
                         example_dicts.append(example)
@@ -156,6 +157,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                 for output, original_data_point in zip(outputs, data_points):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
                     # all of the ground-truth data to the output file alongside the generated solutions
+                    original_data_point = deepcopy(original_data_point)
                     original_data_point["solution"] = original_data_point.pop("generated_solution")
                     output.update(original_data_point)
                     fout.write(json.dumps(output) + "\n")
@@ -166,6 +168,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
         if len(prompts) > 0:
             outputs = llm(stop_phrases=list(cfg.prompt.stop_phrases), prompts=prompts, **asdict(cfg.inference))
             for output, original_data_point in zip(outputs, data_points):
+                original_data_point = deepcopy(original_data_point)
                 original_data_point["solution"] = original_data_point.pop("generated_solution")
                 output.update(original_data_point)
                 fout.write(json.dumps(output) + "\n")
