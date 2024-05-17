@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from dataclasses import asdict, dataclass, field
+import json
+from dataclasses import asdict, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -31,11 +32,42 @@ datasets = [
 ]
 
 
+class BM25Retriever:
+    def __init__(self, data_path: str, field: str):
+        from rank_bm25 import BM25Okapi
+
+        with open(data_path, "rt", encoding="utf-8") as fin:
+            self.entries = [json.loads(x) for x in fin]
+
+        corpus = [entry[field] for entry in self.entries]
+        tokenized_corpus = [doc.split(" ") for doc in corpus]
+        self.bm25 = BM25Okapi(tokenized_corpus)
+
+    def retrieve(self, query: str, top_k: int = 1):
+        tokenized_query = query.split(" ")
+        return self.bm25.get_top_n(tokenized_query, self.entries, n=top_k)
+
+
 @nested_dataclass
 class FewShotExamples:
     template: str = MISSING
     examples_type: Optional[str] = None
     num_few_shots: int = 5
+
+    retrieval_field: Optional[str] = None  # e.g. question, reference_solution, etc.
+    retrieval_file: Optional[str] = None  # needs to be provided if retrieval_field is not None
+    retriever: Optional[Any] = None
+
+    def __post_init__(self):
+        """Initializing retriever if necessary."""
+        if self.retriever is not None:
+            return
+
+        if self.retrieval_field is not None:
+            if self.retrieval_file is None:
+                raise ValueError("retrieval_file must be provided if retrieval_field is not None")
+
+            self.retriever = BM25Retriever(self.retrieval_file, field=self.retrieval_field)
 
 
 @nested_dataclass
@@ -59,9 +91,14 @@ class Prompt:
     def __post_init__(self):
         """Initialize example_dicts/context_template if not provided."""
         if self.example_dicts is None:
-            self.example_dicts = examples_map.get(self.config.few_shot_examples.examples_type, [])[
-                : self.config.few_shot_examples.num_few_shots
-            ]
+            if self.config.few_shot_examples.retriever is None:
+                self.example_dicts = examples_map.get(self.config.few_shot_examples.examples_type, [])[
+                    : self.config.few_shot_examples.num_few_shots
+                ]
+        else:
+            if self.config.few_shot_examples.retriever is not None:
+                raise ValueError("example_dicts and retriever cannot be used together")
+
         if self.context_template is None:
             self.context_template = context_templates.get(self.config.context_type, "")
 
@@ -77,7 +114,31 @@ class Prompt:
 
     def build_examples(self) -> str:
         """Builds all examples string concatenated by delimiter."""
-        filled_examples = [self.build_filled_example(example) for example in self.example_dicts]
+        if self.example_dicts:
+            example_dicts = self.example_dicts
+        else:
+            if self.config.few_shot_examples.num_few_shots > 0:
+                example_dicts = self.config.few_shot_examples.retriever.retrieve(
+                    query=self.input_dict[self.config.few_shot_examples.retrieval_field],
+                    top_k=self.config.few_shot_examples.num_few_shots + 1,
+                )
+                reference = self.input_dict[self.config.few_shot_examples.retrieval_field]
+                # filtering exact match if it's there
+                if example_dicts[0][self.config.few_shot_examples.retrieval_field] == reference:
+                    example_dicts = example_dicts[1:]
+                else:  # removing the last one to match desired number of examples
+                    example_dicts = example_dicts[:-1]
+                # if still has a match, let's error out for now
+                for example_dict in example_dicts:
+                    if example_dict[self.config.few_shot_examples.retrieval_field] == reference:
+                        raise ValueError("Exact match found in retrieved examples")
+
+                # let's reverse the order to show the most relevant last
+                example_dicts = example_dicts[::-1]
+            else:
+                example_dicts = []
+
+        filled_examples = [self.build_filled_example(example) for example in example_dicts]
         examples = "".join(filled_examples)
         context = self.build_context(self.input_dict)
         user = self.config.user.format(examples=examples, context=context, **self.input_dict)
