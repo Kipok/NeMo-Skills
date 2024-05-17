@@ -210,6 +210,27 @@ def _fix_interval(expr):
     return expr
 
 
+def _inject_implicit_mixed_fraction(step: str):
+    """
+    Automatically make a mixed number evalable
+    e.g. 7 \\frac{3}{4} => 7+3/4
+    """
+    p1 = re.compile(r"(\d+) *\\frac{(\d+)}{(\d+)}")
+
+    def replacer(match):
+        whole_part = match.group(1)
+        numerator = match.group(2)
+        denominator = match.group(3)
+
+        if whole_part:
+            return f"{whole_part} + {numerator}/{denominator}"
+        else:
+            return f"{numerator}/{denominator}"
+
+    step = p1.sub(replacer, step)
+    return step
+
+
 def normalize_answer_string(expr: str) -> str:
     """Normalize answer expressions."""
     if expr is None:
@@ -288,7 +309,6 @@ def normalize_answer_string(expr: str) -> str:
         expr = expr[1:-1]
 
     expr = _fix_sqrt(expr)
-    expr = expr.replace(" ", "")
 
     # \frac1b or \frac12 --> \frac{1}{b} and \frac{1}{2}, etc. Even works with \frac1{72} (but not \frac{72}1). Also does a/b --> \\frac{a}{b}
     expr = _fix_fracs(expr)
@@ -296,6 +316,8 @@ def normalize_answer_string(expr: str) -> str:
     # edge case with mixed numbers and negative signs
     expr = re.sub("- *", "-", expr)
     expr = _inject_implicit_mixed_number(expr)
+    expr = _inject_implicit_mixed_fraction(expr)
+    expr = expr.replace(" ", "")
 
     if _str_is_int(expr):
         expr = str(_str_to_int(expr))
