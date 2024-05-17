@@ -14,10 +14,12 @@
 from nemo_skills.code_execution import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS
 from nemo_skills.inference.prompt.few_shot_examples.examples_gsm8k import examples_map as examples_gsm8k
 from nemo_skills.inference.prompt.few_shot_examples.examples_math import examples_map as examples_math
+from nemo_skills.inference.prompt.few_shot_examples.examples_textbook import examples_map as examples_textbook
 
 examples_map = examples_gsm8k.copy()
 examples_map.update(examples_math)
-assert len(examples_map) == len(examples_gsm8k) + len(examples_math), "Duplicate keys in examples!"
+examples_map.update(examples_textbook)
+assert len(examples_map) == len(examples_gsm8k) + len(examples_math) + len(examples_textbook), "Duplicate keys in examples!"
 
 
 # post-processing to replace code separators with actual tokens

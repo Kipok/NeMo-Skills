@@ -118,7 +118,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
     # additionally, skipping whatever is pre-filled, assuming offset didn't change
     data = data[starting_idx:]
-    example_dicts = cfg.example_dicts or []
+    example_dicts = cfg.example_dicts or None
     if cfg.prompt.few_shot_examples.examples_type == "previous":
         example_dicts = data[cfg.batch_size : cfg.batch_size + cfg.prompt.few_shot_examples.num_few_shots]
     # setting buffering=1 to force to dump the output after every line, so that we can see intermediate generations
