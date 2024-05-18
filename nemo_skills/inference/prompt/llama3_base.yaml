@@ -6,8 +6,7 @@ user: |-
     Here are some examples of questions and solutions followed by a new question that you need to solve.
     Make sure to put the answer (and only answer) inside \boxed{{}}.
 
-    {examples}
-    Question:
+    {examples}Question:
     {question}
 
     {context}

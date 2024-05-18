@@ -21,6 +21,84 @@ from nemo_skills.code_execution.sandbox import Sandbox, get_sandbox
 from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
 
 
+def test_rephrasing_prompt():
+    prompt = Prompt(
+        config=get_prompt_config('rephrasing'),
+        input_dict={'question': '2 + 2 = ?'},
+        example_dicts=[
+            {'question': '1 + 1 = ?', 'rephrased_question': "3 + 3 = ?"},
+            {'question': '5 + 5 = ?', 'rephrased_question': "7 + 7 = ?"},
+        ],
+    )
+    expected_prompt = """You are an AI assistant that excels at rephrasing questions. Follow the given examples.
+
+Question:
+1 + 1 = ?
+
+Rephrase the above question:
+3 + 3 = ?
+
+
+
+
+
+Question:
+5 + 5 = ?
+
+Rephrase the above question:
+7 + 7 = ?
+
+
+
+
+
+Question:
+2 + 2 = ?
+
+Rephrase the above question:
+"""
+    assert str(prompt) == expected_prompt
+
+
+def test_augmentation_prompt():
+    prompt = Prompt(
+        config=get_prompt_config('augmentation'),
+        input_dict={'question': '2 + 2 = ?'},
+        example_dicts=[
+            {'question': '1 + 1 = ?', 'augmented_question': "3 + 3 = ?"},
+            {'question': '5 + 5 = ?', 'augmented_question': "7 + 7 = ?"},
+        ],
+    )
+    expected_prompt = """You are an AI assistant that excels at creating similar questions. Follow the given examples.
+
+Question:
+1 + 1 = ?
+
+Write another question similar to this one:
+3 + 3 = ?
+
+
+
+
+
+Question:
+5 + 5 = ?
+
+Write another question similar to this one:
+7 + 7 = ?
+
+
+
+
+
+Question:
+2 + 2 = ?
+
+Write another question similar to this one:
+"""
+    assert str(prompt) == expected_prompt
+
+
 def test_llama3_instruct_prompt():
     prompt = Prompt(
         config=get_prompt_config('llama3_instruct'),
@@ -54,7 +132,6 @@ Question:
 
 My solution:
 That's easy: 10!
-
 
 
 
@@ -94,7 +171,6 @@ Question:
 
 My solution:
 That's easy: 10!
-
 
 
 

@@ -604,6 +604,50 @@ He is open 16 * 5 = M hours a week.\nSo he pays each of his employees 12.5 * M =
 ]
 
 
+data_augmentation = [
+    {
+        'question': 'Olivia has $23. She bought five bagels for $3 each. How much money does she have left?',
+        'rephrased_question': 'What is the amount of money that Olivia has left after purchasing five bagels for $3 each, if she initially had $23?',
+        'augmented_question': 'Aiden has $35. He purchased eight pencils for $2 each and a notebook for $5. How much money does he have remaining?',
+    },
+    {
+        'question': 'Michael had 58 golf balls. On tuesday, he lost 23 golf balls. On wednesday, he lost 2 more. How many golf balls did he have at the end of wednesday?',
+        'rephrased_question': 'After losing 23 golf balls on Tuesday and an additional 2 on Wednesday, how many golf balls does Michael have left if he initially had 58 golf balls?',
+        'augmented_question': 'Sarah collected 72 seashells during her beach vacation. On Thursday, she gave 15 seashells to her friend as a souvenir. On Friday, she found 8 more seashells while exploring the shore. How many seashells did Sarah have at the end of Friday?',
+    },
+    {
+        'question': 'Angelo and Melanie want to plan how many hours over the next week they should study together for their test next week. They have 2 chapters of their textbook to study and 4 worksheets to memorize. They figure out that they should dedicate 3 hours to each chapter of their textbook and 1.5 hours for each worksheet. If they plan to study no more than 4 hours each day, how many days should they plan to study total over the next week if they take a 10-minute break every hour, include 3 10-minute snack breaks each day, and 30 minutes for lunch each day?',
+        'rephrased_question': 'Angelo and Melanie need to study 2 chapters in their textbook and 4 worksheets for their upcoming test. They have planned to dedicate 3 hours for each chapter and 1.5 hours for each worksheet. They can study for a maximum of 4 hours each day, taking into account 10-minute breaks every hour, 3 10-minute snack breaks per day, and 30 minutes for lunch. How many days do they need to study in total over the next week to complete their study plan?',
+        'augmented_question': 'Samantha and David are preparing for their upcoming science fair project. They have four different experiments to conduct and a research paper to write. Each experiment is estimated to take 2 hours, and the research paper will require 8 hours to complete. To stay focused and productive, they plan to take a 15-minute break for every 1.5 hours of work and have three 20-minute snack breaks each day. Additionally, they allocate 45 minutes for lunch each day. If they want to limit their daily study time to 5 hours, how many days should they plan to work on their project over the next two weeks?',
+    },
+    {
+        'question': 'Leah had 32 chocolates and her sister had 42. If they ate 35, how many pieces do they have left in total?',
+        'rephrased_question': 'If Leah had 32 chocolates and her sister had 42, and they both consumed 35 chocolates, what is the total number of chocolates that they have left?',
+        'augmented_question': 'Tom has 50 marbles, and his friend Jerry has 65 marbles. If they decide to play a game and bet 20 marbles each, how many marbles will they have left in total after the game?',
+    },
+    {
+        'question': 'There were nine computers in the server room. Five more computers were installed each day, from monday to thursday. How many computers are now in the server room?',
+        'rephrased_question': 'If there were initially nine computers in the server room and five more computers were added each day from Monday to Thursday, what is the current total number of computers in the server room?',
+        'augmented_question': 'In a garden, there were 12 flowers. Every morning for a week (from Monday to Sunday), 3 more flowers were planted. How many flowers are there in the garden now?',
+    },
+    {
+        'question': 'Jason had 20 lollipops. He gave Denny some lollipops. Now Jason has 12 lollipops. How many lollipops did Jason give to Denny?',
+        'rephrased_question': 'If Jason initially had 20 lollipops and now has 12 after giving some to Denny, how many lollipops did he give to Denny?',
+        'augmented_question': 'Sarah had 35 marbles. She gave some marbles to her friend Emma. Now Sarah has 18 marbles left. How many marbles did Sarah give to Emma?',
+    },
+    {
+        'question': 'Sam bought a dozen boxes, each with 30 highlighter pens inside, for $10 each box. He rearranged five of these boxes into packages of six highlighters each and sold them for $3 per package. He sold the rest of the highlighters separately at the rate of three pens for $2. How much profit did he make in total, in dollars?',
+        'rephrased_question': 'Sam purchased 12 boxes, each containing 30 highlighter pens, at $10 per box. He repackaged five of these boxes into sets of six highlighters and sold them for $3 per set. He sold the remaining highlighters individually at a rate of three pens for $2. What is the total profit he made in dollars?',
+        'augmented_question': 'Amy purchased 8 crates, each containing 24 colorful markers, for $12 per crate. She decided to create sets of 4 markers each and sell them for $2 per set. The remaining markers she sold individually at a rate of 5 markers for $3. Calculate the total profit Amy made, in dollars.',
+    },
+    {
+        'question': 'There are 15 trees in the grove. Grove workers will plant trees in the grove today. After they are done, there will be 21 trees. How many trees did the grove workers plant today?',
+        'rephrased_question': 'If there were initially 15 trees in the grove and the grove workers are planning to plant more trees today, resulting in a total of 21 trees, how many trees did the workers plant today?',
+        'augmented_question': 'In a garden, there are 25 rose bushes. The gardener plans to plant some more rose bushes today. After planting, there will be a total of 40 rose bushes in the garden. How many rose bushes will the gardener plant today?',
+    },
+]
+
+
 examples_map = {
     "gsm8k_text_with_code": text_with_code,
     "gsm8k_generate_masked": generate_masked,
@@ -611,4 +655,5 @@ examples_map = {
     "gsm8k_only_code": only_code,
     "gsm8k_only_sympy": only_sympy,
     "gsm8k_code_with_sympy": code_with_sympy,
+    "gsm8k_data_augmentation": data_augmentation,
 }
