@@ -194,7 +194,7 @@ class BaseModel(abc.ABC):
                 num_executions += 1
                 request["prompts"] = [new_outputs[idx]['full_prompt'] for idx in remaining_ids]
                 outputs = self._single_call(**request)
-                # TODO: remove this when trtllm is fixed
+                # TODO: remove this when trtllm part is fixed
                 for i in range(len(outputs)):
                     if '>>>>' in outputs[i]:
                         outputs[i] = re.sub(r">{3,}", ">", outputs[i])

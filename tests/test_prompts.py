@@ -12,48 +12,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 
-import pytest
-
-from nemo_skills.code_execution import extract_code_output, extract_code_to_execute
-from nemo_skills.code_execution.sandbox import Sandbox, get_sandbox
 from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
 
 
 def test_rephrasing_prompt():
     prompt = Prompt(
         config=get_prompt_config('rephrasing'),
-        input_dict={'question': '2 + 2 = ?'},
+        input_dict={'question': "What's the meaning of life?"},
         example_dicts=[
-            {'question': '1 + 1 = ?', 'rephrased_question': "3 + 3 = ?"},
-            {'question': '5 + 5 = ?', 'rephrased_question': "7 + 7 = ?"},
+            {
+                'question': 'Are you sure you want to do that?',
+                'rephrased_question': "Is this really what you want to do?",
+            },
+            {'question': 'How are you?', 'rephrased_question': "How is it going?"},
         ],
     )
     expected_prompt = """You are an AI assistant that excels at rephrasing questions. Follow the given examples.
 
 Question:
-1 + 1 = ?
+Are you sure you want to do that?
 
 Rephrase the above question:
-3 + 3 = ?
+Is this really what you want to do?
 
 
 
 
 
 Question:
-5 + 5 = ?
+How are you?
 
 Rephrase the above question:
-7 + 7 = ?
+How is it going?
 
 
 
 
 
 Question:
-2 + 2 = ?
+What's the meaning of life?
 
 Rephrase the above question:
 """
@@ -63,36 +61,39 @@ Rephrase the above question:
 def test_augmentation_prompt():
     prompt = Prompt(
         config=get_prompt_config('augmentation'),
-        input_dict={'question': '2 + 2 = ?'},
+        input_dict={'question': "What's the meaning of life?"},
         example_dicts=[
-            {'question': '1 + 1 = ?', 'augmented_question': "3 + 3 = ?"},
-            {'question': '5 + 5 = ?', 'augmented_question': "7 + 7 = ?"},
+            {
+                'question': 'Are you sure you want to do that?',
+                'augmented_question': "Is this really what you want to do?",
+            },
+            {'question': 'How are you?', 'augmented_question': "How is it going?"},
         ],
     )
     expected_prompt = """You are an AI assistant that excels at creating similar questions. Follow the given examples.
 
 Question:
-1 + 1 = ?
+Are you sure you want to do that?
 
 Write another question similar to this one:
-3 + 3 = ?
+Is this really what you want to do?
 
 
 
 
 
 Question:
-5 + 5 = ?
+How are you?
 
 Write another question similar to this one:
-7 + 7 = ?
+How is it going?
 
 
 
 
 
 Question:
-2 + 2 = ?
+What's the meaning of life?
 
 Write another question similar to this one:
 """
@@ -181,4 +182,61 @@ Question:
 
 My solution:
 """
+    assert str(prompt) == expected_prompt
+
+
+def test_code_base_prompt():
+    prompt = Prompt(
+        config=get_prompt_config('code_base'),
+        input_dict={'question': '2 + 2 = ?'},
+        example_dicts=[
+            {'question': '1 + 1 = ?', 'generated_solution': "That's easy: 2!"},
+            {'question': '5 + 5 = ?', 'generated_solution': "That's easy: 10!"},
+        ],
+    )
+    expected_prompt = """Here are some examples of questions and solutions followed by a new question that you need to solve.
+Make sure to put the answer (and only answer) inside \\boxed{}.
+
+Question:
+1 + 1 = ?
+
+My solution:
+That's easy: 2!
+
+
+
+
+
+Question:
+5 + 5 = ?
+
+My solution:
+That's easy: 10!
+
+
+
+
+
+Question:
+2 + 2 = ?
+
+My solution:
+"""
+    assert str(prompt) == expected_prompt
+
+
+def test_code_sfted_prompt():
+    prompt = Prompt(
+        config=get_prompt_config('code_sfted'),
+        input_dict={'question': '2 + 2 = ?'},
+    )
+    expected_prompt = """System:
+You're an expert Python programmer and mathematician. Help the user to solve this problem using code when necessary. Make sure to put the answer (and only answer) inside \\boxed{}.
+
+User:
+2 + 2 = ?
+
+Assistant:
+"""
+    print(str(prompt))
     assert str(prompt) == expected_prompt
