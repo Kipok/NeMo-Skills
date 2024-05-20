@@ -17,7 +17,7 @@ different GPU types or with different inference frameworks.
      --output_dir ./test-results \
      --benchmarks gsm8k:0 \
      --num_gpus <number of GPUs on your machine/cluster node> \
-     --num_nodes 1 \
+     --num_jobs 1 \
      +prompt=code_sfted \
      ++prompt.few_shot_examples.num_few_shots=0 \
      ++split_name=test

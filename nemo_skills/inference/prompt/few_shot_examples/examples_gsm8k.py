@@ -132,7 +132,7 @@ Thus, Missy put \\boxed{30} dollars in the bank the first year.
         "question": "Pete has to take a 10-minute walk down to the train station and then board a 1hr 20-minute train to LA. When should he leave if he cannot get to LA later than 0900 hours? (24-hr time)",
         "reference_solution": "There are 60 minutes in an hour so 1 hour 20 minutes = (60+20) minutes = 80 minutes\nHe will spend a total of 80+10 = 90 minutes\n90 minutes is = (60/60) hours and 30 minutes = 1 hour 30 minutes = 0130 in 24-hr time\nHe has to leave 0130 hours earlier than 0900 i.e. 0900-0130 = 0730 hours",
         "generated_solution": """
-Since Pete needs to take a $0 minutes walk and then a 1 hour 20 minutes train ride, he will spend a total of 1 hour and 30 minutes.
+Since Pete needs to take a 10 minutes walk and then a 1 hour 20 minutes train ride, he will spend a total of 1 hour and 30 minutes.
 This means that he needs to leave 1 hour and 30 minutes earlier than 09:00 hours.
 Subtracting 1 hour and 30 minutes from 0900 hours we get \\boxed{07:30} hours.
 """.strip(),

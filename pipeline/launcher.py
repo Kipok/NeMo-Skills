@@ -62,7 +62,7 @@ def get_server_command(server_type, num_gpus, num_nodes=1):
         server_start_cmd = (
             f"(python /code/nemo_skills/inference/server/serve_trt.py --model_path /model > /tmp/server_logs.txt &)"
         )
-        num_tasks = num_gpus  # we launch via mpirun directly
+        num_tasks = num_gpus
 
     return server_start_cmd, num_tasks
 

@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser.add_argument("--server_type", choices=('nemo', 'tensorrt_llm'), default='tensorrt_llm')
     parser.add_argument("--num_gpus", type=int, required=True)
     parser.add_argument(
-        "--num_server_nodes",
+        "--num_nodes",
         type=int,
         default=1,
         help="Number of nodes required for hosting LLM server.",
@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
     job_id = launch_job(
         cmd=SLURM_CMD.format(**format_dict),
-        num_nodes=args.num_server_nodes,
+        num_nodes=args.num_nodes,
         tasks_per_node=num_tasks,
         gpus_per_node=format_dict["num_gpus"],
         job_name=JOB_NAME.format(**format_dict),

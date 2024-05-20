@@ -106,16 +106,17 @@ if __name__ == "__main__":
         "Use <benchmark>:0 to only run greedy decoding.",
     )
     wrapper_args.add_argument(
-        "--num_server_nodes",
+        "--num_nodes",
         type=int,
         default=1,
         help="Number of nodes required for hosting LLM server.",
     )
     wrapper_args.add_argument(
-        "--num_nodes",
+        "--num_jobs",
         type=int,
         default=-1,
-        help="Will parallelize across this number of nodes. Set -1 to run each decoding on a separate node.",
+        help="Will launch this many separate jobs and split the benchmarks across them. "
+        "Set -1 to run each benchmark / random seed as a separate job.",
     )
     wrapper_args.add_argument(
         "--partition",
@@ -134,7 +135,7 @@ if __name__ == "__main__":
     args.model_path = Path(args.model_path).absolute()
     args.output_dir = Path(args.output_dir).absolute()
 
-    server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus, args.num_server_nodes)
+    server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus, args.num_nodes)
 
     format_dict = {
         "model_path": args.model_path,
@@ -161,21 +162,17 @@ if __name__ == "__main__":
         for benchmark, rs_num in BENCHMARKS.items()
         for rs in range(args.starting_seed, args.starting_seed + rs_num)
     ]
-    if args.num_nodes == -1:
-        # TODO: change to num_jobs
-        args.num_nodes = len(eval_cmds) * args.num_server_nodes
-    if args.num_nodes % args.num_server_nodes != 0:
-        raise ValueError("Number of nodes should be divisible by number of server nodes")
-    args.num_nodes //= args.num_server_nodes
+    if args.num_jobs == -1:
+        args.num_jobs = len(eval_cmds)
 
-    # splitting eval cmds equally across num_nodes nodes
-    eval_cmds = [" ".join(eval_cmds[i :: args.num_nodes]) for i in range(args.num_nodes)]
+    # splitting eval cmds equally across num_jobs nodes
+    eval_cmds = [" ".join(eval_cmds[i :: args.num_jobs]) for i in range(args.num_jobs)]
 
     for idx, eval_cmd in enumerate(eval_cmds):
         extra_sbatch_args = ["--parsable", f"--output={args.output_dir}/slurm_logs_eval{idx}.log"]
         launch_job(
             cmd=SLURM_CMD.format(**format_dict, eval_cmds=eval_cmd.format(**format_dict)),
-            num_nodes=args.num_server_nodes,
+            num_nodes=args.num_nodes,
             tasks_per_node=num_tasks,
             gpus_per_node=format_dict["num_gpus"],
             job_name=JOB_NAME.format(**format_dict),

@@ -34,10 +34,10 @@ Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
    (e.g. to re-run with different sampling parameters) use `--stages eval`.
 
    You can also customize any evaluation parameters with `--extra_eval_args`, e.g.
-   to use 2 evaluation nodes, batch size of 32 and evaluate on the test set use
+   to use 2 evaluation jobs, batch size of 32 and evaluate on the test set use
 
    ```
-   --extra_eval_args="--num_nodes=2 ++split_name=test ++batch_size=32 "
+   --extra_eval_args="--num_jobs=2 ++split_name=test ++batch_size=32 "
    ```
 
    You can customize any of the SFT parameters by directly providing those

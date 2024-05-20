@@ -54,7 +54,7 @@ documentation to learn how to make inference more efficient.
    cp /model/tokenizer.model /code/openmath-mistral-7b-trtllm'
    ```
 
-3. Run greedy decoding for all datasets. You can increase number of nodes if running on Slurm cluster for faster evaluation.
+3. Run greedy decoding for all datasets. You can increase number of jobs if running on Slurm cluster for faster evaluation.
 
    ```
    python pipeline/run_eval.py \
@@ -63,7 +63,7 @@ documentation to learn how to make inference more efficient.
      --output_dir `pwd`/openmath-mistral-7b-eval-results \
      --benchmarks gsm8k:0 asdiv:0 gsm-hard:0 mawps:0 svamp:0 tabmwp:0 algebra222:0 math:0 \
      --num_gpus 8 \
-     --num_nodes 1 \
+     --num_jobs 1 \
      +prompt=code_sfted \
      ++prompt.few_shot_examples.num_few_shots=0 \
      ++split_name=test \
@@ -81,7 +81,7 @@ documentation to learn how to make inference more efficient.
      --output_dir `pwd`/openmath-mistral-7b-eval-results \
      --benchmarks gsm8k:50 math:50 \
      --num_gpus 8 \
-     --num_nodes 1 \
+     --num_jobs 1 \
      +prompt=code_sfted \
      ++prompt.few_shot_examples.num_few_shots=0 \
      ++skip_filled=True \
