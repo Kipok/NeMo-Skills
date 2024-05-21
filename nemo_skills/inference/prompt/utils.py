@@ -51,23 +51,79 @@ class BM25Retriever:
 @nested_dataclass
 class FewShotExamples:
     template: str = MISSING
-    examples_type: Optional[str] = None
     num_few_shots: int = 5
+
+    examples_type: Optional[str] = None
+    example_dicts: Optional[List[Dict[str, Any]]] = None
 
     retrieval_field: Optional[str] = None  # e.g. question, reference_solution, etc.
     retrieval_file: Optional[str] = None  # needs to be provided if retrieval_field is not None
     retriever: Optional[Any] = None
 
     def __post_init__(self):
-        """Initializing retriever if necessary."""
+        """Error checks + building example_dicts and retriever if needed."""
+        if self.examples_type is not None:  # building example_dicts
+            if self.example_dicts is not None:
+                raise ValueError(
+                    "You specified both examples_type and example_dicts. "
+                    "This is redundant, so please remove one to avoid accidental errors."
+                )
+            self.example_dicts = examples_map[self.examples_type][: self.num_few_shots]
+
+        if self.example_dicts is not None and self.num_few_shots > len(self.example_dicts):
+            raise ValueError(
+                f"There are not enough few shot examples in {self.examples_type}. "
+                f"Max number is {len(self.example_dicts)}"
+            )
+
         if self.retriever is not None:
             return
 
-        if self.retrieval_field is not None:
+        if self.retrieval_field is not None:  # building retriever
             if self.retrieval_file is None:
                 raise ValueError("retrieval_file must be provided if retrieval_field is not None")
 
+            if self.retriever is not None:
+                raise ValueError(
+                    "You specified both retrieval field/file and retriever. "
+                    "This is redundant, so please remove one to avoid accidental errors."
+                )
+
             self.retriever = BM25Retriever(self.retrieval_file, field=self.retrieval_field)
+        else:
+            if self.retrieval_file is not None:
+                raise ValueError("retrieval_field must be provided if retrieval_file is not None")
+
+        if self.example_dicts is None and self.retriever is None and self.num_few_shots > 0:
+            raise ValueError("You need to construct either example_dicts or retriever if num_few_shots > 0")
+
+        if self.example_dicts is not None and self.retriever is not None:
+            raise ValueError("example_dicts and retriever cannot be used together")
+
+    def get_examples(self, input_dict):
+        if self.num_few_shots == 0:
+            return []
+
+        if self.example_dicts:
+            return self.example_dicts
+
+        example_dicts = self.retriever.retrieve(
+            query=input_dict[self.retrieval_field],
+            top_k=self.num_few_shots + 1,
+        )
+        reference = input_dict[self.retrieval_field]
+        # filtering exact match if it's there
+        if example_dicts[0][self.retrieval_field] == reference:
+            example_dicts = example_dicts[1:]
+        else:  # removing the last one to match desired number of examples
+            example_dicts = example_dicts[:-1]
+        # if still has a match, let's error out for now
+        for example_dict in example_dicts:
+            if example_dict[self.retrieval_field] == reference:
+                raise ValueError("Exact match found in retrieved examples")
+
+        # let's reverse the order to show the most relevant last
+        return example_dicts[::-1]
 
 
 @nested_dataclass
@@ -84,21 +140,11 @@ class PromptConfig:
 class Prompt:
     config: PromptConfig
     input_dict: Dict[str, Any]
-    example_dicts: Optional[List[Dict[str, Any]]] = None
     context_template: Optional[str] = None
     generated_solution: str = ""
 
     def __post_init__(self):
-        """Initialize example_dicts/context_template if not provided."""
-        if self.example_dicts is None:
-            if self.config.few_shot_examples.retriever is None:
-                self.example_dicts = examples_map.get(self.config.few_shot_examples.examples_type, [])[
-                    : self.config.few_shot_examples.num_few_shots
-                ]
-        else:
-            if self.config.few_shot_examples.retriever is not None:
-                raise ValueError("example_dicts and retriever cannot be used together")
-
+        """Initialize context_template if not provided."""
         if self.context_template is None:
             self.context_template = context_templates.get(self.config.context_type, "")
 
@@ -114,29 +160,7 @@ class Prompt:
 
     def build_examples(self) -> str:
         """Builds all examples string concatenated by delimiter."""
-        if self.example_dicts:
-            example_dicts = self.example_dicts
-        else:
-            if self.config.few_shot_examples.num_few_shots > 0:
-                example_dicts = self.config.few_shot_examples.retriever.retrieve(
-                    query=self.input_dict[self.config.few_shot_examples.retrieval_field],
-                    top_k=self.config.few_shot_examples.num_few_shots + 1,
-                )
-                reference = self.input_dict[self.config.few_shot_examples.retrieval_field]
-                # filtering exact match if it's there
-                if example_dicts[0][self.config.few_shot_examples.retrieval_field] == reference:
-                    example_dicts = example_dicts[1:]
-                else:  # removing the last one to match desired number of examples
-                    example_dicts = example_dicts[:-1]
-                # if still has a match, let's error out for now
-                for example_dict in example_dicts:
-                    if example_dict[self.config.few_shot_examples.retrieval_field] == reference:
-                        raise ValueError("Exact match found in retrieved examples")
-
-                # let's reverse the order to show the most relevant last
-                example_dicts = example_dicts[::-1]
-            else:
-                example_dicts = []
+        example_dicts = self.config.few_shot_examples.get_examples(self.input_dict)
 
         filled_examples = [self.build_filled_example(example) for example in example_dicts]
         examples = "".join(filled_examples)
