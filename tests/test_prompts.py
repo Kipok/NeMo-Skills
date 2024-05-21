@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
+from nemo_skills.inference.prompt.utils import FewShotExamples, Prompt, PromptConfig, get_prompt_config
 
 
 def test_rephrasing_prompt():
@@ -238,5 +238,4 @@ User:
 
 Assistant:
 """
-    print(str(prompt))
     assert str(prompt) == expected_prompt
