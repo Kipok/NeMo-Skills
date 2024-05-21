@@ -109,21 +109,21 @@ class FewShotExamples:
 
         example_dicts = self.retriever.retrieve(
             query=input_dict[self.retrieval_field],
-            top_k=self.num_few_shots + 1,
+            # getting 2 times more to account for potential duplicates. This assumes there are not too many of them
+            top_k=self.num_few_shots * 2,
         )
         reference = input_dict[self.retrieval_field]
         # filtering exact match if it's there
-        if example_dicts[0][self.retrieval_field] == reference:
+        while example_dicts[0][self.retrieval_field] == reference:
             example_dicts = example_dicts[1:]
-        else:  # removing the last one to match desired number of examples
-            example_dicts = example_dicts[:-1]
+
         # if still has a match, let's error out for now
         for example_dict in example_dicts:
             if example_dict[self.retrieval_field] == reference:
                 raise ValueError("Exact match found in retrieved examples")
 
         # let's reverse the order to show the most relevant last
-        return example_dicts[::-1]
+        return example_dicts[: self.num_few_shots][::-1]
 
 
 @nested_dataclass
