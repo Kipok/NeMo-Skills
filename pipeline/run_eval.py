@@ -96,7 +96,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(usage=WRAPPER_HELP + '\n\n' + SCRIPT_HELP + '\n\nscript arguments:\n\n' + HELP_MESSAGE)
     wrapper_args = parser.add_argument_group('wrapper arguments')
     wrapper_args.add_argument("--model_path", required=True)
-    wrapper_args.add_argument("--server_type", choices=('nemo', 'tensorrt_llm'), default='tensorrt_llm')
+    wrapper_args.add_argument("--server_type", choices=('nemo', 'tensorrt_llm', 'vllm'), default='tensorrt_llm')
     wrapper_args.add_argument("--output_dir", required=True)
     wrapper_args.add_argument("--num_gpus", type=int, required=True)
     wrapper_args.add_argument("--starting_seed", type=int, default=0)
@@ -123,6 +123,7 @@ if __name__ == "__main__":
         default="",
         help="Any extra arguments to pass to nemo_skills/evaluation/evaluate_results.py",
     )
+
     args, unknown = parser.parse_known_args()
 
     extra_arguments = f'{" ".join(unknown)}'
@@ -130,7 +131,7 @@ if __name__ == "__main__":
     args.model_path = Path(args.model_path).absolute()
     args.output_dir = Path(args.output_dir).absolute()
 
-    server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus)
+    server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus, args.model_path.name)
 
     format_dict = {
         "model_path": args.model_path,
