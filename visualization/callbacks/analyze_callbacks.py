@@ -99,13 +99,27 @@ def choose_base_model(
 def save_dataset(n_click: int, base_model: str) -> Tuple[List, bool]:
     if (
         not n_click
-        or not current_app.config['data_explorer']['visualization_params']['save_dataset_path']
+        or not current_app.config['data_explorer']['visualization_params'][
+            'save_dataset_path'
+        ]
         or not base_model
     ):
         return no_update
-    path = current_app.config['data_explorer']['visualization_params']['save_dataset_path']
+    path = current_app.config['data_explorer']['visualization_params'][
+        'save_dataset_path'
+    ]
     if not os.path.exists(path):
         os.mkdir(path)
+
+    if not os.path.exists(os.path.join(path, base_model)):
+        path = os.path.join(path, base_model)
+    else:
+        i = 0
+        while os.path.exists(os.path.join(path, f'{base_model}_{i}')):
+            i += 1
+        path = os.path.join(path, f'{base_model}_{i}')
+
+    os.mkdir(path)
 
     new_data = {}
 
@@ -114,9 +128,13 @@ def save_dataset(n_click: int, base_model: str) -> Tuple[List, bool]:
             file_name = file_data['file_name']
             if file_name not in new_data:
                 new_data[file_name] = []
-            for field in EXTRA_FIELDS:
-                file_data.pop(field)
-            new_data[file_name].append(file_data)
+            new_data[file_name].append(
+                {
+                    key: value
+                    for key, value in file_data.items()
+                    if key not in EXTRA_FIELDS
+                }
+            )
 
     for file_name, data in new_data.items():
         with open(os.path.join(path, file_name + '.jsonl'), 'w') as file:
@@ -230,7 +248,9 @@ def toggle_modal_label(n1: int, n2: int, n3: int, is_open: bool) -> bool:
     ],
     prevent_initial_call=True,
 )
-def toggle_modal_stats(n1: int, n2: int, is_open: bool, modes: List[str], js_trigger: str) -> bool:
+def toggle_modal_stats(
+    n1: int, n2: int, is_open: bool, modes: List[str], js_trigger: str
+) -> bool:
     if not n1 and not n2:
         return no_update, no_update, no_update, no_update
 
@@ -449,7 +469,9 @@ def change_page(page_current: int, page_size: int, base_model: str) -> List[Dict
         return no_update
     return [
         data[base_model][0]
-        for data in get_table_data()[page_current * page_size : (page_current + 1) * page_size]
+        for data in get_table_data()[
+            page_current * page_size : (page_current + 1) * page_size
+        ]
         if base_model in data.keys()
     ]
 
@@ -606,9 +628,16 @@ def change_label(
         return [no_update]
 
     button_id = label_ids.index(
-        json.loads(LABEL_SELECTOR_ID.format(json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']))
+        json.loads(
+            LABEL_SELECTOR_ID.format(
+                json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']
+            )
+        )
     )
-    is_apply = json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['type'] == "apply_label_button"
+    is_apply = (
+        json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['type']
+        == "apply_label_button"
+    )
     if not ctx.triggered[0]['value'] or labels[button_id] == CHOOSE_LABEL:
         return [no_update]
 
@@ -637,7 +666,10 @@ def change_label(
             options = (
                 current_file_options
                 if button_id != 0
-                else [{'value': file['file_name']} for file in get_table_data()[question_id][model]]
+                else [
+                    {'value': file['file_name']}
+                    for file in get_table_data()[question_id][model]
+                ]
             )
             for file in options:
                 if not apply_for_all_files and not file['value'] == current_file:
@@ -649,12 +681,19 @@ def change_label(
                         file_id = i
                         break
 
-                if labels[button_id] not in get_table_data()[question_id][model][file_id][LABEL]:
+                if (
+                    labels[button_id]
+                    not in get_table_data()[question_id][model][file_id][LABEL]
+                ):
                     if is_apply:
-                        get_table_data()[question_id][model][file_id][LABEL].append(labels[button_id])
+                        get_table_data()[question_id][model][file_id][LABEL].append(
+                            labels[button_id]
+                        )
 
                 elif not is_apply:
-                    get_table_data()[question_id][model][file_id][LABEL].remove(labels[button_id])
+                    get_table_data()[question_id][model][file_id][LABEL].remove(
+                        labels[button_id]
+                    )
 
     return [dummy_data + "1"]
 
@@ -706,7 +745,11 @@ def change_file(
     question_id = page_size * current_page + idx[0]
     try:
         button_id = model_ids.index(
-            json.loads(MODEL_SELECTOR_ID.format(json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']))
+            json.loads(
+                MODEL_SELECTOR_ID.format(
+                    json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']
+                )
+            )
         )
     except ValueError:
         return [no_update] * len(table_data)
@@ -714,21 +757,29 @@ def change_file(
     model = models[button_id]
 
     file_id = 0
-    file_name = file_names[button_id]['value'] if isinstance(file_names[button_id], Dict) else file_names[button_id]
+    file_name = (
+        file_names[button_id]['value']
+        if isinstance(file_names[button_id], Dict)
+        else file_names[button_id]
+    )
     for i, file_data in enumerate(get_table_data()[question_id][model]):
         if file_data['file_name'] == file_name:
             file_id = i
             break
 
     question_id = current_page * page_size + idx[0]
-    table_data[button_id * len(rows_names) : (button_id + 1) * len(rows_names)] = get_row_detailed_inner_data(
-        question_id=question_id,
-        model=model,
-        file_id=file_id,
-        rows_names=rows_names,
-        files_names=[option['value'] for option in file_options[button_id]],
-        col_id=button_id,
-        plain_text=(plain_text_switch[button_id] and len(plain_text_switch[button_id])),
+    table_data[button_id * len(rows_names) : (button_id + 1) * len(rows_names)] = (
+        get_row_detailed_inner_data(
+            question_id=question_id,
+            model=model,
+            file_id=file_id,
+            rows_names=rows_names,
+            files_names=[option['value'] for option in file_options[button_id]],
+            col_id=button_id,
+            plain_text=(
+                plain_text_switch[button_id] and len(plain_text_switch[button_id])
+            ),
+        )
     )
     return table_data
 
@@ -760,7 +811,11 @@ def add_new_label(
         return no_updates, no_updates, no_updates
 
     button_id = label_ids.index(
-        json.loads(LABEL_SELECTOR_ID.format(json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']))
+        json.loads(
+            LABEL_SELECTOR_ID.format(
+                json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']
+            )
+        )
     )
 
     if not ctx.triggered[0]['value']:
@@ -770,7 +825,9 @@ def add_new_label(
         for i in range(len(options)):
             new_label = {'label': new_labels[button_id], 'value': new_labels[button_id]}
             if new_label not in options[i]:
-                options[i].append({'label': new_labels[button_id], 'value': new_labels[button_id]})
+                options[i].append(
+                    {'label': new_labels[button_id], 'value': new_labels[button_id]}
+                )
         values[button_id] = new_labels[button_id]
     else:
         return no_updates, no_updates, no_updates
@@ -798,7 +855,11 @@ def choose_label(
 
     for trigger in ctx.triggered:
         button_id = label_ids.index(
-            json.loads(LABEL_SELECTOR_ID.format(json.loads(trigger['prop_id'].split('.')[0])['id']))
+            json.loads(
+                LABEL_SELECTOR_ID.format(
+                    json.loads(trigger['prop_id'].split('.')[0])['id']
+                )
+            )
         )
 
         if not ctx.triggered[0]['value'] or label[button_id] == CHOOSE_LABEL:
@@ -842,7 +903,11 @@ def add_model(
         return no_update, [no_update] * len(rows)
     available_models = list(get_available_models().keys())
     last_header_id = selectors_ids[-1]['id'] if selectors_ids != [] else -1
-    header.append(get_models_selector_table_cell(available_models, available_models[0], last_header_id + 1, True))
+    header.append(
+        get_models_selector_table_cell(
+            available_models, available_models[0], last_header_id + 1, True
+        )
+    )
     last_cell_id = rows[-1][-1]["props"]["children"]["props"]['id']['id']
     for i, row in enumerate(rows):
         row.append(
@@ -941,7 +1006,11 @@ def change_files_order(
         return no_updates, no_updates
     try:
         button_id = model_ids.index(
-            json.loads(MODEL_SELECTOR_ID.format(json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']))
+            json.loads(
+                MODEL_SELECTOR_ID.format(
+                    json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']
+                )
+            )
         )
     except ValueError:
         return no_updates, no_updates
@@ -955,7 +1024,8 @@ def change_files_order(
         if not apply_on_filtered_data or not apply_on_filtered_data[button_id]
         else list(
             filter(
-                lambda data: data['file_name'] in [file_name['label'] for file_name in file_selector_options],
+                lambda data: data['file_name']
+                in [file_name['label'] for file_name in file_selector_options],
                 get_table_data()[question_id][model],
             )
         )
