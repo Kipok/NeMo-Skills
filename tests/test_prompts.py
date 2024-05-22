@@ -13,21 +13,20 @@
 # limitations under the License.
 
 
-from nemo_skills.inference.prompt.utils import FewShotExamples, Prompt, PromptConfig, get_prompt_config
+from nemo_skills.inference.prompt.utils import FewShotExamplesConfig, Prompt, PromptConfig, get_prompt_config
 
 
 def test_rephrasing_prompt():
-    prompt = Prompt(
-        config=get_prompt_config('rephrasing'),
-        input_dict={'question': "What's the meaning of life?"},
-        example_dicts=[
-            {
-                'question': 'Are you sure you want to do that?',
-                'rephrased_question': "Is this really what you want to do?",
-            },
-            {'question': 'How are you?', 'rephrased_question': "How is it going?"},
-        ],
-    )
+    prompt = Prompt(config=get_prompt_config('rephrasing'))
+    prompt.config.few_shot_examples.example_dicts = [
+        {
+            'question': 'Are you sure you want to do that?',
+            'rephrased_question': "Is this really what you want to do?",
+        },
+        {'question': 'How are you?', 'rephrased_question': "How is it going?"},
+    ]
+    prompt.config.few_shot_examples.num_few_shots = 2
+
     expected_prompt = """You are an AI assistant that excels at rephrasing questions. Follow the given examples.
 
 Question:
@@ -55,21 +54,20 @@ What's the meaning of life?
 
 Rephrase the above question:
 """
-    assert str(prompt) == expected_prompt
+    assert prompt.build_prompt_string({'question': "What's the meaning of life?"}) == expected_prompt
 
 
 def test_augmentation_prompt():
-    prompt = Prompt(
-        config=get_prompt_config('augmentation'),
-        input_dict={'question': "What's the meaning of life?"},
-        example_dicts=[
-            {
-                'question': 'Are you sure you want to do that?',
-                'augmented_question': "Is this really what you want to do?",
-            },
-            {'question': 'How are you?', 'augmented_question': "How is it going?"},
-        ],
-    )
+    prompt = Prompt(config=get_prompt_config('augmentation'))
+    prompt.config.few_shot_examples.example_dicts = [
+        {
+            'question': 'Are you sure you want to do that?',
+            'augmented_question': "Is this really what you want to do?",
+        },
+        {'question': 'How are you?', 'augmented_question': "How is it going?"},
+    ]
+    prompt.config.few_shot_examples.num_few_shots = 2
+
     expected_prompt = """You are an AI assistant that excels at creating similar questions. Follow the given examples.
 
 Question:
@@ -97,18 +95,17 @@ What's the meaning of life?
 
 Write another question similar to this one:
 """
-    assert str(prompt) == expected_prompt
+    assert prompt.build_prompt_string({'question': "What's the meaning of life?"}) == expected_prompt
 
 
 def test_llama3_instruct_prompt():
-    prompt = Prompt(
-        config=get_prompt_config('llama3_instruct'),
-        input_dict={'question': '2 + 2 = ?'},
-        example_dicts=[
-            {'question': '1 + 1 = ?', 'generated_solution': "That's easy: 2!"},
-            {'question': '5 + 5 = ?', 'generated_solution': "That's easy: 10!"},
-        ],
-    )
+    prompt = Prompt(config=get_prompt_config('llama3_instruct'))
+    prompt.config.few_shot_examples.example_dicts = [
+        {'question': '1 + 1 = ?', 'generated_solution': "That's easy: 2!"},
+        {'question': '5 + 5 = ?', 'generated_solution': "That's easy: 10!"},
+    ]
+    prompt.config.few_shot_examples.num_few_shots = 2
+
     expected_prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
 
 You are Meta AI, a sophisticated and energetic AI Assistant. You excel at solving mathematical problems.
@@ -142,18 +139,17 @@ Question:
 2 + 2 = ?
 
 <|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
-    assert str(prompt) == expected_prompt
+    assert prompt.build_prompt_string({'question': '2 + 2 = ?'}) == expected_prompt
 
 
 def test_llama3_base_prompt():
-    prompt = Prompt(
-        config=get_prompt_config('llama3_base'),
-        input_dict={'question': '2 + 2 = ?'},
-        example_dicts=[
-            {'question': '1 + 1 = ?', 'generated_solution': "That's easy: 2!"},
-            {'question': '5 + 5 = ?', 'generated_solution': "That's easy: 10!"},
-        ],
-    )
+    prompt = Prompt(config=get_prompt_config('llama3_base'))
+    prompt.config.few_shot_examples.example_dicts = [
+        {'question': '1 + 1 = ?', 'generated_solution': "That's easy: 2!"},
+        {'question': '5 + 5 = ?', 'generated_solution': "That's easy: 10!"},
+    ]
+    prompt.config.few_shot_examples.num_few_shots = 2
+
     expected_prompt = """<|begin_of_text|>Here are some examples of questions and solutions followed by a new question that you need to solve.
 Make sure to put the answer (and only answer) inside \\boxed{}.
 
@@ -182,18 +178,17 @@ Question:
 
 My solution:
 """
-    assert str(prompt) == expected_prompt
+    assert prompt.build_prompt_string({'question': '2 + 2 = ?'}) == expected_prompt
 
 
 def test_code_base_prompt():
-    prompt = Prompt(
-        config=get_prompt_config('code_base'),
-        input_dict={'question': '2 + 2 = ?'},
-        example_dicts=[
-            {'question': '1 + 1 = ?', 'generated_solution': "That's easy: 2!"},
-            {'question': '5 + 5 = ?', 'generated_solution': "That's easy: 10!"},
-        ],
-    )
+    prompt = Prompt(config=get_prompt_config('code_base'))
+    prompt.config.few_shot_examples.example_dicts = [
+        {'question': '1 + 1 = ?', 'generated_solution': "That's easy: 2!"},
+        {'question': '5 + 5 = ?', 'generated_solution': "That's easy: 10!"},
+    ]
+    prompt.config.few_shot_examples.num_few_shots = 2
+
     expected_prompt = """Here are some examples of questions and solutions followed by a new question that you need to solve.
 Make sure to put the answer (and only answer) inside \\boxed{}.
 
@@ -222,14 +217,11 @@ Question:
 
 My solution:
 """
-    assert str(prompt) == expected_prompt
+    assert prompt.build_prompt_string({'question': '2 + 2 = ?'}) == expected_prompt
 
 
 def test_code_sfted_prompt():
-    prompt = Prompt(
-        config=get_prompt_config('code_sfted'),
-        input_dict={'question': '2 + 2 = ?'},
-    )
+    prompt = Prompt(config=get_prompt_config('code_sfted'))
     expected_prompt = """System:
 You're an expert Python programmer and mathematician. Help the user to solve this problem using code when necessary. Make sure to put the answer (and only answer) inside \\boxed{}.
 
@@ -238,4 +230,4 @@ User:
 
 Assistant:
 """
-    assert str(prompt) == expected_prompt
+    assert prompt.build_prompt_string({'question': '2 + 2 = ?'}) == expected_prompt

@@ -60,8 +60,6 @@ class GenerateSolutionsConfig:
     split_name: Optional[str] = None  # Can be train, validation, test or train_full (train + validation)
     data_file: Optional[str] = None  # Can directly specify a data file, if using a custom dataset
 
-    example_dicts: Optional[List[Dict]] = None  # A list of few-shot demonstrations to be shown in the prompt
-
     batch_size: int = 16
     max_samples: int = -1  # If > 0, will stop after generating this many samples. Useful for debugging
     skip_filled: bool = False  # If True, will skip the generations that are already in the output file
@@ -115,6 +113,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
     # additionally, skipping whatever is pre-filled, assuming offset didn't change
     data = data[starting_idx:]
+    prompt = Prompt(config=cfg.prompt)
 
     # setting buffering=1 to force to dump the output after every line, so that we can see intermediate generations
     with open(cfg.output_file, "at" if cfg.skip_filled else "wt", encoding="utf-8", buffering=1) as fout:
@@ -124,7 +123,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
             if idx == cfg.max_samples:
                 break
 
-            prompts.append(Prompt(config=cfg.prompt, input_dict=data_point, example_dicts=cfg.example_dicts))
+            prompts.append(prompt.build_prompt_string(input_dict=data_point))
 
             data_points.append(data_point)
 

@@ -49,9 +49,9 @@ class BM25Retriever:
 
 
 @nested_dataclass
-class FewShotExamples:
+class FewShotExamplesConfig:
     template: str = MISSING
-    num_few_shots: int = 5
+    num_few_shots: int = 0
 
     examples_type: Optional[str] = None
     example_dicts: Optional[List[Dict[str, Any]]] = None
@@ -100,57 +100,33 @@ class FewShotExamples:
         if self.example_dicts is not None and self.retriever is not None:
             raise ValueError("example_dicts and retriever cannot be used together")
 
-    def get_examples(self, input_dict):
-        if self.num_few_shots == 0:
-            return []
-
-        if self.example_dicts:
-            return self.example_dicts
-
-        example_dicts = self.retriever.retrieve(
-            query=input_dict[self.retrieval_field],
-            # getting 2 times more to account for potential duplicates. This assumes there are not too many of them
-            top_k=self.num_few_shots * 2,
-        )
-        reference = input_dict[self.retrieval_field]
-        # filtering exact match if it's there
-        while example_dicts[0][self.retrieval_field] == reference:
-            example_dicts = example_dicts[1:]
-
-        # if still has a match, let's error out for now
-        for example_dict in example_dicts:
-            if example_dict[self.retrieval_field] == reference:
-                raise ValueError("Exact match found in retrieved examples")
-
-        # let's reverse the order to show the most relevant last
-        return example_dicts[: self.num_few_shots][::-1]
-
 
 @nested_dataclass
 class PromptConfig:
-    few_shot_examples: FewShotExamples = field(default_factory=FewShotExamples)
+    few_shot_examples: FewShotExamplesConfig = field(default_factory=FewShotExamplesConfig)
     prompt_template: str = MISSING
     user: str = MISSING
     system: str = MISSING
     context_type: str = "empty"
-    stop_phrases: List[str] = field(default_factory=list)
-
-
-@nested_dataclass
-class Prompt:
-    config: PromptConfig
-    input_dict: Dict[str, Any]
     context_template: Optional[str] = None
-    generated_solution: str = ""
+    stop_phrases: List[str] = field(default_factory=list)
 
     def __post_init__(self):
         """Initialize context_template if not provided."""
         if self.context_template is None:
-            self.context_template = context_templates.get(self.config.context_type, "")
+            self.context_template = context_templates[self.context_type]
+        else:
+            if self.context_type != "empty":
+                raise ValueError("context_template should not be provided if context_type is not empty")
+
+
+class Prompt:
+    def __init__(self, config):
+        self.config = config
 
     def build_context(self, example_dict: Dict[str, Any]) -> str:
         """Builds the context string based on the example dictionary."""
-        context = self.context_template.format(**example_dict)
+        context = self.config.context_template.format(**example_dict)
         return context
 
     def build_filled_example(self, example_dict: Dict[str, Any]) -> str:
@@ -158,30 +134,55 @@ class Prompt:
         context = self.build_context(example_dict)
         return self.config.few_shot_examples.template.format(context=context, **example_dict)
 
-    def build_examples(self) -> str:
+    def get_examples_dict(self, input_dict):
+        if self.config.few_shot_examples.num_few_shots == 0:
+            return []
+
+        if self.config.few_shot_examples.example_dicts:
+            return self.config.few_shot_examples.example_dicts
+
+        example_dicts = self.config.few_shot_examples.retriever.retrieve(
+            query=input_dict[self.config.few_shot_examples.retrieval_field],
+            # getting 2 times more to account for potential duplicates. This assumes there are not too many of them
+            top_k=self.config.few_shot_examples.num_few_shots * 2,
+        )
+        reference = input_dict[self.config.few_shot_examples.retrieval_field]
+        # filtering exact match if it's there
+        while example_dicts[0][self.config.few_shot_examples.retrieval_field] == reference:
+            example_dicts = example_dicts[1:]
+
+        # if still has a match, let's error out for now
+        for example_dict in example_dicts:
+            if example_dict[self.config.few_shot_examples.retrieval_field] == reference:
+                raise ValueError("Exact match found in retrieved examples")
+
+        # let's reverse the order to show the most relevant last
+        return example_dicts[: self.config.few_shot_examples.num_few_shots][::-1]
+
+    def build_examples(self, input_dict: Dict[str, str]) -> str:
         """Builds all examples string concatenated by delimiter."""
-        example_dicts = self.config.few_shot_examples.get_examples(self.input_dict)
+        example_dicts = self.get_examples_dict(input_dict)
 
         filled_examples = [self.build_filled_example(example) for example in example_dicts]
         examples = "".join(filled_examples)
-        context = self.build_context(self.input_dict)
-        user = self.config.user.format(examples=examples, context=context, **self.input_dict)
+        context = self.build_context(input_dict)
+        user = self.config.user.format(examples=examples, context=context, **input_dict)
         return user
 
-    def build_chat_prompt(self) -> List[Dict[str, str]]:
+    def build_prompt_dict(self, input_dict: Dict[str, str], generated_solution: str = "") -> List[Dict[str, str]]:
         """Builds a structured representation of the prompt."""
         structured_prompt = [{"role": "system", "content": self.config.system}] if self.config.system else []
-        structured_prompt.append({"role": "user", "content": self.build_examples()})
-        if self.generated_solution:
-            structured_prompt.append({"role": "assistant", "content": self.generated_solution})
+        structured_prompt.append({"role": "user", "content": self.build_examples(input_dict)})
+        if generated_solution:
+            structured_prompt.append({"role": "assistant", "content": generated_solution})
         return structured_prompt
 
-    def __str__(self) -> str:
+    def build_prompt_string(self, input_dict: Dict[str, str], generated_solution: str = "") -> str:
         """Returns the complete prompt string representation."""
         prompt = self.config.prompt_template.format(
             system=self.config.system,
-            user=self.build_examples(),
-            generated_solution=self.generated_solution,
+            user=self.build_examples(input_dict),
+            generated_solution=generated_solution,
         )
         return prompt
 

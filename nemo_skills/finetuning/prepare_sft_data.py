@@ -166,10 +166,10 @@ def prepare_sft_data(cfg: PrepareSFTDataConfig):
     prepared_data = []
     total_covered = 0
     samples_per_question = []
+    prompt = Prompt(config=cfg.prompt)
     # only looping over the correct samples (unless asked for incorrect)
     for question, samples in tqdm.tqdm(grouped_samples.items()):
         filtered_solutions = process_bad_solutions(samples, cfg.filters, cfg.text_filter_type, cfg.trim_solutions)
-
         samples_per_question.append(len(filtered_solutions))
         total_covered += samples_per_question[-1] != 0
 
@@ -177,7 +177,7 @@ def prepare_sft_data(cfg: PrepareSFTDataConfig):
             # including all fields in case they are useful for training
             elem = sample.copy()
             # NeMo requires input/output fields
-            elem["input"] = str(Prompt(config=cfg.prompt, input_dict={"question": question}))
+            elem["input"] = prompt.build_prompt_string(input_dict={"question": question})
             elem["output"] = elem.pop("generated_solution")
             elem.update(cfg.metadata)
             prepared_data.append(elem)

@@ -475,7 +475,7 @@ class OpenAIModel(BaseModel):
         random_seed,
         stop_phrases: List[str],
     ):
-        messages = prompt.build_chat_prompt()
+        messages = prompt.build_prompt_dict()
         response = self.client.chat.completions.create(
             model=self.model,
             temperature=temperature,
