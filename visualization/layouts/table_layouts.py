@@ -19,7 +19,6 @@ from typing import List
 
 import dash_bootstrap_components as dbc
 from dash import dash_table, html
-
 from layouts.base_layouts import (
     get_selector_layout,
     get_single_prompt_output_layout,

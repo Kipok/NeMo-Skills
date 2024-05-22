@@ -267,7 +267,7 @@ def update_examples(
             "value",
         )
         for field in get_utils_from_config(
-            {"prompt": asdict(PromptConfig(FewShotExamples()))}
+            {"prompt": asdict(PromptConfig(few_shot_examples=FewShotExamples()))}
         ).keys()
     ]
     + [
@@ -293,7 +293,9 @@ def update_prompt_type(
     ]
     if prompt_type not in prompt_types:
         output_len = len(
-            get_utils_from_config(asdict(PromptConfig(FewShotExamples()))).keys()
+            get_utils_from_config(
+                asdict(PromptConfig(few_shot_examples=FewShotExamples()))
+            ).keys()
         )
         return [no_update] * (output_len + 2)
     prompt_config = get_prompt_config(prompt_type)

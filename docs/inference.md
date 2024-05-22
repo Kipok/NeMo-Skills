@@ -22,7 +22,7 @@ Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
    conversion for pretrained models).
 
    You can also run this command on a slurm cluster and then submit requests from a local workstation by setting up
-   `SSH_SERVER` and `SSH_KEY_PATH` environment variables (if you have ssh access there).
+   `NEMO_SKILLS_SSH_SERVER` and `NEMO_SKILLS_SSH_KEY_PATH` environment variables (if you have ssh access there).
 
    ```
    python pipeline/start_server.py \
@@ -70,7 +70,7 @@ Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
         "hip-hop dance. What percentage of the entire students enrolled in hip-hop dance?"
     )
     # can provide multiple requests
-    prompts = [Prompt(prompt_config, input_dict={'question': question})]
+    prompts = [Prompt(config=prompt_config, input_dict={'question': question})]
 
     # can provide different inference parameters here
     inference_cfg = InferenceConfig(temperature=0)  # greedy

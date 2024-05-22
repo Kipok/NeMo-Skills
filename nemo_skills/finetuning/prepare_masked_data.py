@@ -16,20 +16,19 @@ import json
 import logging
 import os
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 
 import hydra
-from omegaconf import MISSING, OmegaConf
+from omegaconf import MISSING
 
 sys.path.append(str(Path(__file__).absolute().parents[2]))
 
-from nemo_skills.utils import get_help_message, setup_logging, unroll_files
+from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging, unroll_files
 
 LOG = logging.getLogger(__file__)
 
 
-@dataclass
+@nested_dataclass
 class PrepareMaskedDataConfig:
     """Top-level parameters for the script"""
 
@@ -112,7 +111,7 @@ cs.store(name="base_prepare_masked_data_config", node=PrepareMaskedDataConfig)
 
 @hydra.main(version_base=None, config_name="base_prepare_masked_data_config")
 def prepare_masked_data(cfg: PrepareMaskedDataConfig):
-    cfg = OmegaConf.to_object(cfg)
+    cfg = PrepareMaskedDataConfig(_init_nested=True, **cfg)
     LOG.info("Config used: %s", cfg)
 
     original_data_folder = Path(__file__).parents[2] / "datasets" / cfg.dataset
@@ -142,14 +141,14 @@ def prepare_masked_data(cfg: PrepareMaskedDataConfig):
 
             # Replace reference solution with masked solution
             train_instance["reference_solution"] = ref_soln
-            train_instance["reference_masked_solution"] = cand_soln
+            train_instance["masked_reference_solution"] = cand_soln
 
             if cand_soln == "":
                 # Masked solution length is too different from the reference solution
                 cand_soln = ref_soln
                 problematic_instances += 1
 
-            train_instance["reference_masked_solution"] = cand_soln
+            train_instance["masked_reference_solution"] = cand_soln
             output_f.write(json.dumps(train_instance) + '\n')
 
         LOG.info("Answer not masked soln: %d", answer_not_masked_instance)

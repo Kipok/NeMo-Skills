@@ -16,15 +16,10 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from omegaconf import OmegaConf
-
-# guarding import to allow prompt_types to be used in scripts without extra packages required
-try:
-    from omegaconf import MISSING
-except ImportError:
-    MISSING = ''
+from omegaconf import MISSING, OmegaConf
 
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
+from nemo_skills.utils import nested_dataclass
 
 # listing all available configs here
 prompt_types = [cfg.stem for cfg in Path(__file__).parent.glob("*.yaml")]
@@ -36,14 +31,14 @@ datasets = [
 ]
 
 
-@dataclass
+@nested_dataclass
 class FewShotExamples:
     template: str = MISSING
     examples_type: Optional[str] = None
     num_few_shots: int = 5
 
 
-@dataclass
+@nested_dataclass
 class PromptConfig:
     few_shot_examples: FewShotExamples = field(default_factory=FewShotExamples)
     prompt_template: str = MISSING
@@ -53,7 +48,7 @@ class PromptConfig:
     stop_phrases: List[str] = field(default_factory=list)
 
 
-@dataclass
+@nested_dataclass
 class Prompt:
     config: PromptConfig
     input_dict: Dict[str, Any]
@@ -119,7 +114,7 @@ def get_prompt_config(prompt_type: str) -> PromptConfig:
         # Merge the default config with the loaded config
         merged_config = OmegaConf.merge(default_config, loaded_config)
 
-        prompt_config = OmegaConf.structured(PromptConfig(**merged_config))
+        prompt_config = OmegaConf.structured(PromptConfig(_init_nested=True, **merged_config))
         return prompt_config
 
 
@@ -128,5 +123,5 @@ def get_prompt_config(prompt_type: str) -> PromptConfig:
 context_templates = {
     "empty": "",
     "reference_solution": "Reference solution (do not copy it):\n{reference_solution}\n\n",
-    "masked_solution": "Reference solution:\n{reference_masked_solution}\n\n",
+    "masked_solution": "Reference solution:\n{masked_reference_solution}\n\n",
 }
