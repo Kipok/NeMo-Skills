@@ -352,7 +352,11 @@ def get_data_from_files(cache_indicator=None) -> List:
                 for question_index, answer in enumerate(answers):
                     result = {
                         "file_name": path.split('/')[-1].split('.')[0],
-                        **(dataset[question_index] if dataset else {}),
+                        **(
+                            dataset[question_index]
+                            if dataset and len(dataset) > question_index
+                            else {}
+                        ),
                         "question_index": question_index + 1,
                         "page_index": file_id,
                         "labels": [],

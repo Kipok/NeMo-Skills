@@ -13,6 +13,7 @@
 # limitations under the License.
 
 ANSWER_FIELD = "expected_answer"
+NAME_FOR_BASE_MODEL = "base_generation"
 EXTRA_FIELDS = ["page_index", "file_name"]
 CHAT_MODE = "chat_mode"
 CHOOSE_MODEL = "choose dataset"

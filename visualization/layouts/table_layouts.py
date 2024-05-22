@@ -31,6 +31,7 @@ from settings.constants import (
     FILES_FILTERING,
     FILES_ONLY,
     MODEL_SELECTOR_ID,
+    NAME_FOR_BASE_MODEL,
     QUESTIONS_FILTERING,
     STATS_KEYS,
 )
@@ -83,8 +84,9 @@ def get_filter_text(
     elif mode == FILES_FILTERING:
         return (
             "Write an expression to filter the data\n"
-            + "Separate expressions for different datasets with &&\n\n"
-            + "For example:\ndata['dataset1']['correct_responses'] > 0.5 && data['dataset2']['no_response'] < 0.2\n\n"
+            + "Separate expressions for different datasets with &&\n"
+            + "You can use base_generation variable to access data from the current generation\n\n"
+            + "For example:\ndata['generation1']['correct_responses'] > 0.5 && data[base_generation]['no_response'] < 0.2\n\n"
             + "The function has to return bool.\n\n"
             + "Available parameters to filter data:\n"
             + '\n'.join(
@@ -98,8 +100,9 @@ def get_filter_text(
         return (
             "Write a function to filter the data\n"
             + "The function should take a dictionary containing keys representing dataset names\n"
-            + "and a list of values as JSON data from your dataset from each file.\n\n"
-            + "For example:\ndata['dataset1'][0]['is_correct'] != data['dataset2'][0]['is_correct']\n\n"
+            + "and a list of values as JSON data from your dataset from each file.\n"
+            + "You can use base_generation variable to access data from the current generation\n\n"
+            + "For example:\ndata['generation1'][0]['is_correct'] != data[generation2'][0]['is_correct']\n\n"
             + "The function has to return bool.\n\n"
             + "Available parameters to filter data:\n"
             + '\n'.join(
@@ -632,7 +635,7 @@ def get_general_stats_layout(
             logging.error(ERROR_MESSAGE_TEMPLATE.format(name, errors_dict))
 
     overall_samples = sum(len(question_data) for question_data in data_for_base_model)
-    dataset_size = len(data_for_base_model)
+    dataset_size = len(list(filter(lambda x: bool(x), data_for_base_model)))
     stats = {
         "dataset size": dataset_size,
         "overall number of samples": overall_samples,
@@ -739,7 +742,12 @@ def get_filter_answers_layout(
             for single_filter in splitted_filters.split('&&')
         ]
         filtering_functions = (
-            list([get_eval_function(func) for func in full_splitted_filters])
+            list(
+                [
+                    get_eval_function(f"{NAME_FOR_BASE_MODEL} = '{base_model}'\n" + func)
+                    for func in full_splitted_filters
+                ]
+            )
             if filtering_function
             else []
         )
@@ -783,7 +791,9 @@ def get_filter_answers_layout(
                 if good_data:
                     clean_table_data.append(table_data[question_id])
         else:
-            func = get_eval_function(filtering_function.strip())
+            func = get_eval_function(
+                f"{NAME_FOR_BASE_MODEL} = '{base_model}'\n" + filtering_function.strip()
+            )
             clean_table_data = list(
                 filter(
                     lambda data: catch_eval_exception(
