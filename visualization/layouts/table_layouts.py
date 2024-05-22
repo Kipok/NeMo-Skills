@@ -71,7 +71,7 @@ def get_filter_text(
     if mode == FILES_ONLY:
         return (
             "Write an expression to filter the data\n\n"
-            + "For example:\ndata['correct_responses'] > 0.5 and data['no_response'] < 0.2\n\n"
+            + "For example:\ndata['is_correct'] and not data['error_message']\n\n"
             + "The function has to return bool.\n\n"
             + "Available parameters to filter data:\n"
             + '\n'.join(
@@ -561,18 +561,23 @@ def get_row_detailed_inner_data(
 ) -> List:
     table_data = get_table_data()[question_id].get(model, [])
     row_data = []
+    empty_list = False
+    if table_data[file_id].get('file_name', None) not in files_names:
+        empty_list = True
     for key in filter(
         lambda key: is_detailed_answers_rows_key(key),
-        map(lambda data: data, rows_names),
+        rows_names,
     ):
-        if len(table_data) <= file_id or key in get_excluded_row():
+        if file_id < 0 or len(table_data) <= file_id or key in get_excluded_row():
             value = ""
         elif key == 'file_name':
             value = get_selector_layout(
                 files_names,
                 {"type": "file_selector", "id": col_id},
-                table_data[file_id].get(key, None),
+                (table_data[file_id].get(key, None) if not empty_list else ""),
             )
+        elif empty_list:
+            value = ""
         else:
             value = (
                 get_single_prompt_output_layout(str(table_data[file_id].get(key, None)))

@@ -477,11 +477,23 @@ def change_page(page_current: int, page_size: int, base_model: str) -> List[Dict
 
 
 @app.callback(
-    Output(
-        {'type': 'detailed_models_answers', 'id': ALL},
-        'children',
-        allow_duplicate=True,
-    ),
+    [
+        Output(
+            {'type': 'detailed_models_answers', 'id': ALL},
+            'children',
+            allow_duplicate=True,
+        ),
+        Output(
+            {"type": "filter_function_input", "id": ALL},
+            "value",
+            allow_duplicate=True,
+        ),
+        Output(
+            {"type": "sorting_function_input", "id": ALL},
+            "value",
+            allow_duplicate=True,
+        ),
+    ],
     [
         Input('datatable', 'selected_rows'),
         Input(
@@ -513,6 +525,12 @@ def show_item(
 ) -> List[str]:
     if not idx:
         raise PreventUpdate
+    ctx = callback_context
+    if not ctx.triggered:
+        return [no_update, no_update, no_update]
+    elif ctx.triggered[0]['prop_id'] == 'datatable.selected_rows':
+        filter_functions = [filter_functions[0]] + [None] * (len(filter_functions) - 1)
+        sorting_functions = [sorting_functions[0]] + [None] * (len(sorting_functions) - 1)
     question_id = current_page * page_size + idx[0]
     file_ids = [0] * len(models)
     for model_id, name in enumerate(file_names):
@@ -523,14 +541,18 @@ def show_item(
         ):
             if file['file_name'] == name:
                 file_ids[model_id] = file_id
-    return get_table_detailed_inner_data(
-        question_id=question_id,
-        rows_names=rows_names,
-        models=models,
-        files_id=file_ids,
-        filter_functions=filter_functions[1:],
-        sorting_functions=sorting_functions[1:],
-    )
+    return [
+        get_table_detailed_inner_data(
+            question_id=question_id,
+            rows_names=rows_names,
+            models=models,
+            files_id=file_ids,
+            filter_functions=filter_functions[1:],
+            sorting_functions=sorting_functions[1:],
+        ),
+        filter_functions,
+        sorting_functions,
+    ]
 
 
 @app.callback(
