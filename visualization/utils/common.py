@@ -346,12 +346,19 @@ def get_data_from_files(cache_indicator=None) -> List:
 
     def process_model_files(model_id, results_files, dataset):
         model_data = defaultdict(list)
+        file_names = {}
         for file_id, path in enumerate(results_files):
+            file_name = path.split('/')[-1].split('.')[0]
+            if file_name in file_names:
+                file_names[file_name] += 1
+                file_name += f"_{file_names[file_name]}"
+            else:
+                file_names[file_name] = 1
             with open(path) as f:
                 answers = map(json.loads, f)
                 for question_index, answer in enumerate(answers):
                     result = {
-                        "file_name": path.split('/')[-1].split('.')[0],
+                        "file_name": file_name,
                         **(
                             dataset[question_index]
                             if dataset and len(dataset) > question_index
