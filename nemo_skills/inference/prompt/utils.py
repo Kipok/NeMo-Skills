@@ -134,7 +134,7 @@ class Prompt:
         context = self.build_context(example_dict)
         return self.config.few_shot_examples.template.format(context=context, **example_dict)
 
-    def get_examples_dict(self, input_dict):
+    def build_examples_dict(self, input_dict):
         if self.config.few_shot_examples.num_few_shots == 0:
             return []
 
@@ -159,9 +159,9 @@ class Prompt:
         # let's reverse the order to show the most relevant last
         return example_dicts[: self.config.few_shot_examples.num_few_shots][::-1]
 
-    def build_examples(self, input_dict: Dict[str, str]) -> str:
+    def build_user_message(self, input_dict: Dict[str, str]) -> str:
         """Builds all examples string concatenated by delimiter."""
-        example_dicts = self.get_examples_dict(input_dict)
+        example_dicts = self.build_examples_dict(input_dict)
 
         filled_examples = [self.build_filled_example(example) for example in example_dicts]
         examples = "".join(filled_examples)
@@ -169,19 +169,19 @@ class Prompt:
         user = self.config.user.format(examples=examples, context=context, **input_dict)
         return user
 
-    def build_prompt_dict(self, input_dict: Dict[str, str], generated_solution: str = "") -> List[Dict[str, str]]:
+    def build_structured(self, input_dict: Dict[str, str], generated_solution: str = "") -> List[Dict[str, str]]:
         """Builds a structured representation of the prompt."""
         structured_prompt = [{"role": "system", "content": self.config.system}] if self.config.system else []
-        structured_prompt.append({"role": "user", "content": self.build_examples(input_dict)})
+        structured_prompt.append({"role": "user", "content": self.build_user_message(input_dict)})
         if generated_solution:
             structured_prompt.append({"role": "assistant", "content": generated_solution})
         return structured_prompt
 
-    def build_prompt_string(self, input_dict: Dict[str, str], generated_solution: str = "") -> str:
+    def build_string(self, input_dict: Dict[str, str], generated_solution: str = "") -> str:
         """Returns the complete prompt string representation."""
         prompt = self.config.prompt_template.format(
             system=self.config.system,
-            user=self.build_examples(input_dict),
+            user=self.build_user_message(input_dict),
             generated_solution=generated_solution,
         )
         return prompt

@@ -177,7 +177,7 @@ def prepare_sft_data(cfg: PrepareSFTDataConfig):
             # including all fields in case they are useful for training
             elem = sample.copy()
             # NeMo requires input/output fields
-            elem["input"] = prompt.build_prompt_string(input_dict={"question": question})
+            elem["input"] = prompt.build_string(input_dict={"question": question})
             elem["output"] = elem.pop("generated_solution")
             elem.update(cfg.metadata)
             prepared_data.append(elem)

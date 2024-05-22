@@ -54,7 +54,7 @@ What's the meaning of life?
 
 Rephrase the above question:
 """
-    assert prompt.build_prompt_string({'question': "What's the meaning of life?"}) == expected_prompt
+    assert prompt.build_string({'question': "What's the meaning of life?"}) == expected_prompt
 
 
 def test_augmentation_prompt():
@@ -95,7 +95,7 @@ What's the meaning of life?
 
 Write another question similar to this one:
 """
-    assert prompt.build_prompt_string({'question': "What's the meaning of life?"}) == expected_prompt
+    assert prompt.build_string({'question': "What's the meaning of life?"}) == expected_prompt
 
 
 def test_llama3_instruct_prompt():
@@ -139,7 +139,7 @@ Question:
 2 + 2 = ?
 
 <|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
-    assert prompt.build_prompt_string({'question': '2 + 2 = ?'}) == expected_prompt
+    assert prompt.build_string({'question': '2 + 2 = ?'}) == expected_prompt
 
 
 def test_llama3_base_prompt():
@@ -178,7 +178,7 @@ Question:
 
 My solution:
 """
-    assert prompt.build_prompt_string({'question': '2 + 2 = ?'}) == expected_prompt
+    assert prompt.build_string({'question': '2 + 2 = ?'}) == expected_prompt
 
 
 def test_code_base_prompt():
@@ -217,7 +217,7 @@ Question:
 
 My solution:
 """
-    assert prompt.build_prompt_string({'question': '2 + 2 = ?'}) == expected_prompt
+    assert prompt.build_string({'question': '2 + 2 = ?'}) == expected_prompt
 
 
 def test_code_sfted_prompt():
@@ -230,4 +230,4 @@ User:
 
 Assistant:
 """
-    assert prompt.build_prompt_string({'question': '2 + 2 = ?'}) == expected_prompt
+    assert prompt.build_string({'question': '2 + 2 = ?'}) == expected_prompt

@@ -123,7 +123,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
             if idx == cfg.max_samples:
                 break
 
-            prompts.append(prompt.build_prompt_string(input_dict=data_point))
+            prompts.append(prompt.build_string(input_dict=data_point))
 
             data_points.append(data_point)
 
