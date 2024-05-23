@@ -14,6 +14,7 @@
 
 
 import abc
+import copy
 import json
 import logging
 import os
@@ -122,7 +123,8 @@ class BaseModel(abc.ABC):
     @abc.abstractmethod
     def _single_call(
         self,
-        prompts,
+        prompt,
+        input_dicts,
         tokens_to_generate,
         temperature,
         top_p,
@@ -135,7 +137,8 @@ class BaseModel(abc.ABC):
 
     def __call__(
         self,
-        prompts,
+        prompt,
+        input_dicts,
         tokens_to_generate,
         temperature,
         top_p,
@@ -144,6 +147,8 @@ class BaseModel(abc.ABC):
         random_seed,
         stop_phrases: List[str],
     ):
+        # making a copy of input_dicts to not corrupt original data
+        input_dicts = copy.deepcopy(input_dicts)
         if self.handle_code_execution:
             full_stop_phrases = stop_phrases + ['\n' + CODE_SEPARATORS[-1]]
         else:
@@ -151,6 +156,8 @@ class BaseModel(abc.ABC):
 
         # prompts are added later
         request = {
+            "prompt": prompt,
+            "input_dicts": input_dicts,
             "tokens_to_generate": tokens_to_generate,
             "temperature": temperature,
             "top_k": top_k,
@@ -163,7 +170,6 @@ class BaseModel(abc.ABC):
         # if code execution is handled by the inference framework, we only need to make a single call
         # and then apply postprocessing to extract errors from the output
         if not self.handle_code_execution:
-            request["prompts"] = prompts
             outputs = self._single_call(**request)
             outputs = [
                 {
@@ -179,20 +185,22 @@ class BaseModel(abc.ABC):
         # after executing code and getting result back into the prompt
         new_outputs = [
             {
-                'full_prompt': prompts[idx],
+                'input_dict': input_dicts[idx],
                 'result': None,
                 'error_message': Sandbox.NOT_EXECUTED,
                 'session_id': None,
             }
-            for idx in range(len(prompts))
+            for idx in range(len(input_dicts))
         ]
+        for output in new_outputs:
+            output['input_dict']['generated_solution'] = ''
         remaining_ids = list(range(len(new_outputs)))
         num_executions = 0
 
-        with ThreadPoolExecutor(max_workers=len(prompts)) as executor:
+        with ThreadPoolExecutor(max_workers=len(input_dicts)) as executor:
             while len(remaining_ids) > 0:
                 num_executions += 1
-                request["prompts"] = [new_outputs[idx]['full_prompt'] for idx in remaining_ids]
+                request["input_dicts"] = [new_outputs[idx]['input_dict'] for idx in remaining_ids]
                 outputs = self._single_call(**request)
                 # TODO: remove this when trtllm part is fixed
                 for i in range(len(outputs)):
@@ -200,7 +208,7 @@ class BaseModel(abc.ABC):
                         outputs[i] = re.sub(r">{3,}", ">", outputs[i])
                 new_ids = []
                 # checking if any of the outputs need code execution and submitting requests in parallel
-                futures = [None] * len(prompts)
+                futures = [None] * len(input_dicts)
                 for idx, output in zip(remaining_ids, outputs):
                     if output.strip().endswith(CODE_SEPARATORS[-1]):
                         futures[idx] = executor.submit(
@@ -218,23 +226,23 @@ class BaseModel(abc.ABC):
                         if result['error_message']:
                             new_outputs[idx]['error_message'] = result['error_message']
                             if self.stop_on_code_error:
-                                new_outputs[idx]['full_prompt'].generated_solution += output
+                                new_outputs[idx]['input_dict']['generated_solution'] += output
                                 continue
                             text_only_part = output.split(CODE_SEPARATORS[0])[0]
-                            new_outputs[idx]['full_prompt'].generated_solution += text_only_part
+                            new_outputs[idx]['input_dict']['generated_solution'] += text_only_part
                             code_output = self._recover_from_error(request, new_outputs[idx], executor)
                             # if re-generation did not help
                             if code_output is None:
                                 code_output = result["result"]
-                                new_outputs[idx]['full_prompt'].generated_solution += output[len(text_only_part) :]
+                                new_outputs[idx]['input_dict']['generated_solution'] += output[len(text_only_part) :]
                         else:
-                            new_outputs[idx]['full_prompt'].generated_solution += output
+                            new_outputs[idx]['input_dict']['generated_solution'] += output
                             new_outputs[idx]['error_message'] = ''
                             code_output = result["result"]
 
                         # adding code output to the prompt
                         code_output = f'\n{CODE_OUTPUT_SEPARATORS[0]}\n{code_output}\n{CODE_OUTPUT_SEPARATORS[1]}\n'
-                        new_outputs[idx]['full_prompt'].generated_solution += code_output
+                        new_outputs[idx]['input_dict']['generated_solution'] += code_output
                         # setting a limit on max code executions to speed things up
                         # (sometimes keeps repeating the same sequence forever)
                         if num_executions >= self.max_code_executions:
@@ -242,7 +250,7 @@ class BaseModel(abc.ABC):
                         else:
                             new_ids.append(idx)
                     else:
-                        new_outputs[idx]['full_prompt'].generated_solution += output
+                        new_outputs[idx]['input_dict']['generated_solution'] += output
                 remaining_ids = new_ids
 
         # removing original prompt and stop tokens from the end of the generated text
@@ -250,7 +258,7 @@ class BaseModel(abc.ABC):
         for output in new_outputs:
             if output['session_id'] is not None:
                 self.sandbox.clear_session(output['session_id'])
-            generated_solution = remove_stop_tokens(output['full_prompt'].generated_solution, stop_phrases)
+            generated_solution = remove_stop_tokens(output['input_dict']['generated_solution'], stop_phrases)
             # generated_solution = output['full_prompt'].generated_solution
             outputs.append(
                 {
@@ -262,8 +270,8 @@ class BaseModel(abc.ABC):
         return outputs
 
     def _recover_from_error(self, request, new_output, executor):
-        recovery_request = {key: value for key, value in request.items() if key != 'prompts'}
-        recovery_request['prompts'] = [new_output['full_prompt']]
+        recovery_request = {key: value for key, value in request.items() if key != 'input_dicts'}
+        recovery_request['input_dicts'] = [new_output['input_dict']]
 
         recovery_request['temperature'] = self.error_recovery.temperature
         recovery_request['top_p'] = self.error_recovery.top_p
@@ -309,7 +317,7 @@ class BaseModel(abc.ABC):
 
         most_common = counts.most_common(1)[0][0]
         valid_idx = results.index(most_common)
-        new_output['full_prompt'].generated_solution += outputs[valid_idx]
+        new_output['input_dict']['generated_solution'] += outputs[valid_idx]
         new_output['error_message'] = ''
 
         return most_common
@@ -344,7 +352,8 @@ class BaseModel(abc.ABC):
 class TensorRTLLMModel(BaseModel):
     def _single_call(
         self,
-        prompts,
+        prompt,
+        input_dicts,
         tokens_to_generate,
         temperature,
         top_p,
@@ -353,7 +362,7 @@ class TensorRTLLMModel(BaseModel):
         random_seed,
         stop_phrases: List[str],
     ):
-        string_prompts = [str(prompt) for prompt in prompts]
+        string_prompts = [prompt.build_string(input_dict) for input_dict in input_dicts]
         request = {
             "prompts": string_prompts,
             "tokens_to_generate": tokens_to_generate,
@@ -393,7 +402,8 @@ class NemoModel(BaseModel):
 
     def _single_call(
         self,
-        prompts,
+        prompt,
+        input_dicts,
         tokens_to_generate,
         temperature,
         top_p,
@@ -402,7 +412,7 @@ class NemoModel(BaseModel):
         random_seed,
         stop_phrases: List[str],
     ):
-        string_prompts = [str(prompt) for prompt in prompts]
+        string_prompts = [prompt.build_string(input_dict) for input_dict in input_dicts]
         request = {
             "sentences": string_prompts,
             "tokens_to_generate": tokens_to_generate,
@@ -439,7 +449,8 @@ class OpenAIModel(BaseModel):
 
     def _single_call(
         self,
-        prompts,
+        prompt,
+        input_dicts,
         tokens_to_generate,
         temperature,
         top_p,
@@ -452,9 +463,10 @@ class OpenAIModel(BaseModel):
             raise ValueError("`top_k` is not supported by OpenAI, please set it to default value `0`.")
 
         responses = []
-        for prompt in prompts:
+        for input_dict in input_dicts:
             response = self._send_request(
                 prompt=prompt,
+                input_dict=input_dict,
                 tokens_to_generate=tokens_to_generate,
                 temperature=temperature,
                 top_p=top_p,
@@ -468,6 +480,7 @@ class OpenAIModel(BaseModel):
     def _send_request(
         self,
         prompt: Prompt,
+        input_dict,
         tokens_to_generate,
         temperature,
         top_p,
@@ -475,7 +488,7 @@ class OpenAIModel(BaseModel):
         random_seed,
         stop_phrases: List[str],
     ):
-        messages = prompt.build_structured()
+        messages = prompt.build_structured(input_dict)
         response = self.client.chat.completions.create(
             model=self.model,
             temperature=temperature,

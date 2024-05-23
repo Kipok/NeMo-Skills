@@ -169,16 +169,22 @@ class Prompt:
         user = self.config.user.format(examples=examples, context=context, **input_dict)
         return user
 
-    def build_structured(self, input_dict: Dict[str, str], generated_solution: str = "") -> List[Dict[str, str]]:
-        """Builds a structured representation of the prompt."""
+    def build_structured(self, input_dict: Dict[str, str]) -> List[Dict[str, str]]:
+        """Builds a structured representation of the prompt.
+
+        The "generated_solution" in the input_dict is a special key that will be
+        appended to the structured prompt as an assistant message.
+        """
         structured_prompt = [{"role": "system", "content": self.config.system}] if self.config.system else []
         structured_prompt.append({"role": "user", "content": self.build_user_message(input_dict)})
-        if generated_solution:
-            structured_prompt.append({"role": "assistant", "content": generated_solution})
+        if input_dict.get('generated_solution'):
+            structured_prompt.append({"role": "assistant", "content": input_dict.get('generated_solution')})
         return structured_prompt
 
-    def build_string(self, input_dict: Dict[str, str], generated_solution: str = "") -> str:
+    def build_string(self, input_dict: Dict[str, str]) -> str:
         """Returns the complete prompt string representation."""
+        generated_solution = input_dict.get("generated_solution", "")
+
         prompt = self.config.prompt_template.format(
             system=self.config.system,
             user=self.build_user_message(input_dict),

@@ -117,32 +117,38 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
     # setting buffering=1 to force to dump the output after every line, so that we can see intermediate generations
     with open(cfg.output_file, "at" if cfg.skip_filled else "wt", encoding="utf-8", buffering=1) as fout:
-        prompts = []
         data_points = []
         for idx, data_point in tqdm(enumerate(data), initial=starting_idx, total=len(data) + starting_idx):
             if idx == cfg.max_samples:
                 break
 
-            prompts.append(prompt.build_string(input_dict=data_point))
-
             data_points.append(data_point)
 
-            if len(prompts) == cfg.batch_size:
+            if len(data_points) == cfg.batch_size:
                 # batch-computing the outputs
 
-                outputs = llm(stop_phrases=list(cfg.prompt.stop_phrases), prompts=prompts, **asdict(cfg.inference))
+                outputs = llm(
+                    prompt=prompt,
+                    input_dicts=data_points,
+                    stop_phrases=list(cfg.prompt.stop_phrases),
+                    **asdict(cfg.inference),
+                )
 
                 for output, original_data_point in zip(outputs, data_points):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
                     # all of the ground-truth data to the output file alongside the generated solutions
                     output.update(original_data_point)
                     fout.write(json.dumps(output) + "\n")
-                prompts = []
                 data_points = []
 
         # collecting the final batch
-        if len(prompts) > 0:
-            outputs = llm(stop_phrases=list(cfg.prompt.stop_phrases), prompts=prompts, **asdict(cfg.inference))
+        if len(data_points) > 0:
+            outputs = llm(
+                prompt=prompt,
+                input_dicts=data_points,
+                stop_phrases=list(cfg.prompt.stop_phrases),
+                **asdict(cfg.inference),
+            )
             for output, original_data_point in zip(outputs, data_points):
                 output.update(original_data_point)
                 fout.write(json.dumps(output) + "\n")

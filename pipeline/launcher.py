@@ -157,7 +157,7 @@ def launch_local_job(
     mounts += f" -v {fp.name}:/start.sh"
 
     if tasks_per_node > 1:
-        start_cmd = f"mpirun --allow-run-as-root -np {tasks_per_node} bash /start.sh"
+        start_cmd = f"mpirun -quiet --allow-run-as-root -np {tasks_per_node} bash /start.sh"
     else:
         start_cmd = "bash /start.sh"
 
