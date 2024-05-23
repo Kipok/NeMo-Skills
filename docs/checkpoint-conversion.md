@@ -30,7 +30,7 @@ trtllm-build \
     --max_output_len 512 \
     --max_batch_size <desired batch size>
 
-cp <path to the HF folder>/tokenizer.model <final path for the trtllm checkpoint>/tokenizer.model
+cp <path to the HF folder>/tokenizer* <final path for the trtllm checkpoint>
 ```
 
 Please note that these are just example parameters and we refer you to the

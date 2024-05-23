@@ -15,8 +15,7 @@
 cluster: local
 
 containers:
-  tensorrt_llm: igitman/nemo-skills-trtllm:0.2.0
-  nemo: igitman/nemo-skills-sft:0.2.0
+  tensorrt_llm: gitlab-master.nvidia.com/igitman/nemo_containers:trt-nemotron
   # sandbox is always re-built locally
 
 # change this to "sudo docker" if non-root user access is not set up

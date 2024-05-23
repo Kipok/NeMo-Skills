@@ -267,16 +267,13 @@ class ModeStrategies:
             current_app.config['data_explorer']['prompt']['few_shot_examples'],
         )
 
-        prompt = Prompt(
-            config=prompt_config,
-            input_dict=input_dict,
-            example_dicts=get_examples().get(
-                utils.get('examples_type', None),
-                [],
-            ),
-            context_template=utils['context_template'],
+        prompt = Prompt(config=prompt_config)
+        prompt.context_template = utils['context_template']
+        prompt.few_shot_examples.examples_dicts = get_examples().get(
+            utils.get('examples_type', None),
+            [],
         )
-        return prompt
+        return prompt.build_string(input_dict)
 
     def _get_search_prompt_layout(self) -> dbc.InputGroup:
         return dbc.InputGroup(
