@@ -33,8 +33,17 @@ def design_text_output(text: str, style={}):
         text = conv.convert(text, full=False)
         return html.Div(
             iframe_template(
-                '<link rel="stylesheet" type="text/css" href="assets/ansi_styles.css">',
-                text,
+                '<link rel="stylesheet" type="text/css" href="/assets/ansi_styles.css">',
+                f'<pre>{text}</pre>',
+            ),
+            style=style,
+        )
+    elif 'ipython-input' in text or 'Traceback' in text:
+        text = conv.convert(text.replace('[', '\u001b['), full=False)
+        return html.Div(
+            iframe_template(
+                '<link rel="stylesheet" type="text/css" href="/assets/ansi_styles.css">',
+                f'<pre>{text}</pre>',
             ),
             style=style,
         )
@@ -73,7 +82,7 @@ def design_text_output(text: str, style={}):
 
         # Replace the placeholders with the original math blocks
         for i, block in enumerate(math_blocks):
-            text = text.replace(f'\_\_MATH\_BLOCK\_{i}\_\_', block)
+            text = text.replace(fr'\_\_MATH\_BLOCK\_{i}\_\_', block)
 
         return text.replace('\n', '\n\n')
 

@@ -35,7 +35,9 @@ config_path = os.path.join(os.path.abspath(Path(__file__).parents[1]), "settings
 config = {}
 
 
-@hydra.main(version_base=None, config_path=config_path, config_name="visualization_config")
+@hydra.main(
+    version_base=None, config_path=config_path, config_name="visualization_config"
+)
 def set_config(cfg: VisualizationConfig) -> None:
     global config
 
@@ -103,11 +105,14 @@ set_config()
 server = Flask(__name__)
 server.config.update(config)
 
+assets_path = os.path.join(os.path.dirname(__file__), 'assets')
+
 app = Dash(
     __name__,
     suppress_callback_exceptions=True,
     external_stylesheets=[dbc.themes.BOOTSTRAP],
     server=server,
+    assets_folder=assets_path,
 )
 
 from callbacks.analyze_callbacks import choose_base_model
