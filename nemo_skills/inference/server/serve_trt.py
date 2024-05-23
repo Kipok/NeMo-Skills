@@ -163,8 +163,8 @@ def prepare_stop_words(stop_words_list, tokenizer):
             # words as well as newlines that we commonly use. But note that it's not a universal fix, so this might
             # require refactoring if different stop words are used in the future.
             # Eventually, this needs to be fixed inside TensorRT-LLM itself.
-            ids = tokenizer.encode(word)
-            ids = ids[1:]
+            ids = tokenizer.encode('magic' + word)
+            ids = ids[2:]  # skipping "magic"
 
             if len(ids) == 0:
                 continue
@@ -225,7 +225,17 @@ class TensorRTLLM:
         self.tokenizer, self.pad_id, self.end_id = load_tokenizer(
             tokenizer_dir=model_path, model_name=read_model_name(model_path)
         )
-        self.runner = ModelRunnerCpp.from_dir(engine_dir=model_path, rank=tensorrt_llm.mpi_rank())
+        # tmp fix. TODO: remove this when trtllm fixes that
+        with open(Path(model_path) / 'config.json', 'rt', encoding='utf-8') as fin:
+            cfg = json.load(fin)
+        self.runner = ModelRunnerCpp.from_dir(
+            engine_dir=model_path,
+            rank=tensorrt_llm.mpi_rank(),
+            max_beam_width=cfg['build_config']['max_beam_width'],
+            max_input_len=cfg['build_config']['max_input_len'],
+            max_output_len=cfg['build_config']['max_output_len'],
+            max_batch_size=cfg['build_config']['max_batch_size'],
+        )
 
     @torch.no_grad()
     def forward(
@@ -259,6 +269,7 @@ class TensorRTLLM:
                 stop_words_list=stop_words_list,
                 return_dict=False,
             )
+
             torch.cuda.synchronize()
 
             output = get_output(output_ids, input_lengths, max_output_token, self.tokenizer, self.end_id)

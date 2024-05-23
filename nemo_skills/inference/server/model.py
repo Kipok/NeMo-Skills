@@ -150,7 +150,7 @@ class BaseModel(abc.ABC):
         # making a copy of input_dicts to not corrupt original data
         input_dicts = copy.deepcopy(input_dicts)
         if self.handle_code_execution:
-            full_stop_phrases = stop_phrases + ['\n' + CODE_SEPARATORS[-1]]
+            full_stop_phrases = stop_phrases + [CODE_SEPARATORS[-1] + '\n']
         else:
             full_stop_phrases = stop_phrases
 

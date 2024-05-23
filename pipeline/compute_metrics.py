@@ -137,7 +137,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     correct_answer, wrong_answer, no_answer, total = compute_metrics(
-        args.jsonl_prediction_files, args.allow_incomplete, args.max_samples, args.aggregation_mode
+        args.prediction_jsonl_files, args.allow_incomplete, args.max_samples, args.aggregation_mode
     )
 
     LOG.info(f"Evaluation results for %s", args.prediction_jsonl_files)

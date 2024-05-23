@@ -17,6 +17,7 @@
 # you'd also need 2+ GPUs to run this test
 # the metrics are assuming llama3-8b-base as the model and will fail for other models
 
+import json
 import os
 import subprocess
 import sys
@@ -28,7 +29,7 @@ sys.path.append(str(Path(__file__).absolute().parents[1] / 'pipeline'))
 from compute_metrics import compute_metrics
 
 
-def test_hf_run_eval():
+def test_trtllm_run_eval():
     model_path = os.getenv('NEMO_SKILLS_TEST_TRTLLM_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_TRTLLM_MODEL to run this test")
@@ -56,8 +57,15 @@ python pipeline/run_eval.py \
 
     # running compute_metrics to check that results are expected
     correct_answer, wrong_answer, no_answer, total = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"])
-    print(correct_answer, wrong_answer, no_answer, total)
-    assert correct_answer == 10.0
-    assert wrong_answer == 85.0
-    assert no_answer == 5.0
+    assert correct_answer == 40.0
+    assert wrong_answer == 45.0
+    assert no_answer == 15.0
     assert total == 20
+
+    # double checking that code was actually executed
+    with open(f"{output_path}/gsm8k/output-greedy.jsonl") as fin:
+        data = [json.loads(line) for line in fin]
+
+    for elem in data:
+        assert '<llm-code>' in elem['generated_solution']
+        assert elem['error_message'] != '<not_executed>'
