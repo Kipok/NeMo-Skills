@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import sys
 from argparse import ArgumentParser
 from datetime import datetime
@@ -28,6 +29,7 @@ from nemo_skills.utils import setup_logging
 # which contains most of the important parameters
 SLURM_CMD = """
 export WANDB_API_KEY={WANDB_API_KEY} \
+&& export HF_TOKEN={HF_TOKEN} \
 && export HYDRA_FULL_ERROR=1 \
 && echo "Starting training" \
 && export PYTHONPATH=$PYTHONPATH:/code \
@@ -104,6 +106,7 @@ if __name__ == "__main__":
         "extra_arguments": extra_arguments,
         "timeout": timeout,
         "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
+        "HF_TOKEN": os.getenv("HF_TOKEN", ""),  # needed for some of the models, so making an option to pass it in
     }
     fill_env_vars(format_dict, ["NEMO_SKILLS_DATA"])
     if not args.disable_wandb:

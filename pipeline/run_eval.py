@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
@@ -75,6 +76,7 @@ SLURM_CMD = """
 nvidia-smi && \
 cd /code && \
 export PYTHONPATH=$PYTHONPATH:/code && \
+export HF_TOKEN={HF_TOKEN} && \
 {server_start_cmd} && \
 if [ $SLURM_PROCID -eq 0 ]; then \
     echo "Waiting for the server to start" && \
@@ -145,6 +147,7 @@ if __name__ == "__main__":
         "server_start_cmd": server_start_cmd,
         "server_type": args.server_type,
         "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
+        "HF_TOKEN": os.getenv("HF_TOKEN", ""),  # needed for some of the models, so making an option to pass it in
     }
 
     Path(args.output_dir).mkdir(exist_ok=True, parents=True)
