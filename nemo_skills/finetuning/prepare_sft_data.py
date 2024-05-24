@@ -98,22 +98,24 @@ class PrepareSFTDataConfig:
             self.preprocessed_dataset_files = self.preprocessed_dataset_files.split(" ")
 
 
-def read_preprocessed_data(file_paths, grouped_samples: Dict[str, List]):
+def read_preprocessed_data(file_paths, grouped_samples: Dict[str, List]) -> int:
+    questions = set()
     for file_path in file_paths:
         with open(file_path, "rt", encoding="utf-8") as file_handle:
             for line in tqdm.tqdm(file_handle):
                 sample = json.loads(line)
                 grouped_samples[sample["question"]].append(sample)
 
+    return len(questions)
 
-def read_raw_data(file_handles, cfg: PrepareSFTDataConfig, grouped_samples: Dict[str, List]):
-    data_size = 0
+
+def read_raw_data(file_handles, cfg: PrepareSFTDataConfig, grouped_samples: Dict[str, List]) -> int:
+    questions = set()
     for idx, lines in tqdm.tqdm(enumerate(zip_longest(*file_handles))):
         if idx < cfg.skip_first:
             continue
-        data_size += 1
 
-        seen_predictions = set()
+        seen_predictions = {}
         for file_line in lines:
             # if different files have different number of lines
             if file_line is None:
@@ -122,6 +124,11 @@ def read_raw_data(file_handles, cfg: PrepareSFTDataConfig, grouped_samples: Dict
             # can be empty for incomplete generations
             if not line_dict:
                 continue
+
+            questions.add(line_dict["question"])
+            if line_dict["question"] not in seen_predictions:
+                seen_predictions[line_dict["question"]] = set()
+
             # skipping any incomplete generations
             if "is_correct" not in line_dict:
                 LOG.warning("Found incomplete generations (is_correct field is missing) - skipping")
@@ -133,12 +140,13 @@ def read_raw_data(file_handles, cfg: PrepareSFTDataConfig, grouped_samples: Dict
             if not cfg.add_incorrect and not line_dict["is_correct"]:
                 continue
 
-            if line_dict["generated_solution"] in seen_predictions:
+            if line_dict["generated_solution"] in seen_predictions[line_dict["question"]]:
                 continue
-            seen_predictions.add(line_dict["generated_solution"])
+
+            seen_predictions[line_dict["question"]].add(line_dict["generated_solution"])
             grouped_samples[line_dict["question"]].append(line_dict)
 
-    return data_size
+    return len(questions)
 
 
 cs = hydra.core.config_store.ConfigStore.instance()
@@ -150,16 +158,16 @@ def prepare_sft_data(cfg: PrepareSFTDataConfig):
     cfg = PrepareSFTDataConfig(_init_nested=True, **cfg)
     LOG.info("Config used: %s", cfg)
 
-    data_size = None
+    data_size = 0
     grouped_samples = defaultdict(list)
     if cfg.preprocessed_dataset_files:
-        read_preprocessed_data(cfg.preprocessed_dataset_files, grouped_samples)
+        data_size += read_preprocessed_data(cfg.preprocessed_dataset_files, grouped_samples)
 
     if cfg.prediction_jsonl_files:
         file_handles = [
             open(manifest, "rt", encoding="utf-8") for manifest in unroll_files(cfg.prediction_jsonl_files)
         ]
-        data_size = read_raw_data(file_handles, cfg, grouped_samples)
+        data_size += read_raw_data(file_handles, cfg, grouped_samples)
         for handle in file_handles:
             handle.close()
 
@@ -189,8 +197,7 @@ def prepare_sft_data(cfg: PrepareSFTDataConfig):
             [samples_per_question, np.zeros(data_size - len(samples_per_question), dtype=int)]
         )
     LOG.info("Total SFT entries: %d", len(prepared_data))
-    if data_size is not None:
-        LOG.info("Dataset coverage: %.2f%%", 100 * total_covered / data_size)
+    LOG.info("Dataset coverage: %.2f%%", 100 * total_covered / data_size)
     LOG.info("Samples per question = %.2f ± %.2f", samples_per_question.mean(), samples_per_question.std())
     random.shuffle(prepared_data)
 
