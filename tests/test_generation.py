@@ -55,13 +55,6 @@ python pipeline/run_eval.py \
         shell=True,
     )  # not checking the error as it's expected to finish with non-zero error code
 
-    # running compute_metrics to check that results are expected
-    correct_answer, wrong_answer, no_answer, total = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"])
-    assert correct_answer == 40.0
-    assert wrong_answer == 45.0
-    assert no_answer == 15.0
-    assert total == 20
-
     # double checking that code was actually executed
     with open(f"{output_path}/gsm8k/output-greedy.jsonl") as fin:
         data = [json.loads(line) for line in fin]
@@ -69,3 +62,10 @@ python pipeline/run_eval.py \
     for elem in data:
         assert '<llm-code>' in elem['generated_solution']
         assert elem['error_message'] != '<not_executed>'
+
+    # running compute_metrics to check that results are expected
+    correct_answer, wrong_answer, no_answer, total = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"])
+    assert correct_answer == 40.0
+    assert wrong_answer == 45.0
+    assert no_answer == 15.0
+    assert total == 20

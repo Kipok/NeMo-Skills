@@ -172,6 +172,16 @@ def prepare_stop_words(stop_words_list, tokenizer):
             item_flat_ids += ids
             item_offsets.append(len(ids))
 
+            # another processing is required for nemotron models
+            ids = tokenizer.encode(word)
+            ids = ids[1:]
+
+            if len(ids) == 0:
+                continue
+
+            item_flat_ids += ids
+            item_offsets.append(len(ids))
+
         flat_ids.append(np.array(item_flat_ids))
         offsets.append(np.cumsum(np.array(item_offsets)))
 
