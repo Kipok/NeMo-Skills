@@ -49,9 +49,6 @@ def get_default_prompt_config():
         encoding="utf-8",
     ) as fin:
         prompt_config = PromptConfig(_init_nested=True, **yaml.safe_load(fin))
-    prompt_config.context_type = "empty"
-    prompt_config.few_shot_examples.examples_type = "gsm8k_text_with_code"  # not used since num_few_shots = 0
-    prompt_config.few_shot_examples.num_few_shots = 0
     return prompt_config
 
 
@@ -116,7 +113,7 @@ def read_raw_data(file_handles, cfg: PrepareSFTDataConfig, grouped_samples: Dict
             continue
 
         seen_predictions = {}
-        for file_line in lines:
+        for lidx, file_line in enumerate(lines):
             # if different files have different number of lines
             if file_line is None:
                 continue
@@ -144,6 +141,7 @@ def read_raw_data(file_handles, cfg: PrepareSFTDataConfig, grouped_samples: Dict
                 continue
 
             seen_predictions[line_dict["question"]].add(line_dict["generated_solution"])
+            line_dict['filename'] = file_handles[lidx].name
             grouped_samples[line_dict["question"]].append(line_dict)
 
     return len(questions)
