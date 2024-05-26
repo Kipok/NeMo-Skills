@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import json
+import logging
 from dataclasses import asdict, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -21,6 +22,8 @@ from omegaconf import MISSING, OmegaConf
 
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
 from nemo_skills.utils import nested_dataclass
+
+LOG = logging.getLogger(__file__)
 
 # listing all available configs here
 prompt_types = [cfg.stem for cfg in Path(__file__).parent.glob("*.yaml")]
@@ -58,6 +61,9 @@ class FewShotExamplesConfig:
 
     retrieval_field: Optional[str] = None  # e.g. question, reference_solution, etc.
     retrieval_file: Optional[str] = None  # needs to be provided if retrieval_field is not None
+    retrieved_entries: Optional[int] = -1
+    max_retrieved_chars: int = 100000000  # no limit by default
+    max_retrieved_chars_field: str = "reference_solution"
     retriever: Optional[Any] = None
 
     def __post_init__(self):
@@ -99,6 +105,9 @@ class FewShotExamplesConfig:
 
         if self.example_dicts is not None and self.retriever is not None:
             raise ValueError("example_dicts and retriever cannot be used together")
+
+        if self.retrieved_entries == -1:
+            self.retrieved_entries = 2 * self.num_few_shots
 
 
 @nested_dataclass
@@ -144,17 +153,27 @@ class Prompt:
         example_dicts = self.config.few_shot_examples.retriever.retrieve(
             query=input_dict[self.config.few_shot_examples.retrieval_field],
             # getting 2 times more to account for potential duplicates. This assumes there are not too many of them
-            top_k=self.config.few_shot_examples.num_few_shots * 2,
+            top_k=self.config.few_shot_examples.retrieved_entries,
         )
         reference = input_dict[self.config.few_shot_examples.retrieval_field]
         # filtering exact match if it's there
         while example_dicts[0][self.config.few_shot_examples.retrieval_field] == reference:
             example_dicts = example_dicts[1:]
 
-        # if still has a match, let's error out for now
-        for example_dict in example_dicts:
-            if example_dict[self.config.few_shot_examples.retrieval_field] == reference:
-                raise ValueError("Exact match found in retrieved examples")
+        # removing too long solutions
+        example_dicts = [
+            example_dict
+            for example_dict in example_dicts
+            if len(example_dict[self.config.few_shot_examples.max_retrieved_chars_field])
+            < self.config.few_shot_examples.max_retrieved_chars
+        ]
+
+        if len(example_dicts) < self.config.few_shot_examples.num_few_shots:
+            LOG.warning(
+                'Too little examples (%d) found for the query "%s"',
+                len(example_dicts),
+                input_dict[self.config.few_shot_examples.retrieval_field],
+            )
 
         # let's reverse the order to show the most relevant last
         return example_dicts[: self.config.few_shot_examples.num_few_shots][::-1]
