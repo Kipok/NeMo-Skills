@@ -101,6 +101,7 @@ def read_preprocessed_data(file_paths, grouped_samples: Dict[str, List]) -> int:
         with open(file_path, "rt", encoding="utf-8") as file_handle:
             for line in tqdm.tqdm(file_handle):
                 sample = json.loads(line)
+                questions.add(sample["question"])
                 grouped_samples[sample["question"]].append(sample)
 
     return len(questions)
