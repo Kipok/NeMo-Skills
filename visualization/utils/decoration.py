@@ -49,42 +49,59 @@ def design_text_output(text: str, style={}):
         )
 
     def preprocess_latex(text):
-        # Replace \[ and \] with $$ $$
-        text = re.sub(r'\\\[', '\n$$', text)
-        text = re.sub(r'\\\]', '$$\n', text)
+        text = text.replace('\\[', '\n$$\n').replace('\\]', '\n$$\n')
 
-        reg_exp = r'(?:\$\$(?:.|\n)*?\$\$|\$(?!\s)(?:[^$\n]|\\\$)*?(?<!\s)\$)'
+        special_chars = set(r'*_{}[]()#+-.!')
+        begin_tag = '\\begin'
+        end_tag = '\\end'
+        begin_tag_index = -1
+        math_block_flags = {'$$': False, '$': False}
+        begin_end_counter = 0
+        index = 0
+        string_modifications = [(0, "")]
 
-        # Extract blocks inside $$ $$ and $ $
-        math_blocks = re.findall(reg_exp, text, flags=re.DOTALL)
+        def handle_braces(index):
+            while index < len(text) and text[index] == '{':
+                while index < len(text) and text[index] != '}':
+                    index += 1
+                if index < len(text) - 1 and text[index + 1] == '{':
+                    index += 1
+            return index
 
-        # Replace the math blocks with placeholders
-        for i, block in enumerate(math_blocks):
-            text = text.replace(block, f'__MATH_BLOCK_{i}__')
+        while index < len(text):
+            if text.startswith(begin_tag, index):
+                if begin_end_counter == 0:
+                    begin_tag_index = index
+                begin_end_counter += 1
+                index += len(begin_tag)
+                index = handle_braces(index)
+            elif text.startswith(end_tag, index):
+                begin_end_counter -= 1
+                index += len(end_tag)
+                index = handle_braces(index)
+                if begin_end_counter == 0:
+                    string_modifications.append((begin_tag_index, "\n$$\n"))
+                    string_modifications.append((index + 1, "\n$$\n"))
+            elif text.startswith("$$", index):
+                math_block_flags['$$'] = not math_block_flags['$$']
+                index += 1
+            elif text[index] == "$":
+                math_block_flags['$'] = not math_block_flags['$']
+            elif not any(math_block_flags.values()) and begin_end_counter == 0:
+                if text[index] in special_chars:
+                    string_modifications.append((index, "\\"))
+            index += 1
 
-        # Add $$ $$ around \begin{} and \end{} blocks
-        text = re.sub(r'\\begin\{(.*?)\}', r'\n$$\\begin{\1}', text)
-        text = re.sub(r'\\end\{(.*?)\}', r'\\end{\1}$$\n', text)
+        string_pieces = []
+        string_modifications.sort()
+        for i in range(len(string_modifications)):
+            if i != 0:
+                start, end = string_modifications[i - 1][0], string_modifications[i][0]
+                string_pieces.append(text[start:end])
+                string_pieces.append(string_modifications[i][1])
+        string_pieces.append(text[string_modifications[-1][0] :])
 
-        # Replace the placeholders with the original math blocks
-        for i, block in enumerate(math_blocks):
-            text = text.replace(f'__MATH_BLOCK_{i}__', block)
-
-        # Extract all blocks (including our custom blocks) inside $$ $$ and $ $
-        math_blocks = re.findall(reg_exp, text, flags=re.DOTALL)
-
-        # Replace the math blocks with placeholders
-        for i, block in enumerate(math_blocks):
-            text = text.replace(block, f'__MATH_BLOCK_{i}__')
-
-        # Escape plain text outside of math blocks
-        text = re.sub(r'([*_{}[\]()#+\-\.!])', r'\\\1', text)
-
-        # Replace the placeholders with the original math blocks
-        for i, block in enumerate(math_blocks):
-            text = text.replace(fr'\_\_MATH\_BLOCK\_{i}\_\_', block)
-
-        return text.replace('\n', '\n\n')
+        return "".join(string_pieces)
 
     return html.Div(
         dcc.Markdown(preprocess_latex(text), mathjax=True, dangerously_allow_html=True),
