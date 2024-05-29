@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import json
 import os
 import urllib.request
@@ -30,10 +31,24 @@ URL = "https://raw.githubusercontent.com/lupantech/PromptPG/main/data/tabmwp/pro
 
 
 if __name__ == "__main__":
-    data_folder = Path(__file__).absolute().parent
-    data_folder.mkdir(exist_ok=True)
-    original_file = str(data_folder / f"original_test.json")
-    output_file = str(data_folder / f"test.jsonl")
+    parser = argparse.ArgumentParser(
+        "Reads TabMWP data and converts it to a format readable by the llm-structured-data scripts."
+    )
+    parser.add_argument("--data", default=f"{Path(__file__).absolute().parent / 'original' / 'test.jsonl'}",
+        help="Path to JSON file with TabMWP data. Will automatically download if not found."
+    )
+    parser.add_argument("--output", type=str, default=f"{Path(__file__).absolute().parent / 'test.jsonl'}",
+        help="Path to where the output file will be written."
+    )
+    args = parser.parse_args()
+
+    if not os.path.exists(args.data):
+        os.makedirs(os.path.dirname(args.data), exist_ok=True)
+        os.system(f"wget {URL} -O {args.data}")
+
+    original_file = args.data
+    output_file = args.output
+
     question_template = "Read the following table and then answer the question that follows.\n{table}\n\n{question}"
 
     if not os.path.exists(original_file):
@@ -54,6 +69,8 @@ if __name__ == "__main__":
                 question=question,
                 expected_answer=original_entry["answer"],
                 reference_solution=original_entry["solution"],
+                table_title=original_entry["table_title"],
+                table=original_entry["table_for_pd"],
                 grade=original_entry["grade"],
             )
 

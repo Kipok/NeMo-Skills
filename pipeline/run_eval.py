@@ -45,14 +45,13 @@ def get_greedy_cmd(benchmark, output_name='output-greedy.jsonl', extra_eval_args
     return f"""echo "Evaluating benchmark {benchmark}" && \
 python nemo_skills/inference/generate_solutions.py \
     server.server_type={{server_type}} \
-    prompt.context_type=empty \
+    prompt.context_type={{context_type}} \
     +dataset={benchmark} \
     output_file=/results/{benchmark}/{output_name} \
     {extra_arguments} && \
 python nemo_skills/evaluation/evaluate_results.py \
     prediction_jsonl_files=/results/{benchmark}/{output_name} {extra_eval_args} && \
 """
-
 
 def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments=""):
     extra_arguments = f" inference.random_seed={random_seed} inference.temperature=0.7 {extra_arguments}"
@@ -68,6 +67,7 @@ def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments
 BENCHMARKS = {
     "gsm8k": 8,
     "math": 4,
+    "tabmwp": 4,
 }
 
 # TODO: remove backoff installation after it gets into docker
@@ -98,6 +98,7 @@ if __name__ == "__main__":
     wrapper_args.add_argument("--model_path", required=True)
     wrapper_args.add_argument("--server_type", choices=('nemo', 'tensorrt_llm'), default='tensorrt_llm')
     wrapper_args.add_argument("--output_dir", required=True)
+    wrapper_args.add_argument("--context_type", default="empty")
     wrapper_args.add_argument("--num_gpus", type=int, required=True)
     wrapper_args.add_argument("--starting_seed", type=int, default=0)
     wrapper_args.add_argument(
@@ -139,6 +140,7 @@ if __name__ == "__main__":
         "num_gpus": args.num_gpus,
         "server_start_cmd": server_start_cmd,
         "server_type": args.server_type,
+        "context_type": args.context_type,
         "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
     }
 
@@ -164,7 +166,7 @@ if __name__ == "__main__":
     eval_cmds = [" ".join(eval_cmds[i :: args.num_nodes]) for i in range(args.num_nodes)]
 
     for idx, eval_cmd in enumerate(eval_cmds):
-        extra_sbatch_args = ["--parsable", f"--output={args.output_dir}/slurm_logs_eval{idx}.log"]
+        extra_sbatch_args = ["--parsable", f"--output={args.output_dir}/slurm_logs_eval{idx}.log", f"--nv-meta ml-model.llm-reasoning "]
         launch_job(
             cmd=SLURM_CMD.format(**format_dict, eval_cmds=eval_cmd.format(**format_dict)),
             num_nodes=1,
