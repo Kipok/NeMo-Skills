@@ -17,9 +17,11 @@
 
 import json
 import logging
+import re
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
+from typing import List
 
 import numpy as np
 import tensorrt_llm
@@ -27,8 +29,14 @@ import torch
 from flask import Flask, jsonify, request
 from flask_restful import Api, Resource
 from mpi4py import MPI
-from tensorrt_llm.runtime import ModelRunnerCpp
+from tensorrt_llm.runtime import ModelRunner
 from transformers import AutoTokenizer, T5Tokenizer
+
+
+# keeping it here to make this file self-contained. This is duplicated from model.py
+def remove_stop_tokens(text: str, stop_phrases: List[str]) -> str:
+    """Removes everything after the last stop token."""
+    return re.split("|".join([sp.replace('|', '\\|') for sp in stop_phrases]), text, maxsplit=1)[0]
 
 
 class CustomSentencePieceTokenizer(T5Tokenizer):
@@ -130,25 +138,29 @@ def parse_input(input_texts: str, tokenizer):
     return batch_input_ids, input_lengths
 
 
+def get_output_single(output_ids, input_length, max_output_len, tokenizer, eos_token):
+    output_begin = input_length
+    output_end = input_length + max_output_len
+    outputs = output_ids[output_begin:output_end]
+    eos_ids = (outputs == eos_token).nonzero(as_tuple=True)[-1]
+    if len(eos_ids) > 0:
+        outputs = outputs[: eos_ids[0]]
+    outputs = outputs.tolist()
+    outputs = [elem if elem < tokenizer.vocab_size else tokenizer.vocab_size - 1 for elem in outputs]
+    outputs = [elem if 0 <= elem else 0 for elem in outputs]
+    return tokenizer.decode(outputs)
+
+
 def get_output(output_ids, input_lengths, max_output_len, tokenizer, eos_token):
     num_beams = output_ids.size(1)
     assert num_beams == 1
     output_texts = []
     for idx, input_len in enumerate(input_lengths):
-        output_begin = input_len
-        output_end = input_len + max_output_len
-        outputs = output_ids[idx][0][output_begin:output_end]
-        eos_ids = (outputs == eos_token).nonzero(as_tuple=True)[-1]
-        if len(eos_ids) > 0:
-            outputs = outputs[: eos_ids[0]]
-        outputs = outputs.tolist()
-        outputs = [elem if elem < tokenizer.vocab_size else tokenizer.vocab_size - 1 for elem in outputs]
-        outputs = [elem if 0 <= elem else 0 for elem in outputs]
-        output_texts.append(tokenizer.decode(outputs))
+        output_texts.append(get_output_single(output_ids[idx, 0], input_len, max_output_len, tokenizer, eos_token))
     return output_texts
 
 
-def prepare_stop_words(stop_words_list, tokenizer):
+def prepare_stop_words(stop_words_list, tokenizer, model_name):
     # adapted from https://github.com/NVIDIA/TensorRT-LLM/blob/b310ec675145c9ee7668592549f733df4abf1e94/tensorrt_llm/runtime/generation.py#L46
     flat_ids = []
     offsets = []
@@ -163,18 +175,14 @@ def prepare_stop_words(stop_words_list, tokenizer):
             # words as well as newlines that we commonly use. But note that it's not a universal fix, so this might
             # require refactoring if different stop words are used in the future.
             # Eventually, this needs to be fixed inside TensorRT-LLM itself.
-            ids = tokenizer.encode('magic' + word)
-            ids = ids[2:]  # skipping "magic"
-
-            if len(ids) == 0:
-                continue
-
-            item_flat_ids += ids
-            item_offsets.append(len(ids))
-
-            # another processing is required for nemotron models
-            ids = tokenizer.encode(word)
-            ids = ids[1:]
+            if model_name == 'gpt-next':
+                # another processing is required for nemotron models
+                ids = tokenizer.encode(word)
+                ids = ids[1:]
+            else:
+                ids = tokenizer.encode('magic' + word)
+                # ids = ids[1:]
+                ids = ids[2:]  # skipping "magic"
 
             if len(ids) == 0:
                 continue
@@ -232,19 +240,18 @@ def read_model_name(engine_dir: str):
 
 class TensorRTLLM:
     def __init__(self, model_path: str):
-        self.tokenizer, self.pad_id, self.end_id = load_tokenizer(
-            tokenizer_dir=model_path, model_name=read_model_name(model_path)
-        )
+        self.model_name = read_model_name(model_path)
+        self.tokenizer, self.pad_id, self.end_id = load_tokenizer(tokenizer_dir=model_path, model_name=self.model_name)
         # tmp fix. TODO: remove this when trtllm fixes that
         with open(Path(model_path) / 'config.json', 'rt', encoding='utf-8') as fin:
             cfg = json.load(fin)
-        self.runner = ModelRunnerCpp.from_dir(
+        self.runner = ModelRunner.from_dir(
             engine_dir=model_path,
             rank=tensorrt_llm.mpi_rank(),
-            max_beam_width=cfg['build_config']['max_beam_width'],
-            max_input_len=cfg['build_config']['max_input_len'],
-            max_output_len=cfg['build_config']['max_output_len'],
-            max_batch_size=cfg['build_config']['max_batch_size'],
+            # max_beam_width=cfg['build_config']['max_beam_width'],
+            # max_input_len=cfg['build_config']['max_input_len'],
+            # max_output_len=cfg['build_config']['max_output_len'],
+            # max_batch_size=cfg['build_config']['max_batch_size'],
         )
 
     @torch.no_grad()
@@ -259,14 +266,15 @@ class TensorRTLLM:
         random_seed,
         stop_words_list,
     ):
+        assert len(input_texts) == 1
         batch_input_ids, input_lengths = parse_input(input_texts, self.tokenizer)
 
-        stop_words_list = [stop_words_list for _ in range(len(input_texts))]
-        stop_words_list = prepare_stop_words(stop_words_list, self.tokenizer)
+        # stop_words_list = [stop_words_list for _ in range(len(input_texts))]
+        # stop_words_list = prepare_stop_words(stop_words_list, self.tokenizer, self.model_name)
 
         # TODO: return dictionary with a proper error reporting
         try:
-            output_ids = self.runner.generate(
+            output_generator = self.runner.generate(
                 batch_input_ids,
                 max_new_tokens=max_output_token,
                 end_id=self.end_id,
@@ -276,13 +284,37 @@ class TensorRTLLM:
                 top_p=top_p,
                 repetition_penalty=repetition_penalty,
                 random_seed=random_seed,
-                stop_words_list=stop_words_list,
-                return_dict=False,
+                stop_words_list=None,
+                return_dict=True,
+                output_sequence_lengths=True,
+                streaming=True,
             )
-
             torch.cuda.synchronize()
+            # checking the last 20 tokens for stop words
+            num_tokens_to_check = 20
+            matching_stop_word = None
+            for idx, output in enumerate(output_generator, 1):
+                # checking every half of the required tokens to have overlapping checks
+                if idx < num_tokens_to_check - 1 or idx % (num_tokens_to_check // 2) != 0:
+                    continue
+                seq_length = output['sequence_lengths']
+                generation_suffix = output['output_ids'][0, 0, seq_length[0] - num_tokens_to_check : seq_length[0]]
+                output_string = get_output_single(
+                    generation_suffix, 0, num_tokens_to_check, self.tokenizer, self.end_id
+                )
+                for stop_word in stop_words_list:
+                    if stop_word in output_string:
+                        matching_stop_word = stop_word
+                        break
 
-            output = get_output(output_ids, input_lengths, max_output_token, self.tokenizer, self.end_id)
+                if matching_stop_word is not None:
+                    break
+
+            output = get_output(output['output_ids'], input_lengths, seq_length[0], self.tokenizer, self.end_id)
+            if matching_stop_word is not None:
+                output[0] = remove_stop_tokens(output[0], stop_words_list)
+                # adding it back, since we only need to remove what's *after* the stop phrase
+                output[0] += matching_stop_word
         except RuntimeError as e:
             logging.error("RuntimeError: %s", e)
             output = [f"RuntimeError: {e}"] * len(input_texts)

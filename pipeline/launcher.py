@@ -53,15 +53,14 @@ def get_server_command(server_type, num_gpus, num_nodes=1):
             f"trainer.num_nodes={num_nodes} "
             f"tensor_model_parallel_size={num_gpus} "
             f"pipeline_model_parallel_size={num_nodes} "
-            "> /tmp/server_logs.txt &)"
-        )
+            "> /tmp/server_logs.txt &) && sleep 1"
+        )  # nemo generates a lot of output in the logs, so we are not streaming stdout by default
         # somehow on slurm nemo needs multiple tasks, but locally only 1
         if CLUSTER_CONFIG["cluster"] == "local":
             num_tasks = 1
     else:
-        server_start_cmd = (
-            f"(python /code/nemo_skills/inference/server/serve_trt.py --model_path /model > /tmp/server_logs.txt &)"
-        )
+        # adding sleep to ensure the logs file exists
+        server_start_cmd = f"(python /code/nemo_skills/inference/server/serve_trt.py --model_path /model | tee /tmp/server_logs.txt &) && sleep 1"
         num_tasks = num_gpus
 
     return server_start_cmd, num_tasks

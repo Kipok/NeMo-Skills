@@ -44,6 +44,11 @@ LOG = logging.getLogger(__name__)
 #       that require additional code executions
 
 
+def remove_stop_tokens(text: str, stop_phrases: List[str]) -> str:
+    """Removes everything after the last stop token."""
+    return re.split("|".join([sp.replace('|', '\\|') for sp in stop_phrases]), text, maxsplit=1)[0]
+
+
 @nested_dataclass
 class ErrorRecoveryConfig:
     # Number of attempts to recover from code execution error
@@ -58,10 +63,6 @@ class ErrorRecoveryConfig:
     top_p: float = 0.95
     # Top-k for recovery requests
     top_k: int = 0
-
-
-def remove_stop_tokens(text: str, stop_phrases: List[str]) -> str:
-    return re.split("|".join([sp.replace('|', '\\|') for sp in stop_phrases]), text, maxsplit=1)[0]
 
 
 class BaseModel(abc.ABC):
@@ -150,7 +151,7 @@ class BaseModel(abc.ABC):
         # making a copy of input_dicts to not corrupt original data
         input_dicts = copy.deepcopy(input_dicts)
         if self.handle_code_execution:
-            full_stop_phrases = stop_phrases + ['\n' + CODE_SEPARATORS[-1] + '\n']
+            full_stop_phrases = stop_phrases + [CODE_SEPARATORS[-1]]
         else:
             full_stop_phrases = stop_phrases
 
@@ -259,7 +260,7 @@ class BaseModel(abc.ABC):
             if output['session_id'] is not None:
                 self.sandbox.clear_session(output['session_id'])
             generated_solution = remove_stop_tokens(output['input_dict']['generated_solution'], stop_phrases)
-            # generated_solution = output['full_prompt'].generated_solution
+            generated_solution = output['input_dict']['generated_solution']
             outputs.append(
                 {
                     'generated_solution': generated_solution,

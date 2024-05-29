@@ -47,7 +47,7 @@ python pipeline/run_eval.py \
     ++prompt.few_shot_examples.examples_type=gsm8k_text_with_code \
     ++prompt.few_shot_examples.num_few_shots=5 \
     ++split_name=test \
-    batch_size=8 \
+    batch_size=1 \
     max_samples=20 \
 """
     subprocess.run(
