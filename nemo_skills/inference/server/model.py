@@ -260,7 +260,6 @@ class BaseModel(abc.ABC):
             if output['session_id'] is not None:
                 self.sandbox.clear_session(output['session_id'])
             generated_solution = remove_stop_tokens(output['input_dict']['generated_solution'], stop_phrases)
-            generated_solution = output['input_dict']['generated_solution']
             outputs.append(
                 {
                     'generated_solution': generated_solution,

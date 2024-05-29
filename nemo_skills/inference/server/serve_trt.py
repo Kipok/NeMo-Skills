@@ -15,6 +15,7 @@
 # adapted from https://github.com/NVIDIA/TensorRT-LLM/blob/v0.7.1/examples/run.py
 
 
+import asyncio
 import json
 import logging
 import re
@@ -64,7 +65,7 @@ class CustomSentencePieceTokenizer(T5Tokenizer):
         return self.sp_model.decode([token_ids])[0]
 
 
-class TritonServerGenerate(Resource):
+class TrtServerGenerate(Resource):
     def __init__(self, model):
         self.model = model
         self.comm = MPI.COMM_WORLD
@@ -160,49 +161,6 @@ def get_output(output_ids, input_lengths, max_output_len, tokenizer, eos_token):
     return output_texts
 
 
-def prepare_stop_words(stop_words_list, tokenizer, model_name):
-    # adapted from https://github.com/NVIDIA/TensorRT-LLM/blob/b310ec675145c9ee7668592549f733df4abf1e94/tensorrt_llm/runtime/generation.py#L46
-    flat_ids = []
-    offsets = []
-    for batch_stop_words in stop_words_list:
-        item_flat_ids = []
-        item_offsets = []
-
-        for word in batch_stop_words:
-            # there is a known issue in TensorRT-LLM that word ids are not unique and might change depending on
-            # where in the text it appears. In our case we mainly need to stop on ids as they appear in the middle
-            # of the text. The following is a workaround to get such ids that works for both <TOKEN> kind of stop
-            # words as well as newlines that we commonly use. But note that it's not a universal fix, so this might
-            # require refactoring if different stop words are used in the future.
-            # Eventually, this needs to be fixed inside TensorRT-LLM itself.
-            if model_name == 'gpt-next':
-                # another processing is required for nemotron models
-                ids = tokenizer.encode(word)
-                ids = ids[1:]
-            else:
-                ids = tokenizer.encode('magic' + word)
-                # ids = ids[1:]
-                ids = ids[2:]  # skipping "magic"
-
-            if len(ids) == 0:
-                continue
-
-            item_flat_ids += ids
-            item_offsets.append(len(ids))
-
-        flat_ids.append(np.array(item_flat_ids))
-        offsets.append(np.cumsum(np.array(item_offsets)))
-
-    pad_to = max(1, max(len(ids) for ids in flat_ids))
-
-    for i, (ids, offs) in enumerate(zip(flat_ids, offsets)):
-        flat_ids[i] = np.pad(ids, (0, pad_to - len(ids)), constant_values=0)
-        offsets[i] = np.pad(offs, (0, pad_to - len(offs)), constant_values=-1)
-
-    stop_words = np.array([flat_ids, offsets], dtype="int32").transpose((1, 0, 2))
-    return torch.Tensor(stop_words).to(torch.int32).to("cuda").contiguous()
-
-
 def load_tokenizer(tokenizer_dir: str, model_name: str):
     if model_name == 'gpt-next':
         tokenizer = CustomSentencePieceTokenizer(str(Path(tokenizer_dir) / 'tokenizer.model'))
@@ -224,10 +182,7 @@ def load_tokenizer(tokenizer_dir: str, model_name: str):
     return tokenizer, pad_id, end_id
 
 
-def read_model_name(engine_dir: str):
-    with open(Path(engine_dir) / "config.json", 'r') as f:
-        config = json.load(f)
-
+def read_model_name(config):
     name = config['pretrained_config']['architecture'].lower()
     name_map = {
         'MistralForCausalLM'.lower(): 'mistral',
@@ -240,24 +195,20 @@ def read_model_name(engine_dir: str):
 
 class TensorRTLLM:
     def __init__(self, model_path: str):
-        self.model_name = read_model_name(model_path)
-        self.tokenizer, self.pad_id, self.end_id = load_tokenizer(tokenizer_dir=model_path, model_name=self.model_name)
-        # tmp fix. TODO: remove this when trtllm fixes that
-        with open(Path(model_path) / 'config.json', 'rt', encoding='utf-8') as fin:
-            cfg = json.load(fin)
+        with open(Path(model_path) / "config.json", 'r') as f:
+            config = json.load(f)
+        self.tokenizer, self.pad_id, self.end_id = load_tokenizer(
+            tokenizer_dir=model_path, model_name=read_model_name(config)
+        )
         self.runner = ModelRunner.from_dir(
             engine_dir=model_path,
             rank=tensorrt_llm.mpi_rank(),
-            # max_beam_width=cfg['build_config']['max_beam_width'],
-            # max_input_len=cfg['build_config']['max_input_len'],
-            # max_output_len=cfg['build_config']['max_output_len'],
-            # max_batch_size=cfg['build_config']['max_batch_size'],
         )
 
-    @torch.no_grad()
-    def forward(
+    async def get_output(
         self,
-        input_texts,
+        batch_input_ids,
+        input_lengths,
         max_output_token,
         top_k,
         top_p,
@@ -266,12 +217,6 @@ class TensorRTLLM:
         random_seed,
         stop_words_list,
     ):
-        assert len(input_texts) == 1
-        batch_input_ids, input_lengths = parse_input(input_texts, self.tokenizer)
-
-        # stop_words_list = [stop_words_list for _ in range(len(input_texts))]
-        # stop_words_list = prepare_stop_words(stop_words_list, self.tokenizer, self.model_name)
-
         # TODO: return dictionary with a proper error reporting
         try:
             output_generator = self.runner.generate(
@@ -284,12 +229,14 @@ class TensorRTLLM:
                 top_p=top_p,
                 repetition_penalty=repetition_penalty,
                 random_seed=random_seed,
+                # stop words in trtllm are supported on the token-level only and this representation is not unique
+                # so instead of passing in all tokenizations (is that even possible?) of each phrase, we will
+                # instead stream outputs and detokenize them to check for stop words
                 stop_words_list=None,
                 return_dict=True,
                 output_sequence_lengths=True,
                 streaming=True,
             )
-            torch.cuda.synchronize()
             # checking the last 20 tokens for stop words
             num_tokens_to_check = 20
             matching_stop_word = None
@@ -310,16 +257,56 @@ class TensorRTLLM:
                 if matching_stop_word is not None:
                     break
 
-            output = get_output(output['output_ids'], input_lengths, seq_length[0], self.tokenizer, self.end_id)
+            output = get_output(output['output_ids'], input_lengths, seq_length[0], self.tokenizer, self.end_id)[0]
             if matching_stop_word is not None:
-                output[0] = remove_stop_tokens(output[0], stop_words_list)
+                output = remove_stop_tokens(output, stop_words_list)
                 # adding it back, since we only need to remove what's *after* the stop phrase
-                output[0] += matching_stop_word
+                output += matching_stop_word
         except RuntimeError as e:
             logging.error("RuntimeError: %s", e)
-            output = [f"RuntimeError: {e}"] * len(input_texts)
+            output = f"RuntimeError: {e}"
 
         return output
+
+    @torch.no_grad()
+    def forward(
+        self,
+        input_texts,
+        max_output_token,
+        top_k,
+        top_p,
+        temperature,
+        repetition_penalty,
+        random_seed,
+        stop_words_list,
+    ):
+        # TODO: remove batch dimension since it's not needed anymore?
+        tasks = []
+        for input_text in input_texts:
+            # hashing based on all parameters so that we do not execute
+            # the same requests and can identify futures later
+            batch_input_ids, input_lengths = parse_input([input_text], self.tokenizer)
+            tasks.append(
+                asyncio.create_task(
+                    self.get_output(
+                        batch_input_ids,
+                        input_lengths,
+                        max_output_token,
+                        top_k,
+                        top_p,
+                        temperature,
+                        repetition_penalty,
+                        random_seed,
+                        stop_words_list,
+                    )
+                )
+            )
+
+        # TODO: return tasks in the future
+        for task in tasks:
+            await task
+        outputs = [task.result() for task in tasks]
+        return outputs
 
 
 class WrapperServer:
@@ -332,7 +319,7 @@ class WrapperServer:
         if self.rank == 0:
             self.app = Flask(__file__, static_url_path="")
             api = Api(self.app)
-            api.add_resource(TritonServerGenerate, "/generate", resource_class_args=[self.model])
+            api.add_resource(TrtServerGenerate, "/generate", resource_class_args=[self.model])
 
     def run(self, url, port=5000):
         if self.rank == 0:
@@ -341,12 +328,12 @@ class WrapperServer:
             self.worker_loop()
 
     def worker_loop(self):
-        triton = TritonServerGenerate(self.model)
+        server = TrtServerGenerate(self.model)
         while True:
             self.comm.Barrier()
             data = None
             data = self.comm.bcast(data, root=0)
-            triton.generate(**data)
+            server.generate(**data)
 
 
 if __name__ == "__main__":
