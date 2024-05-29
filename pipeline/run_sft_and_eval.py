@@ -40,7 +40,7 @@ def start_job(extra_sbatch_args: str, cmd: str) -> int:
         print("ERRROR INFO vvvvvvvvvvvvvvvvvvvvv")
         print(e.returncode)
         print(e.output.decode())
-        stderr=subprocess.STDOUT
+        stderr = subprocess.STDOUT
         return -1
     print(f"Submitted batch job(s) {job_id}")
     return job_id

@@ -32,7 +32,7 @@ from omegaconf import MISSING
 sys.path.append(str(Path(__file__).absolute().parents[2]))
 
 from nemo_skills.finetuning.filtering_utils import downsample_data, process_bad_solutions
-from nemo_skills.inference.prompt.utils import Prompt, PromptConfig, FewShotExamples
+from nemo_skills.inference.prompt.utils import FewShotExamples, Prompt, PromptConfig
 from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging, unroll_files
 
 LOG = logging.getLogger(__file__)

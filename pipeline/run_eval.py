@@ -53,6 +53,7 @@ python nemo_skills/evaluation/evaluate_results.py \
     prediction_jsonl_files=/results/{benchmark}/{output_name} {extra_eval_args} && \
 """
 
+
 def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments=""):
     extra_arguments = f" inference.random_seed={random_seed} inference.temperature=0.7 {extra_arguments}"
     return get_greedy_cmd(
@@ -166,7 +167,11 @@ if __name__ == "__main__":
     eval_cmds = [" ".join(eval_cmds[i :: args.num_nodes]) for i in range(args.num_nodes)]
 
     for idx, eval_cmd in enumerate(eval_cmds):
-        extra_sbatch_args = ["--parsable", f"--output={args.output_dir}/slurm_logs_eval{idx}.log", f"--nv-meta ml-model.llm-reasoning "]
+        extra_sbatch_args = [
+            "--parsable",
+            f"--output={args.output_dir}/slurm_logs_eval{idx}.log",
+            f"--nv-meta ml-model.llm-reasoning ",
+        ]
         launch_job(
             cmd=SLURM_CMD.format(**format_dict, eval_cmds=eval_cmd.format(**format_dict)),
             num_nodes=1,

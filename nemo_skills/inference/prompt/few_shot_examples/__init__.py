@@ -19,8 +19,9 @@ from nemo_skills.inference.prompt.few_shot_examples.examples_tabmwp import examp
 examples_map = examples_gsm8k.copy()
 examples_map.update(examples_math)
 examples_map.update(examples_tabmwp)
-assert len(examples_map) == len(examples_gsm8k) + len(examples_math) + len(examples_tabmwp), \
-    "Duplicate keys in examples!"
+assert len(examples_map) == len(examples_gsm8k) + len(examples_math) + len(
+    examples_tabmwp
+), "Duplicate keys in examples!"
 
 
 # post-processing to replace code separators with actual tokens
