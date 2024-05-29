@@ -532,17 +532,16 @@ class VLLMModel(BaseModel):
 
         print(f"Model hosted by {self.server_type} server:", self.model)
 
-
     def _single_call(
-            self,
-            prompts,
-            tokens_to_generate,
-            temperature,
-            top_p,
-            top_k,
-            repetition_penalty,
-            random_seed,
-            stop_phrases: List[str],
+        self,
+        prompts,
+        tokens_to_generate,
+        temperature,
+        top_p,
+        top_k,
+        repetition_penalty,
+        random_seed,
+        stop_phrases: List[str],
     ):
         request = {
             'prompt': prompts,
@@ -623,8 +622,13 @@ class VLLMModel(BaseModel):
             top_k = 1
 
         # Process top_k
-        extra_body = {"extra_body": {"top_k": 1, "repetition_penalty": repetition_penalty,
-                                     "spaces_between_special_tokens": False}}
+        extra_body = {
+            "extra_body": {
+                "top_k": 1,
+                "repetition_penalty": repetition_penalty,
+                "spaces_between_special_tokens": False,
+            }
+        }
 
         response = self.oai_client.completions.create(
             model=self.model,
