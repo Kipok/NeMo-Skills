@@ -56,16 +56,6 @@ QUANTIZATION=${6:-""}
 # Deploy model with all gpus on local machine
 NUM_GPUS=${NUM_GPUS:-$(nvidia-smi -L | wc -l)}
 
-# Check quantization is provided or not
-if [ -n "$TRANSFORMERS_CACHE" ]
-then
-      # DOWNLOAD_DIR="--download-dir=${TRANSFORMERS_CACHE}"
-      DOWNLOAD_DIR=""
-else
-      DOWNLOAD_DIR=""
-fi
-
-
 # Check transformers cache and set download-dir if necessary
 if [ -n "$QUANTIZATION" ]
 then
@@ -73,9 +63,6 @@ then
 else
       QUANTIZATION=""
 fi
-
-# Add scripts dir to path
-export PYTHONPATH=../../:$PYTHONPATH
 
 # Select server
 # Start OpenAI Server
@@ -92,4 +79,4 @@ python -m vllm.entrypoints.openai.api_server \
   --tensor-parallel-size=${NUM_GPUS} \
   --max-num-seqs=1024 \
   --enforce-eager \
-  --disable-log-requests $DOWNLOAD_DIR $QUANTIZATION
+  --disable-log-requests $QUANTIZATION
