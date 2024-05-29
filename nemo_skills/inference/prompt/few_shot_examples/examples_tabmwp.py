@@ -130,7 +130,7 @@ yes
 {end_code_output}
 \\boxed{Yes}, Lorenzo does have enough money to buy a toy guitar and juggling balls.
 """.strip(),
-    }
+    },
 ]
 
 
@@ -151,7 +151,7 @@ Avery | 87
 Question: Some friends discussed the sizes of their coin collections. What is the mean of the numbers?""",
         "reference_solution": "Read the numbers from the table.\n\n76, 94, 86, 84, 80, 83, 82, 87\n\nFirst, count how many numbers are in the group.\n\nThere are 8 numbers.\n\nNow add all the numbers together:\n\n76 + 94 + 86 + 84 + 80 + 83 + 82 + 87 = 672\n\nNow divide the sum by the number of numbers:\n\n672 \u00f7 8 = 84\n\nThe mean is 84.",
         "generated_solution": """number_of_coins_for_different_person = [76, 94, 86, 84, 80, 83, 82, 87]
-result = sum(number_of_coins_for_different_person) / len(number_of_coins_for_different_person)"""
+result = sum(number_of_coins_for_different_person) / len(number_of_coins_for_different_person)""",
     },
     {
         "question": """Read the following table regarding "" and then write Python code to answer a question:
@@ -170,7 +170,7 @@ quantity_supplied_price_155 = 5800
 if quantity_demanded_price_155 > quantity_supplied_price_155:
     result = 'shortage'
 else:
-    result = 'surplus'"""
+    result = 'surplus'""",
     },
     {
         "question": """Read the following table regarding "Cans of food collected" and then write Python code to answer a question:
@@ -187,7 +187,7 @@ Question: Samir's class recorded how many cans of food each student collected fo
 cans = sorted(cans)
 middle1 = (len(cans) - 1) // 2
 middle2 = len(cans) // 2
-result = (cans[middle1] + cans[middle2]) / 2"""
+result = (cans[middle1] + cans[middle2]) / 2""",
     },
     {
         "question": """Read the following table regarding "" and then write Python code to answer a question:
@@ -207,12 +207,11 @@ total_money = 13.5
 if total_money > juggling_balls + guitar_price:
     result = 'yes'
 else:
-    result = 'no'"""
-    }
+    result = 'no'""",
+    },
 ]
 
 examples_map = {
     "tabmwp_text_with_code": text_with_code,
     "tabmwp_only_code": only_code,
 }
-

@@ -34,11 +34,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         "Reads TabMWP data and converts it to a format readable by the llm-structured-data scripts."
     )
-    parser.add_argument("--data", default=f"{Path(__file__).absolute().parent / 'original' / 'test.jsonl'}",
-        help="Path to JSON file with TabMWP data. Will automatically download if not found."
+    parser.add_argument(
+        "--data",
+        default=f"{Path(__file__).absolute().parent / 'original' / 'test.jsonl'}",
+        help="Path to JSON file with TabMWP data. Will automatically download if not found.",
     )
-    parser.add_argument("--output", type=str, default=f"{Path(__file__).absolute().parent / 'test.jsonl'}",
-        help="Path to where the output file will be written."
+    parser.add_argument(
+        "--output",
+        type=str,
+        default=f"{Path(__file__).absolute().parent / 'test.jsonl'}",
+        help="Path to where the output file will be written.",
     )
     args = parser.parse_args()
 
