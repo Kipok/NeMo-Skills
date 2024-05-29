@@ -33,7 +33,7 @@ export PYTHONPATH=/code && \
 {server_start_cmd} && \
 if [ $SLURM_LOCALID -eq 0 ]; then \
     echo "Waiting for the server to start" && \
-    tail -n0 -f /tmp/server_logs.txt | sed '/${SERVER_WAIT_STRING}/ q' && \
+    tail -n0 -f /tmp/server_logs.txt | sed '/{SERVER_WAIT_STRING}/ q' && \
     tail -n10 /tmp/server_logs.txt &&  \
     SERVER_ADDRESS=$(tail -n 10 /tmp/server_logs.txt | \
     grep -oP 'http://\K[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | tail -n1) && \

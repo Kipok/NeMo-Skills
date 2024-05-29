@@ -80,7 +80,7 @@ export PYTHONPATH=$PYTHONPATH:/code && \
 if [ $SLURM_LOCALID -eq 0 ]; then \
     pip install backoff && \
     echo "Waiting for the server to start" && \
-    tail -n0 -f /tmp/server_logs.txt | sed '/Running on all addresses/ q' && \
+    tail -n0 -f /tmp/server_logs.txt | sed '/{SERVER_WAIT_STRING}/ q' && \
     {eval_cmds} \
     kill %1; \
 else \
@@ -133,6 +133,11 @@ if __name__ == "__main__":
 
     server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus, args.model_path.name)
 
+    if args.server_type == "vllm":
+        server_wait_string = "Uvicorn running"
+    else:
+        server_wait_string = "Running on all addresses"
+
     format_dict = {
         "model_path": args.model_path,
         "model_name": args.model_path.name,
@@ -141,6 +146,7 @@ if __name__ == "__main__":
         "server_start_cmd": server_start_cmd,
         "server_type": args.server_type,
         "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
+        "SERVER_WAIT_STRING": server_wait_string,
     }
 
     Path(args.output_dir).mkdir(exist_ok=True, parents=True)

@@ -91,4 +91,5 @@ python -m vllm.entrypoints.openai.api_server \
   --served-model-name "${MODEL_NAME}" \
   --tensor-parallel-size=${NUM_GPUS} \
   --max-num-seqs=1024 \
-  --enforce-eager $DOWNLOAD_DIR $QUANTIZATION
+  --enforce-eager \
+  --disable-log-requests $DOWNLOAD_DIR $QUANTIZATION

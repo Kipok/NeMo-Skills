@@ -57,8 +57,8 @@ def get_server_command(server_type, num_gpus, model_name: str):
 
     elif server_type == 'vllm':
         server_start_cmd = (
-            f"pwd && cd /model && ls && "
             f"(NUM_GPUS={num_gpus} bash /code/nemo_skills/inference/server/serve_vllm.sh /model/ {model_name} "
+            # f"0 openai 5000 2>&1 | tee /tmp/server_logs.txt &)"
             f"0 openai 5000 > /tmp/server_logs.txt &)"
         )
         num_tasks = 1
@@ -164,9 +164,9 @@ def launch_local_job(
     if tasks_per_node > 1:
         start_cmd = f"mpirun --allow-run-as-root -np {tasks_per_node} bash /start.sh"
     else:
-        start_cmd = "mpirun --allow-run-as-root -np 1 bash /start.sh"
+        start_cmd = "bash /start.sh"
 
-    cmd = f"{docker_cmd} run --rm --gpus all --ipc=host {mounts} {container} {start_cmd}"
+    cmd = f"{docker_cmd} run --rm -p 5000:5000 --gpus all --ipc=host {mounts} {container} {start_cmd}"
     subprocess.run(cmd, shell=True, check=True)
 
     # TODO: same behavior of streaming logs to a file and supporting dependencies?
