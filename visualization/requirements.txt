@@ -6,3 +6,4 @@ joblib
 pandas
 pygments
 sshtunnel_requests
+dash[testing]

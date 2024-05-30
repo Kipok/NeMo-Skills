@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import dash_bootstrap_components as dbc
-from dash import ALL, html, no_update
+from dash import ALL, callback_context, html, no_update
 from dash._callback import NoUpdate
 from dash.dependencies import Input, Output, State
 from flask import current_app
@@ -335,6 +335,9 @@ def update_random_seed_mode(
     range_random_mode: List[int],
     utils: List[Dict],
 ) -> List[Dict]:
+    ctx = callback_context
+    if not ctx.triggered:
+        return no_update
     for i, util in enumerate(utils):
         name = util['props']['children'][0]['props']['children']
         if name in ("random_seed", "start_random_seed", "end_random_seed"):
