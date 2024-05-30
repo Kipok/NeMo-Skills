@@ -71,7 +71,7 @@ def get_filter_text(
         return (
             "Write an expression to filter the data\n\n"
             + "For example:\ndata['is_correct'] and not data['error_message']\n\n"
-            + "The function has to return bool.\n\n"
+            + "The expression has to return bool.\n\n"
             + "Available parameters to filter data:\n"
             + '\n'.join(
                 [
@@ -86,7 +86,7 @@ def get_filter_text(
             + "Separate expressions for different datasets with &&\n"
             + "You can use base_generation variable to access data from the current generation\n\n"
             + "For example:\ndata['generation1']['correct_responses'] > 0.5 && data[base_generation]['no_response'] < 0.2\n\n"
-            + "The function has to return bool.\n\n"
+            + "The expression has to return bool.\n\n"
             + "Available parameters to filter data:\n"
             + '\n'.join(
                 [
@@ -97,12 +97,12 @@ def get_filter_text(
         )
     elif mode == QUESTIONS_FILTERING:
         return (
-            "Write a function to filter the data\n"
-            + "The function should take a dictionary containing keys representing dataset names\n"
+            "Write an expression to filter the data\n"
+            + "You can operate with a dictionary containing keys representing dataset names\n"
             + "and a list of values as JSON data from your dataset from each file.\n"
             + "You can use base_generation variable to access data from the current generation\n\n"
-            + "For example:\ndata['generation1'][0]['is_correct'] != data[generation2'][0]['is_correct']\n\n"
-            + "The function has to return bool.\n\n"
+            + "For example:\ndata['generation1'][0]['is_correct'] != data[base_generation][0]['is_correct']\n\n"
+            + "The expression has to return bool.\n\n"
             + "Available parameters to filter data:\n"
             + '\n'.join(
                 [
