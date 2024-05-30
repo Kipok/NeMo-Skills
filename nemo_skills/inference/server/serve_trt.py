@@ -20,6 +20,8 @@ import json
 import logging
 import re
 import sys
+import time
+import uuid
 from argparse import ArgumentParser
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -67,14 +69,14 @@ class CustomSentencePieceTokenizer(T5Tokenizer):
         return self.sp_model.decode([token_ids])[0]
 
 
-class TrtServerGenerate(Resource):
+class TrtStartGeneration(Resource):
     def __init__(self, model):
         self.model = model
         self.comm = MPI.COMM_WORLD
 
-    def generate(
+    def start_generation(
         self,
-        prompts,
+        prompt,
         max_new_tokens,
         temperature,
         top_k,
@@ -83,8 +85,8 @@ class TrtServerGenerate(Resource):
         random_seed,
         stop_words_list,
     ):
-        output = self.model.forward(
-            prompts,
+        return self.model.start_generation(
+            prompt,
             max_output_token=max_new_tokens,
             top_k=top_k,
             top_p=top_p,
@@ -93,38 +95,43 @@ class TrtServerGenerate(Resource):
             random_seed=random_seed,
             stop_words_list=stop_words_list,
         )
-        return output
 
     def put(self):
-        logging.info("request IP: " + str(request.remote_addr))
-        logging.info(json.dumps(request.get_json()))
-
+        logging.debug("generate async request")
+        logging.debug("request IP: %s", str(request.remote_addr))
         input_request = request.get_json()
-
-        tokens_to_generate = input_request.get("tokens_to_generate", 64)
-        temperature = input_request.get("temperature", 1.0)
-        top_k = input_request.get("top_k", 0)
-        top_p = input_request.get("top_p", 1.0)
-        repetition_penalty = input_request.get("repetition_penalty", 1.2)
-        stop_words_list = input_request.get("stop_words_list")
-        random_seed = input_request.get("random_seed", 0)
-        prompts = input_request["prompts"]
+        logging.debug("request content: %s", json.dumps(input_request))
 
         data = dict(
-            prompts=prompts,
-            max_new_tokens=tokens_to_generate,
-            temperature=temperature,
-            top_k=top_k,
-            top_p=top_p,
-            repetition_penalty=repetition_penalty,
-            random_seed=random_seed,
-            stop_words_list=stop_words_list,
+            prompt=input_request["prompt"],
+            max_new_tokens=input_request.get("tokens_to_generate", 64),
+            temperature=input_request.get("temperature", 1.0),
+            top_k=input_request.get("top_k", 0),
+            top_p=input_request.get("top_p", 1.0),
+            repetition_penalty=input_request.get("repetition_penalty", 1.2),
+            random_seed=input_request.get("random_seed", 0),
+            stop_words_list=input_request.get("stop_words_list"),
         )
         self.comm.Barrier()
         data = self.comm.bcast(data, root=0)
 
-        out = self.generate(**data)
+        out = self.start_generation(**data)
         return jsonify(out)
+
+
+class TrtGetResult(Resource):
+    def __init__(self, model):
+        self.model = model
+
+    def get_result(self, idx):
+        return self.model.get_result(idx)
+
+    def put(self):
+        logging.debug("get result request")
+        logging.debug("request IP: %s", str(request.remote_addr))
+        input_request = request.get_json()
+        logging.debug("request content: %s", json.dumps(input_request))
+        return jsonify(self.get_result(input_request['generation_id']))
 
 
 def parse_input(input_texts: str, tokenizer):
@@ -481,10 +488,11 @@ class TensorRTLLM:
             max_output_len=config['build_config']['max_output_len'],
             max_batch_size=config['build_config']['max_batch_size'],
         )
+        self.executor = ThreadPoolExecutor(max_workers=config['build_config']['max_batch_size'])
+        self.requests = {}  # id to future
 
     def get_output(
         self,
-        # input_text,
         batch_input_ids,
         input_lengths,
         max_output_token,
@@ -526,10 +534,16 @@ class TensorRTLLM:
 
         return output
 
+    def get_result(self, idx):
+        if self.requests[idx].done():
+            result = self.requests.pop(idx).result()
+            return result
+        return None
+
     @torch.no_grad()
-    def forward(
+    def start_generation(
         self,
-        input_texts,
+        input_text,
         max_output_token,
         top_k,
         top_p,
@@ -539,27 +553,22 @@ class TensorRTLLM:
         stop_words_list,
     ):
         # TODO: remove batch dimension since it's not needed anymore?
-        futures = []
-        with ThreadPoolExecutor(max_workers=len(input_texts)) as executor:
-            for input_text in input_texts:
-                batch_input_ids, input_lengths = parse_input([input_text], self.tokenizer)
-                futures.append(
-                    executor.submit(
-                        self.get_output,
-                        batch_input_ids,
-                        input_lengths,
-                        max_output_token,
-                        top_k,
-                        top_p,
-                        temperature,
-                        repetition_penalty,
-                        random_seed,
-                        stop_words_list,
-                    )
-                )
+        idx = str(uuid.uuid4())
+        batch_input_ids, input_lengths = parse_input([input_text], self.tokenizer)
+        self.requests[idx] = self.executor.submit(
+            self.get_output,
+            batch_input_ids,
+            input_lengths,
+            max_output_token,
+            top_k,
+            top_p,
+            temperature,
+            repetition_penalty,
+            random_seed,
+            stop_words_list,
+        )
 
-        outputs = [future.result() for future in futures]
-        return outputs
+        return idx
 
 
 class WrapperServer:
@@ -572,7 +581,8 @@ class WrapperServer:
         if self.rank == 0:
             self.app = Flask(__file__, static_url_path="")
             api = Api(self.app)
-            api.add_resource(TrtServerGenerate, "/generate", resource_class_args=[self.model])
+            api.add_resource(TrtStartGeneration, "/start_generation", resource_class_args=[self.model])
+            api.add_resource(TrtGetResult, "/get_result", resource_class_args=[self.model])
 
     def run(self, url, port=5000):
         if self.rank == 0:
@@ -581,16 +591,22 @@ class WrapperServer:
             self.worker_loop()
 
     def worker_loop(self):
-        server = TrtServerGenerate(self.model)
+        server = TrtStartGeneration(self.model)
         while True:
             self.comm.Barrier()
             data = None
             data = self.comm.bcast(data, root=0)
-            server.generate(**data)
+            server.start_generation(**data)
 
 
 if __name__ == "__main__":
     # TODO: can we reuse normal logger here?
+    class LogFilter(logging.Filter):
+        def filter(self, record):
+            return "\"PUT /get_result HTTP/1.1\" 200" not in record.getMessage()
+
+    log = logging.getLogger('werkzeug')
+    log.addFilter(LogFilter())
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
     parser = ArgumentParser()

@@ -19,6 +19,7 @@ import json
 import logging
 import os
 import re
+import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from typing import List
@@ -364,7 +365,6 @@ class TensorRTLLMModel(BaseModel):
     ):
         string_prompts = [prompt.build_string(input_dict) for input_dict in input_dicts]
         request = {
-            "prompts": string_prompts,
             "tokens_to_generate": tokens_to_generate,
             "temperature": temperature,
             "top_k": top_k,
@@ -373,7 +373,40 @@ class TensorRTLLMModel(BaseModel):
             "repetition_penalty": repetition_penalty,
             "stop_words_list": stop_phrases,
         }
-        return self._send_request(request)
+        if request["temperature"] == 0:
+            request["temperature"] = 1.0
+            request["top_k"] = 1
+            request["top_p"] = 1.0
+
+        generation_ids = []
+
+        for prompt in string_prompts:
+            request["prompt"] = prompt
+            generation_ids.append(
+                requests.put(
+                    url="http://{}:{}/start_generation".format(self.server_host, self.server_port),
+                    data=json.dumps(request),
+                    headers={"Content-Type": "application/json"},
+                ).json()
+            )
+
+        results = [None] * len(generation_ids)
+        finished_count = 0
+        while finished_count < len(generation_ids):
+            time.sleep(0.1)
+            for pos, generation_id in enumerate(generation_ids):
+                if results[pos] is not None:
+                    continue
+                result = requests.put(
+                    url="http://{}:{}/get_result".format(self.server_host, self.server_port),
+                    data=json.dumps({'generation_id': generation_id}),
+                    headers={"Content-Type": "application/json"},
+                ).json()
+                if result is not None:
+                    finished_count += 1
+                    results[pos] = result
+        print(results)
+        return results
 
 
 class NemoModel(BaseModel):
