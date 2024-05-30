@@ -7,3 +7,4 @@ pandas
 pygments
 sshtunnel_requests
 dash[testing]
+webdriver_manager
