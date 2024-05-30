@@ -15,7 +15,6 @@
 # adapted from https://github.com/NVIDIA/TensorRT-LLM/blob/v0.7.1/examples/run.py
 
 
-import asyncio
 import json
 import logging
 import re
@@ -30,7 +29,7 @@ import torch
 from flask import Flask, jsonify, request
 from flask_restful import Api, Resource
 from mpi4py import MPI
-from tensorrt_llm.runtime import ModelRunner
+from tensorrt_llm.runtime import ModelRunnerCpp
 from transformers import AutoTokenizer, T5Tokenizer
 
 
@@ -133,8 +132,8 @@ def parse_input(input_texts: str, tokenizer):
         )
         for input_text in input_texts
     ]
-    batch_input_ids = [torch.tensor(x, dtype=torch.int32, device="cuda") for x in batch_input_ids]
-    input_lengths = [x.size(0) for x in batch_input_ids]
+    batch_input_ids = [torch.tensor(x, dtype=torch.int32).unsqueeze(0) for x in batch_input_ids]
+    input_lengths = [x.size(1) for x in batch_input_ids]
 
     return batch_input_ids, input_lengths
 
@@ -200,13 +199,18 @@ class TensorRTLLM:
         self.tokenizer, self.pad_id, self.end_id = load_tokenizer(
             tokenizer_dir=model_path, model_name=read_model_name(config)
         )
-        self.runner = ModelRunner.from_dir(
+        self.runner = ModelRunnerCpp.from_dir(
             engine_dir=model_path,
             rank=tensorrt_llm.mpi_rank(),
+            max_beam_width=config['build_config']['max_beam_width'],
+            max_input_len=config['build_config']['max_input_len'],
+            max_output_len=config['build_config']['max_output_len'],
+            max_batch_size=config['build_config']['max_batch_size'],
         )
 
-    async def get_output(
+    def get_output(
         self,
+        # input_text,
         batch_input_ids,
         input_lengths,
         max_output_token,
@@ -218,25 +222,29 @@ class TensorRTLLM:
         stop_words_list,
     ):
         # TODO: return dictionary with a proper error reporting
+        sampling_config = SamplingConfig(
+            end_id=self.end_id,
+            pad_id=self.pad_id,
+            max_new_tokens=max_output_token,
+            temperature=temperature,
+        )
+        # sampling_config.temperature = [temperature]
+        # # sampling_config.top_k = [top_k]
+        # # sampling_config.top_p = [top_p]
+        # sampling_config.repetition_penalty = [repetition_penalty]
+        # print(random_seed)
+        # sampling_config.random_seed = [random_seed]
+        # stop words in trtllm are supported on the token-level only and this representation is not unique
+        # so instead of passing in all tokenizations (is that even possible?) of each phrase, we will
+        # instead stream outputs and detokenize them to check for stop words
+
         try:
-            output_generator = self.runner.generate(
-                batch_input_ids,
-                max_new_tokens=max_output_token,
-                end_id=self.end_id,
-                pad_id=self.pad_id,
-                temperature=temperature,
-                top_k=top_k,
-                top_p=top_p,
-                repetition_penalty=repetition_penalty,
-                random_seed=random_seed,
-                # stop words in trtllm are supported on the token-level only and this representation is not unique
-                # so instead of passing in all tokenizations (is that even possible?) of each phrase, we will
-                # instead stream outputs and detokenize them to check for stop words
-                stop_words_list=None,
-                return_dict=True,
-                output_sequence_lengths=True,
+            output_generator = self.executor.generate(
+                prompt=batch_input_ids[0],
                 streaming=True,
+                sampling_config=sampling_config,
             )
+            print(output_generator)
             # checking the last 20 tokens for stop words
             num_tokens_to_check = 20
             matching_stop_word = None
@@ -281,31 +289,25 @@ class TensorRTLLM:
         stop_words_list,
     ):
         # TODO: remove batch dimension since it's not needed anymore?
-        tasks = []
+        outputs = []
         for input_text in input_texts:
             # hashing based on all parameters so that we do not execute
             # the same requests and can identify futures later
             batch_input_ids, input_lengths = parse_input([input_text], self.tokenizer)
-            tasks.append(
-                asyncio.create_task(
-                    self.get_output(
-                        batch_input_ids,
-                        input_lengths,
-                        max_output_token,
-                        top_k,
-                        top_p,
-                        temperature,
-                        repetition_penalty,
-                        random_seed,
-                        stop_words_list,
-                    )
+            outputs.append(
+                self.get_output(
+                    batch_input_ids,
+                    input_lengths,
+                    max_output_token,
+                    top_k,
+                    top_p,
+                    temperature,
+                    repetition_penalty,
+                    random_seed,
+                    stop_words_list,
                 )
             )
 
-        # TODO: return tasks in the future
-        for task in tasks:
-            await task
-        outputs = [task.result() for task in tasks]
         return outputs
 
 
