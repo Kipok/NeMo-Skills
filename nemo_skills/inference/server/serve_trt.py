@@ -197,6 +197,7 @@ def read_model_name(config):
 def generate(
     runner,
     batch_input_ids: List[torch.Tensor],
+    input_lengths,
     *,
     sampling_config=None,
     lora_uids=None,
@@ -207,7 +208,8 @@ def generate(
     end_id: int | None = None,
     pad_id: int | None = None,
     bad_words_list: list[list[int]] | None = None,
-    stop_words_list: list[list[int]] | None = None,
+    tokenizer=None,
+    stop_words_list=None,
     return_dict: bool = False,
     output_sequence_lengths: bool = False,
     output_log_probs: bool = False,
@@ -251,6 +253,7 @@ def generate(
             context_logits and generation_logits (if self.gather_context_logits=True and
             self.gather_generation_logits=True, respectively).
     """
+    assert streaming
     # TODO: Check if these can be supported now and support them
     if lora_uids is not None:
         raise RuntimeError("LoRA is not supported in C++ session.")
@@ -342,7 +345,8 @@ def generate(
             max_new_tokens=max_new_tokens,
             pad_id=pad_id,
             end_id=end_id,
-            stop_words=stop_words_list,
+            # not letting trtllm handle stop words as this is only supported on a token-level
+            stop_words=None,
             bad_words=bad_words_list,
             sampling_config=sampling_config,
             streaming=streaming,
@@ -368,33 +372,22 @@ def generate(
                         for _ in range(len(response.result.output_token_ids))
                     ]
 
-    if not streaming:
-        output_ids = runner._process_response(multi_responses, output_ids, request_ids)
-        return runner._fill_output(
-            multi_responses,
-            output_ids,
-            end_id,
-            return_dict,
-            output_sequence_lengths,
-            output_log_probs,
-            output_cum_log_probs,
-            batch_input_ids,
-            streaming,
-        )
-    else:
-        return _stream(
-            runner,
-            request_ids,
-            output_ids,
-            multi_responses,
-            end_id,
-            return_dict,
-            output_sequence_lengths,
-            output_log_probs,
-            output_cum_log_probs,
-            batch_input_ids,
-            streaming,
-        )
+    return _stream(
+        runner,
+        request_ids,
+        output_ids,
+        multi_responses,
+        end_id,
+        return_dict,
+        output_sequence_lengths,
+        output_log_probs,
+        output_cum_log_probs,
+        batch_input_ids,
+        streaming,
+        stop_words_list,
+        tokenizer,
+        input_lengths,
+    )
 
 
 def _stream(
@@ -409,16 +402,26 @@ def _stream(
     output_cum_log_probs,
     batch_input_ids,
     streaming,
+    stop_words_list,
+    tokenizer,
+    input_lengths,
 ):
     active_reqids = copy.deepcopy(request_ids)
+    assert len(active_reqids) == 1
+
+    # checking the last 20 tokens for stop words
+    num_tokens_to_check = 20
+
+    idx = 0
     while active_reqids:
+        print("here", active_reqids, flush=True)
         for req_id, response in zip(active_reqids, multi_responses):
             for r in response:
                 if r.result.is_final:
                     active_reqids.remove(req_id)
 
             output_ids = runner._process_response(multi_responses, output_ids, request_ids)
-            yield runner._fill_output(
+            output = runner._fill_output(
                 multi_responses,
                 output_ids,
                 end_id,
@@ -429,9 +432,37 @@ def _stream(
                 batch_input_ids,
                 streaming,
             )
+            # print("!", output, flush=True)
+
+            matching_stop_word = None
+            # checking every half of the required tokens to have overlapping checks
+            if idx < num_tokens_to_check - 1 or idx % (num_tokens_to_check // 2) != 0:
+                continue
+            seq_length = output['sequence_lengths']
+            generation_suffix = output['output_ids'][0, 0, seq_length[0] - num_tokens_to_check : seq_length[0]]
+            output_string = get_output_single(generation_suffix, 0, num_tokens_to_check, tokenizer, end_id)
+            for stop_word in stop_words_list:
+                if stop_word in output_string:
+                    matching_stop_word = stop_word
+                    break
+
+            if matching_stop_word is not None:
+                # runner.session.cancel_request(req_id)
+                active_reqids.remove(req_id)
+                # print("Cancelling!", flush=True)
+                # print(active_reqids, flush=True)
+                break
 
         if active_reqids:
             multi_responses = runner.session.await_responses(active_reqids)
+        idx += 1
+
+    output = get_output(output['output_ids'], input_lengths, seq_length[0], tokenizer, end_id)[0]
+    if matching_stop_word is not None:
+        output = remove_stop_tokens(output, stop_words_list)
+        # adding it back, since we only need to remove what's *after* the stop phrase
+        output += matching_stop_word
+    return output
 
 
 class TensorRTLLM:
@@ -466,9 +497,10 @@ class TensorRTLLM:
         # TODO: return dictionary with a proper error reporting
 
         try:
-            output_generator = generate(
+            output = generate(
                 self.runner,
                 batch_input_ids[0],
+                input_lengths,
                 max_new_tokens=max_output_token,
                 end_id=self.end_id,
                 pad_id=self.pad_id,
@@ -479,39 +511,14 @@ class TensorRTLLM:
                 random_seed=random_seed,
                 # stop words in trtllm are supported on the token-level only and this representation is not unique
                 # so instead of passing in all tokenizations (is that even possible?) of each phrase, we will
-                # instead stream outputs and detokenize them to check for stop words
-                stop_words_list=None,
+                # instead stream outputs and detokenize them to check for stop words - this is done inside
+                # overriden generate/stream functions above
+                tokenizer=self.tokenizer,
+                stop_words_list=stop_words_list,
                 return_dict=True,
                 output_sequence_lengths=True,
                 streaming=True,
             )
-            output = None
-            if tensorrt_llm.mpi_rank() == 0:
-                # checking the last 20 tokens for stop words
-                num_tokens_to_check = 20
-                matching_stop_word = None
-                for idx, output in enumerate(output_generator, 1):
-                    # checking every half of the required tokens to have overlapping checks
-                    if idx < num_tokens_to_check - 1 or idx % (num_tokens_to_check // 2) != 0:
-                        continue
-                    seq_length = output['sequence_lengths']
-                    generation_suffix = output['output_ids'][0, 0, seq_length[0] - num_tokens_to_check : seq_length[0]]
-                    output_string = get_output_single(
-                        generation_suffix, 0, num_tokens_to_check, self.tokenizer, self.end_id
-                    )
-                    for stop_word in stop_words_list:
-                        if stop_word in output_string:
-                            matching_stop_word = stop_word
-                            break
-
-                    if matching_stop_word is not None:
-                        break
-
-                output = get_output(output['output_ids'], input_lengths, seq_length[0], self.tokenizer, self.end_id)[0]
-                if matching_stop_word is not None:
-                    output = remove_stop_tokens(output, stop_words_list)
-                    # adding it back, since we only need to remove what's *after* the stop phrase
-                    output += matching_stop_word
         except RuntimeError as e:
             logging.error("RuntimeError: %s", e)
             output = f"RuntimeError: {e}"
