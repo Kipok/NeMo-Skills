@@ -15,6 +15,7 @@
 # adapted from https://github.com/NVIDIA/TensorRT-LLM/blob/v0.7.1/examples/run.py
 
 
+import copy
 import json
 import logging
 import re
@@ -25,6 +26,7 @@ from typing import List
 
 import numpy as np
 import tensorrt_llm
+import tensorrt_llm.bindings.executor as trtllm
 import torch
 from flask import Flask, jsonify, request
 from flask_restful import Api, Resource
@@ -192,6 +194,246 @@ def read_model_name(config):
     return name_map[name]
 
 
+def generate(
+    runner,
+    batch_input_ids: List[torch.Tensor],
+    *,
+    sampling_config=None,
+    lora_uids=None,
+    streaming: bool = False,
+    stopping_criteria=None,
+    logits_processor=None,
+    max_new_tokens: int = 1,
+    end_id: int | None = None,
+    pad_id: int | None = None,
+    bad_words_list: list[list[int]] | None = None,
+    stop_words_list: list[list[int]] | None = None,
+    return_dict: bool = False,
+    output_sequence_lengths: bool = False,
+    output_log_probs: bool = False,
+    output_cum_log_probs: bool = False,
+    prompt_table=None,
+    prompt_tasks=None,
+    **kwargs,
+):
+    """
+    Generates sequences of token ids.
+    The generation-controlling parameters are set in the sampling_config; it will be set to a default one if not passed.
+    You can override any sampling_config's attributes by passing corresponding parameters.
+
+    Args:
+        batch_input_ids (List[torch.Tensor]):
+            A list of input id tensors. Each tensor is of shape (sequence_length, ).
+        sampling_config (SamplingConfig):
+            The sampling configuration to be used as base parametrization for the generation call.
+            The passed **kwargs matching the sampling_config's attributes will override them.
+            If the sampling_config is not provided, a default will be used.
+        prompt_table (str or torch.Tensor):
+            The file path of prompt table (.npy format, exported by nemo_prompt_convert.py) or the prompt table itself.
+        prompt_tasks (str):
+            The prompt tuning task ids for the input batch, in format of comma-separated list (e.g., 0,3,1,0).
+        lora_uids (list):
+            The uids of LoRA weights for the input batch. Use -1 to disable the LoRA module.
+        streaming (bool):
+            Whether or not to use streaming mode for generation.
+        stopping_criteria (StoppingCriteria):
+            Custom stopping criteria.
+        logits_processor (LogitsProcessor):
+            Custom logits processors.
+        kwargs (Dict[str, Any]:
+            Ad hoc parametrization of sampling_config.
+            The passed **kwargs matching the sampling_config's attributes will override them.
+    Returns:
+        torch.Tensor or dict:
+            If return_dict=False, the method returns generated output_ids.
+            If return_dict=True, the method returns a dict of output_ids,
+            sequence_lengths (if sampling_config.output_sequence_lengths=True),
+            context_logits and generation_logits (if self.gather_context_logits=True and
+            self.gather_generation_logits=True, respectively).
+    """
+    # TODO: Check if these can be supported now and support them
+    if lora_uids is not None:
+        raise RuntimeError("LoRA is not supported in C++ session.")
+    if stopping_criteria is not None:
+        raise RuntimeError("Stopping criteria is not supported in C++ session.")
+    if logits_processor is not None:
+        raise RuntimeError("Logits processor is not supported in C++ session.")
+
+    # If we are in a multi-gpu scenario, only rank 0 continues
+    if not runner.session.can_enqueue_requests():
+        return []
+
+    # Convert tensor input to plain lists
+    batch_input_ids_list = [a.tolist() for a in batch_input_ids]
+
+    if sampling_config is None:
+        # Convert from old API of SamplingConfig
+        # Note: Due to a Python3.10 bug one cannot use inspect on it currently
+        accepted_parameters = [
+            "num_beams",
+            "top_k",
+            "top_p",
+            "top_p_min",
+            "top_p_reset_ids",
+            "top_p_decay",
+            "random_seed",
+            "temperature",
+            "min_length",
+            "beam_search_diversity_rate",
+            "repetition_penalty",
+            "presence_penalty",
+            "frequency_penalty",
+            "length_penalty",
+            "early_stopping",
+        ]
+        rename_params = {"num_beams": "beam_width"}
+        sampling_params = {k: v for k, v in kwargs.items() if k in accepted_parameters}
+        for k, v in rename_params.items():
+            if k in sampling_params:
+                sampling_params[v] = sampling_params.pop(k)
+        if "top_p" in sampling_params and sampling_params["top_p"] == 0.0:
+            sampling_params["top_p"] = None
+
+        # To prevent numerical overflow when the temperature is set to 0.0
+        # Attributes of `trtllm.SamplingConfig` cannot be modified
+        if "temperature" in sampling_params and sampling_params["temperature"] == 0.0:
+            sampling_params['temperature'] = None
+            sampling_params['top_k'] = 1
+
+        sampling_config = trtllm.SamplingConfig(**sampling_params)
+    else:
+        sampling_config = copy.deepcopy(sampling_config)
+
+        # To prevent numerical overflow when the temperature is set to 0.0
+        # Modify generation.SamplingConfig
+        if isinstance(sampling_config.temperature, float) and sampling_config.temperature == 0.0:
+            sampling_config.temperature = None
+            sampling_config.top_k = 1
+
+    runner._check_inputs(batch_input_ids_list, sampling_config, max_new_tokens)
+
+    output_config = trtllm.OutputConfig(
+        return_context_logits=runner.gather_context_logits,
+        return_generation_logits=runner.gather_generation_logits,
+        return_log_probs=output_log_probs,
+    )
+
+    prompt_tuning_configs = len(batch_input_ids_list) * [None]
+    if prompt_table is not None:
+        prompt_table_data = runner._prepare_embedding_table(prompt_table)
+        if prompt_tasks is not None:
+            task_indices = [int(t) for t in prompt_tasks.split(',')]
+            assert len(task_indices) == len(
+                batch_input_ids_list
+            ), f"Number of supplied tasks ({len(task_indices)}) must match input batch size ({len(batch_input_ids_list)})"
+            prompt_tuning_configs = [
+                trtllm.PromptTuningConfig(embedding_table=prompt_table_data[task_indices[i]])
+                for i in range(len(batch_input_ids_list))
+            ]
+        else:
+            prompt_tuning_configs = [
+                trtllm.PromptTuningConfig(embedding_table=prompt_table_data[0])
+                for _ in range(len(batch_input_ids_list))
+            ]
+
+    requests = [
+        trtllm.Request(
+            input_token_ids=input_ids,
+            max_new_tokens=max_new_tokens,
+            pad_id=pad_id,
+            end_id=end_id,
+            stop_words=stop_words_list,
+            bad_words=bad_words_list,
+            sampling_config=sampling_config,
+            streaming=streaming,
+            output_config=output_config,
+            prompt_tuning_config=prompt_tuning_configs[i],
+        )
+        for i, input_ids in enumerate(batch_input_ids_list)
+    ]
+
+    request_ids = runner.session.enqueue_requests(requests)
+    multi_responses = runner.session.await_responses(request_ids)
+
+    output_ids = [[] for _ in range(len(multi_responses))]
+    for responses in multi_responses:
+        for response in responses:
+            if not response.has_error():
+                reqid_pos = request_ids.index(response.request_id)
+                if not streaming:
+                    output_ids[reqid_pos] = [[] for _ in range(len(response.result.output_token_ids))]
+                else:
+                    output_ids[reqid_pos] = [
+                        copy.deepcopy(batch_input_ids_list[reqid_pos])
+                        for _ in range(len(response.result.output_token_ids))
+                    ]
+
+    if not streaming:
+        output_ids = runner._process_response(multi_responses, output_ids, request_ids)
+        return runner._fill_output(
+            multi_responses,
+            output_ids,
+            end_id,
+            return_dict,
+            output_sequence_lengths,
+            output_log_probs,
+            output_cum_log_probs,
+            batch_input_ids,
+            streaming,
+        )
+    else:
+        return _stream(
+            runner,
+            request_ids,
+            output_ids,
+            multi_responses,
+            end_id,
+            return_dict,
+            output_sequence_lengths,
+            output_log_probs,
+            output_cum_log_probs,
+            batch_input_ids,
+            streaming,
+        )
+
+
+def _stream(
+    runner,
+    request_ids,
+    output_ids,
+    multi_responses,
+    end_id,
+    return_dict,
+    output_sequence_lengths,
+    output_log_probs,
+    output_cum_log_probs,
+    batch_input_ids,
+    streaming,
+):
+    active_reqids = copy.deepcopy(request_ids)
+    while active_reqids:
+        for req_id, response in zip(active_reqids, multi_responses):
+            for r in response:
+                if r.result.is_final:
+                    active_reqids.remove(req_id)
+
+            output_ids = runner._process_response(multi_responses, output_ids, request_ids)
+            yield runner._fill_output(
+                multi_responses,
+                output_ids,
+                end_id,
+                return_dict,
+                output_sequence_lengths,
+                output_log_probs,
+                output_cum_log_probs,
+                batch_input_ids,
+                streaming,
+            )
+
+        if active_reqids:
+            multi_responses = runner.session.await_responses(active_reqids)
+
+
 class TensorRTLLM:
     def __init__(self, model_path: str):
         with open(Path(model_path) / "config.json", 'r') as f:
@@ -224,7 +466,8 @@ class TensorRTLLM:
         # TODO: return dictionary with a proper error reporting
 
         try:
-            output_generator = self.runner.generate(
+            output_generator = generate(
+                self.runner,
                 batch_input_ids[0],
                 max_new_tokens=max_output_token,
                 end_id=self.end_id,
