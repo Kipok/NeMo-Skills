@@ -21,6 +21,7 @@ import logging
 import re
 import sys
 from argparse import ArgumentParser
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import List
 
@@ -414,7 +415,7 @@ def _stream(
 
     idx = 0
     while active_reqids:
-        print("here", active_reqids, flush=True)
+        # print("here", active_reqids, flush=True)
         for req_id, response in zip(active_reqids, multi_responses):
             for r in response:
                 if r.result.is_final:
@@ -538,25 +539,26 @@ class TensorRTLLM:
         stop_words_list,
     ):
         # TODO: remove batch dimension since it's not needed anymore?
-        outputs = []
-        for input_text in input_texts:
-            # hashing based on all parameters so that we do not execute
-            # the same requests and can identify futures later
-            batch_input_ids, input_lengths = parse_input([input_text], self.tokenizer)
-            outputs.append(
-                self.get_output(
-                    batch_input_ids,
-                    input_lengths,
-                    max_output_token,
-                    top_k,
-                    top_p,
-                    temperature,
-                    repetition_penalty,
-                    random_seed,
-                    stop_words_list,
+        futures = []
+        with ThreadPoolExecutor(max_workers=len(input_texts)) as executor:
+            for input_text in input_texts:
+                batch_input_ids, input_lengths = parse_input([input_text], self.tokenizer)
+                futures.append(
+                    executor.submit(
+                        self.get_output,
+                        batch_input_ids,
+                        input_lengths,
+                        max_output_token,
+                        top_k,
+                        top_p,
+                        temperature,
+                        repetition_penalty,
+                        random_seed,
+                        stop_words_list,
+                    )
                 )
-            )
 
+        outputs = [future.result() for future in futures]
         return outputs
 
 
