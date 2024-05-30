@@ -37,7 +37,7 @@ result = sum(number_of_coins_for_different_person) / len(number_of_coins_for_dif
 result
 {end_code}
 {start_code_output}
-84
+84.0
 {end_code_output}
 So the mean of the sizes of their coin collections is \\boxed{84} coins.
 """.strip(),
@@ -67,9 +67,9 @@ else:
 result
 {end_code}
 {start_code_output}
-surplus
+shortage
 {end_code_output}
-So there is a \\boxed{surplus} at a price of 155 dollars.
+So there is a \\boxed{shortage} at a price of 155 dollars.
 """.strip(),
     },
     {
@@ -95,7 +95,7 @@ result = (cans[middle1] + cans[middle2]) / 2
 result
 {end_code}
 {start_code_output}
-7
+7.0
 {end_code_output}
 The median number of cans collected is \\boxed{7}.
 """.strip(),
