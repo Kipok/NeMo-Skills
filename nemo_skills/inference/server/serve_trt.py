@@ -222,54 +222,53 @@ class TensorRTLLM:
         stop_words_list,
     ):
         # TODO: return dictionary with a proper error reporting
-        sampling_config = SamplingConfig(
-            end_id=self.end_id,
-            pad_id=self.pad_id,
-            max_new_tokens=max_output_token,
-            temperature=temperature,
-        )
-        # sampling_config.temperature = [temperature]
-        # # sampling_config.top_k = [top_k]
-        # # sampling_config.top_p = [top_p]
-        # sampling_config.repetition_penalty = [repetition_penalty]
-        # print(random_seed)
-        # sampling_config.random_seed = [random_seed]
-        # stop words in trtllm are supported on the token-level only and this representation is not unique
-        # so instead of passing in all tokenizations (is that even possible?) of each phrase, we will
-        # instead stream outputs and detokenize them to check for stop words
 
         try:
-            output_generator = self.executor.generate(
-                prompt=batch_input_ids[0],
+            output_generator = self.runner.generate(
+                batch_input_ids[0],
+                max_new_tokens=max_output_token,
+                end_id=self.end_id,
+                pad_id=self.pad_id,
+                temperature=temperature,
+                top_k=top_k,
+                top_p=top_p,
+                repetition_penalty=repetition_penalty,
+                random_seed=random_seed,
+                # stop words in trtllm are supported on the token-level only and this representation is not unique
+                # so instead of passing in all tokenizations (is that even possible?) of each phrase, we will
+                # instead stream outputs and detokenize them to check for stop words
+                stop_words_list=None,
+                return_dict=True,
+                output_sequence_lengths=True,
                 streaming=True,
-                sampling_config=sampling_config,
             )
-            print(output_generator)
-            # checking the last 20 tokens for stop words
-            num_tokens_to_check = 20
-            matching_stop_word = None
-            for idx, output in enumerate(output_generator, 1):
-                # checking every half of the required tokens to have overlapping checks
-                if idx < num_tokens_to_check - 1 or idx % (num_tokens_to_check // 2) != 0:
-                    continue
-                seq_length = output['sequence_lengths']
-                generation_suffix = output['output_ids'][0, 0, seq_length[0] - num_tokens_to_check : seq_length[0]]
-                output_string = get_output_single(
-                    generation_suffix, 0, num_tokens_to_check, self.tokenizer, self.end_id
-                )
-                for stop_word in stop_words_list:
-                    if stop_word in output_string:
-                        matching_stop_word = stop_word
+            output = None
+            if tensorrt_llm.mpi_rank() == 0:
+                # checking the last 20 tokens for stop words
+                num_tokens_to_check = 20
+                matching_stop_word = None
+                for idx, output in enumerate(output_generator, 1):
+                    # checking every half of the required tokens to have overlapping checks
+                    if idx < num_tokens_to_check - 1 or idx % (num_tokens_to_check // 2) != 0:
+                        continue
+                    seq_length = output['sequence_lengths']
+                    generation_suffix = output['output_ids'][0, 0, seq_length[0] - num_tokens_to_check : seq_length[0]]
+                    output_string = get_output_single(
+                        generation_suffix, 0, num_tokens_to_check, self.tokenizer, self.end_id
+                    )
+                    for stop_word in stop_words_list:
+                        if stop_word in output_string:
+                            matching_stop_word = stop_word
+                            break
+
+                    if matching_stop_word is not None:
                         break
 
+                output = get_output(output['output_ids'], input_lengths, seq_length[0], self.tokenizer, self.end_id)[0]
                 if matching_stop_word is not None:
-                    break
-
-            output = get_output(output['output_ids'], input_lengths, seq_length[0], self.tokenizer, self.end_id)[0]
-            if matching_stop_word is not None:
-                output = remove_stop_tokens(output, stop_words_list)
-                # adding it back, since we only need to remove what's *after* the stop phrase
-                output += matching_stop_word
+                    output = remove_stop_tokens(output, stop_words_list)
+                    # adding it back, since we only need to remove what's *after* the stop phrase
+                    output += matching_stop_word
         except RuntimeError as e:
             logging.error("RuntimeError: %s", e)
             output = f"RuntimeError: {e}"
