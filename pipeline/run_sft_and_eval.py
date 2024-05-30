@@ -26,12 +26,15 @@ from nemo_skills.utils import setup_logging
 
 
 def start_job(extra_sbatch_args: str, cmd: str) -> int:
+    print("--------------")
     full_cmd = f'{extra_sbatch_args} {cmd}'
+    print(full_cmd)
+    print("===========")
 
     if CLUSTER_CONFIG['cluster'] == 'local':
         subprocess.run(full_cmd, shell=True)
         return 0
-    return job_id
+    job_id = subprocess.run(full_cmd, shell=True, check=True, capture_output=True).stdout.decode()
 
 
 def run_sft(
