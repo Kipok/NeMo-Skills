@@ -56,10 +56,15 @@ if __name__ == "__main__":
             os.makedirs(args.data_dir, exist_ok=True)
             urllib.request.urlretrieve(URL_prefix + split + ".json", original_file)
 
-        output_file = os.path.join(args.output_dir, "validation.json") if split == "dev" else \
-                os.path.join(args.output_dir, split + ".json")
+        output_file = (
+            os.path.join(args.output_dir, "validation.json")
+            if split == "dev"
+            else os.path.join(args.output_dir, split + ".json")
+        )
 
-        question_template = "Read the following table and then answer the question that follows.\n{table}\n\n{question}"
+        question_template = (
+            "Read the following table and then answer the question that follows.\n{table}\n\n{question}"
+        )
 
         with open(original_file, "r") as fin:
             data = json.load(fin)
