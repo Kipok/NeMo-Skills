@@ -765,44 +765,45 @@ def change_file(
         return [no_update] * len(table_data)
 
     question_id = page_size * current_page + idx[0]
-    try:
-        button_id = model_ids.index(
-            json.loads(
-                MODEL_SELECTOR_ID.format(
-                    json.loads(ctx.triggered[-1]['prop_id'].split('.')[0])['id']
+    for trigger in ctx.triggered:
+        try:
+            button_id = model_ids.index(
+                json.loads(
+                    MODEL_SELECTOR_ID.format(
+                        json.loads(trigger['prop_id'].split('.')[0])['id']
+                    )
                 )
             )
+        except ValueError:
+            continue
+
+        model = models[button_id]
+
+        file_id = 0
+        file_name = (
+            file_names[button_id]['value']
+            if isinstance(file_names[button_id], Dict)
+            else file_names[button_id]
         )
-    except ValueError:
-        return [no_update] * len(table_data)
+        for i, file_data in enumerate(get_table_data()[question_id][model]):
+            if file_data['file_name'] == file_name:
+                file_id = i
+                break
 
-    model = models[button_id]
-
-    file_id = 0
-    file_name = (
-        file_names[button_id]['value']
-        if isinstance(file_names[button_id], Dict)
-        else file_names[button_id]
-    )
-    for i, file_data in enumerate(get_table_data()[question_id][model]):
-        if file_data['file_name'] == file_name:
-            file_id = i
-            break
-
-    question_id = current_page * page_size + idx[0]
-    table_data[button_id * len(rows_names) : (button_id + 1) * len(rows_names)] = (
-        get_row_detailed_inner_data(
-            question_id=question_id,
-            model=model,
-            file_id=file_id,
-            rows_names=rows_names,
-            files_names=[option['value'] for option in file_options[button_id]],
-            col_id=button_id,
-            plain_text=(
-                plain_text_switch[button_id] and len(plain_text_switch[button_id])
-            ),
+        question_id = current_page * page_size + idx[0]
+        table_data[button_id * len(rows_names) : (button_id + 1) * len(rows_names)] = (
+            get_row_detailed_inner_data(
+                question_id=question_id,
+                model=model,
+                file_id=file_id,
+                rows_names=rows_names,
+                files_names=[option['value'] for option in file_options[button_id]],
+                col_id=button_id,
+                plain_text=(
+                    plain_text_switch[button_id] and len(plain_text_switch[button_id])
+                ),
+            )
         )
-    )
     return table_data
 
 
