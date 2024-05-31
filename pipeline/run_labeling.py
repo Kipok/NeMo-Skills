@@ -62,7 +62,7 @@ def run_script(format_dict, seed, extra_arguments, partition=None, dependency=No
     format_dict["random_seed"] = seed
     format_dict["extra_arguments"] = extra_arguments
 
-    extra_sbatch_args = ["--parsable", f"--output={LOGS.format(**format_dict)}", f"--nv-meta ml-model.llm-reasoning "]
+    extra_sbatch_args = ["--parsable", f"--output={LOGS.format(**format_dict)}"]
 
     if dependency is not None:
         extra_sbatch_args.append(f"--dependency=afterany:{dependency}")

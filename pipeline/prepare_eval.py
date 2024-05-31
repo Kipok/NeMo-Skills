@@ -64,7 +64,6 @@ if __name__ == "__main__":
     args.output_path.mkdir(exist_ok=True, parents=True)
 
     conversion_step = f"&& mv /training_folder/model-averaged.nemo /inference_folder/{model_name}"
-    conversion_step += f" && cp /nemo_model/model_config.yaml /inference_folder/"
     # TODO: add NeMo to TensorRT-LLM conversion step
 
     format_dict = {

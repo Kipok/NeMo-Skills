@@ -45,7 +45,7 @@ def get_greedy_cmd(benchmark, output_name='output-greedy.jsonl', extra_eval_args
     return f"""echo "Evaluating benchmark {benchmark}" && \
 python nemo_skills/inference/generate_solutions.py \
     server.server_type={{server_type}} \
-    prompt.context_type={{context_type}} \
+    prompt.context_type=empty \
     +dataset={benchmark} \
     output_file=/results/{benchmark}/{output_name} \
     {extra_arguments} && \
@@ -99,7 +99,6 @@ if __name__ == "__main__":
     wrapper_args.add_argument("--model_path", required=True)
     wrapper_args.add_argument("--server_type", choices=('nemo', 'tensorrt_llm'), default='tensorrt_llm')
     wrapper_args.add_argument("--output_dir", required=True)
-    wrapper_args.add_argument("--context_type", default="empty")
     wrapper_args.add_argument("--num_gpus", type=int, required=True)
     wrapper_args.add_argument("--starting_seed", type=int, default=0)
     wrapper_args.add_argument(
@@ -167,11 +166,7 @@ if __name__ == "__main__":
     eval_cmds = [" ".join(eval_cmds[i :: args.num_nodes]) for i in range(args.num_nodes)]
 
     for idx, eval_cmd in enumerate(eval_cmds):
-        extra_sbatch_args = [
-            "--parsable",
-            f"--output={args.output_dir}/slurm_logs_eval{idx}.log",
-            f"--nv-meta ml-model.llm-reasoning ",
-        ]
+        extra_sbatch_args = ["--parsable", f"--output={args.output_dir}/slurm_logs_eval{idx}.log"]
         launch_job(
             cmd=SLURM_CMD.format(**format_dict, eval_cmds=eval_cmd.format(**format_dict)),
             num_nodes=1,
