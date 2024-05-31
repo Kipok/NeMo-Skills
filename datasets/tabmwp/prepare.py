@@ -18,7 +18,7 @@ import os
 import urllib.request
 from pathlib import Path
 
-URL = "https://raw.githubusercontent.com/lupantech/PromptPG/main/data/tabmwp/problems_test1k.json"
+URL_prefix = "https://raw.githubusercontent.com/lupantech/PromptPG/main/data/tabmwp/problems_"
 
 # Data Format
 #
@@ -35,55 +35,57 @@ if __name__ == "__main__":
         "Reads TabMWP data and converts it to a format readable by the llm-structured-data scripts."
     )
     parser.add_argument(
-        "--data",
-        default=f"{Path(__file__).absolute().parent / 'original' / 'test.jsonl'}",
-        help="Path to JSON file with TabMWP data. Will automatically download if not found.",
+        "--data_dir",
+        default=f"{Path(__file__).absolute().parent / 'original'}",
+        help="Path to directory with JSON files with TabMWP data. Will automatically download if not found.",
     )
     parser.add_argument(
-        "--output",
+        "--output_dir",
         type=str,
-        default=f"{Path(__file__).absolute().parent / 'test.jsonl'}",
+        default=f"{Path(__file__).absolute().parent}",
         help="Path to where the output file will be written.",
     )
     args = parser.parse_args()
 
-    if not os.path.exists(args.data):
-        os.makedirs(os.path.dirname(args.data), exist_ok=True)
-        os.system(f"wget {URL} -O {args.data}")
+    splits = ["train", "dev", "test"]
 
-    original_file = args.data
-    output_file = args.output
+    for split in splits:
+        original_file = os.path.join(args.data_dir, f"problems_{split}.json")
 
-    question_template = "Read the following table and then answer the question that follows.\n{table}\n\n{question}"
+        if not os.path.exists(original_file):
+            os.makedirs(args.data_dir, exist_ok=True)
+            urllib.request.urlretrieve(URL_prefix + split + ".json", original_file)
 
-    if not os.path.exists(original_file):
-        urllib.request.urlretrieve(URL, original_file)
+        output_file = os.path.join(args.output_dir, "validation.json") if split == "dev" else \
+                os.path.join(args.output_dir, split + ".json")
 
-    with open(original_file, "r") as fin:
-        data = json.load(fin)
+        question_template = "Read the following table and then answer the question that follows.\n{table}\n\n{question}"
 
-    with open(output_file, "wt", encoding="utf-8") as fout:
-        for original_entry in data.values():
-            question = question_template.format(
-                table_title=original_entry["table_title"],
-                table=original_entry["table"],
-                question=original_entry["question"],
-            )
+        with open(original_file, "r") as fin:
+            data = json.load(fin)
 
-            new_entry = dict(
-                question=question,
-                expected_answer=original_entry["answer"],
-                reference_solution=original_entry["solution"],
-                table_title=original_entry["table_title"],
-                table=original_entry["table_for_pd"],
-                grade=original_entry["grade"],
-            )
+        with open(output_file, "wt", encoding="utf-8") as fout:
+            for original_entry in data.values():
+                question = question_template.format(
+                    table_title=original_entry["table_title"],
+                    table=original_entry["table"],
+                    question=original_entry["question"],
+                )
 
-            if original_entry["ques_type"] == "multi_choice":
-                new_entry["question"] += "\nAnswer options:\n{}".format(", ".join(original_entry["choices"]))
+                new_entry = dict(
+                    question=question,
+                    expected_answer=original_entry["answer"],
+                    reference_solution=original_entry["solution"],
+                    table_title=original_entry["table_title"],
+                    table=original_entry["table_for_pd"],
+                    grade=original_entry["grade"],
+                )
 
-            # converting to int if able to for cleaner text representation
-            if original_entry["ans_type"] == "integer_number":
-                new_entry["expected_answer"] = int(new_entry["expected_answer"].replace(",", ""))
+                if original_entry["ques_type"] == "multi_choice":
+                    new_entry["question"] += "\nAnswer options:\n{}".format(", ".join(original_entry["choices"]))
 
-            fout.write(json.dumps(new_entry) + "\n")
+                # converting to int if able to for cleaner text representation
+                if original_entry["ans_type"] == "integer_number":
+                    new_entry["expected_answer"] = int(new_entry["expected_answer"].replace(",", ""))
+
+                fout.write(json.dumps(new_entry) + "\n")
