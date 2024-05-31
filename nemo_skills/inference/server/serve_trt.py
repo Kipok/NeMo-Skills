@@ -156,8 +156,6 @@ def get_output_single(output_ids, input_length, max_output_len, tokenizer, eos_t
     if len(eos_ids) > 0:
         outputs = outputs[: eos_ids[0]]
     outputs = outputs.tolist()
-    outputs = [elem if elem < tokenizer.vocab_size else tokenizer.vocab_size - 1 for elem in outputs]
-    outputs = [elem if 0 <= elem else 0 for elem in outputs]
     return tokenizer.decode(outputs)
 
 
@@ -488,7 +486,8 @@ class TensorRTLLM:
             max_output_len=config['build_config']['max_output_len'],
             max_batch_size=config['build_config']['max_batch_size'],
         )
-        self.executor = ThreadPoolExecutor(max_workers=config['build_config']['max_batch_size'])
+        # TODO: what's the right number here? Does it matter?
+        self.executor = ThreadPoolExecutor(max_workers=1024)
         self.requests = {}  # id to future
 
     def get_output(
