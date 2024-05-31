@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from flask import Flask
 import os
-import pytest
-from pathlib import Path
 import sys
+from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+from flask import Flask
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 

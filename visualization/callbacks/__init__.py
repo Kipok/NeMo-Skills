@@ -35,9 +35,7 @@ config_path = os.path.join(os.path.abspath(Path(__file__).parents[1]), "settings
 config = {}
 
 
-@hydra.main(
-    version_base=None, config_path=config_path, config_name="visualization_config"
-)
+@hydra.main(version_base=None, config_path=config_path, config_name="visualization_config")
 def set_config(cfg: VisualizationConfig) -> None:
     global config
 
