@@ -16,8 +16,8 @@ Our pipeline consists of 3 steps and can be directly applied to any LLM that is 
 2. <b>[Generate synthetic data](/docs/synthetic-data-generation.md)</b>
    - Write a couple of examples of solutions that you want the student LLM to learn.
      E.g. [teach it to use code](/nemo_skills/inference/prompt/few_shot_examples/examples_gsm8k.py) to solve math problems.
-   - Run a large-scale generation of diverse solutions on the training datasets showing your examples in the prompt to the teacher model. This can be done through our [visualization tool](/visualization/Readme.md)
-   - Filter the generated solutions based on correctness and quality. This is also can be done through our [visualization tool](/visualization/Readme.md)
+   - Run a large-scale generation of diverse solutions on the training datasets showing your examples in the prompt to the teacher model.
+   - Filter the generated solutions based on correctness and quality.
 3. <b>[Finetune the student model on the generated dataset](/docs/finetuning.md)</b>
 
 We release a series of [OpenMath models](https://huggingface.co/collections/nvidia/openmath-65c5619de2ba059be0775014)

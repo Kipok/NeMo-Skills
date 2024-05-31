@@ -41,7 +41,7 @@ visualization_params:
     generation2: /some_path/generation2/output-rs*.jsonl
 ```
 
-The tool also supports multiple generations (e.g. 
+The tool also supports comparison of multiple generations (e.g. 
  `generation2` in the config above). All files satisfying the given pattern will be considered for analysis.
 
 On this page, you can sort, filter, and compare generations. You can also add labels to the data and save your modified, filtered, and sorted generation by specifying `save_dataset_path`.
@@ -104,7 +104,7 @@ custom_sorting_function(data['generated_solution'])
 ```
 
 ### Statistics
-There are two types of statistics: "Custom Statistics" and "General Custom Statistics". Custom statistics apply to different runs of a single question. There are some default custom statistics: "correct_responses", "wrong_responses", and "no_responses". General Custom Statistics apply to each sample across all questions. Default general custom statistic - "overall number of runs"
+There are two types of statistics: "Custom Statistics" and "General Custom Statistics". Custom statistics apply to different samples of a single question. There are some default custom statistics: "correct_responses", "wrong_responses", and "no_responses". General Custom Statistics apply to each sample across all questions. Default general custom statistics - "dataset size", "overall number of samples" and "generations per sample"
 
 ![stats](/visualization/images/stats.png)
 
