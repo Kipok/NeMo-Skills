@@ -140,7 +140,6 @@ if __name__ == "__main__":
         "num_gpus": args.num_gpus,
         "server_start_cmd": server_start_cmd,
         "server_type": args.server_type,
-        "context_type": args.context_type,
         "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
     }
 
