@@ -63,12 +63,10 @@ if __name__ == "__main__":
         for original_entry in original_data:
             if original_entry["perturbation_type"].replace(' ', '_') in args.categories:
                 # original entries
-                reference_solution = original_entry.get(
-                    "solution", None
-                ) or original_entry.get("reference_solution", None)
-                expected_answer = original_entry.get(
-                    "answer", None
-                ) or original_entry.get("expected_answer", None)
+                reference_solution = original_entry.get("solution", None) or original_entry.get(
+                    "reference_solution", None
+                )
+                expected_answer = original_entry.get("answer", None) or original_entry.get("expected_answer", None)
                 entry = dict(
                     question=original_entry["question"],
                     reference_solution=reference_solution,
@@ -87,12 +85,7 @@ if __name__ == "__main__":
                     },
                 )
                 # converting to int if able to for cleaner text representation
-                if (
-                    str(entry["expected_answer"])
-                    .replace('.', "", 1)
-                    .replace('-', "", 1)
-                    .isdigit()
-                ):
+                if str(entry["expected_answer"]).replace('.', "", 1).replace('-', "", 1).isdigit():
                     entry["expected_answer"] = float(entry["expected_answer"])
                     if int(entry["expected_answer"]) == entry["expected_answer"]:
                         entry["expected_answer"] = int(entry["expected_answer"])
