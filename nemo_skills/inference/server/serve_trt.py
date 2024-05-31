@@ -101,11 +101,14 @@ class TrtStartGeneration(Resource):
         input_request = request.get_json()
         logging.debug("request content: %s", json.dumps(input_request))
 
+        top_k = input_request.get("top_k")
+        if top_k == 0:
+            top_k = None
         data = dict(
             prompt=input_request["prompt"],
             max_new_tokens=input_request.get("tokens_to_generate", 64),
             temperature=input_request.get("temperature", 1.0),
-            top_k=input_request.get("top_k", 0),
+            top_k=top_k,
             top_p=input_request.get("top_p", 1.0),
             repetition_penalty=input_request.get("repetition_penalty", 1.2),
             random_seed=input_request.get("random_seed", 0),

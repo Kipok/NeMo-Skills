@@ -209,16 +209,14 @@ read -r -d '' cmd <<EOF
 EOF
 """
     if with_sandbox:
-        # we should estimate optimal memory and cpu requirements for sandbox
-        # right now splitting 1-to-3, since both evaluation and training
-        # do not use CPUs or CPU-RAM that much
         extra_sandbox_args = " ".join(CLUSTER_CONFIG.get("extra_sandbox_args", []))
         cmd += f"""
+srun --mpi=pmix --container-image={container} --container-mounts={mounts} bash -c "$cmd" &
+MAIN_PID=$!
 srun {extra_sandbox_args} --mpi=pmix --ntasks={num_nodes} \
      --container-image={CLUSTER_CONFIG["containers"]["sandbox"]} \
      bash -c "/entrypoint.sh && /start.sh" &
-srun --mpi=pmix --container-image={container} --container-mounts={mounts} bash -c "$cmd" &
-wait $!
+wait $MAIN_PID
 """
     # note how we are waiting only for the main command and sandbox will be killed when it finishes
     else:

@@ -119,7 +119,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
     with open(cfg.output_file, "at" if cfg.skip_filled else "wt", encoding="utf-8", buffering=1) as fout:
         data_points = []
         for idx, data_point in tqdm(enumerate(data), initial=starting_idx, total=len(data) + starting_idx):
-            if idx == cfg.max_samples:
+            if idx >= cfg.max_samples:
                 break
 
             data_points.append(data_point)
