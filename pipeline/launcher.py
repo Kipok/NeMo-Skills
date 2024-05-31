@@ -212,17 +212,12 @@ EOF
         # we should estimate optimal memory and cpu requirements for sandbox
         # right now splitting 1-to-3, since both evaluation and training
         # do not use CPUs or CPU-RAM that much
-        max_cpus = CLUSTER_CONFIG["max_cpus"][partition]
-        max_memory = CLUSTER_CONFIG["max_memory"][partition]
         extra_sandbox_args = " ".join(CLUSTER_CONFIG.get("extra_sandbox_args", []))
         cmd += f"""
-srun --cpus-per-task={max_cpus // 4} --mem={max_memory // 4}M \
-    {extra_sandbox_args} --ntasks={num_nodes} \
-    --container-image={CLUSTER_CONFIG["containers"]["sandbox"]} \
+srun {extra_sandbox_args} --mpi=pmix --ntasks={num_nodes} \
+     --container-image={CLUSTER_CONFIG["containers"]["sandbox"]} \
      bash -c "/entrypoint.sh && /start.sh" &
-srun --cpus-per-task={(3 * max_cpus) // (4 * tasks_per_node)} --mem={(3 * max_memory) // 4}M \
-    --mpi=pmix --container-image={container} \
-    --container-mounts={mounts} bash -c "$cmd" &
+srun --mpi=pmix --container-image={container} --container-mounts={mounts} bash -c "$cmd" &
 wait $!
 """
     # note how we are waiting only for the main command and sandbox will be killed when it finishes
