@@ -89,7 +89,7 @@ python pipeline/run_labeling.py \
     ++prompt.few_shot_examples.num_few_shots=5 \
     ++dataset=gsm8k \
     ++split_name=train_full \
-    ++inference.temperature=0.7 \
+    ++inference.temperature=0.5 \
     ++skip_filled=False \
     ++batch_size=8 \
     ++max_samples=20 \
@@ -109,8 +109,8 @@ python pipeline/run_labeling.py \
 
     # running compute_metrics to check that results are expected
     correct_answer, wrong_answer, no_answer, total = compute_metrics([f"{output_path}/output-rs0.jsonl"])
-    assert correct_answer == 40.0
-    assert wrong_answer == 45.0
+    assert correct_answer == 35.0
+    assert wrong_answer == 50.0
     assert no_answer == 15.0
     assert total == 20
 
