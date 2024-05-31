@@ -25,6 +25,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install .
         pip install pytest pytest-cov
+        pip install -r visualization/requirements.txt 
+        pip install -r visualization/test-requirements.txt
     - name: Run all tests
       run: |
         ./nemo_skills/code_execution/local_sandbox/start_local_sandbox.sh &
