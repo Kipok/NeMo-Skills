@@ -20,7 +20,6 @@ import json
 import logging
 import re
 import sys
-import time
 import uuid
 from argparse import ArgumentParser
 from concurrent.futures import ThreadPoolExecutor
@@ -420,7 +419,6 @@ def _stream(
 
     idx = 0
     while active_reqids:
-        # print("here", active_reqids, flush=True)
         for req_id, response in zip(active_reqids, multi_responses):
             for r in response:
                 if r.result.is_final:
@@ -438,7 +436,6 @@ def _stream(
                 batch_input_ids,
                 streaming,
             )
-            # print("!", output, flush=True)
 
             matching_stop_word = None
             # checking every half of the required tokens to have overlapping checks
@@ -455,8 +452,6 @@ def _stream(
             if matching_stop_word is not None:
                 # runner.session.cancel_request(req_id)
                 active_reqids.remove(req_id)
-                # print("Cancelling!", flush=True)
-                # print(active_reqids, flush=True)
                 break
 
         if active_reqids:

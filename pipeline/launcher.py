@@ -156,7 +156,7 @@ def launch_local_job(
     mounts += f" -v {fp.name}:/start.sh"
 
     if tasks_per_node > 1:
-        start_cmd = f"mpirun -quiet --allow-run-as-root -np {tasks_per_node} bash /start.sh"
+        start_cmd = f"mpirun --allow-run-as-root -np {tasks_per_node} bash /start.sh"
     else:
         start_cmd = "bash /start.sh"
 
@@ -210,18 +210,18 @@ EOF
 """
     if with_sandbox:
         # we should estimate optimal memory and cpu requirements for sandbox
-        # right now splitting half-and-half, since both evaluation and training
+        # right now splitting 1-to-3, since both evaluation and training
         # do not use CPUs or CPU-RAM that much
         max_cpus = CLUSTER_CONFIG["max_cpus"][partition]
         max_memory = CLUSTER_CONFIG["max_memory"][partition]
         extra_sandbox_args = " ".join(CLUSTER_CONFIG.get("extra_sandbox_args", []))
         cmd += f"""
-srun --cpus-per-task={max_cpus // 2} --mem={max_memory // 2}M \
+srun --cpus-per-task={max_cpus // 4} --mem={max_memory // 4}M \
     {extra_sandbox_args} --ntasks={num_nodes} \
     --container-image={CLUSTER_CONFIG["containers"]["sandbox"]} \
      bash -c "/entrypoint.sh && /start.sh" &
-srun --cpus-per-task={max_cpus // (2 * tasks_per_node)} --mem={max_memory // 2}M \
-    {extra_sandbox_args} --mpi=pmix --container-image={container} \
+srun --cpus-per-task={(3 * max_cpus) // (4 * tasks_per_node)} --mem={(3 * max_memory) // 4}M \
+    --mpi=pmix --container-image={container} \
     --container-mounts={mounts} bash -c "$cmd" &
 wait $!
 """

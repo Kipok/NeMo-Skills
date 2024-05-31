@@ -157,7 +157,7 @@ class Prompt:
         )
         reference = input_dict[self.config.few_shot_examples.retrieval_field]
         # filtering exact match if it's there
-        while example_dicts[0][self.config.few_shot_examples.retrieval_field] == reference:
+        while example_dicts and example_dicts[0][self.config.few_shot_examples.retrieval_field] == reference:
             example_dicts = example_dicts[1:]
 
         # removing too long solutions
