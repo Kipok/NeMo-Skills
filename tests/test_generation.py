@@ -89,6 +89,7 @@ python pipeline/run_labeling.py \
     ++prompt.few_shot_examples.num_few_shots=5 \
     ++dataset=gsm8k \
     ++split_name=train_full \
+    ++inference.temperature=0.7 \
     ++skip_filled=False \
     ++batch_size=8 \
     ++max_samples=20 \

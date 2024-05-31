@@ -115,6 +115,9 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
     data = data[starting_idx:]
     prompt = Prompt(config=cfg.prompt)
 
+    if cfg.max_samples < 0:
+        cfg.max_samples = len(data)
+
     # setting buffering=1 to force to dump the output after every line, so that we can see intermediate generations
     with open(cfg.output_file, "at" if cfg.skip_filled else "wt", encoding="utf-8", buffering=1) as fout:
         data_points = []
