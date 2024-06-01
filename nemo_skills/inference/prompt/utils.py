@@ -61,7 +61,7 @@ class FewShotExamplesConfig:
 
     retrieval_field: Optional[str] = None  # e.g. question, reference_solution, etc.
     retrieval_file: Optional[str] = None  # needs to be provided if retrieval_field is not None
-    retrieved_entries: Optional[int] = -1
+    retrieved_entries: int = 0
     max_retrieved_chars: int = 100000000  # no limit by default
     max_retrieved_chars_field: str = "reference_solution"
     retriever: Optional[Any] = None
@@ -81,6 +81,12 @@ class FewShotExamplesConfig:
                 f"There are not enough few shot examples in {self.examples_type}. "
                 f"Max number is {len(self.example_dicts)}"
             )
+
+        if self.retrieved_entries == 0:
+            self.retrieved_entries = 2 * self.num_few_shots
+
+        if self.example_dicts is not None and self.retriever is not None:
+            raise ValueError("example_dicts and retriever cannot be used together")
 
         if self.retriever is not None:
             return
@@ -102,12 +108,6 @@ class FewShotExamplesConfig:
 
         if self.example_dicts is None and self.retriever is None and self.num_few_shots > 0:
             raise ValueError("You need to construct either example_dicts or retriever if num_few_shots > 0")
-
-        if self.example_dicts is not None and self.retriever is not None:
-            raise ValueError("example_dicts and retriever cannot be used together")
-
-        if self.retrieved_entries == -1:
-            self.retrieved_entries = 2 * self.num_few_shots
 
 
 @nested_dataclass

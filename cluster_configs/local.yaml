@@ -15,7 +15,7 @@
 cluster: local
 
 containers:
-  tensorrt_llm: gitlab-master.nvidia.com/igitman/nemo_containers:trt-nemotron-new
+  tensorrt_llm: gitlab-master.nvidia.com/igitman/nemo_containers:trt-nemotron-new-latest
   nemo: igitman/nemo-skills-sft:0.2.0
   # sandbox is always re-built locally
 

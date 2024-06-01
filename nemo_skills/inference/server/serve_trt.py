@@ -453,7 +453,7 @@ def _stream(
                     break
 
             if matching_stop_word is not None:
-                # runner.session.cancel_request(req_id)
+                runner.session.cancel_request(req_id)
                 active_reqids.remove(req_id)
                 break
 
@@ -597,10 +597,11 @@ class WrapperServer:
 
 
 if __name__ == "__main__":
-    # TODO: can we reuse normal logger here?
+
     class LogFilter(logging.Filter):
         def filter(self, record):
-            return "\"PUT /get_result HTTP/1.1\" 200" not in record.getMessage()
+            filter_strings = ("\"PUT /get_result HTTP/1.1\" 200", "\"PUT /start_generation HTTP/1.1\" 200")
+            return all(filter_string not in record.getMessage() for filter_string in filter_strings)
 
     log = logging.getLogger('werkzeug')
     log.addFilter(LogFilter())
