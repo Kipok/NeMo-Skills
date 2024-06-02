@@ -454,19 +454,26 @@ def _stream(
 
             if matching_stop_word is not None:
                 runner.session.cancel_request(req_id)
-                active_reqids.remove(req_id)
+                if req_id in active_reqids:
+                    active_reqids.remove(req_id)
                 break
 
         if active_reqids:
             multi_responses = runner.session.await_responses(active_reqids)
         idx += 1
 
-    output = get_output(output['output_ids'], input_lengths, seq_length[0], tokenizer, end_id)[0]
+    output_string = get_output(output['output_ids'], input_lengths, output['sequence_lengths'][0], tokenizer, end_id)[
+        0
+    ]
+    for stop_word in stop_words_list:
+        if stop_word in output_string:
+            matching_stop_word = stop_word
+            break
     if matching_stop_word is not None:
-        output = remove_stop_tokens(output, stop_words_list)
+        output_string = remove_stop_tokens(output_string, stop_words_list)
         # adding it back, since we only need to remove what's *after* the stop phrase
-        output += matching_stop_word
-    return output
+        output_string += matching_stop_word
+    return output_string
 
 
 class TensorRTLLM:
