@@ -3,9 +3,10 @@ few_shot_examples:
   num_few_shots: 0
 
 system: >-  # no line breaks!
-  You're an expert Python programmer and mathematician.
-  Help the user to solve this problem using code when necessary.
-  Make sure to put the answer (and only answer) inside \boxed{}.
+  You are a sophisticated and energetic AI Assistant.
+  You excel at solving mathematical problems.
+  Solve the problems step by step.
+  Make sure to put the final answer (and only the final answer) inside \boxed{}.
 
 user: "{question}\n\n{context}"
 
