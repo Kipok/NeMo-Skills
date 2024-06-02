@@ -209,15 +209,28 @@ read -r -d '' cmd <<EOF
 EOF
 """
     if with_sandbox:
+        # we should estimate optimal memory and cpu requirements for sandbox
+        # right now splitting half-and-half, since both evaluation and training
+        # do not use CPUs or CPU-RAM that much
+
+        extra_main_args = ""
         extra_sandbox_args = " ".join(CLUSTER_CONFIG.get("extra_sandbox_args", []))
+        try:
+            max_cpus = CLUSTER_CONFIG["max_cpus"][partition]
+            max_memory = CLUSTER_CONFIG["max_memory"][partition]
+            extra_main_args += f" --cpus-per-task={max_cpus // (2 * tasks_per_node)} --mem={max_memory // 2}M "
+            extra_sandbox_args += f" --cpus-per-task={max_cpus // 2} --mem={max_memory // 2}M "
+        except KeyError:
+            pass
         cmd += f"""
-srun --mpi=pmix --container-image={container} --container-mounts={mounts} bash -c "$cmd" &
+srun {extra_main_args} --mpi=pmix --container-image={container} --container-mounts={mounts} bash -c "$cmd" &
 MAIN_PID=$!
 srun {extra_sandbox_args} --mpi=pmix --ntasks={num_nodes} \
      --container-image={CLUSTER_CONFIG["containers"]["sandbox"]} \
      bash -c "/entrypoint.sh && /start.sh" &
 wait $MAIN_PID
 """
+
     # note how we are waiting only for the main command and sandbox will be killed when it finishes
     else:
         cmd = cmd + f'\nsrun --mpi=pmix --container-image={container} --container-mounts={mounts} bash -c "$cmd"'
