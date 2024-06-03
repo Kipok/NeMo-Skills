@@ -530,7 +530,7 @@ class VLLMModel(BaseModel):
         self.model_name_server = self.get_model_name_from_server()
         self.model = self.model_name_server
 
-        print(f"Model hosted by {self.server_type} server:", self.model)
+        LOG.info("Model hosted by %s server: %s", self.server_type, self.model)
 
     def _single_call(
         self,
