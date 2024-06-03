@@ -42,6 +42,8 @@ LOG = logging.getLogger(__name__)
 
 def remove_stop_tokens(text: str, stop_phrases: List[str]) -> str:
     """Removes everything after the last stop token."""
+    if not stop_phrases:
+        return text
     return re.split("|".join([sp.replace('|', '\\|') for sp in stop_phrases]), text, maxsplit=1)[0]
 
 

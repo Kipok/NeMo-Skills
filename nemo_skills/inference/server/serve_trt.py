@@ -40,6 +40,8 @@ from transformers import AutoTokenizer, T5Tokenizer
 # keeping it here to make this file self-contained. This is duplicated from model.py
 def remove_stop_tokens(text: str, stop_phrases: List[str]) -> str:
     """Removes everything after the last stop token."""
+    if not stop_phrases:
+        return text
     return re.split("|".join([sp.replace('|', '\\|') for sp in stop_phrases]), text, maxsplit=1)[0]
 
 
@@ -414,6 +416,8 @@ def _stream(
     tokenizer,
     input_lengths,
 ):
+    if stop_words_list is None:
+        stop_words_list = []
     active_reqids = copy.deepcopy(request_ids)
     assert len(active_reqids) == 1
 
