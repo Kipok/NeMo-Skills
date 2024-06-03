@@ -93,6 +93,9 @@ from sympy.parsing.sympy_parser import parse_expr
 
 
 def _fix_fracs(string):
+    # replacing all extra spaces
+    while "\\frac " in string:
+        string = string.replace("\\frac ", "\\frac")
     substrs = string.split("\\frac")
     new_str = substrs[0]
     if len(substrs) > 1:
