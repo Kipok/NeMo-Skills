@@ -15,10 +15,9 @@
 import argparse
 import json
 import os
+import tarfile
 import urllib.request
 from pathlib import Path
-import tarfile
-
 
 URL = "https://github.com/ConsequentAI/fneval/raw/main/{}.tar.gz"
 # Data Format
@@ -85,10 +84,7 @@ if __name__ == "__main__":
     with open(output_file, "wt", encoding="utf-8") as fout_ic:
         for original_entry in fin_data:
             # original entries
-            if (
-                original_entry["category"] in args.categories
-                and args.date == original_entry['date']
-            ):
+            if original_entry["category"] in args.categories and args.date == original_entry['date']:
                 entry = dict(
                     question=original_entry["question"],
                     expected_answer=original_entry["expected_answer"],

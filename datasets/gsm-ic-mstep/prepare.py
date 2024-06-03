@@ -63,35 +63,20 @@ if __name__ == "__main__":
     if not os.path.exists(original_file):
         urllib.request.urlretrieve(URL, original_file)
 
-    with open(original_file, "rt") as fin, open(
-        output_file_ic, "wt", encoding="utf-8"
-    ) as fout_ic:
+    with open(original_file, "rt") as fin, open(output_file_ic, "wt", encoding="utf-8") as fout_ic:
         fin_data = json.loads(fin.read())
         for original_entry in fin_data:
             # entries with irrelevant context
             if all(
-                [
-                    original_entry[key] == value
-                    for key, value in args.items()
-                    if LABEL in key and value is not None
-                ]
+                [original_entry[key] == value for key, value in args.items() if LABEL in key and value is not None]
             ):
                 ic_entry = dict(
                     question=original_entry["new_question"],
                     expected_answer=original_entry["answer"],
-                    **{
-                        key: value
-                        for key, value in original_entry.items()
-                        if key not in ["answer", "new_question"]
-                    },
+                    **{key: value for key, value in original_entry.items() if key not in ["answer", "new_question"]},
                 )
                 # converting to int if able to for cleaner text representation
-                if (
-                    str(ic_entry["expected_answer"])
-                    .replace('.', "", 1)
-                    .replace('-', "", 1)
-                    .isdigit()
-                ):
+                if str(ic_entry["expected_answer"]).replace('.', "", 1).replace('-', "", 1).isdigit():
                     ic_entry["expected_answer"] = float(ic_entry["expected_answer"])
                     if int(ic_entry["expected_answer"]) == ic_entry["expected_answer"]:
                         ic_entry["expected_answer"] = int(ic_entry["expected_answer"])
