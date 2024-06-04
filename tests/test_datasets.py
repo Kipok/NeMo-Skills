@@ -30,7 +30,7 @@ def test_data_scripts():
         ++server.host=1 \
         ++test=1"""
     subprocess.run(
-        f'bash {Path(__file__).absolute().parents[1] / "datasets" / "prepare_all.sh"}', shell=True, check=True,
+        f'bash {Path(__file__).absolute().parents[1] / "datasets" / "prepare_all.sh"}', shell=True, check=True
     )
 
     # checking that all expected files are created
