@@ -162,7 +162,9 @@ class CodeExecutionWrapper:
         for output in new_outputs:
             if output['session_id'] is not None:
                 self.sandbox.clear_session(output['session_id'])
-            outputs.append({'generation': output['input_dict']['generation']})
+            outputs.append(
+                {'generation': output['input_dict']['generation'], 'error_message': output['error_message']}
+            )
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
         return outputs

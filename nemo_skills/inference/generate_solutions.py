@@ -90,7 +90,8 @@ cs.store(name="base_generation_config", node=GenerateSolutionsConfig)
 
 def add_answer_and_error_message(output: dict):
     output['predicted_answer'] = extract_answer(output['generation'])
-    output['error_message'] = extract_error_message(output['generation'])
+    if 'error_message' not in output:
+        output['error_message'] = extract_error_message(output['generation'])
 
 
 @hydra.main(version_base=None, config_name='generation_config', config_path='.')

@@ -26,7 +26,7 @@ from nemo_skills.utils import nested_dataclass
 LOG = logging.getLogger(__file__)
 
 # listing all available configs here
-prompt_types = [cfg.stem for cfg in Path(__file__).parent.glob("*.yaml")]
+prompt_types = [str(cfg).split('nemo_skills/inference/prompt/')[1] for cfg in Path(__file__).parent.glob("**/*.yaml")]
 
 # listing all dataset folders available - note this will not be available
 # if using from installed package but you need to have data files available anyway

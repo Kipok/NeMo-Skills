@@ -13,11 +13,11 @@
 # limitations under the License.
 
 
-from nemo_skills.inference.prompt.utils import FewShotExamplesConfig, Prompt, PromptConfig, get_prompt_config
+from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
 
 
 def test_rephrasing_prompt():
-    prompt = Prompt(config=get_prompt_config('rephrasing'))
+    prompt = Prompt(config=get_prompt_config('question_generation/rephrasing'))
     prompt.config.few_shot_examples.example_dicts = [
         {
             'question': 'Are you sure you want to do that?',
@@ -58,7 +58,7 @@ Rephrase the above question:
 
 
 def test_augmentation_prompt():
-    prompt = Prompt(config=get_prompt_config('augmentation'))
+    prompt = Prompt(config=get_prompt_config('question_generation/augmentation'))
     prompt.config.few_shot_examples.example_dicts = [
         {
             'question': 'Are you sure you want to do that?',
@@ -99,7 +99,7 @@ Write another question similar to this one:
 
 
 def test_llama3_instruct_prompt():
-    prompt = Prompt(config=get_prompt_config('llama3_instruct'))
+    prompt = Prompt(config=get_prompt_config('llama3/instruct'))
     prompt.config.few_shot_examples.example_dicts = [
         {'question': '1 + 1 = ?', 'generation': "That's easy: 2!"},
         {'question': '5 + 5 = ?', 'generation': "That's easy: 10!"},
@@ -143,7 +143,7 @@ Question:
 
 
 def test_llama3_base_prompt():
-    prompt = Prompt(config=get_prompt_config('llama3_base'))
+    prompt = Prompt(config=get_prompt_config('llama3/base'))
     prompt.config.few_shot_examples.example_dicts = [
         {'question': '1 + 1 = ?', 'generation': "That's easy: 2!"},
         {'question': '5 + 5 = ?', 'generation': "That's easy: 10!"},
@@ -182,7 +182,7 @@ My solution:
 
 
 def test_code_base_prompt():
-    prompt = Prompt(config=get_prompt_config('code_base'))
+    prompt = Prompt(config=get_prompt_config('openmathinstruct/base'))
     prompt.config.few_shot_examples.example_dicts = [
         {'question': '1 + 1 = ?', 'generation': "That's easy: 2!"},
         {'question': '5 + 5 = ?', 'generation': "That's easy: 10!"},
@@ -221,7 +221,7 @@ My solution:
 
 
 def test_code_sfted_prompt():
-    prompt = Prompt(config=get_prompt_config('code_sfted'))
+    prompt = Prompt(config=get_prompt_config('openmathinstruct/sfted'))
     expected_prompt = """System:
 You're an expert Python programmer and mathematician. Help the user to solve this problem using code when necessary. Make sure to put the answer (and only answer) inside \\boxed{}.
 

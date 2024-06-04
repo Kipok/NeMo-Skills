@@ -43,7 +43,7 @@ python pipeline/run_eval.py \
     --benchmarks gsm8k:0 \
     --num_gpus 2 \
     --num_nodes 1 \
-    +prompt=code_base \
+    +prompt=openmathinstruct/base \
     ++prompt.few_shot_examples.examples_type=gsm8k_only_code \
     ++prompt.few_shot_examples.num_few_shots=5 \
     ++split_name=test \
@@ -86,7 +86,7 @@ python pipeline/run_eval.py \
     --benchmarks math:0 \
     --num_gpus 2 \
     --num_nodes 1 \
-    +prompt=code_base_reference \
+    +prompt=openmathinstruct/reference \
     ++prompt.few_shot_examples.retrieval_field=question  \
     ++prompt.few_shot_examples.retrieval_file=/code/datasets/math/train_full.jsonl \
     ++prompt.few_shot_examples.num_few_shots=5 \
@@ -128,7 +128,7 @@ python pipeline/run_labeling.py \
     --output_dir {output_path} \
     --num_gpus 2 \
     --num_nodes 1 \
-    +prompt=code_base \
+    +prompt=openmathinstruct/base \
     ++prompt.few_shot_examples.examples_type=gsm8k_only_code \
     ++prompt.few_shot_examples.num_few_shots=5 \
     ++dataset=gsm8k \
@@ -173,7 +173,7 @@ python pipeline/run_eval.py \
     --benchmarks gsm8k:0 \
     --num_gpus 2 \
     --num_nodes 1 \
-    +prompt=code_base \
+    +prompt=openmathinstruct/base \
     ++prompt.few_shot_examples.examples_type=gsm8k_only_code \
     ++prompt.few_shot_examples.num_few_shots=5 \
     ++split_name=test \

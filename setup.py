@@ -32,10 +32,11 @@ setup(
         'requests',
         'backoff',
         'sympy',
+        'rank_bm25',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.10",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],

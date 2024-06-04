@@ -195,6 +195,8 @@ def test_few_shots(sandbox_type):
 
     for example_name, example_list in examples_map.items():
         for example in example_list:
+            if 'generation' not in example:
+                continue
             if len(extract_code_to_execute(example['generation'], extract_all=True)) > 1:
                 code_snippets = extract_code_to_execute(example['generation'], extract_all=True)
                 expected_outputs = extract_code_output(example['generation'], extract_all=True)
