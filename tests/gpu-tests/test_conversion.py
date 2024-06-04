@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-sys.path.append(str(Path(__file__).absolute().parents[1] / 'pipeline'))
+sys.path.append(str(Path(__file__).absolute().parents[2] / 'pipeline'))
 from launcher import CLUSTER_CONFIG, NEMO_SKILLS_CODE, launch_job
 
 
@@ -39,7 +39,7 @@ python nemo_skills/conversion/hf_to_trtllm.py \
     --tp_size 2 \
 && trtllm-build \
     --checkpoint_dir /tmp/trtllm \
-    --output_dir /output/trtllm-final \
+    --output_dir /output/trtllm-model \
     --gpt_attention_plugin float16 \
     --gemm_plugin float16 \
     --context_fmha "enable" \
@@ -48,7 +48,7 @@ python nemo_skills/conversion/hf_to_trtllm.py \
     --max_input_len 3584 \
     --max_output_len 512 \
     --max_batch_size 8 \
-&& cp /model/tokenizer* /output/trtllm-final/
+&& cp /model/tokenizer* /output/trtllm-model/
 """
 
     launch_job(
@@ -58,5 +58,56 @@ python nemo_skills/conversion/hf_to_trtllm.py \
         gpus_per_node=2,
         job_name='test',
         container=CLUSTER_CONFIG["containers"]['tensorrt_llm'],
+        mounts=f"{model_path}:/model,{output_path}:/output,{NEMO_SKILLS_CODE}:/code",
+    )
+
+
+def test_hf_nemo_conversion():
+    model_path = os.getenv('NEMO_SKILLS_TEST_HF_MODEL')
+    if not model_path:
+        pytest.skip("Define NEMO_SKILLS_TEST_HF_MODEL to run this test")
+    output_path = os.getenv('NEMO_SKILLS_TEST_OUTPUT', '/tmp')
+
+    cmd = f"""cd /code && \
+HF_TOKEN={os.environ['HF_TOKEN']} python nemo_skills/conversion/hf_to_nemo.py \
+    --in-path /model \
+    --out-path /output/model.nemo \
+    --hf-model-name meta-llama/Meta-Llama-3-8B \
+    --precision 16
+"""
+
+    launch_job(
+        cmd,
+        num_nodes=1,
+        tasks_per_node=1,
+        gpus_per_node=2,
+        job_name='test',
+        container=CLUSTER_CONFIG["containers"]['nemo'],
+        mounts=f"{model_path}:/model,{output_path}:/output,{NEMO_SKILLS_CODE}:/code",
+    )
+
+
+def test_nemo_hf_conversion():
+    model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
+    if not model_path:
+        pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
+    output_path = os.getenv('NEMO_SKILLS_TEST_OUTPUT', '/tmp')
+
+    cmd = f"""cd /code && \
+HF_TOKEN={os.environ['HF_TOKEN']} python nemo_skills/conversion/nemo_to_hf.py \
+    --in-path /model \
+    --out-path /output/hf-model \
+    --hf-model-name meta-llama/Meta-Llama-3-8B \
+    --precision 16 \
+    --max-shard-size 10GB
+"""
+
+    launch_job(
+        cmd,
+        num_nodes=1,
+        tasks_per_node=1,
+        gpus_per_node=2,
+        job_name='test',
+        container=CLUSTER_CONFIG["containers"]['nemo'],
         mounts=f"{model_path}:/model,{output_path}:/output,{NEMO_SKILLS_CODE}:/code",
     )

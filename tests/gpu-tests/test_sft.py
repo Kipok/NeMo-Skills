@@ -25,7 +25,7 @@ from pathlib import Path
 
 import pytest
 
-sys.path.append(str(Path(__file__).absolute().parents[1] / 'pipeline'))
+sys.path.append(str(Path(__file__).absolute().parents[2] / 'pipeline'))
 from compute_metrics import compute_metrics
 
 
@@ -37,7 +37,7 @@ def test_sft():
 
     cmd = f""" \
 python {Path(__file__).absolute().parents[1]}/datasets/gsm8k/prepare.py --split_name validation && \
-export NEMO_SKILLS_DATA={Path(__file__).absolute().parents[1] / 'datasets'} && \
+export NEMO_SKILLS_DATA={Path(__file__).absolute().parents[2] / 'datasets'} && \
 export NEMO_SKILLS_RESULTS={output_path} && \
 python pipeline/run_sft_and_eval.py \
       --expname test \
