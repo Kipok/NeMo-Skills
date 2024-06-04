@@ -39,7 +39,6 @@ export WANDB_API_KEY={WANDB_API_KEY} \
     trainer.devices={num_gpus} \
     trainer.num_nodes={num_nodes} \
     model.restore_from_path=/nemo_model \
-    model.data.validation_ds.file_path=/code/datasets/{validation_dataset}/validation-sft.jsonl \
     {logging_params} \
     exp_manager.name={expname} \
     exp_manager.explicit_log_dir=/results \
@@ -71,6 +70,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--disable_wandb", action="store_true", help="Disable wandb logging and use tensorboard instead"
     )
+    parser.add_argument("--chat_format", action="store_true", help="Use chat format for SFT data")
     parser.add_argument(
         "--partition",
         required=False,
@@ -79,6 +79,17 @@ if __name__ == "__main__":
     args, unknown = parser.parse_known_args()
 
     extra_arguments = f'{" ".join(unknown)}'
+
+    if args.chat_format:
+        extra_arguments = (
+            " ++model.data.chat=True "
+            f" model.data.validation_ds.file_path=/code/datasets/{args.validation_dataset}/validation-sft-chat.jsonl "
+        ) + extra_arguments
+    else:
+        extra_arguments = (
+            " ++model.data.chat=False "
+            f" model.data.validation_ds.file_path=/code/datasets/{args.validation_dataset}/validation-sft.jsonl "
+        ) + extra_arguments
 
     args.checkpoints_folder = Path(args.checkpoints_folder).absolute()
     args.nemo_model = Path(args.nemo_model).absolute()
@@ -99,7 +110,6 @@ if __name__ == "__main__":
         "config_name": args.config_name,
         "config_path": args.config_path,
         "checkpoints_folder": args.checkpoints_folder,
-        "validation_dataset": args.validation_dataset,
         "nemo_model": args.nemo_model,
         "num_nodes": args.num_nodes,
         "num_gpus": args.num_gpus,
