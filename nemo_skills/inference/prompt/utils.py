@@ -14,11 +14,12 @@
 
 import json
 import logging
-from dataclasses import asdict, field
+from dataclasses import field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from omegaconf import MISSING, OmegaConf
+import yaml
+from omegaconf import MISSING
 
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
 from nemo_skills.utils import nested_dataclass
@@ -216,16 +217,7 @@ def get_prompt_config(prompt_type: str) -> PromptConfig:
     # reading prompt format from the yaml file, if not running through hydra
     config_path = Path(__file__).parent / f"{prompt_type}.yaml"
     with open(config_path, "rt", encoding="utf-8") as fin:
-        # Load the YAML file using OmegaConf
-        loaded_config = OmegaConf.load(fin)
-
-        # Create a default PromptConfig and convert it to a DictConfig
-        default_config = OmegaConf.create(asdict(PromptConfig()))
-
-        # Merge the default config with the loaded config
-        merged_config = OmegaConf.merge(default_config, loaded_config)
-
-        prompt_config = OmegaConf.structured(PromptConfig(_init_nested=True, **merged_config))
+        prompt_config = PromptConfig(_init_nested=True, **yaml.safe_load(fin))
         return prompt_config
 
 

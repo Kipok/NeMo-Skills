@@ -26,30 +26,18 @@ from typing import Any, Dict, List, Optional
 import hydra
 import numpy as np
 import tqdm
-import yaml
 from omegaconf import MISSING
 
 sys.path.append(str(Path(__file__).absolute().parents[2]))
 
 from nemo_skills.finetuning.filtering_utils import downsample_data, process_bad_solutions
-from nemo_skills.inference.prompt.utils import Prompt, PromptConfig
+from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
 from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging, unroll_files
 
 LOG = logging.getLogger(__file__)
 
 # TODO: this should be done as a pipeline with different filterings / downsampling
 #       ideally directly use nemo curator for this
-
-
-def get_default_prompt_config():
-    # by default reading code_sfted.yaml, but users can override
-    with open(
-        Path(__file__).parents[1] / "inference" / "prompt" / f"code_sfted.yaml",
-        "rt",
-        encoding="utf-8",
-    ) as fin:
-        prompt_config = PromptConfig(_init_nested=True, **yaml.safe_load(fin))
-    return prompt_config
 
 
 @nested_dataclass
@@ -68,7 +56,8 @@ class PrepareSFTDataConfig:
     downsampling_method: Optional[str] = None  # random or fair
     num_output_samples: int = -1
 
-    prompt: PromptConfig = field(default_factory=get_default_prompt_config)
+    # TODO: support prompt config directly, but there are some hydra issues
+    prompt_type: str = 'openmathinstruct/sfted'
 
     filters: List[str] = field(default_factory=lambda: ["multi_boxed", "broken_code"])
     text_filter_type: Optional[str] = None
@@ -180,7 +169,8 @@ def prepare_sft_data(cfg: PrepareSFTDataConfig):
     prepared_data = []
     total_covered = 0
     samples_per_question = []
-    prompt = Prompt(config=cfg.prompt)
+    prompt_config = get_prompt_config(cfg.prompt_type)
+    prompt = Prompt(config=prompt_config)
     # only looping over the correct samples (unless asked for incorrect)
     for question, samples in tqdm.tqdm(grouped_samples.items()):
         filtered_solutions = process_bad_solutions(samples, cfg.filters, cfg.text_filter_type, cfg.trim_solutions)
