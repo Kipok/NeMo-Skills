@@ -19,6 +19,7 @@ import logging
 import os
 import re
 import time
+from typing import Union
 
 import requests
 
@@ -350,7 +351,7 @@ class VLLMModel(BaseModel):
         logit_bias: dict = None,
         seed: int = None,
         parse_response: bool = True,
-    ) -> "openai.types.Completion" | list[str]:
+    ) -> Union[list[str], "openai.types.Completion"]:
         if top_k == 0:
             top_k = 1
 
