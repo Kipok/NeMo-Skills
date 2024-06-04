@@ -27,14 +27,43 @@ from nemo_skills.inference.prompt.utils import Prompt
 LOG = logging.getLogger(__name__)
 
 
-def remove_stop_tokens(text: str, stop_phrases: list[str]) -> str:
+def remove_stop_phrases(text: str, stop_phrases: list[str]) -> str:
     """Removes everything after the last stop token."""
     if not stop_phrases:
         return text
     return re.split("|".join([sp.replace('|', '\\|') for sp in stop_phrases]), text, maxsplit=1)[0]
 
 
+def preprocess_request(request: dict):
+    """Just a small utility to pre-process some of the parameters of request."""
+    # temperature of 0 means greedy, but it's not always supported by the server
+    # so setting explicit greedy parameters instead
+    if request["temperature"] == 0:
+        request["temperature"] = 1.0
+        request["top_k"] = 1
+        request["top_p"] = 1.0
+
+
+def postprocess_output(outputs: list[dict], stop_phrases: list[str]):
+    """Post-processes the outputs of the model."""
+    for output in outputs:
+        output['generation'] = remove_stop_phrases(output['generation'], stop_phrases)
+
+
 class BaseModel(abc.ABC):
+    """Base model class for handling requests to the inference server.
+
+    Args:
+        host: Optional[str] = '127.0.0.1' - Host of the inference server.
+        port: Optional[str] = '5000' - Port of the inference server.
+            Only required if handle_code_execution is True.
+        ssh_server: Optional[str] = None - SSH server for tunneling requests.
+            Useful if server is running on slurm cluster to which there is an ssh access
+            Can also be specified through NEMO_SKILLS_SSH_SERVER env var.
+        ssh_key_path: Optional[str] = None - Path to the ssh key for tunneling.
+            Can also be specified through NEMO_SKILLS_SSH_KEY_PATH env var.
+    """
+
     def __init__(
         self,
         host: str = '127.0.0.1',
@@ -54,15 +83,6 @@ class BaseModel(abc.ABC):
         else:
             self.requests_lib = requests
 
-    def _prepare_request(self, request: dict):
-        """Just a small utility to pre-process some of the parameters of request."""
-        # temperature of 0 means greedy, but it's not always supported by the server
-        # so setting explicit greedy parameters instead
-        if request["temperature"] == 0:
-            request["temperature"] = 1.0
-            request["top_k"] = 1
-            request["top_p"] = 1.0
-
     @abc.abstractmethod
     def generate(
         self,
@@ -75,20 +95,19 @@ class BaseModel(abc.ABC):
         repetition_penalty: float,
         random_seed: int,
         stop_phrases: list[str],
+        remove_stop_phrases: bool = True,
     ) -> list[dict]:
         pass
 
-    def _send_request(self, request: dict):
-        outputs = self.requests_lib.put(
-            url="http://{}:{}/generate".format(self.server_host, self.server_port),
-            data=json.dumps(request),
-            headers={"Content-Type": "application/json"},
-        ).json()
-
-        return outputs
-
 
 class TensorRTLLMModel(BaseModel):
+    """Note that the current implementation supports inflight-batching so
+    to make the most use of it, you should submit a large number of prompts
+    at the same time.
+
+    A good default value is 16-32 times bigger than the model's max batch size.
+    """
+
     def generate(
         self,
         prompt: Prompt,
@@ -100,6 +119,7 @@ class TensorRTLLMModel(BaseModel):
         repetition_penalty: float,
         random_seed: int,
         stop_phrases: list[str],
+        remove_stop_phrases: bool = True,
     ) -> list[dict]:
         string_prompts = [prompt.build_string(input_dict) for input_dict in input_dicts]
         request = {
@@ -111,7 +131,7 @@ class TensorRTLLMModel(BaseModel):
             "repetition_penalty": repetition_penalty,
             "stop_words_list": stop_phrases,
         }
-        self._prepare_request(request)
+        preprocess_request(request)
 
         generation_ids = []
 
@@ -140,7 +160,8 @@ class TensorRTLLMModel(BaseModel):
                 if result is not None:
                     finished_count += 1
                     outputs[pos] = {'generation': result}
-
+        if remove_stop_phrases:
+            postprocess_output(outputs, stop_phrases)
         return outputs
 
 
@@ -156,6 +177,7 @@ class NemoModel(BaseModel):
         repetition_penalty: float,
         random_seed: int,
         stop_phrases: list[str],
+        remove_stop_phrases: bool = True,
     ) -> list[dict]:
         string_prompts = [prompt.build_string(input_dict) for input_dict in input_dicts]
         request = {
@@ -168,7 +190,7 @@ class NemoModel(BaseModel):
             "repetition_penalty": repetition_penalty,
             "end_strings": ["<|endoftext|>"] + stop_phrases,
         }
-        self._prepare_request(request)
+        preprocess_request(request)
         generations = self.requests_lib.put(
             url="http://{}:{}/generate".format(self.server_host, self.server_port),
             data=json.dumps(request),
@@ -178,6 +200,8 @@ class NemoModel(BaseModel):
         outputs = [None] * len(generations['sentences'])
         for idx, generation in enumerate(generations['sentences']):
             outputs[idx] = {'generation': generation[len(string_prompts[idx]) :]}
+        if remove_stop_phrases:
+            postprocess_output(outputs, stop_phrases)
         return outputs
 
 
@@ -208,9 +232,12 @@ class OpenAIModel(BaseModel):
         random_seed: int,
         stop_phrases: list[str],
         top_k: int = 0,
+        remove_stop_phrases: bool = True,
     ) -> list[dict]:
         if top_k != 0:
             raise ValueError("`top_k` is not supported by OpenAI, please set it to default value `0`.")
+        if not remove_stop_phrases:
+            raise ValueError("OpenAI always removes stop phrases.")
 
         outputs = []
         for input_dict in input_dicts:

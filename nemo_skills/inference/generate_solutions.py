@@ -17,14 +17,19 @@ import logging
 import sys
 from dataclasses import asdict, field
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import hydra
 from tqdm import tqdm
 
+from nemo_skills.code_execution import extract_error_message
+from nemo_skills.code_execution.math_grader import extract_answer
 from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
 from nemo_skills.inference.prompt.utils import Prompt, PromptConfig, datasets, prompt_types
-from nemo_skills.inference.server.model import ErrorRecoveryConfig, get_model, server_params
+from nemo_skills.inference.server.code_execution_model import (
+    ErrorRecoveryConfig,
+    get_code_execution_model,
+    server_params,
+)
 from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dataclass, setup_logging
 
 LOG = logging.getLogger(__file__)
@@ -56,9 +61,9 @@ class GenerateSolutionsConfig:
 
     # Can specify one of the existing datasets.
     # Choices: {datasets}.
-    dataset: Optional[str] = None
-    split_name: Optional[str] = None  # Can be train, validation, test or train_full (train + validation)
-    data_file: Optional[str] = None  # Can directly specify a data file, if using a custom dataset
+    dataset: str | None = None
+    split_name: str | None = None  # Can be train, validation, test or train_full (train + validation)
+    data_file: str | None = None  # Can directly specify a data file, if using a custom dataset
 
     batch_size: int = 16
     max_samples: int = -1  # If > 0, will stop after generating this many samples. Useful for debugging
@@ -83,13 +88,18 @@ cs = hydra.core.config_store.ConfigStore.instance()
 cs.store(name="base_generation_config", node=GenerateSolutionsConfig)
 
 
+def add_answer_and_error_message(output: dict):
+    output['predicted_answer'] = extract_answer(output['generation'])
+    output['error_message'] = extract_error_message(output['generation'])
+
+
 @hydra.main(version_base=None, config_name='generation_config', config_path='.')
 def generate_solutions(cfg: GenerateSolutionsConfig):
     cfg = GenerateSolutionsConfig(_init_nested=True, **cfg)
 
     LOG.info("Config used: %s", cfg)
     sandbox = get_sandbox(**cfg.sandbox) if cfg.sandbox is not None else None
-    llm = get_model(**cfg.server, sandbox=sandbox)
+    llm = get_code_execution_model(**cfg.server, sandbox=sandbox)
 
     # making sure output folder exists
     Path(cfg.output_file).absolute().parent.mkdir(parents=True, exist_ok=True)
@@ -130,7 +140,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
             if len(data_points) == cfg.batch_size:
                 # batch-computing the outputs
 
-                outputs = llm(
+                outputs = llm.generate(
                     prompt=prompt,
                     input_dicts=data_points,
                     stop_phrases=list(cfg.prompt.stop_phrases),
@@ -141,12 +151,14 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
                     # all of the ground-truth data to the output file alongside the generated solutions
                     output.update(original_data_point)
+                    # adding answer and error message
+                    add_answer_and_error_message(output)
                     fout.write(json.dumps(output) + "\n")
                 data_points = []
 
         # collecting the final batch
         if len(data_points) > 0:
-            outputs = llm(
+            outputs = llm.generate(
                 prompt=prompt,
                 input_dicts=data_points,
                 stop_phrases=list(cfg.prompt.stop_phrases),
@@ -154,6 +166,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
             )
             for output, original_data_point in zip(outputs, data_points):
                 output.update(original_data_point)
+                add_answer_and_error_message(output)
                 fout.write(json.dumps(output) + "\n")
 
 

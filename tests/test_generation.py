@@ -47,6 +47,7 @@ python pipeline/run_eval.py \
     ++prompt.few_shot_examples.examples_type=gsm8k_only_code \
     ++prompt.few_shot_examples.num_few_shots=5 \
     ++split_name=test \
+    ++server.code_execution.stop_on_code_error=False \
     ++batch_size=8 \
     ++max_samples=20 \
 """
