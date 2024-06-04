@@ -44,7 +44,7 @@ def fill_env_vars(format_dict, env_vars):
         format_dict[env_var] = env_var_value
 
 
-def get_server_command(server_type, num_gpus, num_nodes=1):
+def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_name: str):
     num_tasks = num_gpus
     if server_type == 'nemo':
         server_start_cmd = (
@@ -58,12 +58,26 @@ def get_server_command(server_type, num_gpus, num_nodes=1):
         # somehow on slurm nemo needs multiple tasks, but locally only 1
         if CLUSTER_CONFIG["cluster"] == "local":
             num_tasks = 1
+
+    elif server_type == 'vllm':
+        server_start_cmd = (
+            f"(NUM_GPUS={num_gpus} bash /code/nemo_skills/inference/server/serve_vllm.sh /model/ {model_name} "
+            # f"0 openai 5000 2>&1 | tee /tmp/server_logs.txt &)"
+            f"0 openai 5000 > /tmp/server_logs.txt &)"
+        )
+        num_tasks = 1
+
     else:
         # adding sleep to ensure the logs file exists
         server_start_cmd = f"(python /code/nemo_skills/inference/server/serve_trt.py --model_path /model | tee /tmp/server_logs.txt &) && sleep 1"
         num_tasks = num_gpus
 
-    return server_start_cmd, num_tasks
+    if server_type == "vllm":
+        server_wait_string = "Uvicorn running"
+    else:
+        server_wait_string = "Running on all addresses"
+
+    return server_start_cmd, num_tasks, server_wait_string
 
 
 SLURM_HEADER = """
@@ -160,7 +174,7 @@ def launch_local_job(
     else:
         start_cmd = "bash /start.sh"
 
-    cmd = f"{docker_cmd} run --rm --gpus all --ipc=host {mounts} {container} {start_cmd}"
+    cmd = f"{docker_cmd} run --rm -p 5000:5000 --gpus all --ipc=host {mounts} {container} {start_cmd}"
     subprocess.run(cmd, shell=True, check=True)
 
     # TODO: same behavior of streaming logs to a file and supporting dependencies?
@@ -185,11 +199,16 @@ def launch_slurm_job(
     if os.getenv("EXTRA_SBATCH_ARGS"):
         extra_sbatch_args += os.getenv("EXTRA_SBATCH_ARGS").split(" ")
 
+    if 'timeouts' not in CLUSTER_CONFIG:
+        timeout = "10000:00:00:00"
+    else:
+        timeout = CLUSTER_CONFIG["timeouts"][partition]
+
     header = SLURM_HEADER.format(
         account=CLUSTER_CONFIG["account"],
         partition=partition,
         num_nodes=num_nodes,
-        timeout=CLUSTER_CONFIG["timeouts"][partition],
+        timeout=timeout,
         job_name_prefix=CLUSTER_CONFIG["job_name_prefix"],
         job_name=job_name,
         tasks_per_node=tasks_per_node,
@@ -262,8 +281,8 @@ if __name__ == "__main__":
     parser.add_argument("--cmd", required=True, help="Full command for cluster execution")
     parser.add_argument("--partition", required=False)
     parser.add_argument("--num_nodes", type=int, required=True)
-    parser.add_argument("--tasks_per_node", type=int, choices=(1, 4, 8), required=True)
-    parser.add_argument("--gpus_per_node", type=int, choices=(1, 4, 8), default=8)
+    parser.add_argument("--tasks_per_node", type=int, choices=(1, 2, 4, 8), required=True)
+    parser.add_argument("--gpus_per_node", type=int, choices=(1, 2, 4, 8), default=8)
     parser.add_argument("--with_sandbox", action="store_true")
     parser.add_argument("--job_name", required=True)
     parser.add_argument("--container", required=True)

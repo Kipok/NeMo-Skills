@@ -69,6 +69,7 @@ def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments
 BENCHMARKS = {
     "gsm8k": 8,
     "math": 4,
+    "tabmwp": 4,
 }
 
 
@@ -80,7 +81,7 @@ export HF_TOKEN={HF_TOKEN} && \
 {server_start_cmd} && \
 if [ $SLURM_PROCID -eq 0 ]; then \
     echo "Waiting for the server to start" && \
-    tail -n0 -f /tmp/server_logs.txt | sed '/Running on all addresses/ q' && \
+    tail -n0 -f /tmp/server_logs.txt | sed '/{server_wait_string}/ q' && \
     {eval_cmds} \
     kill %1; \
 else \
@@ -96,7 +97,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(usage=WRAPPER_HELP + '\n\n' + SCRIPT_HELP + '\n\nscript arguments:\n\n' + HELP_MESSAGE)
     wrapper_args = parser.add_argument_group('wrapper arguments')
     wrapper_args.add_argument("--model_path", required=True)
-    wrapper_args.add_argument("--server_type", choices=('nemo', 'tensorrt_llm'), default='tensorrt_llm')
+    wrapper_args.add_argument("--server_type", choices=('nemo', 'tensorrt_llm', 'vllm'), default='tensorrt_llm')
     wrapper_args.add_argument("--output_dir", required=True)
     wrapper_args.add_argument("--num_gpus", type=int, required=True)
     wrapper_args.add_argument("--starting_seed", type=int, default=0)
@@ -130,6 +131,7 @@ if __name__ == "__main__":
         default="",
         help="Any extra arguments to pass to nemo_skills/evaluation/evaluate_results.py",
     )
+
     args, unknown = parser.parse_known_args()
 
     extra_arguments = f'{" ".join(unknown)}'
@@ -137,7 +139,9 @@ if __name__ == "__main__":
     args.model_path = Path(args.model_path).absolute()
     args.output_dir = Path(args.output_dir).absolute()
 
-    server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus, args.num_nodes)
+    server_start_cmd, num_tasks, server_wait_string = get_server_command(
+        args.server_type, args.num_gpus, args.num_nodes, args.model_path.name
+    )
 
     format_dict = {
         "model_path": args.model_path,
@@ -148,6 +152,7 @@ if __name__ == "__main__":
         "server_type": args.server_type,
         "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
         "HF_TOKEN": os.getenv("HF_TOKEN", ""),  # needed for some of the models, so making an option to pass it in
+        "server_wait_string": server_wait_string,
     }
 
     Path(args.output_dir).mkdir(exist_ok=True, parents=True)

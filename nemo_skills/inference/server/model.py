@@ -264,7 +264,7 @@ class OpenAIModel(BaseModel):
         repetition_penalty: float,
         random_seed: int,
         stop_phrases: list[str],
-    ):
+    ) -> str:
         messages = prompt.build_structured(input_dict)
         response = self.client.chat.completions.create(
             model=self.model,
@@ -281,10 +281,145 @@ class OpenAIModel(BaseModel):
         return content
 
 
+class VLLMModel(BaseModel):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        if self.ssh_server and self.ssh_key_path:
+            raise NotImplementedError("SSH tunnelling is not implemented for vLLM model.")
+
+        self.server_type = "openai"
+        self.oai_client = None
+        self.oai_client = self.prepare_openai(self.server_host, self.server_port)  # type: openai.OpenAI
+
+        self.model_name_server = self.get_model_name_from_server()
+        self.model = self.model_name_server
+
+        LOG.info("Model hosted by %s server: %s", self.server_type, self.model)
+
+    def generate(
+        self,
+        prompt: Prompt,
+        input_dicts: list[dict],
+        tokens_to_generate: int,
+        temperature: float,
+        top_p: float,
+        top_k: int,
+        repetition_penalty: float,
+        random_seed: int,
+        stop_phrases: list[str],
+        remove_stop_phrases: bool = True,
+    ) -> list[dict]:
+        string_prompts = [prompt.build_string(input_dict) for input_dict in input_dicts]
+        request = {
+            'prompt': string_prompts,
+            'max_tokens': tokens_to_generate,
+            'temperature': temperature,
+            'top_p': top_p,
+            'top_k': top_k,
+            'num_generations': 1,  # VLLM provides 1 generation per prompt, duplicate prompts if you want more
+            'stop': stop_phrases,
+            'echo': False,
+            'repetition_penalty': repetition_penalty,
+            'frequency_penalty': 0.0,
+            'presence_penalty': 0.0,
+            'logprobs': None,
+            'logit_bias': None,
+            'seed': random_seed,
+        }
+        preprocess_request(request)
+        outputs = self.prompt_api(**request, parse_response=True)
+        if remove_stop_phrases:
+            postprocess_output(outputs, stop_phrases)
+        return outputs
+
+    def prompt_api(
+        self,
+        prompt: str,
+        max_tokens: int,
+        temperature: float,
+        top_p: float,
+        top_k: int = 1,
+        num_generations: int = 1,
+        stop=None,
+        echo: bool = False,
+        repetition_penalty: float = 1.0,
+        frequency_penalty: float = 0.0,
+        presence_penalty: float = 0.0,
+        logprobs: int = None,
+        logit_bias: dict = None,
+        seed: int = None,
+        parse_response: bool = True,
+    ) -> "openai.types.Completion" | list[str]:
+        if top_k == 0:
+            top_k = 1
+
+        # Process top_k
+        extra_body = {
+            "extra_body": {
+                "top_k": 1,
+                "repetition_penalty": repetition_penalty,
+                "spaces_between_special_tokens": False,
+            }
+        }
+
+        response = self.oai_client.completions.create(
+            model=self.model,
+            prompt=prompt,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            n=num_generations,
+            stream=False,
+            stop=stop,
+            echo=echo,
+            frequency_penalty=frequency_penalty,
+            presence_penalty=presence_penalty,
+            logprobs=logprobs,
+            logit_bias=logit_bias,
+            seed=seed,
+            **extra_body,
+        )
+
+        if parse_response:
+            response = self.parse_openai_response(response)
+
+        return response
+
+    @classmethod
+    def parse_openai_response(cls, response: "openai.types.Completion") -> list[str]:
+        responses = []
+        if not isinstance(response, list):
+            response = [response]
+
+        for resp in response:
+            for choice in resp.choices:
+                responses.append(choice.text)
+        return responses
+
+    @staticmethod
+    def prepare_openai(host: str, port: str = "5000") -> "OpenAI":
+        import openai
+
+        # Update global config of openai
+        openai.api_key = "EMPTY"
+        openai.base_url = f"http://{host}:{port}/v1"
+
+        # Create local client with no timeout
+        client = openai.OpenAI(api_key="EMPTY", base_url=f"http://{host}:{port}/v1", timeout=None)
+        return client
+
+    def get_model_name_from_server(self) -> str:
+        model_list = self.oai_client.models.list()
+        model_name = model_list.data[0].id
+        return model_name
+
+
 models = {
     'tensorrt_llm': TensorRTLLMModel,
     'nemo': NemoModel,
     'openai': OpenAIModel,
+    'vllm': VLLMModel,
 }
 
 
