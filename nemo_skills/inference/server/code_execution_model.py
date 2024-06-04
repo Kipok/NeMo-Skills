@@ -75,7 +75,6 @@ class CodeExecutionWrapper:
     ) -> list[dict]:
         # making a copy of input_dicts to not corrupt original data
         input_dicts = copy.deepcopy(input_dicts)
-        stop_phrases = stop_phrases + [CODE_SEPARATORS[-1]]
 
         # prompts are added later
         request = {
@@ -87,7 +86,7 @@ class CodeExecutionWrapper:
             "top_p": top_p,
             "random_seed": random_seed,
             "repetition_penalty": repetition_penalty,
-            "stop_phrases": stop_phrases,
+            "stop_phrases": stop_phrases + [CODE_SEPARATORS[-1]],
             "remove_stop_phrases": False,  # we need to see where the model stopped
         }
 
