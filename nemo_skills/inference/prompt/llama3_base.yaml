@@ -1,5 +1,5 @@
 few_shot_examples:
-  template: "Question:\n{question}\n\n{context}My solution:\n{generated_solution}\n\n\n\n\n\n"
+  template: "Question:\n{question}\n\n{context}My solution:\n{generation}\n\n\n\n\n\n"
 
 system: ""
 user: |-
@@ -11,6 +11,6 @@ user: |-
 
     {context}
 
-prompt_template: "<|begin_of_text|>{user}My solution:\n{generated_solution}"
+prompt_template: "<|begin_of_text|>{user}My solution:\n{generation}"
 
 stop_phrases: ["\n\n\n\n\n\n"]

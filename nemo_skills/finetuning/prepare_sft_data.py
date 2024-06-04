@@ -138,10 +138,10 @@ def read_raw_data(file_handles, cfg: PrepareSFTDataConfig, grouped_samples: Dict
             if not cfg.add_incorrect and not line_dict["is_correct"]:
                 continue
 
-            if line_dict["generated_solution"] in seen_predictions[line_dict["question"]]:
+            if line_dict["generation"] in seen_predictions[line_dict["question"]]:
                 continue
 
-            seen_predictions[line_dict["question"]].add(line_dict["generated_solution"])
+            seen_predictions[line_dict["question"]].add(line_dict["generation"])
             line_dict['filename'] = file_handles[lidx].name
             grouped_samples[line_dict["question"]].append(line_dict)
 
@@ -185,7 +185,7 @@ def prepare_sft_data(cfg: PrepareSFTDataConfig):
             elem = sample.copy()
             # NeMo requires input/output fields
             elem["input"] = prompt.build_string(input_dict={"question": question})
-            elem["output"] = elem.pop("generated_solution")
+            elem["output"] = elem.pop("generation")
             elem.update(cfg.metadata)
             prepared_data.append(elem)
 

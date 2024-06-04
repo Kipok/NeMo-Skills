@@ -101,8 +101,8 @@ Write another question similar to this one:
 def test_llama3_instruct_prompt():
     prompt = Prompt(config=get_prompt_config('llama3_instruct'))
     prompt.config.few_shot_examples.example_dicts = [
-        {'question': '1 + 1 = ?', 'generated_solution': "That's easy: 2!"},
-        {'question': '5 + 5 = ?', 'generated_solution': "That's easy: 10!"},
+        {'question': '1 + 1 = ?', 'generation': "That's easy: 2!"},
+        {'question': '5 + 5 = ?', 'generation': "That's easy: 10!"},
     ]
     prompt.config.few_shot_examples.num_few_shots = 2
 
@@ -145,8 +145,8 @@ Question:
 def test_llama3_base_prompt():
     prompt = Prompt(config=get_prompt_config('llama3_base'))
     prompt.config.few_shot_examples.example_dicts = [
-        {'question': '1 + 1 = ?', 'generated_solution': "That's easy: 2!"},
-        {'question': '5 + 5 = ?', 'generated_solution': "That's easy: 10!"},
+        {'question': '1 + 1 = ?', 'generation': "That's easy: 2!"},
+        {'question': '5 + 5 = ?', 'generation': "That's easy: 10!"},
     ]
     prompt.config.few_shot_examples.num_few_shots = 2
 
@@ -184,8 +184,8 @@ My solution:
 def test_code_base_prompt():
     prompt = Prompt(config=get_prompt_config('code_base'))
     prompt.config.few_shot_examples.example_dicts = [
-        {'question': '1 + 1 = ?', 'generated_solution': "That's easy: 2!"},
-        {'question': '5 + 5 = ?', 'generated_solution': "That's easy: 10!"},
+        {'question': '1 + 1 = ?', 'generation': "That's easy: 2!"},
+        {'question': '5 + 5 = ?', 'generation': "That's easy: 10!"},
     ]
     prompt.config.few_shot_examples.num_few_shots = 2
 

@@ -6,5 +6,5 @@ user: "\
     Make sure to put the answer (and only answer) inside \\boxed{{}}.\n\n\
     {examples}\
     Question:\n{question}\n\n{context}"
-prompt_template: "{system}{user}My solution:\n{generated_solution}"
+prompt_template: "{system}{user}My solution:\n{generation}"
 stop_phrases: ["\n\n\n\n\n\n"]

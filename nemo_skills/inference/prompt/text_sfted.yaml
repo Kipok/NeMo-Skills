@@ -9,5 +9,5 @@ system: >-  # no line breaks!
 
 user: "{question}\n\n{context}"
 
-prompt_template: "System:\n{system}\n\nUser:\n{user}Assistant:\n{generated_solution}"
+prompt_template: "System:\n{system}\n\nUser:\n{user}Assistant:\n{generation}"
 stop_phrases: []

@@ -239,9 +239,9 @@ class ModeStrategies:
         return html.Div(
             [
                 get_results_content_layout(
-                    outputs[0]['generated_solution'],
+                    outputs[0]['generation'],
                     get_single_prompt_output_layout(
-                        outputs[0]['generated_solution'],
+                        outputs[0]['generation'],
                     ),
                     style={"border": f"2px solid {color}"},
                     switch_is_active=True,

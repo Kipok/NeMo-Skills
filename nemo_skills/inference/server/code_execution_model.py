@@ -103,7 +103,7 @@ class CodeExecutionWrapper:
             for idx in range(len(input_dicts))
         ]
         for output in new_outputs:
-            output['input_dict']['generated_solution'] = ''
+            output['input_dict']['generation'] = ''
         remaining_ids = list(range(len(new_outputs)))
         num_executions = 0
 
@@ -131,23 +131,23 @@ class CodeExecutionWrapper:
                         if result['error_message']:
                             new_outputs[idx]['error_message'] = result['error_message']
                             if self.config.stop_on_code_error:
-                                new_outputs[idx]['input_dict']['generated_solution'] += output
+                                new_outputs[idx]['input_dict']['generation'] += output
                                 continue
                             text_only_part = output.split(CODE_SEPARATORS[0])[0]
-                            new_outputs[idx]['input_dict']['generated_solution'] += text_only_part
+                            new_outputs[idx]['input_dict']['generation'] += text_only_part
                             code_output = self._recover_from_error(request, new_outputs[idx], executor)
                             # if re-generation did not help
                             if code_output is None:
                                 code_output = result["result"]
-                                new_outputs[idx]['input_dict']['generated_solution'] += output[len(text_only_part) :]
+                                new_outputs[idx]['input_dict']['generation'] += output[len(text_only_part) :]
                         else:
-                            new_outputs[idx]['input_dict']['generated_solution'] += output
+                            new_outputs[idx]['input_dict']['generation'] += output
                             new_outputs[idx]['error_message'] = ''
                             code_output = result["result"]
 
                         # adding code output to the prompt
                         code_output = f'\n{CODE_OUTPUT_SEPARATORS[0]}\n{code_output}\n{CODE_OUTPUT_SEPARATORS[1]}\n'
-                        new_outputs[idx]['input_dict']['generated_solution'] += code_output
+                        new_outputs[idx]['input_dict']['generation'] += code_output
                         # setting a limit on max code executions to speed things up
                         # (sometimes keeps repeating the same sequence forever)
                         if num_executions >= self.config.max_code_executions:
@@ -155,7 +155,7 @@ class CodeExecutionWrapper:
                         else:
                             new_ids.append(idx)
                     else:
-                        new_outputs[idx]['input_dict']['generated_solution'] += output
+                        new_outputs[idx]['input_dict']['generation'] += output
                 remaining_ids = new_ids
 
         # removing original prompt and stop tokens from the end of the generated text
@@ -163,7 +163,7 @@ class CodeExecutionWrapper:
         for output in new_outputs:
             if output['session_id'] is not None:
                 self.sandbox.clear_session(output['session_id'])
-            outputs.append({'generation': output['input_dict']['generated_solution']})
+            outputs.append({'generation': output['input_dict']['generation']})
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
         return outputs
@@ -216,7 +216,7 @@ class CodeExecutionWrapper:
 
         most_common = counts.most_common(1)[0][0]
         valid_idx = results.index(most_common)
-        new_output['input_dict']['generated_solution'] += outputs[valid_idx]
+        new_output['input_dict']['generation'] += outputs[valid_idx]
         new_output['error_message'] = ''
 
         return most_common

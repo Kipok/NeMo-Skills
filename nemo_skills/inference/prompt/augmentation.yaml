@@ -13,6 +13,6 @@ user: |-
 
 prompt_template: |-
   {system}{user}Write another question similar to this one:
-  {generated_solution}
+  {generation}
 
 stop_phrases: ["\n\n\n\n\n\n"]

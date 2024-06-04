@@ -1,5 +1,5 @@
 few_shot_examples:
-  template: "Question:\n{question}\n\n{context}My solution:\n{generated_solution}\n\n\n\n\n\n"
+  template: "Question:\n{question}\n\n{context}My solution:\n{generation}\n\n\n\n\n\n"
 
 system: |-
   You are Meta AI, a sophisticated and energetic AI Assistant. You excel at solving mathematical problems.
@@ -20,6 +20,6 @@ prompt_template: |-
 
   {system}<|eot_id|><|start_header_id|>user<|end_header_id|>
 
-  {user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>{generated_solution}
+  {user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>{generation}
 
 stop_phrases: ["<|eot_id|>"]

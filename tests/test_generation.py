@@ -61,7 +61,7 @@ python pipeline/run_eval.py \
         data = [json.loads(line) for line in fin]
 
     for elem in data:
-        assert '<llm-code>' in elem['generated_solution']
+        assert '<llm-code>' in elem['generation']
         assert elem['error_message'] != '<not_executed>'
 
     # running compute_metrics to check that results are expected
@@ -104,7 +104,7 @@ python pipeline/run_eval.py \
         data = [json.loads(line) for line in fin]
 
     for elem in data:
-        assert '<llm-code>' not in elem['generated_solution']
+        assert '<llm-code>' not in elem['generation']
         assert elem['error_message'] == '<not_executed>'
 
     # running compute_metrics to check that results are expected
@@ -148,7 +148,7 @@ python pipeline/run_labeling.py \
         data = [json.loads(line) for line in fin]
 
     for elem in data:
-        assert '<llm-code>' in elem['generated_solution']
+        assert '<llm-code>' in elem['generation']
         assert elem['error_message'] != '<not_executed>'
 
     # running compute_metrics to check that results are expected
@@ -190,7 +190,7 @@ python pipeline/run_eval.py \
         data = [json.loads(line) for line in fin]
 
     for elem in data:
-        assert '<llm-code>' in elem['generated_solution']
+        assert '<llm-code>' in elem['generation']
         assert elem['error_message'] != '<not_executed>'
 
     # running compute_metrics to check that results are expected
