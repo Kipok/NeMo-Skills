@@ -123,5 +123,7 @@ def get_prompt_config(prompt_type: str) -> PromptConfig:
 context_templates = {
     "empty": "",
     "reference_solution": "Reference solution (do not copy it):\n{reference_solution}\n\n",
-    "masked_solution": "Reference solution:\n{reference_masked_solution}\n\n",
+    "masked_solution": "Reference solution:\n{masked_reference_solution}\n\n",
+    "table": "Use the following table to answer the question:\n{table}\n\n",
+    "table_solution": "Use the following table to answer the question:\n{table}\nReference solution (do not copy it):\n{reference_solution}\n\n",
 }

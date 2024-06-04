@@ -68,6 +68,7 @@ def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments
 BENCHMARKS = {
     "gsm8k": 8,
     "math": 4,
+    "tabmwp": 4,
 }
 
 # TODO: remove backoff installation after it gets into docker
@@ -82,7 +83,7 @@ if [ $SLURM_LOCALID -eq 0 ]; then \
     echo "Waiting for the server to start" && \
     tail -n0 -f /tmp/server_logs.txt | sed '/{SERVER_WAIT_STRING}/ q' && \
     {eval_cmds} \
-    kill %1; \
+    kill %1 || true; \
 else \
     sleep infinity; \
 fi \
