@@ -44,6 +44,7 @@ python nemo_skills/conversion/hf_to_trtllm.py \
     --gemm_plugin float16 \
     --context_fmha "enable" \
     --paged_kv_cache "enable" \
+    --use_paged_context_fmha "enable" \
     --max_input_len 3584 \
     --max_output_len 512 \
     --max_batch_size 8 \

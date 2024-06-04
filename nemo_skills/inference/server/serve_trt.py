@@ -24,7 +24,7 @@ import uuid
 from argparse import ArgumentParser
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import tensorrt_llm
@@ -33,7 +33,7 @@ import torch
 from flask import Flask, jsonify, request
 from flask_restful import Api, Resource
 from mpi4py import MPI
-from tensorrt_llm.runtime import ModelRunnerCpp
+from tensorrt_llm.runtime.model_runner_cpp import GptJsonConfig, ModelRunnerCpp, WorldConfig, profiler
 from transformers import AutoTokenizer, T5Tokenizer
 
 
@@ -202,6 +202,91 @@ def read_model_name(config):
         'GPTForCausalLM'.lower(): 'gpt-next',
     }
     return name_map[name]
+
+
+def from_dir(
+    cls,
+    engine_dir: str,
+    *,
+    lora_dir: Optional[str] = None,
+    rank: int = 0,
+    max_batch_size: Optional[int] = None,
+    max_input_len: Optional[int] = None,
+    max_output_len: Optional[int] = None,
+    max_beam_width: Optional[int] = None,
+    max_attention_window_size: Optional[int] = None,
+    sink_token_length: Optional[int] = None,
+    free_gpu_memory_fraction: Optional[float] = None,
+    medusa_choices: list[list[int]] | None = None,
+    debug_mode: bool = False,
+    lora_ckpt_source: str = "hf",
+    gpu_weights_percent: float = 1,
+) -> 'ModelRunnerCpp':
+
+    config_path = Path(engine_dir) / "config.json"
+    json_config = GptJsonConfig.parse_file(config_path)
+    model_config = json_config.model_config
+
+    # Note: Parallel configuration will be fetched automatically from trtllm.Executor constructor
+    # by inspecting the json file. These lines serve the purpose of serving vocab_size_padded and
+    # num_layers properties.
+    tp_size = json_config.tensor_parallelism
+    pp_size = json_config.pipeline_parallelism
+    gpus_per_node = json_config.gpus_per_node
+    world_config = WorldConfig.mpi(
+        tensor_parallelism=tp_size, pipeline_parallelism=pp_size, gpus_per_node=gpus_per_node
+    )
+    assert rank == world_config.rank
+
+    profiler.start('load tensorrt_llm engine')
+
+    kv_cache_config = trtllm.KvCacheConfig(
+        free_gpu_memory_fraction=free_gpu_memory_fraction,
+        max_attention_window=max_attention_window_size,
+        sink_token_length=sink_token_length,
+        enable_block_reuse=True,
+    )
+
+    if max_batch_size is None:
+        max_batch_size = model_config.max_batch_size
+    else:
+        assert max_batch_size <= model_config.max_batch_size
+    if max_input_len is None:
+        max_input_len = model_config.max_input_len
+    else:
+        assert max_input_len <= model_config.max_input_len
+    if max_output_len is None:
+        max_seq_len = model_config.max_seq_len
+    else:
+        max_seq_len = max_input_len + max_output_len
+        assert max_seq_len <= model_config.max_seq_len
+    if max_beam_width is None:
+        max_beam_width = model_config.max_beam_width
+    else:
+        assert max_beam_width <= model_config.max_beam_width
+
+    executor = trtllm.Executor(
+        engine_dir,
+        trtllm.ModelType.DECODER_ONLY,
+        trtllm.ExecutorConfig(
+            max_beam_width=max_beam_width, kv_cache_config=kv_cache_config, medusa_choices=medusa_choices
+        ),
+    )
+
+    profiler.stop('load tensorrt_llm engine')
+
+    loading_time = profiler.elapsed_time_in_sec("load tensorrt_llm engine")
+    logging.info(f'Load engine takes: {loading_time} sec')
+
+    return cls(
+        executor,
+        max_batch_size=max_batch_size,
+        max_input_len=max_input_len,
+        max_seq_len=max_seq_len,
+        max_beam_width=max_beam_width,
+        model_config=model_config,
+        world_config=world_config,
+    )
 
 
 def generate(
