@@ -16,7 +16,7 @@
 from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
 
 
-def test_rephrasing_prompt():
+def test_question_generation_rephrasing_prompt():
     prompt = Prompt(config=get_prompt_config('question_generation/rephrasing'))
     prompt.config.few_shot_examples.example_dicts = [
         {
@@ -57,7 +57,7 @@ Rephrase the above question:
     assert prompt.build_string({'question': "What's the meaning of life?"}) == expected_prompt
 
 
-def test_augmentation_prompt():
+def test_question_generation_augmentation_prompt():
     prompt = Prompt(config=get_prompt_config('question_generation/augmentation'))
     prompt.config.few_shot_examples.example_dicts = [
         {
@@ -181,7 +181,7 @@ My solution:
     assert prompt.build_string({'question': '2 + 2 = ?'}) == expected_prompt
 
 
-def test_code_base_prompt():
+def test_openmathinstruct_base_prompt():
     prompt = Prompt(config=get_prompt_config('openmathinstruct/base'))
     prompt.config.few_shot_examples.example_dicts = [
         {'question': '1 + 1 = ?', 'generation': "That's easy: 2!"},
@@ -220,8 +220,8 @@ My solution:
     assert prompt.build_string({'question': '2 + 2 = ?'}) == expected_prompt
 
 
-def test_code_sfted_prompt():
-    prompt = Prompt(config=get_prompt_config('openmathinstruct/sfted'))
+def test_openmathinstruct_sft_prompt():
+    prompt = Prompt(config=get_prompt_config('openmathinstruct/sft'))
     expected_prompt = """System:
 You're an expert Python programmer and mathematician. Help the user to solve this problem using code when necessary. Make sure to put the answer (and only answer) inside \\boxed{}.
 

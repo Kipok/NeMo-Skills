@@ -57,7 +57,7 @@ Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
     # replace with "code_base" if model that was not pretrained with our pipeline
     # you can also write a new .yaml file and put it inside nemo_skills/inference/prompt
     # to customize further
-    prompt_config = get_prompt_config("code_sfted")
+    prompt_config = get_prompt_config("openmathinstruct/sft")
     prompt_config.few_shot_examples.num_few_shots = 0
     # replace with the following if model that was not pretrained with our pipeline
     # you can pick different few shot examples based on your needs

@@ -57,7 +57,7 @@ class PrepareSFTDataConfig:
     num_output_samples: int = -1
 
     # TODO: support prompt config directly, but there are some hydra issues
-    prompt_type: str = 'openmathinstruct/sfted'
+    prompt_type: str = 'openmathinstruct/sft'
 
     filters: List[str] = field(default_factory=lambda: ["multi_boxed", "broken_code"])
     text_filter_type: Optional[str] = None

@@ -18,7 +18,7 @@ different GPU types or with different inference frameworks.
      --benchmarks gsm8k:0 \
      --num_gpus <number of GPUs on your machine/cluster node> \
      --num_jobs 1 \
-     +prompt=code_sfted \
+     +prompt=openmathinstruct/sft \
      ++prompt.few_shot_examples.num_few_shots=0 \
      ++split_name=test
    ```
@@ -107,7 +107,7 @@ the [quick start](#quick-start) section.
    ```
    python nemo_skills/inference/generate_solutions.py \
      output_file=./test-results/gsm8k/output-greedy.jsonl \
-     +prompt=code_sfted \
+     +prompt=openmathinstruct/sft \
      ++prompt.few_shot_examples.examples_type=null \
      ++prompt.few_shot_examples.num_few_shots=0 \
      ++prompt.context_type=empty \
