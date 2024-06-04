@@ -63,6 +63,8 @@ class PrepareSFTDataConfig:
     text_filter_type: Optional[str] = None
     trim_solutions: bool = False
 
+    chat_format: bool = False  # whether to use NeMo's chat format
+
     def __post_init__(self):
         """Building data_file from dataset/split_name if not provided directly."""
         if self.prediction_jsonl_files is None and self.preprocessed_dataset_files is None:
@@ -180,9 +182,17 @@ def prepare_sft_data(cfg: PrepareSFTDataConfig):
         for sample in filtered_solutions:
             # including all fields in case they are useful for training
             elem = sample.copy()
-            # NeMo requires input/output fields
-            elem["input"] = prompt.build_string(input_dict={"question": question})
-            elem["output"] = elem.pop("generation")
+            if cfg.chat_format:
+                elem['conversations'] = [
+                    {'value': question, 'from': 'User', 'canonical_form': ''},
+                    {'value': elem.pop("generation"), 'from': 'Assistant', 'canonical_form': ''},
+                ]
+                elem['system'] = prompt_config.system
+                elem['mask'] = 'User'
+                elem['type'] = None
+            else:
+                elem["input"] = prompt.build_string(input_dict={"question": question})
+                elem["output"] = elem.pop("generation")
             elem.update(cfg.metadata)
             prepared_data.append(elem)
 
