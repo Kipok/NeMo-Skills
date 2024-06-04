@@ -33,12 +33,12 @@ export PYTHONPATH=/code && \
 {server_start_cmd} && \
 if [ $SLURM_LOCALID -eq 0 ]; then \
     echo "Waiting for the server to start" && \
-    tail -n0 -f /tmp/server_logs.txt | sed '/{SERVER_WAIT_STRING}/ q' && \
+    tail -n0 -f /tmp/server_logs.txt | sed '/{server_wait_string}/ q' && \
     tail -n10 /tmp/server_logs.txt &&  \
     SERVER_ADDRESS=$(tail -n 10 /tmp/server_logs.txt | \
     grep -oP 'http://\K[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | tail -n1) && \
     echo "Server is running on $SERVER_ADDRESS" && \
-    echo "Sandbox is running on ${{NEMO_SKILLS_SANDBOX_HOST:-$SERVER_ADDRESS}}" && \ 
+    echo "Sandbox is running on ${{NEMO_SKILLS_SANDBOX_HOST:-$SERVER_ADDRESS}}" && \
     sleep infinity;
 else \
     sleep infinity; \
@@ -65,12 +65,9 @@ if __name__ == "__main__":
 
     args.model_path = Path(args.model_path).absolute()
 
-    server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus, args.model_path.name)
-
-    if args.server_type == "vllm":
-        server_wait_string = "Uvicorn running"
-    else:
-        server_wait_string = "Running on all addresses"
+    server_start_cmd, num_tasks, server_wait_string = get_server_command(
+        args.server_type, args.num_gpus, args.model_path.name
+    )
 
     format_dict = {
         "model_path": args.model_path,
@@ -79,7 +76,7 @@ if __name__ == "__main__":
         "server_start_cmd": server_start_cmd,
         "server_type": args.server_type,
         "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
-        "SERVER_WAIT_STRING": server_wait_string,
+        "server_wait_string": server_wait_string,
     }
 
     job_id = launch_job(

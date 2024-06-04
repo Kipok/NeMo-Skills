@@ -70,7 +70,12 @@ def get_server_command(server_type, num_gpus, model_name: str):
         )
         num_tasks = 1  # we launch via mpirun directly
 
-    return server_start_cmd, num_tasks
+    if server_type == "vllm":
+        server_wait_string = "Uvicorn running"
+    else:
+        server_wait_string = "Running on all addresses"
+
+    return server_start_cmd, num_tasks, server_wait_string
 
 
 SLURM_HEADER = """

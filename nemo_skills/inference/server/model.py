@@ -573,23 +573,7 @@ class VLLMModel(BaseModel):
             request["top_k"] = 1
             request["top_p"] = 1.0
 
-        outputs = self.prompt_api(
-            prompt=request['prompt'],
-            max_tokens=request['max_tokens'],
-            temperature=request['temperature'],
-            top_p=request['top_p'],
-            top_k=request['top_k'],
-            num_generations=request.get('num_generations', 1),
-            stop=request['stop'],
-            echo=request.get('echo', False),
-            repetition_penalty=request.get('repetition_penalty', 1.0),
-            frequency_penalty=request.get('frequency_penalty', 0.0),
-            presence_penalty=request.get('presence_penalty', 0.0),
-            logprobs=request.get('logprobs', None),
-            logit_bias=request.get('logit_bias', None),
-            seed=request.get('seed', None),
-            parse_response=True,
-        )
+        outputs = self.prompt_api(**request, parse_response=True)
 
         return outputs
 
@@ -617,6 +601,7 @@ class VLLMModel(BaseModel):
 
         if temperature == 0.0:
             temperature = 1.0
+            top_k = 1
 
         if top_k == 0:
             top_k = 1
