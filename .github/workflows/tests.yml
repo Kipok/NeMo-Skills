@@ -42,10 +42,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python 3.10
+    # we want to be more conservative with python version here as some clusters might have older installed
+    - name: Set up Python 3.8
       uses: actions/setup-python@v3
       with:
-        python-version: "3.10"
+        python-version: "3.8"
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -54,3 +55,6 @@ jobs:
     - name: Run help
       run: |
         NEMO_SKILLS_CONFIG=cluster_configs/slurm.yaml python tests/check_help.py
+    - name: Check datasets preparation
+      run: |
+        NEMO_SKILLS_CONFIG=cluster_configs/slurm.yaml pytest tests/test_datasets.py
