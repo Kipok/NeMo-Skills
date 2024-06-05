@@ -53,7 +53,4 @@ python pipeline/run_pipeline.py \
       ++model.pipeline_model_parallel_size=1 \
       ++model.optim.lr=1e-6 \
 """
-    subprocess.run(
-        cmd,
-        shell=True,
-    )  # not checking the error as it's expected to finish with non-zero error code
+    subprocess.run(cmd, shell=True, check=True)
