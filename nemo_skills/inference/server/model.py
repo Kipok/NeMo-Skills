@@ -222,15 +222,14 @@ class OpenAIModel(BaseModel):
 
     def generate(
         self,
-        prompt: Prompt,
-        input_dicts: list[dict],
-        tokens_to_generate: int,
-        temperature: float,
-        top_p: float,
-        repetition_penalty: float,
-        random_seed: int,
-        stop_phrases: list[str],
+        prompts: list[str],
+        tokens_to_generate: int = 512,
+        temperature: float = 0.0,
+        top_p: float = 0.95,
         top_k: int = 0,
+        repetition_penalty: float = 1.0,
+        random_seed: int = 0,
+        stop_phrases: list[str] | None = None,
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
         if stop_phrases is None:
@@ -259,8 +258,7 @@ class OpenAIModel(BaseModel):
 
     def _send_request(
         self,
-        prompt: Prompt,
-        input_dict: dict,
+        prompt: str,
         tokens_to_generate: int,
         temperature: float,
         top_p: float,

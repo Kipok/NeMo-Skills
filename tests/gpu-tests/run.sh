@@ -34,5 +34,9 @@ export NEMO_SKILLS_TEST_HF_MODEL=$NEMO_SKILLS_TEST_OUTPUT/hf-model
 # converting the model through test
 export NEMO_SKILLS_TEST_HF_MODEL=$NEMO_SKILLS_TEST_OUTPUT/tiny-llama
 # pytest tests/gpu-tests/test_conversion.py -k test_hf_nemo_conversion -s -x
+# untarring model which is required for checkpoint averaging
+mkdir -p $NEMO_SKILLS_TEST_OUTPUT/untarred_nemo
+tar xvf $NEMO_SKILLS_TEST_OUTPUT/model.nemo -C $NEMO_SKILLS_TEST_OUTPUT/untarred_nemo
+export NEMO_SKILLS_TEST_NEMO_MODEL=$NEMO_SKILLS_TEST_OUTPUT/untarred_nemo
 # running finetuning
 pytest tests/gpu-tests/test_finetuning.py -s -x

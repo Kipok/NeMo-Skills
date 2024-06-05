@@ -29,7 +29,7 @@ sys.path.append(str(Path(__file__).absolute().parents[2] / 'pipeline'))
 from compute_metrics import compute_metrics
 
 
-def test_sft():
+def test_sft_pipeline():
     model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
@@ -42,10 +42,10 @@ export NEMO_SKILLS_RESULTS={output_path} && \
 python pipeline/run_pipeline.py \
       --expname test \
       --nemo_model {model_path} \
-      --stages sft prepare_eval \
       --num_nodes 1 \
       --num_gpus 2 \
       --disable_wandb \
+      --extra_eval_args "++max_samples=4 --benchmarks gsm8k:1 math:0"
       ++model.data.train_ds.file_path=/data/gsm8k/validation-sft.jsonl \
       ++trainer.sft.max_steps=15 \
       ++trainer.sft.val_check_interval=10 \
@@ -56,3 +56,8 @@ python pipeline/run_pipeline.py \
       ++model.optim.lr=1e-6 \
 """
     subprocess.run(cmd, shell=True, check=True)
+
+    # only checking the total, since model is tiny
+    for gen_file in ['gsm8k/output-greedy.jsonl', 'gsm8k/output-rs0.jsonl', 'math/output-greedy.jsonl']:
+        *_, total = compute_metrics([f"{output_path}/nemo-skills-exps/results/test/{gen_file}"])
+        assert total == 4
