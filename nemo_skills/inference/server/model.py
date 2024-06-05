@@ -23,8 +23,6 @@ from typing import Union
 
 import requests
 
-from nemo_skills.inference.prompt.utils import Prompt
-
 LOG = logging.getLogger(__name__)
 
 

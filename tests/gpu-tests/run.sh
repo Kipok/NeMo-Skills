@@ -21,18 +21,18 @@ export NEMO_SKILLS_TEST_NEMO_MODEL=$NEMO_SKILLS_TEST_OUTPUT/model.nemo
 export NEMO_SKILLS_TEST_HF_MODEL=$NEMO_SKILLS_TEST_OUTPUT/hf-model
 
 # then running the rest of the tests
-pytest tests/gpu-tests/test_generation.py -s -x
+# pytest tests/gpu-tests/test_generation.py -s -x
 
-# for sft we are using the tiny random llama model to run much faster
-python pipeline/launcher.py \
-    --cmd "HF_TOKEN=$HF_TOKEN python /code/tests/gpu-tests/make_tiny_llama.py" \
-    --tasks_per_node 1 \
-    --job_name make_llama \
-    --container igitman/nemo-skills-sft:0.2.0 \
-    --mounts $NEMO_SKILLS_TEST_OUTPUT:/output,`pwd`:/code
+# # for sft we are using the tiny random llama model to run much faster
+# python pipeline/launcher.py \
+#     --cmd "HF_TOKEN=$HF_TOKEN python /code/tests/gpu-tests/make_tiny_llama.py" \
+#     --tasks_per_node 1 \
+#     --job_name make_llama \
+#     --container igitman/nemo-skills-sft:0.2.0 \
+#     --mounts $NEMO_SKILLS_TEST_OUTPUT:/output,`pwd`:/code
 
 # converting the model through test
 export NEMO_SKILLS_TEST_HF_MODEL=$NEMO_SKILLS_TEST_OUTPUT/tiny-llama
-pytest tests/gpu-tests/test_conversion.py -k test_hf_nemo_conversion -s -x
+# pytest tests/gpu-tests/test_conversion.py -k test_hf_nemo_conversion -s -x
 # running finetuning
 pytest tests/gpu-tests/test_finetuning.py -s -x

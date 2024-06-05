@@ -29,7 +29,7 @@ def start_job(extra_sbatch_args: str, cmd: str) -> int:
     full_cmd = f'{extra_sbatch_args} {cmd}'
 
     if CLUSTER_CONFIG['cluster'] == 'local':
-        subprocess.run(full_cmd, shell=True)
+        subprocess.run(full_cmd, shell=True, check=True)
         return 0
     job_id = subprocess.run(full_cmd, shell=True, check=True, capture_output=True).stdout.decode()
     print(f"Submitted batch job(s) {job_id}")

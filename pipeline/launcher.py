@@ -169,12 +169,13 @@ def launch_local_job(
 
     if tasks_per_node > 1:
         start_cmd = (
-            f'mpirun --allow-run-as-root -np {tasks_per_node} bash /start.sh & echo $! > /tmp/my-process.pid && wait'
+            f'mpirun --allow-run-as-root -np {tasks_per_node} bash /start.sh & '
+            'echo $! > /tmp/my-process.pid && wait `cat /tmp/my-process.pid`'
         )
     else:
-        start_cmd = "bash /start.sh & echo $! > /tmp/my-process.pid && wait"
+        start_cmd = "bash /start.sh & echo $! > /tmp/my-process.pid && wait `cat /tmp/my-process.pid`"
 
-    cmd = f"{docker_cmd} run --rm --gpus all --ipc=host {mounts} {container} bash -c '{start_cmd}'"
+    cmd = f"{docker_cmd} run --rm --gpus all --ipc=host {mounts} {container} {start_cmd}"
     subprocess.run(cmd, shell=True, check=True)
 
 

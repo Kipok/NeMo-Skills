@@ -49,6 +49,8 @@ python pipeline/run_pipeline.py \
       ++model.data.train_ds.file_path=/data/gsm8k/validation-sft.jsonl \
       ++trainer.sft.max_steps=15 \
       ++trainer.sft.val_check_interval=10 \
+      ++trainer.sft.limit_val_batches=2 \
+      ++model.data.train_ds.global_batch_size=4 \
       ++model.tensor_model_parallel_size=2 \
       ++model.pipeline_model_parallel_size=1 \
       ++model.optim.lr=1e-6 \
