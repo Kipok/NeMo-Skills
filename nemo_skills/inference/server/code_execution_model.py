@@ -74,12 +74,12 @@ class CodeExecutionWrapper:
     ) -> list[dict]:
         if stop_phrases is None:
             stop_phrases = []
-        # making a copy of input_dicts to not corrupt original data
-        input_dicts = copy.deepcopy(input_dicts)
+        # making a copy of prompts to not corrupt original data
+        new_prompts = copy.deepcopy(prompts)
 
         # prompts are added later
         request = {
-            "prompts": prompts,
+            "prompts": new_prompts,
             "tokens_to_generate": tokens_to_generate,
             "temperature": temperature,
             "top_k": top_k,
@@ -94,12 +94,12 @@ class CodeExecutionWrapper:
         # after executing code and getting result back into the prompt
         new_outputs = [
             {
-                'prompt': prompts[idx],
+                'prompt': new_prompts[idx],
                 'result': None,
                 'error_message': Sandbox.NOT_EXECUTED,
                 'session_id': None,
             }
-            for idx in range(len(prompts))
+            for idx in range(len(new_prompts))
         ]
         remaining_ids = list(range(len(new_outputs)))
         num_executions = 0
@@ -112,7 +112,7 @@ class CodeExecutionWrapper:
                 outputs = [output['generation'] for output in self.model.generate(**request)]
                 new_ids = []
                 # checking if any of the outputs need code execution and submitting requests in parallel
-                futures = [None] * len(input_dicts)
+                futures = [None] * len(outputs)
                 for idx, output in zip(remaining_ids, outputs):
                     if output.strip().endswith(CODE_SEPARATORS[-1]):
                         futures[idx] = executor.submit(
@@ -157,10 +157,12 @@ class CodeExecutionWrapper:
 
         # removing original prompt and stop tokens from the end of the generated text
         outputs = []
-        for output in new_outputs:
+        for output, orig_prompt in zip(new_outputs, prompts):
             if output['session_id'] is not None:
                 self.sandbox.clear_session(output['session_id'])
-            outputs.append({'generation': output['prompt'], 'error_message': output['error_message']})
+            outputs.append(
+                {'generation': output['prompt'][len(orig_prompt) :], 'error_message': output['error_message']}
+            )
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
         return outputs

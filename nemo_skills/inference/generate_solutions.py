@@ -142,7 +142,6 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                 # batch-computing the outputs
                 outputs = llm.generate(
                     prompts=[prompt.build_string(data_point) for data_point in data_points],
-                    input_dicts=data_points,
                     stop_phrases=list(cfg.prompt.stop_phrases),
                     **asdict(cfg.inference),
                 )

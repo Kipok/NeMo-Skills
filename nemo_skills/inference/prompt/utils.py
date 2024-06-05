@@ -70,11 +70,6 @@ class FewShotExamplesConfig:
     def __post_init__(self):
         """Error checks + building example_dicts and retriever if needed."""
         if self.examples_type is not None:  # building example_dicts
-            if self.example_dicts is not None:
-                raise ValueError(
-                    "You specified both examples_type and example_dicts. "
-                    "This is redundant, so please remove one to avoid accidental errors."
-                )
             self.example_dicts = examples_map[self.examples_type][: self.num_few_shots]
 
         if self.example_dicts is not None and self.num_few_shots > len(self.example_dicts):
@@ -95,13 +90,6 @@ class FewShotExamplesConfig:
         if self.retrieval_field is not None:  # building retriever
             if self.retrieval_file is None:
                 raise ValueError("retrieval_file must be provided if retrieval_field is not None")
-
-            if self.retriever is not None:
-                raise ValueError(
-                    "You specified both retrieval field/file and retriever. "
-                    "This is redundant, so please remove one to avoid accidental errors."
-                )
-
             self.retriever = BM25Retriever(self.retrieval_file, field=self.retrieval_field)
         else:
             if self.retrieval_file is not None:
