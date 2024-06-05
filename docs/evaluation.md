@@ -27,7 +27,7 @@ different GPU types or with different inference frameworks.
    allow it to use Python interpreter, you can show it a couple of few-shot examples
 
    ```
-   +prompt=code_base \
+   +prompt=openmathinstruct/base \
    ++prompt.few_shot_examples.examples_type=gsm8k_text_with_code \
    ++prompt.few_shot_examples.num_few_shots=5
    ```
@@ -84,7 +84,7 @@ the [quick start](#quick-start) section.
    Make sure to run this from the root of the repository. Same as above, this will block your shell.
 
    ```
-   docker run --rm --gpus all --ipc=host -v `pwd`:/code -v <path to the .nemo model>:/model igitman/nemo-skills-sft:0.2.0 \
+   docker run --rm --gpus all --ipc=host -v `pwd`:/code -v <path to the .nemo model>:/model igitman/nemo-skills-sft:0.3.0 \
    bash -c 'PYTHONPATH=/code python /code/nemo_skills/inference/server/serve_nemo.py \
      gpt_model_file=/model \
      trainer.devices=<number of GPUs> \
@@ -97,7 +97,7 @@ the [quick start](#quick-start) section.
    If you want to use TensorRT-LLM server instead, you can run the following command
 
    ```
-   docker run --rm --gpus all --ipc=host -v `pwd`:/code -v <path to the trtllm model>:/model igitman/nemo-skills-trtllm:0.2.0 \
+   docker run --rm --gpus all --ipc=host -v `pwd`:/code -v <path to the trtllm model>:/model igitman/nemo-skills-trtllm:0.3.0 \
    bash -c 'export PYTHONPATH=/code && \
    mpirun -n <number of GPUs> --allow-run-as-root python /code/nemo_skills/inference/server/serve_trt.py --model_path=/model'
    ```

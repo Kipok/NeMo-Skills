@@ -38,7 +38,7 @@ Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
     ```python
     from dataclasses import asdict
 
-    from nemo_skills.inference.server.model import get_model
+    from nemo_skills.inference.server.code_execution_model import get_code_execution_model
     from nemo_skills.code_execution.sandbox import get_sandbox
     from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
     from nemo_skills.inference.generate_solutions import InferenceConfig
@@ -48,7 +48,7 @@ Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
         host=<IP address of sandbox printed on previous step>,
     )
 
-    llm = get_model(
+    llm = get_code_execution_model(
         server_type=<server type from previous step>,
         host=<IP address of server printed on previous step>,
         sandbox=sandbox,
@@ -69,19 +69,19 @@ Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
         "25% of the remaining enrolled in jazz dance, and the rest enrolled in "
         "hip-hop dance. What percentage of the entire students enrolled in hip-hop dance?"
     )
+    prompt = Prompt(config=prompt_config)
     # can provide multiple requests
-    prompts = [Prompt(config=prompt_config).build_string(input_dict={'question': question})]
+    input_dicts = [{'question': question}]
 
     # can provide different inference parameters here
     inference_cfg = InferenceConfig(temperature=0)  # greedy
-    outputs = llm(
-        prompts=prompts,
+    outputs = llm.generate(
+        prompt=prompt,
+        input_dicts=input_dicts,
         stop_phrases=list(prompt_config.stop_phrases),
         **asdict(inference_cfg),
     )
-    print(outputs[0]["generated_solution"])
-    # there are also other keys there, like predicted_answer
-    # or code error_message that could be useful!
+    print(outputs[0]["generation"])
     ```
 
 If using `--server_type=nemo` locally, the NeMo server might sometimes hang around
@@ -89,7 +89,7 @@ after `start_server.py` is already killed. In that case you should manually stop
 e.g. by running
 
 ```
-docker ps -a -q --filter ancestor=igitman/nemo-skills-sft:0.2.0 | xargs docker stop
+docker ps -a -q --filter ancestor=igitman/nemo-skills-sft:0.3.0 | xargs docker stop
 ```
 
 If for some reason you do not want to use [pipeline/start_server.py](/pipeline/start_server.py) helper script,

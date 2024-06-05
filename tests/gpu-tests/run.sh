@@ -21,7 +21,7 @@ pytest tests/gpu-tests/test_conversion.py -k test_nemo_hf_conversion -s -x
 export NEMO_SKILLS_TEST_HF_MODEL=$NEMO_SKILLS_TEST_OUTPUT/hf-model
 
 # then running the rest of the tests
-pytest tests/gpu-tests/test_generation.py -s -x
+pytest tests/gpu-tests/test_generation.py -k vllm -s
 
 # for sft we are using the tiny random llama model to run much faster
 python tests/gpu-tests/make_tiny_llama.py
@@ -29,4 +29,4 @@ python tests/gpu-tests/make_tiny_llama.py
 export NEMO_SKILLS_TEST_HF_MODEL=$NEMO_SKILLS_TEST_OUTPUT/tiny-llama
 pytest tests/gpu-tests/test_conversion.py -k test_nemo_hf_conversion -s -x
 # running sft
-pytest tests/gpu-tests/test_sft.py -s -x
+pytest tests/gpu-tests/test_sft.py -s

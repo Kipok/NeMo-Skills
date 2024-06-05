@@ -25,7 +25,7 @@ pipeline_script_list = [
     'pipeline/prepare_eval.py',
     'pipeline/run_eval.py',
     'pipeline/run_labeling.py',
-    'pipeline/run_sft_and_eval.py',
+    'pipeline/run_pipeline.py',
     'pipeline/run_sft.py',
     'pipeline/start_server.py',
     'pipeline/summarize_results.py',

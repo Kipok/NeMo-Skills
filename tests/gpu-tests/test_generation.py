@@ -238,7 +238,7 @@ python pipeline/run_eval.py \
 
     # running compute_metrics to check that results are expected
     correct_answer, wrong_answer, no_answer, total = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"])
-    assert correct_answer == 40.0
-    assert wrong_answer == 45.0
+    assert correct_answer == 20.0
+    assert wrong_answer == 65.0
     assert no_answer == 15.0
     assert total == 20

@@ -57,5 +57,7 @@ ENV TRANSFORMERS_CACHE=/cache/huggingface/transformers
 ENV HUGGINGFACE_HUB_CACHE=/cache/huggingface/hub
 ENV HF_DATASETS_CACHE=/cache/huggingface/datasets
 
+RUN pip install backoff rank_bm25
+
 # Expose port for vLLM API
 EXPOSE 5000

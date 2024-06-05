@@ -24,6 +24,7 @@ extra_sandbox_args:
 
 containers:
   tensorrt_llm: igitman/nemo-skills-trtllm:0.2.0
+  vllm: igitman/nemo-skills-vllm:0.3.0
   nemo: igitman/nemo-skills-sft:0.2.0
   sandbox: igitman/nemo-skills-sandbox:0.3.0
 
