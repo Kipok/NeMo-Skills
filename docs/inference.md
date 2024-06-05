@@ -38,12 +38,8 @@ code interpreter to execute parts of the output.
 4. Wait until you see "Server is running on" message, then send requests to the server through Python API or by using our [visualization tool](/visualization/Readme.md).
 
     ```python
-    from dataclasses import asdict
-
     from nemo_skills.inference.server.code_execution_model import get_code_execution_model
     from nemo_skills.code_execution.sandbox import get_sandbox
-    from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
-    from nemo_skills.inference.generate_solutions import InferenceConfig
 
     sandbox = get_sandbox(
         sandbox_type="local",
@@ -56,33 +52,12 @@ code interpreter to execute parts of the output.
         sandbox=sandbox,
     )
 
-    # replace with "code_base" if model that was not pretrained with our pipeline
-    # you can also write a new .yaml file and put it inside nemo_skills/inference/prompt
-    # to customize further
-    prompt_config = get_prompt_config("openmathinstruct/sft")
-    prompt_config.few_shot_examples.num_few_shots = 0
-    # replace with the following if model that was not pretrained with our pipeline
-    # you can pick different few shot examples based on your needs
-    # prompt_config.few_shot_examples.num_few_shots = 5
-    # prompt_config.few_shot_examples.examples_type = "gsm8k_text_with_code"
-
-    question = (
+    prompts = [  # can provide multiple requests
         "In a dance class of 20 students, 20% enrolled in contemporary dance, "
         "25% of the remaining enrolled in jazz dance, and the rest enrolled in "
         "hip-hop dance. What percentage of the entire students enrolled in hip-hop dance?"
-    )
-    prompt = Prompt(config=prompt_config)
-    # can provide multiple requests
-    input_dicts = [{'question': question}]
-
-    # can provide different inference parameters here
-    inference_cfg = InferenceConfig(temperature=0)  # greedy
-    outputs = llm.generate(
-        prompt=prompt,
-        input_dicts=input_dicts,
-        stop_phrases=list(prompt_config.stop_phrases),
-        **asdict(inference_cfg),
-    )
+    ]
+    outputs = llm.generate(prompts=prompts)
     print(outputs[0]["generation"])
     ```
 
@@ -108,53 +83,25 @@ code interpreter to execute parts of the output.
 4. Wait until you see "Server is running on" message, then send requests to the server through Python API or by using our [visualization tool](/visualization/Readme.md).
 
     ```python
-    from dataclasses import asdict
-
     from nemo_skills.inference.server.model import get_model
-    from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
-    from nemo_skills.inference.generate_solutions import InferenceConfig
 
     llm = get_model(
         server_type=<server type from previous step>,
         host=<IP address of server printed on previous step>,
     )
 
-    # replace with "code_base" if model that was not pretrained with our pipeline
-    # you can also write a new .yaml file and put it inside nemo_skills/inference/prompt
-    # to customize further
-    prompt_config = get_prompt_config("llama3/instruct")
-    prompt_config.few_shot_examples.num_few_shots = 0
-    # to show few-shot examples, you can add the following
-    # prompt_config.few_shot_examples.num_few_shots = 5
-    # prompt_config.few_shot_examples.examples_type = "gsm8k_text_with_code"
-
-    question = (
+    prompts = [  # can provide multiple requests
         "In a dance class of 20 students, 20% enrolled in contemporary dance, "
         "25% of the remaining enrolled in jazz dance, and the rest enrolled in "
         "hip-hop dance. What percentage of the entire students enrolled in hip-hop dance?"
-    )
-    prompt = Prompt(config=prompt_config)
-    # can provide multiple requests
-    input_dicts = [{'question': question}]
-
-    # can provide different inference parameters here
-    inference_cfg = InferenceConfig(temperature=0)  # greedy
-    outputs = llm.generate(
-        prompt=prompt,
-        input_dicts=input_dicts,
-        stop_phrases=list(prompt_config.stop_phrases),
-        **asdict(inference_cfg),
-    )
+    ]
+    outputs = llm.generate(prompts=prompts)
     print(outputs[0]["generation"])
     ```
 
-If using `--server_type=nemo` locally, the NeMo server might sometimes hang around
+If running locally, the server might sometimes hang around
 after `start_server.py` is already killed. In that case you should manually stop it,
-e.g. by running
-
-```
-docker ps -a -q --filter ancestor=igitman/nemo-skills-sft:0.3.0 | xargs docker stop
-```
+e.g. by running docker stop with the id of the running container.
 
 If for some reason you do not want to use [pipeline/start_server.py](/pipeline/start_server.py) helper script,
 you can always start sandbox and LLM server manually. We describe this process in

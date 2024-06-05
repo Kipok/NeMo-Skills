@@ -87,15 +87,14 @@ class BaseModel(abc.ABC):
     @abc.abstractmethod
     def generate(
         self,
-        prompt: Prompt,
-        input_dicts: list[dict],
-        tokens_to_generate: int,
-        temperature: float,
-        top_p: float,
-        top_k: int,
-        repetition_penalty: float,
-        random_seed: int,
-        stop_phrases: list[str],
+        prompts: list[str],
+        tokens_to_generate: int = 512,
+        temperature: float = 0.0,
+        top_p: float = 0.95,
+        top_k: int = 0,
+        repetition_penalty: float = 1.0,
+        random_seed: int = 0,
+        stop_phrases: list[str] | None = None,
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
         pass
@@ -111,18 +110,18 @@ class TensorRTLLMModel(BaseModel):
 
     def generate(
         self,
-        prompt: Prompt,
-        input_dicts: list[dict],
-        tokens_to_generate: int,
-        temperature: float,
-        top_p: float,
-        top_k: int,
-        repetition_penalty: float,
-        random_seed: int,
-        stop_phrases: list[str],
+        prompts: list[str],
+        tokens_to_generate: int = 512,
+        temperature: float = 0.0,
+        top_p: float = 0.95,
+        top_k: int = 0,
+        repetition_penalty: float = 1.0,
+        random_seed: int = 0,
+        stop_phrases: list[str] | None = None,
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
-        string_prompts = [prompt.build_string(input_dict) for input_dict in input_dicts]
+        if stop_phrases is None:
+            stop_phrases = []
         request = {
             "tokens_to_generate": tokens_to_generate,
             "temperature": temperature,
@@ -136,7 +135,7 @@ class TensorRTLLMModel(BaseModel):
 
         generation_ids = []
 
-        for prompt in string_prompts:
+        for prompt in prompts:
             request["prompt"] = prompt
             generation_ids.append(
                 self.requests_lib.put(
@@ -169,20 +168,20 @@ class TensorRTLLMModel(BaseModel):
 class NemoModel(BaseModel):
     def generate(
         self,
-        prompt: Prompt,
-        input_dicts: list[dict],
-        tokens_to_generate: int,
-        temperature: float,
-        top_p: float,
-        top_k: int,
-        repetition_penalty: float,
-        random_seed: int,
-        stop_phrases: list[str],
+        prompts: list[str],
+        tokens_to_generate: int = 512,
+        temperature: float = 0.0,
+        top_p: float = 0.95,
+        top_k: int = 0,
+        repetition_penalty: float = 1.0,
+        random_seed: int = 0,
+        stop_phrases: list[str] | None = None,
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
-        string_prompts = [prompt.build_string(input_dict) for input_dict in input_dicts]
+        if stop_phrases is None:
+            stop_phrases = []
         request = {
-            "sentences": string_prompts,
+            "sentences": prompts,
             "tokens_to_generate": tokens_to_generate,
             "temperature": temperature,
             "top_k": top_k,
@@ -200,12 +199,13 @@ class NemoModel(BaseModel):
         # we need to remove the original prompt as nemo always returns it
         outputs = [None] * len(generations['sentences'])
         for idx, generation in enumerate(generations['sentences']):
-            outputs[idx] = {'generation': generation[len(string_prompts[idx]) :]}
+            outputs[idx] = {'generation': generation[len(prompts[idx]) :]}
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
         return outputs
 
 
+# TODO: this is broken
 class OpenAIModel(BaseModel):
     def __init__(
         self,
@@ -235,6 +235,8 @@ class OpenAIModel(BaseModel):
         top_k: int = 0,
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
+        if stop_phrases is None:
+            stop_phrases = []
         if top_k != 0:
             raise ValueError("`top_k` is not supported by OpenAI, please set it to default value `0`.")
 
@@ -304,20 +306,20 @@ class VLLMModel(BaseModel):
 
     def generate(
         self,
-        prompt: Prompt,
-        input_dicts: list[dict],
-        tokens_to_generate: int,
-        temperature: float,
-        top_p: float,
-        top_k: int,
-        repetition_penalty: float,
-        random_seed: int,
-        stop_phrases: list[str],
+        prompts: list[str],
+        tokens_to_generate: int = 512,
+        temperature: float = 0.0,
+        top_p: float = 0.95,
+        top_k: int = 0,
+        repetition_penalty: float = 1.0,
+        random_seed: int = 0,
+        stop_phrases: list[str] | None = None,
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
-        string_prompts = [prompt.build_string(input_dict) for input_dict in input_dicts]
+        if stop_phrases is None:
+            stop_phrases = []
         request = {
-            'prompt': string_prompts,
+            'prompt': prompts,
             'max_tokens': tokens_to_generate,
             'temperature': temperature,
             'top_p': top_p,
@@ -426,7 +428,7 @@ class VLLMModel(BaseModel):
 models = {
     'tensorrt_llm': TensorRTLLMModel,
     'nemo': NemoModel,
-    'openai': OpenAIModel,
+    # 'openai': OpenAIModel,
     'vllm': VLLMModel,
 }
 

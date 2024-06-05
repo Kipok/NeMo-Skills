@@ -62,24 +62,24 @@ class CodeExecutionWrapper:
 
     def generate(
         self,
-        prompt: Prompt,
-        input_dicts: list[dict],
-        tokens_to_generate: int,
-        temperature: float,
-        top_p: float,
-        top_k: int,
-        repetition_penalty: float,
-        random_seed: int,
-        stop_phrases: list[str],
+        prompts: list[str],
+        tokens_to_generate: int = 512,
+        temperature: float = 0.0,
+        top_p: float = 0.95,
+        top_k: int = 0,
+        repetition_penalty: float = 1.0,
+        random_seed: int = 0,
+        stop_phrases: list[str] | None = None,
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
+        if stop_phrases is None:
+            stop_phrases = []
         # making a copy of input_dicts to not corrupt original data
         input_dicts = copy.deepcopy(input_dicts)
 
         # prompts are added later
         request = {
-            "prompt": prompt,
-            "input_dicts": input_dicts,
+            "prompts": prompts,
             "tokens_to_generate": tokens_to_generate,
             "temperature": temperature,
             "top_k": top_k,
@@ -94,15 +94,13 @@ class CodeExecutionWrapper:
         # after executing code and getting result back into the prompt
         new_outputs = [
             {
-                'input_dict': input_dicts[idx],
+                'prompt': prompts[idx],
                 'result': None,
                 'error_message': Sandbox.NOT_EXECUTED,
                 'session_id': None,
             }
-            for idx in range(len(input_dicts))
+            for idx in range(len(prompts))
         ]
-        for output in new_outputs:
-            output['input_dict']['generation'] = ''
         remaining_ids = list(range(len(new_outputs)))
         num_executions = 0
 
@@ -110,7 +108,7 @@ class CodeExecutionWrapper:
         with ThreadPoolExecutor(max_workers=32) as executor:
             while len(remaining_ids) > 0:
                 num_executions += 1
-                request["input_dicts"] = [new_outputs[idx]['input_dict'] for idx in remaining_ids]
+                request["prompts"] = [new_outputs[idx]['prompt'] for idx in remaining_ids]
                 outputs = [output['generation'] for output in self.model.generate(**request)]
                 new_ids = []
                 # checking if any of the outputs need code execution and submitting requests in parallel
@@ -130,23 +128,23 @@ class CodeExecutionWrapper:
                         if result['error_message']:
                             new_outputs[idx]['error_message'] = result['error_message']
                             if self.config.stop_on_code_error:
-                                new_outputs[idx]['input_dict']['generation'] += output
+                                new_outputs[idx]['prompt'] += output
                                 continue
                             text_only_part = output.split(CODE_SEPARATORS[0])[0]
-                            new_outputs[idx]['input_dict']['generation'] += text_only_part
+                            new_outputs[idx]['prompt'] += text_only_part
                             code_output = self._recover_from_error(request, new_outputs[idx], executor)
                             # if re-generation did not help
                             if code_output is None:
                                 code_output = result["result"]
-                                new_outputs[idx]['input_dict']['generation'] += output[len(text_only_part) :]
+                                new_outputs[idx]['prompt'] += output[len(text_only_part) :]
                         else:
-                            new_outputs[idx]['input_dict']['generation'] += output
+                            new_outputs[idx]['prompt'] += output
                             new_outputs[idx]['error_message'] = ''
                             code_output = result["result"]
 
                         # adding code output to the prompt
                         code_output = f'\n{CODE_OUTPUT_SEPARATORS[0]}\n{code_output}\n{CODE_OUTPUT_SEPARATORS[1]}\n'
-                        new_outputs[idx]['input_dict']['generation'] += code_output
+                        new_outputs[idx]['prompt'] += code_output
                         # setting a limit on max code executions to speed things up
                         # (sometimes keeps repeating the same sequence forever)
                         if num_executions >= self.config.max_code_executions:
@@ -154,7 +152,7 @@ class CodeExecutionWrapper:
                         else:
                             new_ids.append(idx)
                     else:
-                        new_outputs[idx]['input_dict']['generation'] += output
+                        new_outputs[idx]['prompt'] += output
                 remaining_ids = new_ids
 
         # removing original prompt and stop tokens from the end of the generated text
@@ -162,16 +160,14 @@ class CodeExecutionWrapper:
         for output in new_outputs:
             if output['session_id'] is not None:
                 self.sandbox.clear_session(output['session_id'])
-            outputs.append(
-                {'generation': output['input_dict']['generation'], 'error_message': output['error_message']}
-            )
+            outputs.append({'generation': output['prompt'], 'error_message': output['error_message']})
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
         return outputs
 
     def _recover_from_error(self, request, new_output, executor):
-        recovery_request = {key: value for key, value in request.items() if key != 'input_dicts'}
-        recovery_request['input_dicts'] = [new_output['input_dict']]
+        recovery_request = {key: value for key, value in request.items() if key != 'prompts'}
+        recovery_request['prompts'] = [new_output['prompt']]
 
         recovery_request['temperature'] = self.config.error_recovery.temperature
         recovery_request['top_p'] = self.config.error_recovery.top_p
@@ -217,7 +213,7 @@ class CodeExecutionWrapper:
 
         most_common = counts.most_common(1)[0][0]
         valid_idx = results.index(most_common)
-        new_output['input_dict']['generation'] += outputs[valid_idx]
+        new_output['prompt'] += outputs[valid_idx]
         new_output['error_message'] = ''
 
         return most_common

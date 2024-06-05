@@ -140,9 +140,8 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
             if len(data_points) == cfg.batch_size:
                 # batch-computing the outputs
-
                 outputs = llm.generate(
-                    prompt=prompt,
+                    prompts=[prompt.build_string(data_point) for data_point in data_points],
                     input_dicts=data_points,
                     stop_phrases=list(cfg.prompt.stop_phrases),
                     **asdict(cfg.inference),
@@ -160,8 +159,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
         # collecting the final batch
         if len(data_points) > 0:
             outputs = llm.generate(
-                prompt=prompt,
-                input_dicts=data_points,
+                prompts=[prompt.build_string(data_point) for data_point in data_points],
                 stop_phrases=list(cfg.prompt.stop_phrases),
                 **asdict(cfg.inference),
             )
