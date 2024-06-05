@@ -329,7 +329,7 @@ class VLLMModel(BaseModel):
             'seed': random_seed,
         }
         preprocess_request(request)
-        outputs = self.prompt_api(**request, parse_response=True)
+        outputs = [{'generation': output} for output in self.prompt_api(**request, parse_response=True)]
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
         return outputs

@@ -12,7 +12,7 @@ export NEMO_SKILLS_TEST_HF_MODEL=$1
 export NEMO_SKILLS_TEST_OUTPUT=/tmp/nemo_skills_test_output
 
 # first running the conversion tests
-# pytest tests/gpu-tests/test_conversion.py -k test_hf_trtllm_conversion -s -x
+pytest tests/gpu-tests/test_conversion.py -k test_hf_trtllm_conversion -s -x
 export NEMO_SKILLS_TEST_TRTLLM_MODEL=$NEMO_SKILLS_TEST_OUTPUT/trtllm-model
 pytest tests/gpu-tests/test_conversion.py -k test_hf_nemo_conversion -s -x
 export NEMO_SKILLS_TEST_NEMO_MODEL=$NEMO_SKILLS_TEST_OUTPUT/model.nemo

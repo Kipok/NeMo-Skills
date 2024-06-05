@@ -62,8 +62,7 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_na
     elif server_type == 'vllm':
         server_start_cmd = (
             f"(NUM_GPUS={num_gpus} bash /code/nemo_skills/inference/server/serve_vllm.sh /model/ {model_name} "
-            # f"0 openai 5000 2>&1 | tee /tmp/server_logs.txt &)"
-            f"0 openai 5000 > /tmp/server_logs.txt &)"
+            f"0 openai 5000 2>&1 | tee /tmp/server_logs.txt &) && sleep 1"
         )
         num_tasks = 1
 
@@ -174,7 +173,7 @@ def launch_local_job(
     else:
         start_cmd = "bash /start.sh"
 
-    cmd = f"{docker_cmd} run --rm -p 5000:5000 --gpus all --ipc=host {mounts} {container} {start_cmd}"
+    cmd = f"{docker_cmd} run --rm --gpus all --ipc=host {mounts} {container} {start_cmd}"
     subprocess.run(cmd, shell=True, check=True)
 
     # TODO: same behavior of streaming logs to a file and supporting dependencies?
