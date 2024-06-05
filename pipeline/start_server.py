@@ -39,8 +39,8 @@ if [ $SLURM_PROCID -eq 0 ]; then \
     SERVER_ADDRESS=$(tail -n 10 /tmp/server_logs.txt | \
     grep -oP 'http://\K[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | tail -n1) && \
     echo "Server is running on $SERVER_ADDRESS" && \
-    echo "Sandbox is running on ${{NEMO_SKILLS_SANDBOX_HOST:-$SERVER_ADDRESS}}" && \
-    sleep infinity;
+    {sandbox_echo} \
+    sleep infinity; \
 else \
     sleep infinity; \
 fi \
@@ -68,6 +68,9 @@ if __name__ == "__main__":
         required=False,
         help="Can specify if need interactive jobs or a specific non-default partition",
     )
+    parser.add_argument(
+        "--no_sandbox", action="store_true", help="Disables sandbox if code execution is not required."
+    )
     args = parser.parse_args()
 
     args.model_path = Path(args.model_path).absolute()
@@ -76,6 +79,7 @@ if __name__ == "__main__":
         args.server_type, args.num_gpus, args.num_nodes, args.model_path.name
     )
 
+    sandbox_echo = 'echo "Sandbox is running on ${{NEMO_SKILLS_SANDBOX_HOST:-$SERVER_ADDRESS}}" &&'
     format_dict = {
         "model_path": args.model_path,
         "model_name": args.model_path.name,
@@ -85,6 +89,7 @@ if __name__ == "__main__":
         "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
         "HF_TOKEN": os.getenv("HF_TOKEN", ""),  # needed for some of the models, so making an option to pass it in
         "server_wait_string": server_wait_string,
+        "sandbox_echo": sandbox_echo if not args.no_sandbox else "",
     }
 
     job_id = launch_job(
@@ -96,7 +101,7 @@ if __name__ == "__main__":
         container=CLUSTER_CONFIG["containers"][args.server_type],
         mounts=MOUNTS.format(**format_dict),
         partition=args.partition,
-        with_sandbox=True,
+        with_sandbox=(not args.no_sandbox),
         extra_sbatch_args=["--parsable"],
     )
 
