@@ -132,7 +132,6 @@ def launch_local_job(
     )
 
     docker_cmd = CLUSTER_CONFIG["docker_cmd"]
-
     if with_sandbox:
         sandbox_name = f"local-sandbox-{uuid.uuid4()}"
         sandbox_cmd = (
@@ -169,14 +168,14 @@ def launch_local_job(
     mounts += f" -v {fp.name}:/start.sh"
 
     if tasks_per_node > 1:
-        start_cmd = f"mpirun --allow-run-as-root -np {tasks_per_node} bash /start.sh"
+        start_cmd = (
+            f'mpirun --allow-run-as-root -np {tasks_per_node} bash /start.sh & echo $! > /tmp/my-process.pid && wait'
+        )
     else:
-        start_cmd = "bash /start.sh"
+        start_cmd = "bash /start.sh & echo $! > /tmp/my-process.pid && wait"
 
-    cmd = f"{docker_cmd} run --rm --gpus all --ipc=host {mounts} {container} {start_cmd}"
+    cmd = f"{docker_cmd} run --rm --gpus all --ipc=host {mounts} {container} bash -c '{start_cmd}'"
     subprocess.run(cmd, shell=True, check=True)
-
-    # TODO: same behavior of streaming logs to a file and supporting dependencies?
 
 
 def launch_slurm_job(
@@ -279,7 +278,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--cmd", required=True, help="Full command for cluster execution")
     parser.add_argument("--partition", required=False)
-    parser.add_argument("--num_nodes", type=int, required=True)
+    parser.add_argument("--num_nodes", type=int, default=1)
     parser.add_argument("--tasks_per_node", type=int, choices=(1, 2, 4, 8), required=True)
     parser.add_argument("--gpus_per_node", type=int, choices=(1, 2, 4, 8), default=8)
     parser.add_argument("--with_sandbox", action="store_true")

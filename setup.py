@@ -33,6 +33,7 @@ setup(
         'backoff',
         'sympy',
         'rank_bm25',
+        'openai',
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

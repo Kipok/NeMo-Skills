@@ -83,7 +83,7 @@ if [ $SLURM_PROCID -eq 0 ]; then \
     echo "Waiting for the server to start" && \
     tail -n0 -f /tmp/server_logs.txt | sed '/{server_wait_string}/ q' && \
     {eval_cmds} \
-    kill %1; \
+    kill `cat /tmp/my-process.pid`; \
 else \
     sleep infinity; \
 fi \

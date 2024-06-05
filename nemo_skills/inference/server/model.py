@@ -237,8 +237,6 @@ class OpenAIModel(BaseModel):
     ) -> list[dict]:
         if top_k != 0:
             raise ValueError("`top_k` is not supported by OpenAI, please set it to default value `0`.")
-        if not remove_stop_phrases:
-            raise ValueError("OpenAI always removes stop phrases.")
 
         outputs = []
         for input_dict in input_dicts:
@@ -253,6 +251,10 @@ class OpenAIModel(BaseModel):
                 stop_phrases=stop_phrases,
             )
             outputs.append({'generation': response})
+
+        if remove_stop_phrases:
+            postprocess_output(outputs, stop_phrases)
+
         return outputs
 
     def _send_request(
@@ -277,9 +279,11 @@ class OpenAIModel(BaseModel):
             stop=stop_phrases,
             messages=messages,
         ).choices[0]
-        content = response.message.content
-
-        return content
+        output = response.message.content
+        # adding back stop words
+        if response.finish_reason == "stop":
+            output += response.stop_reason
+        return output
 
 
 class VLLMModel(BaseModel):
@@ -363,7 +367,6 @@ class VLLMModel(BaseModel):
                 "spaces_between_special_tokens": False,
             }
         }
-
         response = self.oai_client.completions.create(
             model=self.model,
             prompt=prompt,
@@ -395,7 +398,11 @@ class VLLMModel(BaseModel):
 
         for resp in response:
             for choice in resp.choices:
-                responses.append(choice.text)
+                output = choice.text
+                # adding back stop words
+                if choice.finish_reason == "stop":
+                    output += choice.stop_reason
+                responses.append(output)
         return responses
 
     @staticmethod

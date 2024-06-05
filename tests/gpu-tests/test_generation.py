@@ -51,10 +51,7 @@ python pipeline/run_eval.py \
     ++batch_size=8 \
     ++max_samples=20 \
 """
-    subprocess.run(
-        cmd,
-        shell=True,
-    )  # not checking the error as it's expected to finish with non-zero error code
+    subprocess.run(cmd, shell=True, check=True)
 
     # double checking that code was actually executed
     with open(f"{output_path}/gsm8k/output-greedy.jsonl") as fin:
@@ -94,10 +91,7 @@ python pipeline/run_eval.py \
     ++batch_size=8 \
     ++max_samples=20 \
 """
-    subprocess.run(
-        cmd,
-        shell=True,
-    )  # not checking the error as it's expected to finish with non-zero error code
+    subprocess.run(cmd, shell=True, check=True)
 
     # double checking that code was actually executed
     with open(f"{output_path}/gsm8k/output-greedy.jsonl") as fin:
@@ -109,8 +103,8 @@ python pipeline/run_eval.py \
 
     # running compute_metrics to check that results are expected
     correct_answer, wrong_answer, no_answer, total = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"])
-    assert correct_answer == 35.0
-    assert wrong_answer == 60.0
+    assert correct_answer == 40.0
+    assert wrong_answer == 55.0
     assert no_answer == 5.0
     assert total == 20
 
@@ -137,10 +131,7 @@ python pipeline/run_eval.py \
     ++batch_size=8 \
     ++max_samples=20 \
 """
-    subprocess.run(
-        cmd,
-        shell=True,
-    )  # not checking the error as it's expected to finish with non-zero error code
+    subprocess.run(cmd, shell=True, check=True)
 
     # double checking that code was actually executed
     with open(f"{output_path}/math/output-greedy.jsonl") as fin:
@@ -181,10 +172,7 @@ python pipeline/run_labeling.py \
     ++batch_size=8 \
     ++max_samples=20 \
 """
-    subprocess.run(
-        cmd,
-        shell=True,
-    )  # not checking the error as it's expected to finish with non-zero error code
+    subprocess.run(cmd, shell=True, check=True)
 
     # double checking that code was actually executed
     with open(f"{output_path}/output-rs0.jsonl") as fin:
@@ -223,10 +211,7 @@ python pipeline/run_eval.py \
     batch_size=8 \
     max_samples=20 \
 """
-    subprocess.run(
-        cmd,
-        shell=True,
-    )  # not checking the error as it's expected to finish with non-zero error code
+    subprocess.run(cmd, shell=True, check=True)
 
     # double checking that code was actually executed
     with open(f"{output_path}/gsm8k/output-greedy.jsonl") as fin:

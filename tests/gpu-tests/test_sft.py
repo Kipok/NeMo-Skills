@@ -36,7 +36,7 @@ def test_sft():
     output_path = os.getenv('NEMO_SKILLS_TEST_OUTPUT', '/tmp')
 
     cmd = f""" \
-python {Path(__file__).absolute().parents[1]}/datasets/gsm8k/prepare.py --split_name validation && \
+python {Path(__file__).absolute().parents[2]}/datasets/gsm8k/prepare.py --split_name validation && \
 export NEMO_SKILLS_DATA={Path(__file__).absolute().parents[2] / 'datasets'} && \
 export NEMO_SKILLS_RESULTS={output_path} && \
 python pipeline/run_pipeline.py \

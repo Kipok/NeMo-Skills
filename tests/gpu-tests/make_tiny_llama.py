@@ -17,15 +17,15 @@
 import os
 import shlex
 import subprocess
+import sys
 
 from transformers import LlamaConfig, LlamaForCausalLM, LlamaTokenizerFast
 
-mname_from = "meta-llama/Meta-Llama-3-8B"
-mname_tiny = f"{os.environ['NEMO_SKILLS_TEST_OUTPUT']}/tiny-llama"
-vocab_keep_items = 3000
+mname_from = "meta-llama/Llama-2-7b-hf"
+mname_tiny = "/output/tiny-llama"
+vocab_keep_items = 32000
 
 config = LlamaConfig.from_pretrained(mname_from)
-# print("orig config", config)
 config.update(
     dict(
         hidden_size=16,
