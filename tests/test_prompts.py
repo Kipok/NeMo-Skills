@@ -235,46 +235,13 @@ Assistant:
 
 def test_nemotron_zeroshot_prompt():
     prompt = Prompt(config=get_prompt_config('nemotron/zeroshot'))
-    prompt.config.few_shot_examples.example_dicts = [
-        {'question': '1 + 1 = ?', 'generation': "That's easy: 2!"},
-        {'question': '5 + 5 = ?', 'generation': "That's easy: 10!"},
-    ]
-    prompt.config.few_shot_examples.num_few_shots = 2
+    expected_prompt = """<extra_id_0>System
 
-    expected_prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-
-You are Meta AI, a sophisticated and energetic AI Assistant. You excel at solving mathematical problems.
-
-You will look at the examples provided by the user and try to follow the solution format as much as possible.<|eot_id|><|start_header_id|>user<|end_header_id|>
-
-Here are some examples of questions and solutions followed by a new question that you need to solve.
-Make sure to put the answer (and only answer) inside \\boxed{}.
-
-Question:
-1 + 1 = ?
-
-My solution:
-That's easy: 2!
-
-
-
-
-
-Question:
-5 + 5 = ?
-
-My solution:
-That's easy: 10!
-
-
-
-
-
-Question:
+<extra_id_1>User
 2 + 2 = ?
 
-<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
-    print(prompt.build_string({'question': '2 + 2 = ?'}))
+<extra_id_1>Assistant
+"""
     assert prompt.build_string({'question': '2 + 2 = ?'}) == expected_prompt
 
 
@@ -286,12 +253,9 @@ def test_nemotron_fewshot_prompt():
     ]
     prompt.config.few_shot_examples.num_few_shots = 2
 
-    expected_prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+    expected_prompt = """<extra_id_0>System
 
-You are Meta AI, a sophisticated and energetic AI Assistant. You excel at solving mathematical problems.
-
-You will look at the examples provided by the user and try to follow the solution format as much as possible.<|eot_id|><|start_header_id|>user<|end_header_id|>
-
+<extra_id_1>User
 Here are some examples of questions and solutions followed by a new question that you need to solve.
 Make sure to put the answer (and only answer) inside \\boxed{}.
 
@@ -318,5 +282,7 @@ That's easy: 10!
 Question:
 2 + 2 = ?
 
-<|eot_id|><|start_header_id|>assistant<|end_header_id|>"""
+<extra_id_1>Assistant
+My solution:
+"""
     assert prompt.build_string({'question': '2 + 2 = ?'}) == expected_prompt
