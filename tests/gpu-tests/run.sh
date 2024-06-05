@@ -21,7 +21,7 @@ export NEMO_SKILLS_TEST_NEMO_MODEL=$NEMO_SKILLS_TEST_OUTPUT/model.nemo
 export NEMO_SKILLS_TEST_HF_MODEL=$NEMO_SKILLS_TEST_OUTPUT/hf-model
 
 # then running the rest of the tests
-pytest tests/gpu-tests/test_generation.py -s
+pytest tests/gpu-tests/test_generation.py -s -x
 
 # for sft we are using the tiny random llama model to run much faster
 python pipeline/launcher.py \
@@ -35,4 +35,4 @@ python pipeline/launcher.py \
 export NEMO_SKILLS_TEST_HF_MODEL=$NEMO_SKILLS_TEST_OUTPUT/tiny-llama
 pytest tests/gpu-tests/test_conversion.py -k test_hf_nemo_conversion -s -x
 # running finetuning
-pytest tests/gpu-tests/test_finetuning.py -s
+pytest tests/gpu-tests/test_finetuning.py -s -x

@@ -79,7 +79,8 @@ if __name__ == "__main__":
         args.server_type, args.num_gpus, args.num_nodes, args.model_path.name
     )
 
-    sandbox_echo = 'echo "Sandbox is running on ${{NEMO_SKILLS_SANDBOX_HOST:-$SERVER_ADDRESS}}" &&'
+    # TODO: VLLM
+    sandbox_echo = 'echo "Sandbox is running on {$NEMO_SKILLS_SANDBOX_HOST:-$SERVER_ADDRESS}" &&'
     format_dict = {
         "model_path": args.model_path,
         "model_name": args.model_path.name,

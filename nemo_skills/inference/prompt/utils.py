@@ -14,7 +14,7 @@
 
 import json
 import logging
-from dataclasses import field
+from dataclasses import asdict, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -132,7 +132,9 @@ class PromptConfig:
 
 class Prompt:
     def __init__(self, config):
-        self.config = config
+        # rebuilding prompt config to make sure post init is called again in
+        # case some parameters were manually changed after the config was created
+        self.config = PromptConfig(_init_nested=True, **asdict(config))
 
     def build_context(self, example_dict: Dict[str, Any]) -> str:
         """Builds the context string based on the example dictionary."""
