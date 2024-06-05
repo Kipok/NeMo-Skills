@@ -24,7 +24,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install .
-        pip install pytest pytest-cov
+        pip install pytest pytest-cov pytest-timeout
     - name: Run all tests
       run: |
         ./nemo_skills/code_execution/local_sandbox/start_local_sandbox.sh &
@@ -51,7 +51,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         # testing cluster environment where no other packages should be required
-        pip install --user pyyaml
+        pip install --user pyyaml pytest pytest-cov pytest-timeout
     - name: Run help
       run: |
         NEMO_SKILLS_CONFIG=cluster_configs/slurm.yaml python tests/check_help.py

@@ -20,7 +20,7 @@ code interpreter to execute parts of the output.
 
 3. Start model server and local [sandbox](/docs/sandbox.md) for code execution.
    We recommend using TensorRT-LLM for fastest inference,
-   but NeMo or vLLM might be easier to setup (works on more GPU types and does not require
+   but NeMo or vLLM might be easier to setup (works on more GPU types and does **not** require
    conversion for pretrained models).
 
    You can also run this command on a slurm cluster and then submit requests from a local workstation by setting up

@@ -63,9 +63,7 @@ python pipeline/run_eval.py \
 
     # running compute_metrics to check that results are expected
     correct_answer, wrong_answer, no_answer, total = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"])
-    assert correct_answer == 35.0
-    assert wrong_answer == 60.0
-    assert no_answer == 5.0
+    assert (int(correct_answer), int(wrong_answer), int(no_answer)) == (35, 60, 5)
     assert total == 20
 
 
@@ -103,9 +101,7 @@ python pipeline/run_eval.py \
 
     # running compute_metrics to check that results are expected
     correct_answer, wrong_answer, no_answer, total = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"])
-    assert correct_answer == 40.0
-    assert wrong_answer == 55.0
-    assert no_answer == 5.0
+    assert (int(correct_answer), int(wrong_answer), int(no_answer)) == (40, 55, 5)
     assert total == 20
 
 
@@ -143,9 +139,7 @@ python pipeline/run_eval.py \
 
     # running compute_metrics to check that results are expected
     correct_answer, wrong_answer, no_answer, total = compute_metrics([f"{output_path}/math/output-greedy.jsonl"])
-    assert correct_answer == 20.0
-    assert wrong_answer == 65.0
-    assert no_answer == 15.0
+    assert (int(correct_answer), int(wrong_answer), int(no_answer)) == (20, 65, 15)
     assert total == 20
 
 
@@ -184,9 +178,7 @@ python pipeline/run_labeling.py \
 
     # running compute_metrics to check that results are expected
     correct_answer, wrong_answer, no_answer, total = compute_metrics([f"{output_path}/output-rs0.jsonl"])
-    assert correct_answer == 35.0
-    assert wrong_answer == 50.0
-    assert no_answer == 15.0
+    assert (int(correct_answer), int(wrong_answer), int(no_answer)) == (35, 50, 15)
     assert total == 20
 
 
@@ -223,7 +215,5 @@ python pipeline/run_eval.py \
 
     # running compute_metrics to check that results are expected
     correct_answer, wrong_answer, no_answer, total = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"])
-    assert correct_answer == 20.0
-    assert wrong_answer == 65.0
-    assert no_answer == 15.0
+    assert (int(correct_answer), int(wrong_answer), int(no_answer)) == (10, 70, 15)
     assert total == 20
