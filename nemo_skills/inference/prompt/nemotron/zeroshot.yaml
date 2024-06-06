@@ -4,14 +4,13 @@ few_shot_examples:
 
 system: ""
 
-user: "{question}"
+user: "{question}\n{context}"
 
 prompt_template: |-
   <extra_id_0>System
   {system}
   <extra_id_1>User
-  {user}
-  <extra_id_1>Assistant
+  {user}<extra_id_1>Assistant
   {generation}
 
 stop_phrases: ["<extra_id_1>"]

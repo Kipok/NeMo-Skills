@@ -239,7 +239,6 @@ def test_nemotron_zeroshot_prompt():
 
 <extra_id_1>User
 2 + 2 = ?
-
 <extra_id_1>Assistant
 """
     assert prompt.build_string({'question': '2 + 2 = ?'}) == expected_prompt
