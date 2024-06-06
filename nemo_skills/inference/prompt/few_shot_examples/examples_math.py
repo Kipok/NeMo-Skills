@@ -13,7 +13,6 @@
 # limitations under the License.
 
 
-
 # Source https://github.com/EleutherAI/lm-evaluation-harness/blob/main/lm_eval/tasks/minerva_math/utils.py#L42
 standard_four_shot = [
     {
@@ -33,7 +32,6 @@ standard_four_shot = [
         "generation": "If we multiply the first equation by $-\\frac{3}{2}$, we obtain\n\n$$6y-9x=-\\frac{3}{2}a.$$Since we also know that $6y-9x=b$, we have\n\n$$-\\frac{3}{2}a=b\\Rightarrow\\frac{a}{b}=\\boxed{-\\frac{2}{3}}.$$",
     },
 ]
-
 
 
 text_detailed = [
