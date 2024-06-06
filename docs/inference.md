@@ -40,6 +40,7 @@ code interpreter to execute parts of the output.
     ```python
     from nemo_skills.inference.server.code_execution_model import get_code_execution_model
     from nemo_skills.code_execution.sandbox import get_sandbox
+    from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
 
     sandbox = get_sandbox(
         sandbox_type="local",
@@ -52,12 +53,29 @@ code interpreter to execute parts of the output.
         sandbox=sandbox,
     )
 
-    prompts = [  # can provide multiple requests
+    # replace with "openmathinstruct/base" if model that was not pretrained with our pipeline
+    # check out other yaml files inside nemo_skills/inference/prompt
+    # or write your own to customize further
+    prompt_config = get_prompt_config("openmathinstruct/sft")
+    prompt_config.few_shot_examples.num_few_shots = 0
+    # replace with the following if model that was not pretrained with our pipeline
+    # you can pick different few shot examples based on your needs
+    # prompt_config.few_shot_examples.num_few_shots = 5
+    # prompt_config.few_shot_examples.examples_type = "gsm8k_text_with_code"
+
+    question = (
         "In a dance class of 20 students, 20% enrolled in contemporary dance, "
         "25% of the remaining enrolled in jazz dance, and the rest enrolled in "
         "hip-hop dance. What percentage of the entire students enrolled in hip-hop dance?"
-    ]
-    outputs = llm.generate(prompts=prompts)
+    )
+    prompt_template = Prompt(config=prompt_config)
+    # can provide multiple requests
+    prompts = [prompt_template.build_string({'question': question})]
+
+    outputs = llm.generate(
+        prompts=prompts,
+        stop_phrases=list(prompt_config.stop_phrases),
+    )
     print(outputs[0]["generation"])
     ```
 
@@ -84,20 +102,57 @@ code interpreter to execute parts of the output.
 
     ```python
     from nemo_skills.inference.server.model import get_model
+    from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
 
     llm = get_model(
         server_type=<server type from previous step>,
         host=<IP address of server printed on previous step>,
     )
 
-    prompts = [  # can provide multiple requests
+    # check out other yaml files inside nemo_skills/inference/prompt
+    # or write your own to customize further
+    prompt_config = get_prompt_config("llama3/instruct")
+    prompt_config.few_shot_examples.num_few_shots = 5
+    prompt_config.few_shot_examples.examples_type = "gsm8k_only_text"
+
+    question = (
         "In a dance class of 20 students, 20% enrolled in contemporary dance, "
         "25% of the remaining enrolled in jazz dance, and the rest enrolled in "
         "hip-hop dance. What percentage of the entire students enrolled in hip-hop dance?"
-    ]
-    outputs = llm.generate(prompts=prompts)
+    )
+    prompt_template = Prompt(config=prompt_config)
+    # can provide multiple requests
+    prompts = [prompt_template.build_string({'question': question})]
+
+    outputs = llm.generate(
+        prompts=prompts,
+        stop_phrases=list(prompt_config.stop_phrases),
+    )
     print(outputs[0]["generation"])
     ```
+
+## Without prompt format
+
+If you just want to use our server hosting code and have another way to prepare
+model prompts in the correct format, you can leverage the following minimal api.
+
+```python
+from nemo_skills.inference.server.model import get_model
+
+llm = get_model(
+    server_type=<server type from previous step>,
+    host=<IP address of server printed on previous step>,
+)
+
+prompts = [  # can provide multiple requests
+    "In a dance class of 20 students, 20% enrolled in contemporary dance, "
+    "25% of the remaining enrolled in jazz dance, and the rest enrolled in "
+    "hip-hop dance. What percentage of the entire students enrolled in hip-hop dance?"
+]
+outputs = llm.generate(prompts=prompts)
+print(outputs[0]["generation"])
+```
+
 
 If running locally, the server might sometimes hang around
 after `start_server.py` is already killed. In that case you should manually stop it,

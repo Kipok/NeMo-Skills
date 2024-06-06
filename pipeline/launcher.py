@@ -123,8 +123,8 @@ def launch_local_job(
     cmd = cmd.strip()
     cmd = (
         f"export CUDA_VISIBLE_DEVICES={','.join(map(str, range(gpus_per_node)))} && "
-        f"export SLURM_LOCALID=$OMPI_COMM_WORLD_LOCAL_RANK && "
-        f"export SLURM_PROCID=$OMPI_COMM_WORLD_LOCAL_RANK && "
+        f"export SLURM_LOCALID={'$OMPI_COMM_WORLD_LOCAL_RANK' if tasks_per_node > 1 else 0} && "
+        f"export SLURM_PROCID={'$OMPI_COMM_WORLD_LOCAL_RANK' if tasks_per_node > 1 else 0} && "
         f"{cmd}"
     )
 
@@ -165,6 +165,10 @@ def launch_local_job(
     mounts += f" -v {fp.name}:/start.sh"
 
     start_cmd = f'mpirun --allow-run-as-root -np {tasks_per_node} bash /start.sh'
+    if tasks_per_node > 1:
+        start_cmd = f'mpirun --allow-run-as-root -np {tasks_per_node} bash /start.sh'
+    else:
+        start_cmd = "bash /start.sh"
 
     cmd = f"{docker_cmd} run --rm --gpus all --ipc=host {mounts} {container} bash -c '{start_cmd}'"
     subprocess.run(cmd, shell=True, check=True)
