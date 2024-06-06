@@ -44,10 +44,11 @@ if [ $SLURM_PROCID -eq 0 ]; then \
         {extra_arguments} && \
     python nemo_skills/evaluation/evaluate_results.py \
         prediction_jsonl_files=/results/output-rs{random_seed}.jsonl {extra_eval_args} && \
-    kill `cat /tmp/my-process.pid`; \
-else \
-    sleep infinity; \
-fi \
+    echo "done";
+fi && \
+python /code/nemo_skills/inference/server/sync.py && \
+echo "Finished $SLURM_PROCID" && \
+kill %1 \
 """
 
 

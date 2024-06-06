@@ -82,11 +82,12 @@ export HF_TOKEN={HF_TOKEN} && \
 if [ $SLURM_PROCID -eq 0 ]; then \
     echo "Waiting for the server to start" && \
     tail -n0 -f /tmp/server_logs.txt | sed '/{server_wait_string}/ q' && \
-    {eval_cmds} \
-    kill `cat /tmp/my-process.pid`; \
-else \
-    sleep infinity; \
-fi \
+    {eval_cmds}
+    echo "done";
+fi && \
+python /code/nemo_skills/inference/server/sync.py && \
+echo "Finished $SLURM_PROCID" && \
+kill %1 \
 """
 
 MOUNTS = "{NEMO_SKILLS_CODE}:/code,{model_path}:/model,{output_dir}:/results"

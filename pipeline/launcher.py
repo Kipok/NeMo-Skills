@@ -48,12 +48,11 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_na
     num_tasks = num_gpus
     if server_type == 'nemo':
         server_start_cmd = (
-            f"(python /code/nemo_skills/inference/server/serve_nemo.py gpt_model_file=/model "
+            f"python /code/nemo_skills/inference/server/serve_nemo.py gpt_model_file=/model "
             f"trainer.devices={num_gpus} "
             f"trainer.num_nodes={num_nodes} "
             f"tensor_model_parallel_size={num_gpus} "
             f"pipeline_model_parallel_size={num_nodes} "
-            "> /tmp/server_logs.txt &) && sleep 1"
         )  # nemo generates a lot of output in the logs, so we are not streaming stdout by default
         # somehow on slurm nemo needs multiple tasks, but locally only 1
         if CLUSTER_CONFIG["cluster"] == "local":
@@ -61,21 +60,19 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_na
 
     elif server_type == 'vllm':
         server_start_cmd = (
-            f"(NUM_GPUS={num_gpus} bash /code/nemo_skills/inference/server/serve_vllm.sh /model/ {model_name} "
-            f"0 openai 5000 2>&1 | tee /tmp/server_logs.txt &) && sleep 1"
+            f"NUM_GPUS={num_gpus} bash /code/nemo_skills/inference/server/serve_vllm.sh "
+            f"/model/ {model_name} 0 openai 5000"
         )
         num_tasks = 1
-
     else:
         # adding sleep to ensure the logs file exists
-        server_start_cmd = f"(python /code/nemo_skills/inference/server/serve_trt.py --model_path /model | tee /tmp/server_logs.txt &) && sleep 1"
+        server_start_cmd = f"python /code/nemo_skills/inference/server/serve_trt.py --model_path /model"
         num_tasks = num_gpus
-
+    server_start_cmd = " { " + server_start_cmd + "2>&1 | tee /tmp/server_logs.txt & } && sleep 1 "
     if server_type == "vllm":
         server_wait_string = "Uvicorn running"
     else:
         server_wait_string = "Running on all addresses"
-
     return server_start_cmd, num_tasks, server_wait_string
 
 
@@ -126,8 +123,8 @@ def launch_local_job(
     cmd = cmd.strip()
     cmd = (
         f"export CUDA_VISIBLE_DEVICES={','.join(map(str, range(gpus_per_node)))} && "
-        f"export SLURM_LOCALID={'$OMPI_COMM_WORLD_LOCAL_RANK' if tasks_per_node > 1 else 0} && "
-        f"export SLURM_PROCID={'$OMPI_COMM_WORLD_LOCAL_RANK' if tasks_per_node > 1 else 0} && "
+        f"export SLURM_LOCALID=$OMPI_COMM_WORLD_LOCAL_RANK && "
+        f"export SLURM_PROCID=$OMPI_COMM_WORLD_LOCAL_RANK && "
         f"{cmd}"
     )
 
@@ -167,15 +164,9 @@ def launch_local_job(
     LOG.info("Running command %s", cmd)
     mounts += f" -v {fp.name}:/start.sh"
 
-    if tasks_per_node > 1:
-        start_cmd = (
-            f'mpirun --allow-run-as-root -np {tasks_per_node} bash /start.sh & '
-            'echo $! > /tmp/my-process.pid && wait `cat /tmp/my-process.pid`'
-        )
-    else:
-        start_cmd = "bash /start.sh & echo $! > /tmp/my-process.pid && wait `cat /tmp/my-process.pid`"
+    start_cmd = f'mpirun --allow-run-as-root -np {tasks_per_node} bash /start.sh'
 
-    cmd = f"{docker_cmd} run --rm --gpus all --ipc=host {mounts} {container} {start_cmd}"
+    cmd = f"{docker_cmd} run --rm --gpus all --ipc=host {mounts} {container} bash -c '{start_cmd}'"
     subprocess.run(cmd, shell=True, check=True)
 
 
