@@ -78,17 +78,17 @@ nvidia-smi && \
 cd /code && \
 export PYTHONPATH=$PYTHONPATH:/code && \
 export HF_TOKEN={HF_TOKEN} && \
-{server_start_cmd} && \
 if [ $SLURM_PROCID -eq 0 ]; then \
+    {{ {server_start_cmd} 2>&1 | tee /tmp/server_logs.txt & }} && sleep 1 && \
     echo "Waiting for the server to start" && \
     tail -n0 -f /tmp/server_logs.txt | sed '/{server_wait_string}/ q' && \
-    {eval_cmds}
-    echo "done";
-fi && \
-python /code/nemo_skills/inference/server/sync.py && \
-echo "Finished $SLURM_PROCID" && \
-kill %1 \
+    {eval_cmds} \
+    pkill -f nemo_skills/inference/server; \
+else \
+    {server_start_cmd}; \
+fi \
 """
+
 
 MOUNTS = "{NEMO_SKILLS_CODE}:/code,{model_path}:/model,{output_dir}:/results"
 JOB_NAME = "eval-{model_name}"

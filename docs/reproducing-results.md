@@ -67,8 +67,8 @@ documentation to learn how to make inference more efficient.
      +prompt=openmathinstruct/sft \
      ++prompt.few_shot_examples.num_few_shots=0 \
      ++split_name=test \
-     ++server.max_code_executions=6 \
-     ++server.stop_on_code_error=False \
+     ++server.code_execution.max_code_executions=6 \
+     ++server.code_execution.stop_on_code_error=False \
      ++batch_size=64
    ```
 
@@ -86,8 +86,8 @@ documentation to learn how to make inference more efficient.
      ++prompt.few_shot_examples.num_few_shots=0 \
      ++skip_filled=True \
      ++split_name=test \
-     ++server.max_code_executions=6 \
-     ++server.stop_on_code_error=False \
+     ++server.code_execution.max_code_executions=6 \
+     ++server.code_execution.stop_on_code_error=False \
      ++batch_size=64
    ```
 
@@ -129,7 +129,7 @@ you can run the following:
      --output_dir ./synthetic-solutions/gsm8k/ \
      --num_gpus 8 \
      --num_runs 128 \
-     +prompt=code_base \
+     +prompt=openmathinstruct/base \
      ++prompt.few_shot_examples.examples_type=gsm8k_text_with_code \
      ++prompt.context_type=empty \
      ++dataset=gsm8k \
@@ -145,7 +145,7 @@ you can run the following:
      --output_dir ./synthetic-solutions/gsm8k-masked/ \
      --num_gpus 8 \
      --num_runs 128 \
-     +prompt=code_base \
+     +prompt=openmathinstruct/base \
      ++prompt.few_shot_examples.examples_type=gsm8k_text_with_code \
      ++prompt.context_type=masked_solution \
      ++dataset=gsm8k-masked \

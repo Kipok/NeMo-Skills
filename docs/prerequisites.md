@@ -41,6 +41,9 @@ cluster, you can skip to the [Slurm prerequisites](#slurm) section.
 4. Install the project and required dependencies: `pip install -e .`
 5. Download and prepare all benchmark datasets: `./datasets/prepare_all.sh`
 
+Please note that when running pipeline scripts locally, you will always see an mpi error
+at the end even if the script finished execution successfully.
+
 ## Slurm
 
 The following are prerequisites for running scripts on a Slurm cluster.

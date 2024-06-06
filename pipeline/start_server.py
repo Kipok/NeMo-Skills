@@ -31,8 +31,8 @@ SLURM_CMD = """
 nvidia-smi && \
 export PYTHONPATH=/code && \
 export HF_TOKEN={HF_TOKEN} && \
-{server_start_cmd} && \
 if [ $SLURM_PROCID -eq 0 ]; then \
+    {{ {server_start_cmd} 2>&1 | tee /tmp/server_logs.txt & }} && sleep 1 && \
     echo "Waiting for the server to start" && \
     tail -n0 -f /tmp/server_logs.txt | sed '/{server_wait_string}/ q' && \
     tail -n10 /tmp/server_logs.txt &&  \
@@ -42,7 +42,7 @@ if [ $SLURM_PROCID -eq 0 ]; then \
     {sandbox_echo} \
     sleep infinity; \
 else \
-    sleep infinity; \
+    {server_start_cmd}; \
 fi \
 """
 MOUNTS = "{NEMO_SKILLS_CODE}:/code,{model_path}:/model"

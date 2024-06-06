@@ -29,8 +29,8 @@ nvidia-smi && \
 cd /code && \
 export PYTHONPATH=$PYTHONPATH:/code && \
 export HF_TOKEN={HF_TOKEN} && \
-{server_start_cmd} && \
 if [ $SLURM_PROCID -eq 0 ]; then \
+    {{ {server_start_cmd} 2>&1 | tee /tmp/server_logs.txt & }} && sleep 1 && \
     echo "Waiting for the server to start" && \
     tail -n0 -f /tmp/server_logs.txt | sed '/{server_wait_string}/ q' && \
     python nemo_skills/inference/generate_solutions.py \
@@ -44,11 +44,10 @@ if [ $SLURM_PROCID -eq 0 ]; then \
         {extra_arguments} && \
     python nemo_skills/evaluation/evaluate_results.py \
         prediction_jsonl_files=/results/output-rs{random_seed}.jsonl {extra_eval_args} && \
-    echo "done";
-fi && \
-python /code/nemo_skills/inference/server/sync.py && \
-echo "Finished $SLURM_PROCID" && \
-kill %1 \
+    pkill -f nemo_skills/inference/server; \
+else \
+    {server_start_cmd}; \
+fi \
 """
 
 

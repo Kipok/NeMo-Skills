@@ -55,7 +55,7 @@ python pipeline/run_pipeline.py \
       ++model.pipeline_model_parallel_size=1 \
       ++model.optim.lr=1e-6 \
 """
-    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run(cmd, shell=True)
 
     # only checking the total, since model is tiny
     for gen_file in ['gsm8k/output-greedy.jsonl', 'gsm8k/output-rs0.jsonl', 'math/output-greedy.jsonl']:

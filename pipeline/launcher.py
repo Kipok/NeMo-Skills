@@ -68,7 +68,6 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_na
         # adding sleep to ensure the logs file exists
         server_start_cmd = f"python /code/nemo_skills/inference/server/serve_trt.py --model_path /model"
         num_tasks = num_gpus
-    server_start_cmd = " { " + server_start_cmd + "2>&1 | tee /tmp/server_logs.txt & } && sleep 1 "
     if server_type == "vllm":
         server_wait_string = "Uvicorn running"
     else:
@@ -164,7 +163,6 @@ def launch_local_job(
     LOG.info("Running command %s", cmd)
     mounts += f" -v {fp.name}:/start.sh"
 
-    start_cmd = f'mpirun --allow-run-as-root -np {tasks_per_node} bash /start.sh'
     if tasks_per_node > 1:
         start_cmd = f'mpirun --allow-run-as-root -np {tasks_per_node} bash /start.sh'
     else:

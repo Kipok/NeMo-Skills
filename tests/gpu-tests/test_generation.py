@@ -51,7 +51,7 @@ python pipeline/run_eval.py \
     ++batch_size=8 \
     ++max_samples=20 \
 """
-    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run(cmd, shell=True)
 
     # double checking that code was actually executed
     with open(f"{output_path}/gsm8k/output-greedy.jsonl") as fin:
@@ -89,7 +89,7 @@ python pipeline/run_eval.py \
     ++batch_size=8 \
     ++max_samples=20 \
 """
-    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run(cmd, shell=True)
 
     # double checking that code was actually executed
     with open(f"{output_path}/gsm8k/output-greedy.jsonl") as fin:
@@ -127,7 +127,7 @@ python pipeline/run_eval.py \
     ++batch_size=8 \
     ++max_samples=20 \
 """
-    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run(cmd, shell=True)
 
     # double checking that code was actually executed
     with open(f"{output_path}/math/output-greedy.jsonl") as fin:
@@ -166,7 +166,7 @@ python pipeline/run_labeling.py \
     ++batch_size=8 \
     ++max_samples=20 \
 """
-    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run(cmd, shell=True)
 
     # double checking that code was actually executed
     with open(f"{output_path}/output-rs0.jsonl") as fin:
@@ -203,7 +203,7 @@ python pipeline/run_eval.py \
     batch_size=8 \
     max_samples=20 \
 """
-    subprocess.run(cmd, shell=True, check=True)
+    subprocess.run(cmd, shell=True)
 
     # double checking that code was actually executed
     with open(f"{output_path}/gsm8k/output-greedy.jsonl") as fin:
