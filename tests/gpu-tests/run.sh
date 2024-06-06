@@ -29,7 +29,7 @@ python pipeline/launcher.py \
     --cmd "HF_TOKEN=$HF_TOKEN python /code/tests/gpu-tests/make_tiny_llama.py" \
     --tasks_per_node 1 \
     --job_name make_llama \
-    --container igitman/nemo-skills-sft:0.2.0 \
+    --container igitman/nemo-skills-sft:0.3.0 \
     --mounts $NEMO_SKILLS_TEST_OUTPUT:/output,`pwd`:/code
 
 # converting the model through test
