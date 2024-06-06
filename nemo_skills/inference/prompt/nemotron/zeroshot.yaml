@@ -4,7 +4,7 @@ few_shot_examples:
 
 system: ""
 
-user: "{instruction}"
+user: "{question}"
 
 prompt_template: |-
   <extra_id_0>System
