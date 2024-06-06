@@ -53,7 +53,7 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_na
             f"trainer.num_nodes={num_nodes} "
             f"tensor_model_parallel_size={num_gpus} "
             f"pipeline_model_parallel_size={num_nodes} "
-        )  # nemo generates a lot of output in the logs, so we are not streaming stdout by default
+        )
         # somehow on slurm nemo needs multiple tasks, but locally only 1
         if CLUSTER_CONFIG["cluster"] == "local":
             num_tasks = 1

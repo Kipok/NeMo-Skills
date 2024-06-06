@@ -81,6 +81,11 @@ code interpreter to execute parts of the output.
 
 ## Without code execution
 
+All of the released OpenMath models require code execution, so if you want to
+use one of them, please refer to the previous section. If you want to try
+some other model (e.g. llama3) and don't want to execute code, you can use
+the following simpler workflow.
+
 3. Start model server.  We recommend using TensorRT-LLM for fastest inference,
    but NeMo or vLLM might be easier to setup (works on more GPU types and does not require
    conversion for pretrained models).
