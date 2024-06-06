@@ -29,6 +29,7 @@ jobs:
       run: |
         ./nemo_skills/code_execution/local_sandbox/start_local_sandbox.sh &
         sleep 120
+        export NEMO_SKILLS_CONFIG=cluster_configs/local.yaml
         export NEMO_SKILLS_SANDBOX_HOST="$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' `docker ps -a | grep local-sandbox  | awk '{print $1}'`)"
         echo $NEMO_SKILLS_SANDBOX_HOST
         set -o pipefail # this will make sure next line returns non-0 exit code if tests fail

@@ -87,10 +87,6 @@ import signal
 from math import isclose
 from typing import Union
 
-from sympy import N, simplify
-from sympy.parsing.latex import parse_latex
-from sympy.parsing.sympy_parser import parse_expr
-
 
 def _fix_fracs(string):
     # replacing all extra spaces
@@ -366,6 +362,8 @@ def math_equal(
     1. numerical equal: both can convert to float and are equal
     2. symbolic equal: both can convert to sympy expression and are equal
     """
+    from sympy.parsing.sympy_parser import parse_expr
+
     prediction = normalize(prediction)
     reference = normalize(reference)
 
@@ -492,6 +490,10 @@ def math_equal(
 
 
 def symbolic_equal(a, b, tolerance, timeout=10.0):
+    import sympy
+    from sympy.parsing.latex import parse_latex
+    from sympy.parsing.sympy_parser import parse_expr
+
     def _parse(s):
         for f in [parse_expr, parse_latex]:
             try:
@@ -506,14 +508,14 @@ def symbolic_equal(a, b, tolerance, timeout=10.0):
 
     try:
         with time_limit(timeout):
-            if simplify(a - b) == 0:
+            if sympy.simplify(a - b) == 0:
                 return True
     except Exception:
         pass
 
     try:
         with time_limit(timeout):
-            if isclose(N(a), N(b), rel_tol=tolerance):
+            if isclose(sympy.N(a), sympy.N(b), rel_tol=tolerance):
                 return True
     except Exception:
         pass

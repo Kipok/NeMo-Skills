@@ -19,7 +19,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
-from omegaconf import MISSING
+
+try:
+    from omegaconf import MISSING
+except ImportError:
+    MISSING = "???"
 
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
 from nemo_skills.utils import nested_dataclass
@@ -218,5 +222,8 @@ context_templates = {
     "reference_solution": "Reference solution (do not copy it):\n{reference_solution}\n\n",
     "masked_solution": "Reference solution:\n{masked_reference_solution}\n\n",
     "table": "Use the following table to answer the question:\n{table}\n\n",
-    "table_solution": "Use the following table to answer the question:\n{table}\nReference solution (do not copy it):\n{reference_solution}\n\n",
+    "table_solution": (
+        "Use the following table to answer the question:\n{table}\n"
+        "Reference solution (do not copy it):\n{reference_solution}\n\n"
+    ),
 }
