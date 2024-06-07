@@ -36,6 +36,7 @@ cluster, you can skip to the [Slurm prerequisites](#slurm) section.
    # only required for running SFT jobs
    export NEMO_SKILLS_DATA=<folder containing training data file(s)>
    export WANDB_API_KEY=<your weights and biases api key if you want to use it for SFT logging>
+   export HF_TOKEN=<if you plan to use gated models such as llama3>
    ```
 
 4. Install the project and required dependencies: `pip install -e .`
@@ -58,6 +59,7 @@ The following are prerequisites for running scripts on a Slurm cluster.
    # only required for running SFT jobs
    export NEMO_SKILLS_DATA=<folder containing training data file(s)>
    export WANDB_API_KEY=<your weights and biases api key if you want to use it for SFT logging>
+   export HF_TOKEN=<if you plan to use gated models such as llama3>
    ```
 
 3. We try to avoid installing packages on Slurm login nodes, but there is still one package that's required: `pip install --user pyyaml`
