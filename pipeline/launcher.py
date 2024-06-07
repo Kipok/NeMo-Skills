@@ -93,6 +93,8 @@ if not config_file:
 with open(config_file, "rt", encoding="utf-8") as fin:
     CLUSTER_CONFIG = yaml.safe_load(fin)
 
+SLURM_HEADER = CLUSTER_CONFIG.get("slurm_header", SLURM_HEADER)
+
 
 def launch_local_job(
     cmd,
