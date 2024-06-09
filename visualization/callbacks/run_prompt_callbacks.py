@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 from copy import deepcopy
 from dataclasses import asdict
 from pathlib import Path
@@ -31,11 +30,17 @@ from layouts import (
     get_single_prompt_output_layout,
     get_utils_field_representation,
 )
-from omegaconf import OmegaConf
-from settings.constants import FEW_SHOTS_INPUT, QUERY_INPUT_TYPE, SEPARATOR_DISPLAY, SEPARATOR_ID, UNDEFINED
+from settings.constants import (
+    FEW_SHOTS_INPUT,
+    QUERY_INPUT_TYPE,
+    SEPARATOR_DISPLAY,
+    SEPARATOR_ID,
+    UNDEFINED,
+)
 from utils.common import (
     extract_query_params,
     get_examples,
+    get_prompt_types,
     get_test_data,
     get_utils_from_config,
     get_values_from_input_group,
@@ -250,6 +255,7 @@ def update_examples(
         Output(
             SEPARATOR_ID.join(field.split(SEPARATOR_DISPLAY)),
             "value",
+            allow_duplicate=True,
         )
         for field in get_utils_from_config(
             {"prompt": asdict(PromptConfig(few_shot_examples=FewShotExamplesConfig()))}
@@ -264,16 +270,7 @@ def update_examples(
     prevent_initial_call=True,
 )
 def update_prompt_type(prompt_type: str, js_trigger: str) -> Union[NoUpdate, dbc.AccordionItem]:
-    prompt_types = [
-        os.path.splitext(file)[0]
-        for file in os.listdir(
-            Path.joinpath(
-                Path(__file__).parents[2].absolute(),
-                "nemo_skills/inference/prompt",
-            )
-        )
-        if os.path.splitext(file)[1] == '.yaml'
-    ]
+    prompt_types = get_prompt_types()
     if prompt_type not in prompt_types:
         output_len = len(get_utils_from_config(asdict(PromptConfig(few_shot_examples=FewShotExamplesConfig()))).keys())
         return [no_update] * (output_len + 2)
@@ -281,13 +278,13 @@ def update_prompt_type(prompt_type: str, js_trigger: str) -> Union[NoUpdate, dbc
     current_app.config['data_explorer']['prompt']['stop_phrases'] = list(prompt_config.stop_phrases)
     return [
         get_utils_field_representation(value, key)
-        for key, value in get_utils_from_config(OmegaConf.to_container(prompt_config)).items()
+        for key, value in get_utils_from_config(asdict(prompt_config)).items()
     ] + ['', js_trigger + " "]
 
 
 @app.callback(
     [
-        Output("context_template", "value"),
+        Output("context_template", "value", allow_duplicate=True),
         Output("js_container", "children", allow_duplicate=True),
         Output("js_trigger", "children", allow_duplicate=True),
     ],
