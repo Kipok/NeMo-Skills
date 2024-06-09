@@ -28,7 +28,6 @@ from settings.visualization_config import VisualizationConfig
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
 from nemo_skills.inference.prompt.utils import context_templates, get_prompt_config
 from nemo_skills.utils import setup_logging
-
 from visualization.utils.common import get_prompt_types
 
 setup_logging()

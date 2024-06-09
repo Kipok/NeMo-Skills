@@ -17,10 +17,10 @@ import functools
 import json
 import logging
 import os
-from pathlib import Path
 import re
 import subprocess
 from collections import defaultdict
+from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from dash import html
@@ -205,12 +205,7 @@ def get_utils_from_config_helper(cfg: Dict, display_path: bool = True) -> Dict:
             config = {
                 **config,
                 **{
-                    (
-                        key + SEPARATOR_DISPLAY
-                        if display_path and 'template' in inner_key
-                        else ""
-                    )
-                    + inner_key: value
+                    (key + SEPARATOR_DISPLAY if display_path and 'template' in inner_key else "") + inner_key: value
                     for inner_key, value in get_utils_from_config_helper(value).items()
                 },
             }
@@ -482,9 +477,7 @@ def get_prompt_types():
             if os.path.isdir(Path.joinpath(current_path, content)):
                 prompt_types.extend(get_prompts(Path.joinpath(current_path, content)))
             elif os.path.splitext(content)[1] == '.yaml':
-                prompt_types.append(
-                    str(Path.joinpath(current_path, os.path.splitext(content)[0]))
-                )
+                prompt_types.append(str(Path.joinpath(current_path, os.path.splitext(content)[0])))
         return prompt_types
 
     return list(
