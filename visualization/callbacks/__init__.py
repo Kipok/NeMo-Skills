@@ -26,10 +26,12 @@ from settings.constants import PARAMS_TO_REMOVE, UNDEFINED
 from settings.visualization_config import VisualizationConfig
 
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
-from nemo_skills.inference.prompt.utils import context_templates, get_prompt_config
+from nemo_skills.inference.prompt.utils import (
+    context_templates,
+    get_prompt_config,
+    prompt_types,
+)
 from nemo_skills.utils import setup_logging
-
-from visualization.utils.common import get_prompt_types
 
 setup_logging()
 config_path = os.path.join(os.path.abspath(Path(__file__).parents[1]), "settings")
@@ -43,9 +45,11 @@ def set_config(cfg: VisualizationConfig) -> None:
 
     prompt_type = UNDEFINED  # TODO detect prompt_type
 
-    prompt_types = get_prompt_types()
+    prompt_types_without_extension = list(
+        map(lambda name: name.split('.')[0], prompt_types)
+    )
 
-    for name in prompt_types:
+    for name in prompt_types_without_extension:
         if get_prompt_config(name) == cfg.prompt:
             prompt_type = name
             break
@@ -86,7 +90,7 @@ def set_config(cfg: VisualizationConfig) -> None:
     ]
 
     config['data_explorer']['types'] = {
-        "prompt_type": [UNDEFINED] + prompt_types,
+        "prompt_type": [UNDEFINED] + prompt_types_without_extension,
         "examples_type": [UNDEFINED] + list(examples_map.keys()),
         "context_type": [UNDEFINED] + list(context_templates.keys()),
     }

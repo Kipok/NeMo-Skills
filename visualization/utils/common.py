@@ -467,29 +467,3 @@ def run_subprocess(command: str) -> Tuple[str, bool]:
         success = False
 
     return result.stdout.strip(), result.stderr.strip(), success
-
-
-def get_prompt_types():
-    path_to_prompts = Path.joinpath(
-        Path(__file__).parents[2].absolute(),
-        "nemo_skills/inference/prompt",
-    )
-
-    def get_prompts(current_path):
-        prompt_types = []
-        contents = [folder for folder in os.listdir(current_path)]
-        for content in contents:
-            if os.path.isdir(Path.joinpath(current_path, content)):
-                prompt_types.extend(get_prompts(Path.joinpath(current_path, content)))
-            elif os.path.splitext(content)[1] == '.yaml':
-                prompt_types.append(
-                    str(Path.joinpath(current_path, os.path.splitext(content)[0]))
-                )
-        return prompt_types
-
-    return list(
-        map(
-            lambda path: path[len(str(path_to_prompts)) + 1 :],
-            get_prompts(path_to_prompts),
-        )
-    )

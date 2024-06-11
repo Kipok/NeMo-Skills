@@ -40,7 +40,6 @@ from settings.constants import (
 from utils.common import (
     extract_query_params,
     get_examples,
-    get_prompt_types,
     get_test_data,
     get_utils_from_config,
     get_values_from_input_group,
@@ -52,6 +51,7 @@ from nemo_skills.inference.prompt.utils import (
     PromptConfig,
     context_templates,
     get_prompt_config,
+    prompt_types,
 )
 
 
@@ -270,8 +270,7 @@ def update_examples(
     prevent_initial_call=True,
 )
 def update_prompt_type(prompt_type: str, js_trigger: str) -> Union[NoUpdate, dbc.AccordionItem]:
-    prompt_types = get_prompt_types()
-    if prompt_type not in prompt_types:
+    if prompt_type not in map(lambda name: name.split('.')[0], prompt_types):
         output_len = len(get_utils_from_config(asdict(PromptConfig(few_shot_examples=FewShotExamplesConfig()))).keys())
         return [no_update] * (output_len + 2)
     prompt_config = get_prompt_config(prompt_type)
