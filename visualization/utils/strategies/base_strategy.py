@@ -28,12 +28,7 @@ from layouts import (
     get_switch_layout,
     get_text_area_layout,
 )
-from settings.constants import (
-    FEW_SHOTS_INPUT,
-    QUERY_INPUT_TYPE,
-    SEPARATOR_DISPLAY,
-    SEPARATOR_ID,
-)
+from settings.constants import FEW_SHOTS_INPUT, QUERY_INPUT_TYPE, SEPARATOR_DISPLAY, SEPARATOR_ID
 from utils.common import get_examples, get_utils_from_config
 
 from nemo_skills.code_execution.sandbox import get_sandbox

@@ -30,13 +30,7 @@ from layouts import (
     get_single_prompt_output_layout,
     get_utils_field_representation,
 )
-from settings.constants import (
-    FEW_SHOTS_INPUT,
-    QUERY_INPUT_TYPE,
-    SEPARATOR_DISPLAY,
-    SEPARATOR_ID,
-    UNDEFINED,
-)
+from settings.constants import FEW_SHOTS_INPUT, QUERY_INPUT_TYPE, SEPARATOR_DISPLAY, SEPARATOR_ID, UNDEFINED
 from utils.common import (
     extract_query_params,
     get_examples,

@@ -17,10 +17,10 @@ import functools
 import json
 import logging
 import os
-from pathlib import Path
 import re
 import subprocess
 from collections import defaultdict
+from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from dash import html
@@ -205,12 +205,7 @@ def get_utils_from_config_helper(cfg: Dict, display_path: bool = True) -> Dict:
             config = {
                 **config,
                 **{
-                    (
-                        key + SEPARATOR_DISPLAY
-                        if display_path and 'template' in inner_key
-                        else ""
-                    )
-                    + inner_key: value
+                    (key + SEPARATOR_DISPLAY if display_path and 'template' in inner_key else "") + inner_key: value
                     for inner_key, value in get_utils_from_config_helper(value).items()
                 },
             }
