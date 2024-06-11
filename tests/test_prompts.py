@@ -264,20 +264,20 @@ def test_nemotron_fewshot_prompt():
 Here are some examples of questions and solutions followed by a new question that you need to solve.
 Make sure to put the answer (and only answer) inside \\boxed{}.
 
-Question:
+Example question:
 1 + 1 = ?
 
-My solution:
+Example solution:
 That's easy: 2!
 
 
 
 
 
-Question:
+Example question:
 5 + 5 = ?
 
-My solution:
+Example solution:
 That's easy: 10!
 
 
@@ -287,8 +287,10 @@ That's easy: 10!
 Question:
 2 + 2 = ?
 
+
+
+Don't forget that your final answer should be inside \\boxed{}!
 <extra_id_1>Assistant
-My solution:
 """
     assert prompt.build_string({'question': '2 + 2 = ?'}) == expected_prompt
 
@@ -303,7 +305,11 @@ def test_nemotron_fewshot_prompt_reference():
     config.context_type = 'reference_solution'
     prompt = Prompt(config=config)
 
-    expected_prompt = """<extra_id_0>System                                                                                                                                                                                                                                                                                                                                                                                                                  <extra_id_1>User                                                                                                                                                                                                  Here are some examples of questions and solutions followed by a new question that you need to solve.                                                                                                              Make sure to put the answer (and only answer) inside \boxed{}.
+    expected_prompt = """<extra_id_0>System
+
+<extra_id_1>User
+Here are some examples of questions and solutions followed by a new question that you need to solve.
+Make sure to put the answer (and only answer) inside \\boxed{}.
 
 Example question:
 1 + 1 = ?
@@ -339,7 +345,8 @@ What should I do??
 
 
 
-Don't forget that your final answer should be inside \boxed{}!<extra_id_1>Assistant
+Don't forget that your final answer should be inside \\boxed{}!
+<extra_id_1>Assistant
 """
     assert (
         prompt.build_string({'question': '2 + 2 = ?', 'reference_solution': 'What should I do??'}) == expected_prompt
