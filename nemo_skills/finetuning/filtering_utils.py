@@ -30,19 +30,19 @@ def process_bad_solutions(
     code_solns = []
     text_solns = []
     # Solution set to ensure uniqueness of solutions filtered through
-    solution_set = set() 
+    solution_set = set()
     for sample in samples:
         if should_remove(sample['generation'], solution_filters):
             continue
         if should_trim:
             sample['generation'] = trim_output(sample['generation'])
-        
+
         if sample['generation'] in solution_set:
             # Generation has already been covered
-            continue 
+            continue
         else:
             solution_set.add(sample['generation'])
-        
+
         if CODE_SEPARATORS[0] in sample['generation']:
             code_solns.append(sample)
         else:
