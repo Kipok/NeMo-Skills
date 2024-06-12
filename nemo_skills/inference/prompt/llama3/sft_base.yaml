@@ -1,0 +1,11 @@
+few_shot_examples:
+  template: ""
+  num_few_shots: 0
+
+system: ""
+
+user: "{question}"
+
+prompt_template: "<|begin_of_text|>{user}\n{generation}"
+
+stop_phrases: []

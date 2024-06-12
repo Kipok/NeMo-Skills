@@ -140,7 +140,10 @@ def read_raw_data(file_handles, cfg: PrepareSFTDataConfig, grouped_samples: Dict
                 continue
 
             seen_predictions[line_dict["question"]].add(line_dict["generation"])
-            line_dict['filename'] = file_handles[lidx].name
+            line_dict['filename'] = str(Path(file_handles[lidx].name).absolute())
+            line_dict['line_idx'] = lidx
+            line_dict.pop("error_message")
+
             grouped_samples[line_dict["question"]].append(line_dict)
 
     return len(questions)
@@ -192,7 +195,8 @@ def prepare_sft_data(cfg: PrepareSFTDataConfig):
                 elem['type'] = None
             else:
                 elem["input"] = prompt.build_string(input_dict={"question": question})
-                elem["output"] = elem.pop("generation")
+                elem["synthetic_solution"] = elem["generation"]
+                elem["output"] = elem.pop("generation") + "<|eot_id|>"
             elem.update(cfg.metadata)
             prepared_data.append(elem)
 
