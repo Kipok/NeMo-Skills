@@ -29,6 +29,7 @@ from nemo_skills.utils import setup_logging
 
 SLURM_CMD = """
 nvidia-smi && \
+cd /code && \
 export PYTHONPATH=/code && \
 export HF_TOKEN={HF_TOKEN} && \
 if [ $SLURM_PROCID -eq 0 ]; then \
