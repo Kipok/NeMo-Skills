@@ -200,7 +200,7 @@ class NemoModel(BaseModel):
             # when the prompt starts from special tokens like bos, nemo will remove them,
             # so we need this hack to find where to start the cut
             begin_idx = 0
-            while begin_idx < len(prompts[idx]) and not prompts[idx][begin_idx].startswith(generation[:20]):
+            while begin_idx < len(prompts[idx]) and not prompts[idx][begin_idx:].startswith(generation[:20]):
                 begin_idx += 1
             outputs[idx] = {'generation': generation[(len(prompts[idx]) - begin_idx) :]}
 
