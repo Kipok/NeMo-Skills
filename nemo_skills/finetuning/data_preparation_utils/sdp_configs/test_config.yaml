@@ -1,0 +1,38 @@
+processors_to_run: all
+
+processors:
+  - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.ReadData
+    prediction_jsonl_files: tests/data/output-rs*.test
+
+  - _target_: nemo_skills.finetuning.data_preparation_utils.filters.DropMultiBoxed
+    test_cases:
+      - {input: {generation: "He had \\boxed{3} 4090s and \\boxed{2} 4080s"}, output: null}
+      - {input: {generation: "She had \\boxed{6} 4090s"}, output: {generation: "She had \\boxed{6} 4090s"}}
+      - {input: {generation: "boxed boxed 42"}, output: {generation: "boxed boxed 42"}}
+
+  # - _target_: nemo_skills.finetuning.data_preparation_utils.filters.DropUselessCode
+
+  - _target_: nemo_skills.finetuning.data_preparation_utils.filters.DropBrokenCode
+
+  - _target_: nemo_skills.finetuning.data_preparation_utils.filters.TrimSolutions
+    test_cases:
+      - {input: {generation: "Solution ends at \\boxed{0}\nThis line is useless."}, output: {generation: "Solution ends at \\boxed{0}"}}
+      - {input: {generation: "Solution continues \\boxed{7} after boxed"}, output: {generation: "Solution continues \\boxed{7} after boxed"}}
+
+  - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.GroupSamples
+
+  - _target_: nemo_skills.finetuning.data_preparation_utils.filters.CodeTextFilter
+    filter_type: null
+
+  - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.ShuffleAndDownsampleData
+    num_samples: null
+    sampling_method: random
+    random_seed: 42
+    do_shuffle: false
+
+  - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.WriteFinalSftManifest
+    output_manifest_file: tests/data/processed_output.jsonl
+    prompt_type: openmathinstruct/sft
+
+    # compare hash with ground truth hash of prepare_sft_data
+    # run script only on small 100 sample subset that already in test folder and also compare its hash with ground truth hash
