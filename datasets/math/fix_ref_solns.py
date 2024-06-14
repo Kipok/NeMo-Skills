@@ -42,7 +42,7 @@ def _post_fix_multi_answer(problem_id, results):
     if problem_id == "train/prealgebra/452.json":
         # Two ptions are mathematically equivalent
         return results[0]
-    
+
     if problem_id == "train/algebra/1771.json":
         return ";".join(results)
 
