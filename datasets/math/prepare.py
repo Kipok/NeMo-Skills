@@ -43,7 +43,7 @@ def find_boxed_entries(answer_str):
     i = 0
 
     while i < len(answer_str):
-        if answer_str[i:i+7] == '\\boxed{':
+        if answer_str[i : i + 7] == '\\boxed{':
             stack.append(i + 7)
             i += 7
         elif answer_str[i] == '{':
@@ -67,7 +67,7 @@ def find_boxed_entries(answer_str):
     if len(results) == 1:
         # Single boxed entry, trivial case
         return results
-    
+
     else:
         # Multiple boxed entries. There are two cases possible
         # (a) The reference solution has the same question answered in multiple ways
@@ -82,8 +82,8 @@ def find_boxed_entries(answer_str):
             # Same problem solved in multiple ways
             return [results[0]]
         else:
-            return results                
-                
+            return results
+
 
 def extract_attributes_from_name(file_name):
     """Extract attributes from file path."""
