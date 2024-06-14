@@ -29,7 +29,7 @@ sys.path.append(str(Path(__file__).parents[1]))
 from fix_ref_solns import _fix_solution, _post_fix, _post_fix_multi_answer
 from utils import prepare_for_sft
 
-from nemo_skills.code_execution.math_grader import normalize_answer_string, math_equal
+from nemo_skills.code_execution.math_grader import normalize_answer_string
 
 # utils is adding main package to path already
 from nemo_skills.inference.prompt.utils import prompt_types
@@ -72,11 +72,9 @@ def find_boxed_entries(answer_str):
         # Multiple boxed entries. There are two cases possible
         # (a) The reference solution has the same question answered in multiple ways
         # (b) The answer is split across multiple boxed entries and we need to merge
-        # if math_equal(results[0], results[1]):
-            # results = [results[0]]
         result_equal = True
         for idx in range(len(results) - 1):
-            if not math_equal(results[idx], results[idx + 1]):
+            if not (results[idx] == results[idx + 1]):
                 result_equal = False
                 break
 

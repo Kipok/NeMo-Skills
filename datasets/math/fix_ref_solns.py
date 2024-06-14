@@ -36,6 +36,12 @@ def _post_fix(problem_id, soln_string):
 
 
 def _post_fix_multi_answer(problem_id, results):
+    """Fixing cases where there are multiple boxed entries."""
+
+    if problem_id == "train/prealgebra/452.json":
+        # Two ptions are mathematically equivalent
+        return results[0]
+    
     if problem_id == "train/algebra/1771.json":
         return ";".join(results)
     
@@ -79,6 +85,10 @@ def _post_fix_multi_answer(problem_id, results):
     
 
     # Test set fixes
+    if problem_id == "test/prealgebra/1088.json":
+        # Two solutions are mathematically equivalent
+        return results[0]
+
     if problem_id == "test/algebra/1197.json":
         # The first entry is an intermediate result
         return results[-1]
