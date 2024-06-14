@@ -39,6 +39,7 @@ dependencies = [
   'sympy',
   'rank_bm25',
   'openai',
+  'huggingface_hub',
   'sdp @ git+https://github.com/i-vainn/NeMo-speech-data-processor'
 ]
 
