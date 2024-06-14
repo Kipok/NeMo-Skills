@@ -1,8 +1,9 @@
-import pytest
-import subprocess
-import os
 import hashlib
+import os
 import shutil
+import subprocess
+
+import pytest
 import requests
 
 
@@ -53,7 +54,9 @@ def test_code_files():
     expected_md5 = "779c70a2d84d96997336bcd47b3e99f9"
     output_md5 = compute_md5(output_file)
 
-    assert expected_md5 == output_md5, "MD5 hashes do not match, something is wrong with nemo_skills/finetuning/prepare_sdp.py"
+    assert (
+        expected_md5 == output_md5
+    ), "MD5 hashes do not match, something is wrong with nemo_skills/finetuning/prepare_sdp.py"
 
 
 def test_openmathinstruct():
@@ -74,4 +77,6 @@ def test_openmathinstruct():
     expected_md5 = "c105c1c3369e5cee569dcba74e7d4d61"
     output_md5 = compute_md5(output_file)
 
-    assert expected_md5 == output_md5, "MD5 hashes do not match, something is wrong with nemo_skills/finetuning/prepare_sdp.py"
+    assert (
+        expected_md5 == output_md5
+    ), "MD5 hashes do not match, something is wrong with nemo_skills/finetuning/prepare_sdp.py"

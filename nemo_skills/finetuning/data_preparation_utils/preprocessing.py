@@ -153,7 +153,14 @@ class GroupSamples(BaseProcessor):
 
 
 class ShuffleAndDownsampleData(BaseProcessor):
-    def __init__(self, random_seed: int, do_shuffle: bool, num_samples: Optional[int] = None, sampling_method: str = 'random', **kwargs):
+    def __init__(
+        self,
+        random_seed: int,
+        do_shuffle: bool,
+        num_samples: Optional[int] = None,
+        sampling_method: str = 'random',
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.sampling_method = sampling_method
         self.num_samples = num_samples
@@ -172,7 +179,7 @@ class ShuffleAndDownsampleData(BaseProcessor):
             output_instances = list(chain(*groupped_samples))
             if self.do_shuffle:
                 random.shuffle(output_instances)
-            output_instances = output_instances[:self.num_samples]
+            output_instances = output_instances[: self.num_samples]
         elif self.sampling_method == "fair":
             soln_counter = 0
             output_instances = []
