@@ -32,10 +32,13 @@ def process_bad_solutions(
     # Solution set to ensure uniqueness of solutions filtered through
     solution_set = set()
     for sample in samples:
-        if should_remove(sample['generation'], solution_filters):
-            continue
         if should_trim:
             sample['generation'] = trim_output(sample['generation'])
+
+        if should_remove(sample['generation'], solution_filters):
+            # print(sample['generation'])
+            continue
+
 
         if sample['generation'] in solution_set:
             # Generation has already been covered
@@ -193,11 +196,33 @@ def trim_output(output_string: str) -> str:
 
     if stop_idx < len(output_lines) - 1 and (
         "\\end{align" in output_lines[stop_idx + 1]
-        or "\]" in output_lines[stop_idx + 1]
+        or "\\]" in output_lines[stop_idx + 1]
         or "$$" in output_lines[stop_idx + 1]
-    ):
+        or "$." in output_lines[stop_idx + 1]
+    ):  
+        # Trim the solution beyond these closing symbols
+        if "\\end{align" in output_lines[stop_idx + 1]:
+            if output_lines[stop_idx + 1].find("}"):
+                # Trim the line to align_end_index
+                end_index = output_lines[stop_idx + 1].index("}")
+                output_lines[stop_idx + 1] = output_lines[stop_idx + 1][:end_index + 1]
+        else:
+            min_end_idx = len(output_lines[stop_idx + 1])
+            for cand_closure in ["\\]", "$$", "$."]:
+                if cand_closure in output_lines[stop_idx + 1]: 
+                    end_idx = output_lines[stop_idx + 1].index(cand_closure)
+                    min_end_idx = min(min_end_idx, end_idx)
+            output_lines[stop_idx + 1] = output_lines[stop_idx + 1][:min_end_idx + 1]
+        #     output_lines[stop_idx + 1] = output_lines[stop_idx + 1][:end_idx + 1]
+        # elif "$$" in output_lines[stop_idx + 1]:
+        #     end_idx = output_lines[stop_idx + 1].index("$$")
+        #     output_lines[stop_idx + 1] = output_lines[stop_idx + 1][:end_idx + 1]
+        # elif "$." in output_lines[stop_idx + 1]:
+        #     end_idx = output_lines[stop_idx + 1].index("$.")
+        #     output_lines[stop_idx + 1] = output_lines[stop_idx + 1][:end_idx + 1]
+
         stop_idx = stop_idx + 1
-
+    
     trimmed_output = "\n".join(output_lines[: stop_idx + 1])
-
+    # print(trimmed_output)
     return trimmed_output
