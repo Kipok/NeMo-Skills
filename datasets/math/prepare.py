@@ -29,7 +29,7 @@ sys.path.append(str(Path(__file__).parents[1]))
 from fix_ref_solns import _fix_solution, _post_fix, _post_fix_multi_answer
 from utils import prepare_for_sft
 
-from nemo_skills.code_execution.math_grader import normalize_answer_string, math_equal
+from nemo_skills.code_execution.math_grader import math_equal, normalize_answer_string
 
 # utils is adding main package to path already
 from nemo_skills.inference.prompt.utils import prompt_types
@@ -43,7 +43,7 @@ def find_boxed_entries(answer_str):
     i = 0
 
     while i < len(answer_str):
-        if answer_str[i:i+7] == '\\boxed{':
+        if answer_str[i : i + 7] == '\\boxed{':
             stack.append(i + 7)
             i += 7
         elif answer_str[i] == '{':
@@ -67,13 +67,13 @@ def find_boxed_entries(answer_str):
     if len(results) == 1:
         # Single boxed entry, trivial case
         return results
-    
+
     else:
         # Multiple boxed entries. There are two cases possible
         # (a) The reference solution has the same question answered in multiple ways
         # (b) The answer is split across multiple boxed entries and we need to merge
         # if math_equal(results[0], results[1]):
-            # results = [results[0]]
+        # results = [results[0]]
         result_equal = True
         for idx in range(len(results) - 1):
             if not math_equal(results[idx], results[idx + 1]):
@@ -84,8 +84,8 @@ def find_boxed_entries(answer_str):
             # Same problem solved in multiple ways
             return [results[0]]
         else:
-            return results                
-                
+            return results
+
 
 def extract_attributes_from_name(file_name):
     """Extract attributes from file path."""
