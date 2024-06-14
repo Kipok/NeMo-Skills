@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import json
-import logging
 import os
 import re
 from collections import Counter
@@ -21,7 +20,6 @@ from itertools import chain
 from typing import List
 
 import tqdm
-from sdp.logging import logger
 from sdp.processors.base_processor import BaseParallelProcessor, DataEntry
 from tqdm.contrib.concurrent import process_map
 
@@ -34,25 +32,25 @@ PATTERN_CODE = re.compile(CODE_SEPARATORS[0])
 
 class DropMultiBoxed(BaseParallelProcessor):
 
-    def __init__(self, text_key: str = "generation", **kwargs):
+    def __init__(self, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
-        self.text_key = text_key
+        self.solution_key = solution_key
 
     def process_dataset_entry(self, data_entry) -> List:
-        if len(PATTERN_ANS.findall(data_entry[self.text_key])) > 1:
+        if len(PATTERN_ANS.findall(data_entry[self.solution_key])) > 1:
             return [DataEntry(data=None)]
         return [DataEntry(data=data_entry)]
 
 
 class DropUselessCode(BaseParallelProcessor):
 
-    def __init__(self, text_key: str = "generation", **kwargs):
+    def __init__(self, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
-        self.text_key = text_key
+        self.solution_key = solution_key
 
     def process_dataset_entry(self, data_entry) -> List:
-        ans_match = PATTERN_ANS.search(data_entry[self.text_key])
-        code_match = PATTERN_CODE.search(data_entry[self.text_key])
+        ans_match = PATTERN_ANS.search(data_entry[self.solution_key])
+        code_match = PATTERN_CODE.search(data_entry[self.solution_key])
         if not ans_match or not code_match or ans_match.start() > code_match.start():
             return [DataEntry(data=None)]
 
@@ -60,12 +58,12 @@ class DropUselessCode(BaseParallelProcessor):
 
 
 class DropBrokenCode(BaseParallelProcessor):
-    def __init__( self, text_key: str = "generation", **kwargs):
+    def __init__( self, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
-        self.text_key = text_key
+        self.solution_key = solution_key
 
     def process_dataset_entry(self, data_entry) -> List:
-        generation = data_entry[self.text_key]
+        generation = data_entry[self.solution_key]
         code_start_indices = [match.start() for match in re.finditer(CODE_SEPARATORS[0], generation)]
         code_end_indices = [match.start() for match in re.finditer(CODE_SEPARATORS[1], generation)]
         code_out_start_indices = [match.start() for match in re.finditer(CODE_OUTPUT_SEPARATORS[0], generation)]
@@ -91,12 +89,12 @@ class DropBrokenCode(BaseParallelProcessor):
 
 class TrimSolutions(BaseParallelProcessor):
 
-    def __init__(self, text_key: str = "generation", **kwargs):
+    def __init__(self, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
-        self.text_key = text_key
+        self.solution_key = solution_key
 
     def process_dataset_entry(self, data_entry) -> List:
-        output_lines = data_entry[self.text_key].split("\n")
+        output_lines = data_entry[self.solution_key].split("\n")
 
         stop_idx = 0
         for idx, soln_line in enumerate(output_lines):
@@ -112,16 +110,16 @@ class TrimSolutions(BaseParallelProcessor):
             stop_idx = stop_idx + 1
 
         trimmed_output = "\n".join(output_lines[: stop_idx + 1])
-        data_entry[self.text_key] = trimmed_output
+        data_entry[self.solution_key] = trimmed_output
 
         return [DataEntry(data=data_entry)]
 
 
 class SplitArithmetic(BaseParallelProcessor):
 
-    def __init__(self, remove_incorrect: bool = False, text_key: str = "generation", **kwargs):
+    def __init__(self, remove_incorrect: bool = False, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
-        self.text_key = text_key
+        self.solution_key = solution_key
         self.remove_incorrect = remove_incorrect
 
     def process_dataset_entry(self, data_entry: str) -> str:
@@ -129,7 +127,7 @@ class SplitArithmetic(BaseParallelProcessor):
         Extends short arithmetic expressions solutions to step-by-step ones
         For example `1 + 2 + 3 + 4 = 10` -> `1 + 2 + 3 + 4 = 3 + 3 + 4 = 6 + 4 = 10`.
         """
-        text = data_entry[self.text_key]
+        text = data_entry[self.solution_key]
         new_text = []
         last_end = 0
 
@@ -173,7 +171,7 @@ class SplitArithmetic(BaseParallelProcessor):
                 last_end = end
 
         new_text.append(text[last_end:])
-        data_entry[self.text_key] = "".join(new_text)
+        data_entry[self.solution_key] = "".join(new_text)
 
         return [DataEntry(data=data_entry)]
 

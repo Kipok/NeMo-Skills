@@ -194,11 +194,13 @@ class ShuffleAndDownsampleData(BaseProcessor):
 
 
 class WriteFinalSftManifest(BaseProcessor):
-    def __init__(self, prompt_type: str, chat_format: bool = False, metadata: Dict = {}, **kwargs):
+    def __init__(self, prompt_type: str, chat_format: bool = False, metadata: Optional[Dict] = None, **kwargs):
         super().__init__(**kwargs)
         self.prompt_type = prompt_type
         self.chat_format = chat_format
         self.metadata = metadata
+        if not self.metadata:
+            self.metadata = {}
 
     def process(self):
         with (
