@@ -16,8 +16,8 @@ import json
 import os
 import re
 from itertools import chain
-from typing import List
 from math import isclose
+from typing import List
 
 import tqdm
 from sdp.processors.base_processor import BaseParallelProcessor, DataEntry
@@ -26,7 +26,6 @@ from tqdm.contrib.concurrent import process_map
 from nemo_skills.code_execution import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS
 from nemo_skills.synthetic_arithmetic.solve_expression import solve_expression
 from nemo_skills.synthetic_arithmetic.utils import extract_expressions
-
 
 PATTERN_ANS = re.compile(r"\\boxed\{([^}]*)\}")
 PATTERN_CODE = re.compile(CODE_SEPARATORS[0])
@@ -55,7 +54,7 @@ class DropMultiBoxed(BaseFilter):
     def process_dataset_entry(self, data_entry) -> List:
         if not self.should_apply:
             return [DataEntry(data=data_entry)]
-        
+
         if len(PATTERN_ANS.findall(data_entry[self.solution_key])) > 1:
             return [DataEntry(data=None)]
         return [DataEntry(data=data_entry)]
@@ -71,7 +70,7 @@ class DropUselessCode(BaseFilter):
     def process_dataset_entry(self, data_entry) -> List:
         if not self.should_apply:
             return [DataEntry(data=data_entry)]
-        
+
         ans_match = PATTERN_ANS.search(data_entry[self.solution_key])
         code_match = PATTERN_CODE.search(data_entry[self.solution_key])
         if not ans_match or not code_match or ans_match.start() > code_match.start():
@@ -81,7 +80,7 @@ class DropUselessCode(BaseFilter):
 
 
 class DropBrokenCode(BaseFilter):
-    def __init__( self, should_apply: bool = False, solution_key: str = "generation", **kwargs):
+    def __init__(self, should_apply: bool = False, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
         self.should_apply = should_apply
@@ -89,7 +88,7 @@ class DropBrokenCode(BaseFilter):
     def process_dataset_entry(self, data_entry) -> List:
         if not self.should_apply:
             return [DataEntry(data=data_entry)]
-        
+
         generation = data_entry[self.solution_key]
         code_start_indices = [match.start() for match in re.finditer(CODE_SEPARATORS[0], generation)]
         code_end_indices = [match.start() for match in re.finditer(CODE_SEPARATORS[1], generation)]
@@ -124,7 +123,7 @@ class TrimSolutions(BaseFilter):
     def process_dataset_entry(self, data_entry) -> List:
         if not self.should_apply:
             return [DataEntry(data=data_entry)]
-        
+
         output_lines = data_entry[self.solution_key].split("\n")
 
         stop_idx = 0
@@ -157,7 +156,7 @@ class DropIncorrectArithmetic(BaseFilter):
     def process_dataset_entry(self, data_entry: str) -> str:
         if not self.should_apply:
             return [DataEntry(data=data_entry)]
-        
+
         for expression, _ in extract_expressions(data_entry[self.solution_key]):
             parts = expression.split("=")
             if len(parts) < 2:
@@ -192,7 +191,7 @@ class SplitArithmetic(BaseFilter):
         """
         if not self.should_apply:
             return [DataEntry(data=data_entry)]
-        
+
         text = data_entry[self.solution_key]
         new_text = []
         last_end = 0

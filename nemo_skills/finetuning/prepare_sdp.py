@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import hydra
 import sys
 from pathlib import Path
+
+import hydra
 
 sys.path.append(str(Path(__file__).absolute().parents[2]))
 
 from sdp.run_processors import run_processors
+
 from nemo_skills.utils import setup_logging
 
 

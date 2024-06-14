@@ -35,21 +35,24 @@ def compute_md5(file_path):
 
 def test_code_files():
     output_file = "tests/data/processed_output.jsonl"
-    subprocess.run([
-        "python",
-        "nemo_skills/finetuning/prepare_sdp.py",
-        "--config-name",
-        "openmathinstruct_config.yaml",
-        "prediction_jsonl_files='tests/data/output-rs*.test'",
-        f"output_path={output_file}",
-        "filters.drop_multi_boxed=true",
-        "filters.drop_broken_code=true",
-        "filters.trim_solutions=true",
-        "filters.code_text_filter=null",
-        "num_output_samples=null",
-        "downsampling_method=random",
-        "do_shuffle=false",
-    ], check=True)
+    subprocess.run(
+        [
+            "python",
+            "nemo_skills/finetuning/prepare_sdp.py",
+            "--config-name",
+            "openmathinstruct_config.yaml",
+            "prediction_jsonl_files='tests/data/output-rs*.test'",
+            f"output_path={output_file}",
+            "filters.drop_multi_boxed=true",
+            "filters.drop_broken_code=true",
+            "filters.trim_solutions=true",
+            "filters.code_text_filter=null",
+            "num_output_samples=null",
+            "downsampling_method=random",
+            "do_shuffle=false",
+        ],
+        check=True,
+    )
 
     expected_md5 = "779c70a2d84d96997336bcd47b3e99f9"
     output_md5 = compute_md5(output_file)
@@ -64,15 +67,17 @@ def test_openmathinstruct():
     download_data("validation")
     output_file = "open-math-instruct-1/train_full_sft.jsonl"
 
-    subprocess.run([
-        "python",
-        "nemo_skills/finetuning/prepare_sdp.py",
-        "--config-name",
-        "openmathinstruct_config.yaml",
-        "preprocessed_dataset_files='open-math-instruct-1/train.jsonl open-math-instruct-1/validation.jsonl'",
-        f"output_path={output_file}",
-    ], check=True)
-
+    subprocess.run(
+        [
+            "python",
+            "nemo_skills/finetuning/prepare_sdp.py",
+            "--config-name",
+            "openmathinstruct_config.yaml",
+            "preprocessed_dataset_files='open-math-instruct-1/train.jsonl open-math-instruct-1/validation.jsonl'",
+            f"output_path={output_file}",
+        ],
+        check=True,
+    )
 
     expected_md5 = "c105c1c3369e5cee569dcba74e7d4d61"
     output_md5 = compute_md5(output_file)

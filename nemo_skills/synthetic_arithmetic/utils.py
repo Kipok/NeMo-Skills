@@ -1,7 +1,6 @@
 import random
 from collections import Counter
 
-
 question_templates = {
     "add": [
         '{p} + {q}',
