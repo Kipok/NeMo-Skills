@@ -25,8 +25,8 @@ from sdp.processors.base_processor import BaseProcessor
 from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
 from nemo_skills.utils import unroll_files
 
-
 LOG = logging.getLogger(__file__)
+
 
 class ReadData(BaseProcessor):
 
