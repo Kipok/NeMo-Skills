@@ -13,18 +13,20 @@
 # limitations under the License.
 
 import json
+import logging
 import random
 from collections import defaultdict
 from itertools import chain, zip_longest
 from typing import Dict, Optional
 
 import tqdm
-from sdp.logging import logger
 from sdp.processors.base_processor import BaseProcessor
 
 from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
 from nemo_skills.utils import unroll_files
 
+
+LOG = logging.getLogger(__file__)
 
 class ReadData(BaseProcessor):
 
@@ -97,7 +99,7 @@ class ReadData(BaseProcessor):
 
                 # skipping any incomplete generations
                 if "is_correct" not in line_dict:
-                    logger.warning("Found incomplete generations (is_correct field is missing) - skipping")
+                    LOG.warning("Found incomplete generations (is_correct field is missing) - skipping")
                     continue
 
                 if not self.add_correct and line_dict["is_correct"]:

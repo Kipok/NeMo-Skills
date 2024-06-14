@@ -15,9 +15,9 @@
 import json
 import os
 import re
-from collections import Counter
 from itertools import chain
 from typing import List
+from math import isclose
 
 import tqdm
 from sdp.processors.base_processor import BaseParallelProcessor, DataEntry
@@ -25,30 +25,53 @@ from tqdm.contrib.concurrent import process_map
 
 from nemo_skills.code_execution import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS
 from nemo_skills.synthetic_arithmetic.solve_expression import solve_expression
+from nemo_skills.synthetic_arithmetic.utils import extract_expressions
+
 
 PATTERN_ANS = re.compile(r"\\boxed\{([^}]*)\}")
 PATTERN_CODE = re.compile(CODE_SEPARATORS[0])
 
 
-class DropMultiBoxed(BaseParallelProcessor):
-
-    def __init__(self, solution_key: str = "generation", **kwargs):
+class BaseFilter(BaseParallelProcessor):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.solution_key = solution_key
 
     def process_dataset_entry(self, data_entry) -> List:
+        raise NotImplementedError
+
+    def test(self):
+        cached_value, self.should_apply = self.should_apply, True
+        super().test()
+        self.should_apply = cached_value
+
+
+class DropMultiBoxed(BaseFilter):
+
+    def __init__(self, should_apply: bool = False, solution_key: str = "generation", **kwargs):
+        super().__init__(**kwargs)
+        self.solution_key = solution_key
+        self.should_apply = should_apply
+
+    def process_dataset_entry(self, data_entry) -> List:
+        if not self.should_apply:
+            return [DataEntry(data=data_entry)]
+        
         if len(PATTERN_ANS.findall(data_entry[self.solution_key])) > 1:
             return [DataEntry(data=None)]
         return [DataEntry(data=data_entry)]
 
 
-class DropUselessCode(BaseParallelProcessor):
+class DropUselessCode(BaseFilter):
 
-    def __init__(self, solution_key: str = "generation", **kwargs):
+    def __init__(self, should_apply: bool = False, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
+        self.should_apply = should_apply
 
     def process_dataset_entry(self, data_entry) -> List:
+        if not self.should_apply:
+            return [DataEntry(data=data_entry)]
+        
         ans_match = PATTERN_ANS.search(data_entry[self.solution_key])
         code_match = PATTERN_CODE.search(data_entry[self.solution_key])
         if not ans_match or not code_match or ans_match.start() > code_match.start():
@@ -57,12 +80,16 @@ class DropUselessCode(BaseParallelProcessor):
         return [DataEntry(data=data_entry)]
 
 
-class DropBrokenCode(BaseParallelProcessor):
-    def __init__( self, solution_key: str = "generation", **kwargs):
+class DropBrokenCode(BaseFilter):
+    def __init__( self, should_apply: bool = False, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
+        self.should_apply = should_apply
 
     def process_dataset_entry(self, data_entry) -> List:
+        if not self.should_apply:
+            return [DataEntry(data=data_entry)]
+        
         generation = data_entry[self.solution_key]
         code_start_indices = [match.start() for match in re.finditer(CODE_SEPARATORS[0], generation)]
         code_end_indices = [match.start() for match in re.finditer(CODE_SEPARATORS[1], generation)]
@@ -87,13 +114,17 @@ class DropBrokenCode(BaseParallelProcessor):
         return [DataEntry(data=data_entry)]
 
 
-class TrimSolutions(BaseParallelProcessor):
+class TrimSolutions(BaseFilter):
 
-    def __init__(self, solution_key: str = "generation", **kwargs):
+    def __init__(self, should_apply: bool = False, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
+        self.should_apply = should_apply
 
     def process_dataset_entry(self, data_entry) -> List:
+        if not self.should_apply:
+            return [DataEntry(data=data_entry)]
+        
         output_lines = data_entry[self.solution_key].split("\n")
 
         stop_idx = 0
@@ -115,23 +146,58 @@ class TrimSolutions(BaseParallelProcessor):
         return [DataEntry(data=data_entry)]
 
 
-class SplitArithmetic(BaseParallelProcessor):
+class DropIncorrectArithmetic(BaseFilter):
 
-    def __init__(self, remove_incorrect: bool = False, solution_key: str = "generation", **kwargs):
+    def __init__(self, should_apply: bool = True, solution_key: str = "generation", tolerance=1e-4, **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
-        self.remove_incorrect = remove_incorrect
+        self.should_apply = should_apply
+        self.tolerance = tolerance
+
+    def process_dataset_entry(self, data_entry: str) -> str:
+        if not self.should_apply:
+            return [DataEntry(data=data_entry)]
+        
+        for expression, _ in extract_expressions(data_entry[self.solution_key]):
+            parts = expression.split("=")
+            if len(parts) < 2:
+                continue
+
+            expr, ans = parts[0], parts[-1]
+            print(expression)
+
+            try:
+                solution_steps = solve_expression(expr)
+                if not isclose(eval(solution_steps[-1]), eval(ans), rel_tol=self.tolerance):
+                    return [DataEntry(data=None)]
+            except KeyboardInterrupt:
+                raise
+            except:
+                pass
+
+        return [DataEntry(data=data_entry)]
+
+
+class SplitArithmetic(BaseFilter):
+
+    def __init__(self, should_apply: bool = True, solution_key: str = "generation", **kwargs):
+        super().__init__(**kwargs)
+        self.solution_key = solution_key
+        self.should_apply = should_apply
 
     def process_dataset_entry(self, data_entry: str) -> str:
         """
         Extends short arithmetic expressions solutions to step-by-step ones
         For example `1 + 2 + 3 + 4 = 10` -> `1 + 2 + 3 + 4 = 3 + 3 + 4 = 6 + 4 = 10`.
         """
+        if not self.should_apply:
+            return [DataEntry(data=data_entry)]
+        
         text = data_entry[self.solution_key]
         new_text = []
         last_end = 0
 
-        for expression, start in self.extract_expressions(text):
+        for expression, start in extract_expressions(text):
             end = start + len(expression)
             parts = expression.split("=")
 
@@ -160,8 +226,6 @@ class SplitArithmetic(BaseParallelProcessor):
                     new_text.append(text[last_end:start] + solution)
                 else:
                     new_text.append(text[last_end:end])
-                    if self.remove_incorrect:  # skipping solutions with broken math
-                        return [DataEntry(data=None)]
 
                 last_end = end
             except KeyboardInterrupt:
@@ -175,54 +239,18 @@ class SplitArithmetic(BaseParallelProcessor):
 
         return [DataEntry(data=data_entry)]
 
-    def get_op_counts(self, counter):
-        return sum(counter.get(op, 0) for op in "+-/*")
-
-    def extract_expressions(self, text: str):
-        start = 0
-        cur_expr = []
-        for idx, c in enumerate(text):
-            prev_len = len(cur_expr)
-            if c.isspace():
-                if cur_expr:
-                    cur_expr.append(c)
-            elif c == '.':
-                if cur_expr and cur_expr[-1].isdigit():
-                    cur_expr.append(c)
-                elif cur_expr:
-                    result = ''.join(cur_expr)
-                    yield result.rstrip(), start
-            elif c.isdigit():
-                cur_expr.append(c)
-            elif c == '=' and not cur_expr:
-                continue
-            elif c in '+-/*=()':
-                cur_expr.append(c)
-            else:
-                result = ''.join(cur_expr)
-                counter = Counter(result)
-                if self.get_op_counts(counter) >= 2:
-                    yield result.rstrip(), start
-                cur_expr = []
-            if prev_len == 0 and len(cur_expr) > 0:
-                start = idx
-        result = ''.join(cur_expr)
-        counter = Counter(result)
-        if self.get_op_counts(counter) >= 2:
-            yield result.rstrip(), start
-
 
 class CodeTextFilter(BaseParallelProcessor):
-    def __init__(self, filter_type, filter_key='generation', **kwargs):
+    def __init__(self, filter_type, solution_key='generation', **kwargs):
         super().__init__(**kwargs)
         self.text_filter_type = filter_type
-        self.filter_key = filter_key
+        self.solution_key = solution_key
 
     def process_dataset_entry(self, groupped_samples: List):
         code_solns = []
         text_solns = []
         for sample in groupped_samples:
-            if CODE_SEPARATORS[0] in sample[self.filter_key]:
+            if CODE_SEPARATORS[0] in sample[self.solution_key]:
                 code_solns.append(sample)
             else:
                 text_solns.append(sample)

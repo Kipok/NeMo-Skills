@@ -1,4 +1,6 @@
 import random
+from collections import Counter
+
 
 question_templates = {
     "add": [
@@ -179,3 +181,42 @@ def augment_expression(expression):
     expression = expression.replace("/", div)
     expression = expression.replace(" ", space)
     return expression
+
+
+def get_op_counts(counter):
+    return sum(counter.get(op, 0) for op in "+-/*")
+
+
+def extract_expressions(text: str):
+    start = 0
+    cur_expr = []
+    for idx, c in enumerate(text):
+        prev_len = len(cur_expr)
+        if c.isspace():
+            if cur_expr:
+                cur_expr.append(c)
+        elif c == '.':
+            if cur_expr and cur_expr[-1].isdigit():
+                cur_expr.append(c)
+            elif cur_expr:
+                result = ''.join(cur_expr)
+                yield result.rstrip(), start
+        elif c.isdigit():
+            cur_expr.append(c)
+        elif c == '=' and not cur_expr:
+            continue
+        elif c in '+-/*=()':
+            cur_expr.append(c)
+        else:
+            result = ''.join(cur_expr)
+            counter = Counter(result)
+            if get_op_counts(counter) >= 2:
+                yield result.rstrip(), start
+            cur_expr = []
+        if prev_len == 0 and len(cur_expr) > 0:
+            start = idx
+
+    result = ''.join(cur_expr)
+    counter = Counter(result)
+    if get_op_counts(counter) >= 2:
+        yield result.rstrip(), start
