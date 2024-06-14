@@ -58,7 +58,7 @@ class DropUselessCode(BaseParallelProcessor):
 
 
 class DropBrokenCode(BaseParallelProcessor):
-    def __init__( self, solution_key: str = "generation", **kwargs):
+    def __init__(self, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
 
