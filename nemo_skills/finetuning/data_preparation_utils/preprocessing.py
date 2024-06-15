@@ -167,6 +167,17 @@ class ShuffleAndDownsampleData(BaseProcessor):
         self.random_seed = random_seed
         self.do_shuffle = do_shuffle
 
+        if self.sampling_method not in [None, "random", "fair"]:
+            raise ValueError(
+                f"Sampling method {self.sampling_method} is not supported, use `None`, `random` or `fair`"
+            )
+
+        if self.sampling_method is None and self.num_samples is not None:
+            raise ValueError("Number of samples can be specified only when sampling method is `random` or `fair`")
+
+        if self.sampling_method is not None and self.num_samples is None:
+            raise ValueError("Number of samples should be specified when sampling method is `random` or `fair`")
+
     def process(self):
         groupped_samples = []
         with open(self.input_manifest_file, "rt", encoding="utf-8") as fin:
@@ -175,6 +186,10 @@ class ShuffleAndDownsampleData(BaseProcessor):
                 groupped_samples.append(samples)
 
         random.seed(self.random_seed)
+        if self.sampling_method is None:
+            output_instances = list(chain(*groupped_samples))
+            if self.do_shuffle:
+                random.shuffle(output_instances)
         if self.sampling_method == "random":
             output_instances = list(chain(*groupped_samples))
             if self.do_shuffle:
@@ -183,19 +198,24 @@ class ShuffleAndDownsampleData(BaseProcessor):
         elif self.sampling_method == "fair":
             soln_counter = 0
             output_instances = []
-            while self.num_samples is not None:
+            num_input_samples = sum(len(samples) for samples in groupped_samples)
+            if num_input_samples < self.num_samples:
+                LOG.warning(
+                    "Total SFT entries %d is not less than `num_output_samples` %d, skipping downsampling.",
+                    num_input_samples,
+                    self.num_samples,
+                )
+                output_instances = list(chain(*groupped_samples))
+            # downsample only if num_input_samples > self.num_samples
+            while len(output_instances) < self.num_samples and num_input_samples > self.num_samples:
                 for quesn_idx in range(len(groupped_samples)):
                     if len(output_instances) == self.num_samples:
                         break
                     if len(groupped_samples[quesn_idx]) > soln_counter:
                         output_instances.append(groupped_samples[quesn_idx][soln_counter])
                 soln_counter += 1
-                if len(output_instances) == self.num_samples:
-                    break
             if self.do_shuffle:
                 random.shuffle(output_instances)
-        else:
-            raise NotImplementedError(f"Sampling method {self.sampling_method} not implemented")
 
         with open(self.output_manifest_file, "wt", encoding="utf-8") as fout:
             for instance in output_instances:

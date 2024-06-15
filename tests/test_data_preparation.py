@@ -1,9 +1,7 @@
 import hashlib
 import os
-import shutil
 import subprocess
 
-import pytest
 import requests
 
 
@@ -38,17 +36,17 @@ def test_code_files():
     subprocess.run(
         [
             "python",
-            "nemo_skills/finetuning/prepare_sdp.py",
-            "--config-name",
-            "openmathinstruct_config.yaml",
+            "nemo_skills/finetuning/prepare_sft_data.py",
             "prediction_jsonl_files='tests/data/output-rs*.test'",
             f"output_path={output_file}",
             "filters.drop_multi_boxed=true",
             "filters.drop_broken_code=true",
             "filters.trim_solutions=true",
+            "filters.drop_incorrect_arithmetic=false",
+            "filters.split_arithmetic=false",
             "filters.code_text_filter=null",
             "num_output_samples=null",
-            "downsampling_method=random",
+            "downsampling_method=null",
             "do_shuffle=false",
         ],
         check=True,
@@ -59,22 +57,28 @@ def test_code_files():
 
     assert (
         expected_md5 == output_md5
-    ), "MD5 hashes do not match, something is wrong with nemo_skills/finetuning/prepare_sdp.py"
+    ), "MD5 hashes do not match, something is wrong with nemo_skills/finetuning/prepare_sft_data.py"
 
 
 def test_openmathinstruct():
-    download_data("train")
     download_data("validation")
-    output_file = "open-math-instruct-1/train_full_sft.jsonl"
+    output_file = "open-math-instruct-1/validation-sft.jsonl"
 
     subprocess.run(
         [
             "python",
-            "nemo_skills/finetuning/prepare_sdp.py",
-            "--config-name",
-            "openmathinstruct_config.yaml",
-            "preprocessed_dataset_files='open-math-instruct-1/train.jsonl open-math-instruct-1/validation.jsonl'",
+            "nemo_skills/finetuning/prepare_sft_data.py",
+            "preprocessed_dataset_files='open-math-instruct-1/validation.jsonl'",
             f"output_path={output_file}",
+            "filters.drop_multi_boxed=true",
+            "filters.drop_broken_code=true",
+            "filters.trim_solutions=true",
+            "filters.drop_incorrect_arithmetic=false",
+            "filters.split_arithmetic=false",
+            "filters.code_text_filter=any_code",
+            "num_output_samples=2048",
+            "downsampling_method=fair",
+            "do_shuffle=true",
         ],
         check=True,
     )
@@ -84,4 +88,4 @@ def test_openmathinstruct():
 
     assert (
         expected_md5 == output_md5
-    ), "MD5 hashes do not match, something is wrong with nemo_skills/finetuning/prepare_sdp.py"
+    ), "MD5 hashes do not match, something is wrong with nemo_skills/finetuning/prepare_sft_data.py"

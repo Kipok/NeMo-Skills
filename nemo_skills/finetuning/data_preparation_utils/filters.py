@@ -163,7 +163,6 @@ class DropIncorrectArithmetic(BaseFilter):
                 continue
 
             expr, ans = parts[0], parts[-1]
-            print(expression)
 
             try:
                 solution_steps = solve_expression(expr)

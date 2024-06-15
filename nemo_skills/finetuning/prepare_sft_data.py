@@ -12,21 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-from pathlib import Path
-
 import hydra
-
-sys.path.append(str(Path(__file__).absolute().parents[2]))
-
 from sdp.run_processors import run_processors
 
 from nemo_skills.utils import setup_logging
 
 
-@hydra.main(version_base=None, config_path="data_preparation_utils/sdp_configs")
+@hydra.main(version_base=None, config_path="data_preparation_utils/", config_name="prepare_sft_data.yaml")
 def main(cfg):
-    print(cfg)
     run_processors(cfg)
 
 

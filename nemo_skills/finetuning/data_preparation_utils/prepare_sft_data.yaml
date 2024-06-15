@@ -9,10 +9,10 @@ skip_first: 0  # useful for skipping validation set from train_full generation (
 add_correct: true  # can set to False if only want to export incorrect solutions
 add_incorrect: false  # if True, saves only incorrect solutions instead of correct
 
-downsampling_method: fair  # random or fair
+downsampling_method: null  # fair, random or null
 random_seed: 42
 do_shuffle: true
-num_output_samples: 1024000
+num_output_samples: null
 
 prompt_type: openmathinstruct/sft
 chat_format: false  # whether to use NeMo's chat format
@@ -25,9 +25,9 @@ filters:
   drop_useless_code: false
   drop_broken_code: true
   trim_solutions: true
-  drop_incorrect_arithmetic: false
-  split_arithmetic: false
-  code_text_filter: any_code
+  drop_incorrect_arithmetic: true
+  split_arithmetic: true
+  code_text_filter: null
 
 
 processors:
