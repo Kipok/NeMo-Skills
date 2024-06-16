@@ -19,6 +19,7 @@ import sys
 import time
 from argparse import ArgumentParser
 from pathlib import Path
+
 from huggingface_hub import get_token
 
 # adding nemo_skills to python path to avoid requiring installation
@@ -78,8 +79,10 @@ if __name__ == "__main__":
         args.model_path = Path(args.model_path).absolute()
 
     server_start_cmd, num_tasks, server_wait_string = get_server_command(
-        args.server_type, args.num_gpus, args.num_nodes,
-        args.model_path.name if os.path.exists(args.model_path) else args.model_path
+        args.server_type,
+        args.num_gpus,
+        args.num_nodes,
+        args.model_path.name if os.path.exists(args.model_path) else args.model_path,
     )
 
     # TODO: VLLM
