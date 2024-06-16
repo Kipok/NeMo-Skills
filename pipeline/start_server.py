@@ -102,6 +102,9 @@ if __name__ == "__main__":
     if os.path.exists(args.model_path):
         MOUNTS += f",{args.model_path}:/model"
 
+    if os.environ.get("HF_HOME", None) is not None:
+        MOUNTS += f",{os.environ['HF_HOME']}:/cache/huggingface"
+
     job_id = launch_job(
         cmd=SLURM_CMD.format(**format_dict),
         num_nodes=args.num_nodes,
