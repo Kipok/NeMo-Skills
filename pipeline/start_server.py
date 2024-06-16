@@ -19,6 +19,7 @@ import sys
 import time
 from argparse import ArgumentParser
 from pathlib import Path
+from huggingface_hub import get_token
 
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
@@ -45,7 +46,7 @@ else \
     {server_start_cmd}; \
 fi \
 """
-MOUNTS = "{NEMO_SKILLS_CODE}:/code,{model_path}:/model"
+MOUNTS = "{NEMO_SKILLS_CODE}:/code"
 JOB_NAME = "interactive-server-{server_type}-{model_name}"
 
 # TODO: nemo does not exit on ctrl+c, need to fix that
@@ -73,25 +74,30 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    args.model_path = Path(args.model_path).absolute()
+    if os.path.exists(args.model_path):
+        args.model_path = Path(args.model_path).absolute()
 
     server_start_cmd, num_tasks, server_wait_string = get_server_command(
-        args.server_type, args.num_gpus, args.num_nodes, args.model_path.name
+        args.server_type, args.num_gpus, args.num_nodes,
+        args.model_path.name if os.path.exists(args.model_path) else args.model_path
     )
 
     # TODO: VLLM
     sandbox_echo = 'echo "Sandbox is running on ${NEMO_SKILLS_SANDBOX_HOST:-$NEMO_SKILLS_SERVER_HOST}" &&'
     format_dict = {
         "model_path": args.model_path,
-        "model_name": args.model_path.name,
+        "model_name": args.model_path.name if os.path.exists(args.model_path) else args.model_path,
         "num_gpus": args.num_gpus,
         "server_start_cmd": server_start_cmd,
         "server_type": args.server_type,
         "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
-        "HF_TOKEN": os.getenv("HF_TOKEN", ""),  # needed for some of the models, so making an option to pass it in
+        "HF_TOKEN": get_token(),  # needed for some of the models, so making an option to pass it in
         "server_wait_string": server_wait_string,
         "sandbox_echo": sandbox_echo if not args.no_sandbox else "",
     }
+
+    if os.path.exists(args.model_path):
+        MOUNTS += f",{args.model_path}:/model"
 
     job_id = launch_job(
         cmd=SLURM_CMD.format(**format_dict),
