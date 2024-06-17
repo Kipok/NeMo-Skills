@@ -1,26 +1,5 @@
 import hashlib
-import os
 import subprocess
-
-import requests
-
-
-def download_data(split):
-    # URL of the data file
-    directory = "open-math-instruct-1"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-    url = f"https://huggingface.co/datasets/nvidia/OpenMathInstruct-1/resolve/main/correct_solutions/{split}.jsonl?download=true"
-    file_path = f"{directory}/{split}.jsonl"
-
-    # Download the data using requests
-    response = requests.get(url)
-    response.raise_for_status()  # Ensure that the request was successful
-    with open(file_path, 'wb') as f:
-        f.write(response.content)
-
-    return file_path
 
 
 def compute_md5(file_path):
@@ -61,14 +40,13 @@ def test_code_files():
 
 
 def test_openmathinstruct():
-    download_data("validation")
-    output_file = "open-math-instruct-1/validation-sft.jsonl"
+    output_file = "tests/data/processed_output.jsonl"
 
     subprocess.run(
         [
             "python",
             "nemo_skills/finetuning/prepare_sft_data.py",
-            "preprocessed_dataset_files='open-math-instruct-1/validation.jsonl'",
+            "preprocessed_dataset_files='tests/data/openmathinstruct.test'",
             f"output_path={output_file}",
             "filters.drop_multi_boxed=true",
             "filters.drop_broken_code=true",
@@ -76,14 +54,14 @@ def test_openmathinstruct():
             "filters.drop_incorrect_arithmetic=false",
             "filters.split_arithmetic=false",
             "filters.code_text_filter=any_code",
-            "num_output_samples=2048",
+            "num_output_samples=32",
             "downsampling_method=fair",
             "do_shuffle=true",
         ],
         check=True,
     )
 
-    expected_md5 = "f827c6a08dbf67450d4a01a701d38a9f"
+    expected_md5 = "6c95a5d2150c9f324ebe72aec3742f04"
     output_md5 = compute_md5(output_file)
 
     assert (
