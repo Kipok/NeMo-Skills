@@ -158,7 +158,7 @@ class ShuffleAndDownsampleData(BaseProcessor):
         random_seed: int,
         do_shuffle: bool,
         num_samples: Optional[int] = None,
-        sampling_method: str = 'random',
+        sampling_method: Optional[str] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
