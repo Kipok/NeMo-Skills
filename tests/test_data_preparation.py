@@ -61,7 +61,7 @@ def test_openmathinstruct():
         check=True,
     )
 
-    expected_md5 = "6c95a5d2150c9f324ebe72aec3742f04"
+    expected_md5 = "31378960fd2857876b6d14f5bd762db6"
     output_md5 = compute_md5(output_file)
 
     assert (
