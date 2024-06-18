@@ -20,7 +20,10 @@ import time
 from argparse import ArgumentParser
 from pathlib import Path
 
-from huggingface_hub import get_token
+try:
+    from huggingface_hub import get_token
+except (ImportError, ModuleNotFoundError):
+    get_token = lambda: os.environ.get('HF_TOKEN', None)
 
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
@@ -56,7 +59,8 @@ JOB_NAME = "interactive-server-{server_type}-{model_name}"
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser()
-    parser.add_argument("--model_path", required=True)
+    parser.add_argument("--model_path", required=False, default=None, help="Path to the model file")
+    parser.add_argument('--model_name', required=False, default=None, help="Name of the HF model")
     parser.add_argument("--server_type", choices=('nemo', 'tensorrt_llm', 'vllm'), default='tensorrt_llm')
     parser.add_argument("--num_gpus", type=int, required=True)
     parser.add_argument(
@@ -75,21 +79,27 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if os.path.exists(args.model_path):
+    # Assert that both model_path and model_name are provided
+    if args.model_name is not None and args.model_name is not None:
+        raise ValueError("Both model_path and model_name cannot be provided")
+    elif args.model_name is None and args.model_name is None:
+        raise ValueError("Either model_path or model_name must be provided")
+
+    if args.model_path is not None:
         args.model_path = Path(args.model_path).absolute()
 
     server_start_cmd, num_tasks, server_wait_string = get_server_command(
         args.server_type,
         args.num_gpus,
         args.num_nodes,
-        args.model_path.name if os.path.exists(args.model_path) else args.model_path,
+        args.model_path.name if args.model_path is not None else args.model_name,
     )
 
     # TODO: VLLM
     sandbox_echo = 'echo "Sandbox is running on ${NEMO_SKILLS_SANDBOX_HOST:-$NEMO_SKILLS_SERVER_HOST}" &&'
     format_dict = {
         "model_path": args.model_path,
-        "model_name": args.model_path.name if os.path.exists(args.model_path) else args.model_path,
+        "model_name": args.model_path.name if args.model_path is not None else args.model_name,
         "num_gpus": args.num_gpus,
         "server_start_cmd": server_start_cmd,
         "server_type": args.server_type,
@@ -99,7 +109,7 @@ if __name__ == "__main__":
         "sandbox_echo": sandbox_echo if not args.no_sandbox else "",
     }
 
-    if os.path.exists(args.model_path):
+    if args.model_path is not None:
         MOUNTS += f",{args.model_path}:/model"
 
     if os.environ.get("HF_HOME", None) is not None:

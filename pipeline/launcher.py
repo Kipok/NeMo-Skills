@@ -59,7 +59,7 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_na
             num_tasks = 1
 
     elif server_type == 'vllm':
-        if len(model_name.split('/')) == 2:
+        if len(model_name.split('/')) == 2 and not os.path.exists(model_name):
             server_start_cmd = (
                 f"NUM_GPUS={num_gpus} bash /code/nemo_skills/inference/server/serve_vllm.sh "
                 f"{model_name} {model_name} 0 openai 5000"
