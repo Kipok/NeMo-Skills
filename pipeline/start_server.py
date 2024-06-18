@@ -23,7 +23,7 @@ from pathlib import Path
 try:
     from huggingface_hub import get_token
 except (ImportError, ModuleNotFoundError):
-    get_token = lambda: os.environ.get('HF_TOKEN', None)
+    get_token = lambda: os.environ.get('HF_TOKEN', '')
 
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
