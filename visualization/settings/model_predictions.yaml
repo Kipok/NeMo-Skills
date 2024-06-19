@@ -1,0 +1,146 @@
+visualization_params:
+  model_prediction:   
+    # orig: /Users/dgitman/Documents/visualization/NeMo-Skills/visualization/results/0shot/sfted/gsm8k/output-greedy.jsonl
+    # critical: /Users/dgitman/Documents/visualization/NeMo-Skills/visualization/results/0shot/sfted_critical/gsm8k/output-greedy.jsonl
+    # orig:    visualization/results/nemotron/gsm8k/output-greedy.jsonl
+    # d_exp:   visualization/results/nemotron/gsm-plus/output-greedy-digit_expansion.jsonl
+    # num_sub: visualization/results/nemotron/gsm-plus/output-greedy-numerical_substitution.jsonl
+    # frac:    visualization/results/nemotron/gsm-plus/output-greedy-integer_decimal_fraction_conversion.jsonl
+    # add_op:  visualization/results/nemotron/gsm-plus/output-greedy-adding_operation.jsonl
+    # distr:   visualization/results/nemotron/gsm-plus/output-greedy-distractor_insertion.jsonl
+    # reverse: visualization/results/nemotron/gsm-plus/output-greedy-reversing_operation.jsonl
+    # underst: visualization/results/nemotron/gsm-plus/output-greedy-problem_understanding.jsonl
+    # cr_th:   visualization/results/nemotron/gsm-plus/output-greedy-critical_thinking.jsonl
+    # d_exp:   visualization/results/nemotron/gsm-plus_with_rounding_and_few_shots/output-greedy-digit_expansion.jsonl
+    # num_sub: visualization/results/nemotron/gsm-plus_with_rounding_and_few_shots/output-greedy-numerical_substitution.jsonl
+    # frac:    visualization/results/nemotron/gsm-plus_with_rounding_and_few_shots/output-greedy-integer_decimal_fraction_conversion.jsonl
+    # add_op:  visualization/results/nemotron/gsm-plus_with_rounding_and_few_shots/output-greedy-adding_operation.jsonl
+    # distr:   visualization/results/nemotron/gsm-plus_with_rounding_and_few_shots/output-greedy-distractor_insertion.jsonl
+    # reverse: visualization/results/nemotron/gsm-plus_with_rounding_and_few_shots/output-greedy-reversing_operation.jsonl
+    # underst: visualization/results/nemotron/gsm-plus_with_rounding_and_few_shots/output-greedy-problem_understanding.jsonl
+    # cr_th:   visualization/results/nemotron/gsm-plus_with_rounding_and_few_shots/output-greedy-critical_thinking.jsonl
+
+      # orig: visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm8k/output-*.jsonl
+      # d_exp: visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-*-digit_expansion.jsonl
+      # num_sub: visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-*-numerical_substitution.jsonl
+      # frac: visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-*-integer_decimal_fraction_conversion.jsonl
+      # add_op: visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-*-adding_operation.jsonl
+      # distr: visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-*-distractor_insertion.jsonl
+      # reverse: visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-*-reversing_operation.jsonl
+      # underst: visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-*-problem_understanding.jsonl
+      # cr_th: visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-*-critical_thinking.jsonl
+    # d_exp_cl:   /Users/dgitman/Documents/visualization/NeMo-Skills/clean_datasets/output-*-digit_expansion.jsonl
+    # num_sub_cl: /Users/dgitman/Documents/visualization/NeMo-Skills/clean_datasets/output-*-numerical_substitution.jsonl
+    # frac_cl:    /Users/dgitman/Documents/visualization/NeMo-Skills/clean_datasets/output-*-integer_decimal_fraction_conversion.jsonl
+    # add_op_cl:  /Users/dgitman/Documents/visualization/NeMo-Skills/clean_datasets/output-*-adding_operation.jsonl
+    # distr_cl:   /Users/dgitman/Documents/visualization/NeMo-Skills/clean_datasets/output-*-distractor_insertion.jsonl
+    # reverse_cl: /Users/dgitman/Documents/visualization/NeMo-Skills/clean_datasets/output-*-reversing_operation.jsonl
+    # underst_cl: /Users/dgitman/Documents/visualization/NeMo-Skills/clean_datasets/output-*-problem_understanding.jsonl
+    # cr_th_cl:   /Users/dgitman/Documents/visualization/NeMo-Skills/clean_datasets/output-*-critical_thinking.jsonl
+    # d_exp:      visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-*-digit_expansion.jsonl
+    # num_sub:    visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-*-numerical_substitution.jsonl
+    # frac:       visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-*-integer_decimal_fraction_conversion.jsonl
+    # add_op:     visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-*-adding_operation.jsonl
+    # distr:      visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-*-distractor_insertion.jsonl
+    # reverse:    visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-*-reversing_operation.jsonl
+    # underst:    visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-*-problem_understanding.jsonl
+    # cr_th:      visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-*-critical_thinking.jsonl
+    # 8k:         visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm8k/output-*.jsonl
+
+    orig:   visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm8k/output-greedy.jsonl
+    # plus:   visualization/results/llama3/70b/instruct/8shot/8shot/text/instruct_critical/gsm-plus/output-greedy.jsonl
+    # base:   /Users/dgitman/Documents/visualization/NeMo-Skills/labeled_dataset.jsonl
+
+    d_exp:   /Users/dgitman/Documents/visualization/NeMo-Skills/clean_datasets/llama_only/cleaned_labeled_generation-digit_expansion.jsonl
+    num_sub: /Users/dgitman/Documents/visualization/NeMo-Skills/clean_datasets/llama_only/cleaned_labeled_generation-numerical_substitution.jsonl
+    frac:    /Users/dgitman/Documents/visualization/NeMo-Skills/clean_datasets/llama_only/cleaned_labeled_generation-integer_decimal_fraction_conversion.jsonl
+    add_op:  /Users/dgitman/Documents/visualization/NeMo-Skills/clean_datasets/llama_only/cleaned_labeled_generation-adding_operation.jsonl
+    distr:   /Users/dgitman/Documents/visualization/NeMo-Skills/clean_datasets/llama_only/cleaned_labeled_generation-distractor_insertion.jsonl
+    reverse: /Users/dgitman/Documents/visualization/NeMo-Skills/clean_datasets/llama_only/cleaned_labeled_generation-reversing_operation.jsonl
+    underst: /Users/dgitman/Documents/visualization/NeMo-Skills/clean_datasets/llama_only/cleaned_labeled_generation-problem_understanding.jsonl
+    cr_th:   /Users/dgitman/Documents/visualization/NeMo-Skills/clean_datasets/llama_only/cleaned_labeled_generation-critical_thinking.jsonl
+
+    # d_exp: visualization/results/llama-70b/instruct/8shot/instruct_critical/gsm-plus/digit_expansion-cleaned.jsonl
+    # num_sub: visualization/results/llama-70b/instruct/8shot/instruct_critical/gsm-plus/numerical_substitution-cleaned.jsonl
+    # frac_cleaned: visualization/NeMo-Skills/visualization/results/integer_decimal_fraction_conversion_cleaned/output-integer_decimal_fraction_conversion.jsonl
+    # frac: visualization/results/llama3/70b/instruct/8shot/text/instruct_critical/gsm-plus/integer_decimal_fraction_conversion.jsonl
+    # add_op_cleaned: visualization/NeMo-Skills/visualization/results/adding_operation_cleaned/output-adding_operation.jsonl
+    # add_op: visualization/results/llama3/70b/instruct/8shot/text/instruct_critical/gsm-plus/adding_operation.jsonl
+    # distr_cleaned: visualization/NeMo-Skills/visualization/results/distractor_insertion_cleaned/output-distractor_insertion.jsonl
+    # distr: visualization/results/llama3/70b/instruct/8shot/text/instruct_critical/gsm-plus/distractor_insertion.jsonl
+    # reverse_cleaned: visualization/NeMo-Skills/visualization/results/reversing_operation_cleaned/output-reversing_operation.jsonl
+    # reverse: visualization/results/llama3/70b/instruct/8shot/text/instruct_critical/gsm-plus/reversing_operation.jsonl
+    # underst: visualization/results/llama-70b/instruct/8shot/instruct_critical/gsm-plus/problem_understanding-cleaned.jsonl
+    # cr_th: visualization/results/llama3/70b/instruct/8shot/text/instruct_critical/gsm-plus/critical_thinking.jsonl
+    # algebra: /Users/dgitman/Documents/visualization/NeMo-Skills/visualization/results/subj_without/algebra/output-rs0.jsonl
+    # gsm-plus: /Users/dgitman/Documents/visualization/NeMo-Skills/visualization/results/cut/gsm-plus/output-rs*.jsonl
+    # orig: /Users/dgitman/Documents/visualization/NeMo-Skills/visualization/results/base/gsm8k/output-full-greedy.jsonl
+    # test: visualization/results/test.jsonl
+    # gsm1k: visualization/results/base/gsm1k/output-greedy.jsonl
+    # orig: visualization/results/math/output_functional-greedy.jsonl
+    # oct: visualization/results/gsm-functional/clean/oct/output-*.jsonl
+    # dec: visualization/results/gsm-functional/clean/dec/output-*.jsonl
+    # nov: visualization/results/gsm-functional/clean/nov/output-*.jsonl
+    # orig: visualization/results/cut/gsm-ic-2step/original-greedy.jsonl
+    # orig: visualization/results/cut/gsm-ic-2step/original-n-a_in_range_in_topic.jsonl
+    # na_ir_it: visualization/results/cut/gsm-ic-2step/output-n-a_in_range_in_topic.jsonl
+    # na_or_it: visualization/results/cut/gsm-ic-2step/output-n-a_out_range_in_topic.jsonl
+    # non_ir_it: visualization/results/cut/gsm-ic-2step/output-nonoverlapped_in_range_in_topic.jsonl
+    # non_ir_or: visualization/results/cut/gsm-ic-2step/output-nonoverlapped_in_range_out_topic.jsonl
+    # non_na_it: visualization/results/cut/gsm-ic-2step/output-nonoverlapped_n-a_in_topic.jsonl
+    # non_or_it: visualization/results/cut/gsm-ic-2step/output-nonoverlapped_out_range_in_topic.jsonl
+    # non_or_ot: visualization/results/cut/gsm-ic-2step/output-nonoverlapped_out_range_out_topic.jsonl
+    # over_ir_it: visualization/results/cut/gsm-ic-2step/output-overlapped_in_range_in_topic.jsonl
+    # over_ir_or: visualization/results/cut/gsm-ic-2step/output-overlapped_in_range_out_topic.jsonl
+    # over_na_it: visualization/results/cut/gsm-ic-2step/output-overlapped_n-a_in_topic.jsonl
+    # over_or_it: visualization/results/cut/gsm-ic-2step/output-overlapped_out_range_in_topic.jsonl
+    # over_or_ot: visualization/results/cut/gsm-ic-2step/output-overlapped_out_range_out_topic.jsonl
+
+    # problem_understanding: visualization/results/cut/gsm-plus/problem_understanding/output*.jsonl
+    # ic-2: visualization/results/cut/gsm-ic-2step/output-greedy.jsonl
+    # random: visualization/results/cut/gsm-plus/output-rs*.jsonl
+    # cl_7b: visualization/results/cut/gsm-plus/all_models/codellama-7b.jsonl
+    # cl_13b: visualization/results/cut/gsm-plus/all_models/codellama-13b.jsonl
+    # cl_34b: visualization/results/cut/gsm-plus/all_models/codellama-34b.jsonl
+    # cl_70b: visualization/results/cut/gsm-plus/all_models/codellama-70b.jsonl
+    # ll_70b: visualization/results/cut/gsm-plus/all_models/llama2-70b.jsonl
+    # mistral_7b: visualization/results/cut/gsm-plus/all_models/mistral-7b.jsonl
+    # orig: visualization/results/cut/gsm-plus/original-greedy.jsonl
+    # d_exp: visualization/results/cut/gsm-plus/output-digit_expansion.jsonl
+    # num_sub: visualization/results/cut/gsm-plus/output-numerical_substitution.jsonl
+    # frac: visualization/results/cut/gsm-plus/output-integer_decimal_fraction_conversion.jsonl
+    # add_op: visualization/results/cut/gsm-plus/output-adding_operation.jsonl
+    # distr: visualization/results/cut/gsm-plus/output-distractor_insertion.jsonl
+    # reverse: visualization/results/cut/gsm-plus/output-reversing_operation.jsonl
+    # underst: visualization/results/cut/gsm-plus/output-problem_understanding.jsonl
+    # cr_th: visualization/results/cut/gsm-plus/output-critical_thinking.jsonl
+    # cleaned: visualization/results/gsm-plus_cleaned.jsonl
+    # rounded: visualization/results/gsm-plus_cleaned_rounded.jsonl
+    # orig: visualization/results/cut/gsm-plus/original-greedy.jsonl
+    # d_exp: visualization/results/digit_expansion_cleaned/output-digit_expansion.jsonl
+    # num_sub: visualization/results/numerical_substitution_cleaned/output-numerical_substitution.jsonl
+    # frac: visualization/results/integer_decimal_fraction_conversion_cleaned/output-integer_decimal_fraction_conversion.jsonl
+    # add_op: visualization/results/adding_operation_cleaned/output-adding_operation.jsonl
+    # distr: visualization/results/distractor_insertion_cleaned/output-distractor_insertion.jsonl
+    # reverse: visualization/results/reversing_operation_cleaned/output-reversing_operation.jsonl
+    # underst: visualization/results/problem_understanding_cleaned/output-problem_understanding.jsonl
+    # orig: visualization/results/cut/gsm-plus/original-greedy.jsonl
+    # d_exp: visualization/results/*/output-*-digit_expansion-*.jsonl
+    # num_sub: visualization/results/*/output-*-numerical_substitution-*.jsonl
+    # frac: visualization/results/*/output-*-integer_decimal_fraction_conversion-*.jsonl
+    # add_op: visualization/results/*/output-*-adding_operation-*.jsonl
+    # distr: visualization/results/*/output-*-distractor_insertion-*.jsonl
+    # reverse: visualization/results/*/output-*-reversing_operation-*.jsonl
+    # underst: visualization/results/*/output-*-problem_understanding-*.jsonl
+    # cr_th: visualization/results/*/output-*-critical_thinking-*.jsonl
+    # orig: visualization/results/cleaned/original-digit_expansion.jsonl    
+    # d_exp: visualization/results/cleaned/cleaned-digit_expansion.jsonl
+    # orig: visualization/results/cleaned/original-numerical_substitution.jsonl      
+    # num_sub: visualization/results/cleaned/cleaned-numerical_substitution.jsonl
+    # orig: visualization/results/cleaned/original-integer_decimal_fraction_conversion.jsonl      
+    # frac: visualization/results/cleaned/cleaned-integer_decimal_fraction_conversion.jsonl
+    # orig: visualization/results/cleaned/original-adding_operation.jsonl      
+    # add_op: visualization/results/cleaned/cleaned-adding_operation.jsonl
+    # distr: visualization/results/cleaned/cleaned-distractor_insertion.jsonl
+    # reverse: visualization/results/cleaned/cleaned-reversing_operation.jsonl
+    # underst: visualization/results/cleaned/cleaned-problem_understanding.jsonl

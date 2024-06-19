@@ -44,24 +44,35 @@ def fill_env_vars(format_dict, env_vars):
         format_dict[env_var] = env_var_value
 
 
-def get_server_command(server_type, num_gpus):
+def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_name: str):
     num_tasks = num_gpus
     if server_type == 'nemo':
         server_start_cmd = (
-            f"(python /code/nemo_skills/inference/server/serve_nemo.py gpt_model_file=/model trainer.devices={num_gpus} "
-            f"tensor_model_parallel_size={num_gpus} > /tmp/server_logs.txt &)"
+            f"python /code/nemo_skills/inference/server/serve_nemo.py gpt_model_file=/model "
+            f"trainer.devices={num_gpus} "
+            f"trainer.num_nodes={num_nodes} "
+            f"tensor_model_parallel_size={num_gpus} "
+            f"pipeline_model_parallel_size={num_nodes} "
         )
         # somehow on slurm nemo needs multiple tasks, but locally only 1
         if CLUSTER_CONFIG["cluster"] == "local":
             num_tasks = 1
-    else:
-        server_start_cmd = (
-            f"(mpirun -np {num_gpus} --allow-run-as-root --oversubscribe python /code/nemo_skills/inference/server/serve_trt.py "
-            "--model_path /model > /tmp/server_logs.txt &)"
-        )
-        num_tasks = 1  # we launch via mpirun directly
 
-    return server_start_cmd, num_tasks
+    elif server_type == 'vllm':
+        server_start_cmd = (
+            f"NUM_GPUS={num_gpus} bash /code/nemo_skills/inference/server/serve_vllm.sh "
+            f"/model/ {model_name} 0 openai 5000"
+        )
+        num_tasks = 1
+    else:
+        # adding sleep to ensure the logs file exists
+        server_start_cmd = f"python /code/nemo_skills/inference/server/serve_trt.py --model_path /model"
+        num_tasks = num_gpus
+    if server_type == "vllm":
+        server_wait_string = "Uvicorn running"
+    else:
+        server_wait_string = "Running on all addresses"
+    return server_start_cmd, num_tasks, server_wait_string
 
 
 SLURM_HEADER = """
@@ -81,6 +92,8 @@ if not config_file:
 
 with open(config_file, "rt", encoding="utf-8") as fin:
     CLUSTER_CONFIG = yaml.safe_load(fin)
+
+SLURM_HEADER = CLUSTER_CONFIG.get("slurm_header", SLURM_HEADER)
 
 
 def launch_local_job(
@@ -112,11 +125,11 @@ def launch_local_job(
     cmd = (
         f"export CUDA_VISIBLE_DEVICES={','.join(map(str, range(gpus_per_node)))} && "
         f"export SLURM_LOCALID={'$OMPI_COMM_WORLD_LOCAL_RANK' if tasks_per_node > 1 else 0} && "
+        f"export SLURM_PROCID={'$OMPI_COMM_WORLD_LOCAL_RANK' if tasks_per_node > 1 else 0} && "
         f"{cmd}"
     )
 
     docker_cmd = CLUSTER_CONFIG["docker_cmd"]
-
     if with_sandbox:
         sandbox_name = f"local-sandbox-{uuid.uuid4()}"
         sandbox_cmd = (
@@ -153,14 +166,12 @@ def launch_local_job(
     mounts += f" -v {fp.name}:/start.sh"
 
     if tasks_per_node > 1:
-        start_cmd = f"mpirun --allow-run-as-root -np {tasks_per_node} bash /start.sh"
+        start_cmd = f'mpirun --allow-run-as-root -np {tasks_per_node} bash /start.sh'
     else:
         start_cmd = "bash /start.sh"
 
-    cmd = f"{docker_cmd} run --rm --gpus all --ipc=host {mounts} {container} {start_cmd}"
+    cmd = f"{docker_cmd} run --rm --gpus all --ipc=host {mounts} {container} bash -c '{start_cmd}'"
     subprocess.run(cmd, shell=True, check=True)
-
-    # TODO: same behavior of streaming logs to a file and supporting dependencies?
 
 
 def launch_slurm_job(
@@ -182,11 +193,16 @@ def launch_slurm_job(
     if os.getenv("EXTRA_SBATCH_ARGS"):
         extra_sbatch_args += os.getenv("EXTRA_SBATCH_ARGS").split(" ")
 
+    if 'timeouts' not in CLUSTER_CONFIG:
+        timeout = "10000:00:00:00"
+    else:
+        timeout = CLUSTER_CONFIG["timeouts"][partition]
+
     header = SLURM_HEADER.format(
         account=CLUSTER_CONFIG["account"],
         partition=partition,
         num_nodes=num_nodes,
-        timeout=CLUSTER_CONFIG["timeouts"][partition],
+        timeout=timeout,
         job_name_prefix=CLUSTER_CONFIG["job_name_prefix"],
         job_name=job_name,
         tasks_per_node=tasks_per_node,
@@ -209,19 +225,25 @@ EOF
         # we should estimate optimal memory and cpu requirements for sandbox
         # right now splitting half-and-half, since both evaluation and training
         # do not use CPUs or CPU-RAM that much
-        max_cpus = CLUSTER_CONFIG["max_cpus"][partition]
-        max_memory = CLUSTER_CONFIG["max_memory"][partition]
+
+        extra_main_args = ""
         extra_sandbox_args = " ".join(CLUSTER_CONFIG.get("extra_sandbox_args", []))
+        try:
+            max_cpus = CLUSTER_CONFIG["max_cpus"][partition]
+            max_memory = CLUSTER_CONFIG["max_memory"][partition]
+            extra_main_args += f" --cpus-per-task={max_cpus // (2 * tasks_per_node)} --mem={max_memory // 2}M "
+            extra_sandbox_args += f" --cpus-per-task={max_cpus // 2} --mem={max_memory // 2}M "
+        except KeyError:
+            pass
         cmd += f"""
-srun --cpus-per-task={max_cpus // 2} --mem={max_memory // 2}M \
-    {extra_sandbox_args} --ntasks={num_nodes} \
-    --container-image={CLUSTER_CONFIG["containers"]["sandbox"]} \
+srun {extra_main_args} --mpi=pmix --container-image={container} --container-mounts={mounts} bash -c "$cmd" &
+MAIN_PID=$!
+srun {extra_sandbox_args} --mpi=pmix --ntasks={num_nodes} \
+     --container-image={CLUSTER_CONFIG["containers"]["sandbox"]} \
      bash -c "/entrypoint.sh && /start.sh" &
-srun --cpus-per-task={max_cpus // (2 * tasks_per_node)} --mem={max_memory // 2}M \
-    {extra_sandbox_args} --mpi=pmix --container-image={container} \
-    --container-mounts={mounts} bash -c "$cmd" &
-wait $!
+wait $MAIN_PID
 """
+
     # note how we are waiting only for the main command and sandbox will be killed when it finishes
     else:
         cmd = cmd + f'\nsrun --mpi=pmix --container-image={container} --container-mounts={mounts} bash -c "$cmd"'
@@ -252,9 +274,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--cmd", required=True, help="Full command for cluster execution")
     parser.add_argument("--partition", required=False)
-    parser.add_argument("--num_nodes", type=int, required=True)
-    parser.add_argument("--tasks_per_node", type=int, choices=(1, 4, 8), required=True)
-    parser.add_argument("--gpus_per_node", type=int, choices=(1, 4, 8), default=8)
+    parser.add_argument("--num_nodes", type=int, default=1)
+    parser.add_argument("--tasks_per_node", type=int, choices=(1, 2, 4, 8), required=True)
+    parser.add_argument("--gpus_per_node", type=int, choices=(1, 2, 4, 8), default=8)
     parser.add_argument("--with_sandbox", action="store_true")
     parser.add_argument("--job_name", required=True)
     parser.add_argument("--container", required=True)

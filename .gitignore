@@ -13,6 +13,7 @@
 # limitations under the License.
 
 *.json
+*.tar.gz
 *.npy
 *.info
 *.jsonl
@@ -26,3 +27,4 @@ build
 *.DS_Store
 
 __pycache__
+.ipynb_checkpoints

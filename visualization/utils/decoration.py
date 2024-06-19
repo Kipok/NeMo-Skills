@@ -112,7 +112,18 @@ def proccess_plain_text(text: str) -> str:
 
 
 def preprocess_latex(text: str) -> str:
-    text = '\n' + text.replace('\\[', '\n$$\n').replace('\\]', '\n$$\n') + '\n'
+    text = (
+        '\n'
+        + text.replace('\\[', '\n$$\n')
+        .replace('\\]', '\n$$\n')
+        .replace('=', ' = ')
+        .replace('+', ' + ')
+        .replace('-', ' - ')
+        .replace('*', ' * ')
+        .replace('/', ' / ')
+        .replace('  ', ' ')
+        + '\n'
+    )
     index = 1
     texts = []
     start_plain_text_index = -1
@@ -152,7 +163,7 @@ def preprocess_latex(text: str) -> str:
             index += 1
     if start_plain_text_index != -1:
         texts.append(proccess_plain_text(text[start_plain_text_index:]))
-    return ''.join(texts).strip()
+    return ''.join(texts).replace('\n', '\n\n').strip()
 
 
 def design_text_output(text: str, style={}) -> html.Div:
@@ -200,7 +211,9 @@ def update_height_js(iframe_id: str) -> str:
     """
 
 
-def iframe_template(header: str, content: str, style: Dict = {}, iframe_id: str = None) -> html.Iframe:
+def iframe_template(
+    header: str, content: str, style: Dict = {}, iframe_id: str = None
+) -> html.Iframe:
     if not iframe_id:
         iframe_id = get_random_id()
 

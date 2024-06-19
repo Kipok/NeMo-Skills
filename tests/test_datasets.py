@@ -17,18 +17,6 @@ from pathlib import Path
 
 
 def test_data_scripts():
-    # top-level
-    # test is not supported
-    cmd = """python nemo_skills/inference/generate_solutions.py \
-        output_file=./test-results/gsm8k/output-greedy.jsonl \
-        +prompt=code_sfted \
-        ++prompt.few_shot_examples.examples_type=null \
-        ++prompt.context_type=empty \
-        ++dataset=gsm8k \
-        ++split_name=test \
-        ++server.server_type=nemo \
-        ++server.host=1 \
-        ++test=1"""
     subprocess.run(
         f'bash {Path(__file__).absolute().parents[1] / "datasets" / "prepare_all.sh"}', shell=True, check=True
     )
@@ -40,25 +28,35 @@ def test_data_scripts():
         'gsm-hard/test.jsonl',
         'mawps/test.jsonl',
         'svamp/test.jsonl',
+        'tabmwp/train.jsonl',
+        'tabmwp/validation.jsonl',
         'tabmwp/test.jsonl',
         'gsm8k/train.jsonl',
         'gsm8k/train_full.jsonl',
         'gsm8k/validation.jsonl',
         'gsm8k/validation-sft.jsonl',
+        'gsm8k/validation-sft-chat.jsonl',
         'gsm8k/test.jsonl',
+        'gsm-plus/test.jsonl',
+        'gsm-ic-2step/test.jsonl',
+        'gsm-ic-mstep/test.jsonl',
+        'functional/test.jsonl',
         'math/train.jsonl',
         'math/train_full.jsonl',
         'math/validation.jsonl',
         'math/validation-sft.jsonl',
+        'math/validation-sft-chat.jsonl',
         'math/test.jsonl',
         'gsm8k-masked/train.jsonl',
         'gsm8k-masked/train_full.jsonl',
         'gsm8k-masked/validation.jsonl',
         'gsm8k-masked/validation-sft.jsonl',
+        'gsm8k-masked/validation-sft-chat.jsonl',
         'math-masked/train.jsonl',
         'math-masked/train_full.jsonl',
         'math-masked/validation.jsonl',
         'math-masked/validation-sft.jsonl',
+        'math-masked/validation-sft-chat.jsonl',
     ]
     for file in expected_files:
         assert (Path(__file__).absolute().parents[1] / "datasets" / file).exists()
