@@ -35,13 +35,9 @@ class BaseFilter(BaseParallelProcessor):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def process_dataset_entry(self, data_entry) -> List:
-        raise NotImplementedError
-
     def test(self):
-        cached_value, self.should_apply = self.should_apply, True
-        super().test()
-        self.should_apply = cached_value
+        if self.should_apply:
+            super().test()
 
 
 class DropMultiBoxed(BaseFilter):
