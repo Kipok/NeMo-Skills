@@ -24,7 +24,7 @@ from sdp.processors.base_processor import BaseParallelProcessor, DataEntry
 from tqdm.contrib.concurrent import process_map
 
 from nemo_skills.code_execution import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS
-from nemo_skills.synthetic_arithmetic.solve_expression import solve_expression
+from nemo_skills.synthetic_arithmetic.solve_expression import merge_solution_steps, solve_expression
 from nemo_skills.synthetic_arithmetic.utils import extract_expressions
 
 PATTERN_ANS = re.compile(r"\\boxed\{([^}]*)\}")
@@ -212,12 +212,7 @@ class SplitArithmetic(BaseFilter):
                 last_end = end
                 continue
 
-            solution = []
-            for step in solution_steps[:-1]:
-                solution.append(re.sub(r"(-\d+)", r"(\1)", step))
-            solution.append(solution_steps[-1].strip())
-            solution = " = ".join(solution)
-            solution = re.sub(r"\s+", " ", solution)
+            solution = merge_solution_steps(solution_steps)
 
             try:
                 if eval(solution_steps[-1]) == eval(ans):
