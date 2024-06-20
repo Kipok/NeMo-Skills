@@ -36,7 +36,9 @@ def get_few_shots_by_id_layout(page: int, examples_type: str, view_mode: bool) -
                 dbc.InputGroup(
                     [
                         dbc.InputGroupText(key),
-                        get_text_area_layout({"type": FEW_SHOTS_INPUT, "id": key}, value, view_mode),
+                        get_text_area_layout(
+                            {"type": FEW_SHOTS_INPUT, "id": key}, str(value), view_mode
+                        ),
                     ],
                     className="mb-3",
                 )

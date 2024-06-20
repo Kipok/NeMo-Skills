@@ -22,7 +22,7 @@ import hydra
 from dash import Dash
 from flask import Flask
 from omegaconf import MISSING, DictConfig, OmegaConf
-from settings.constants import PARAMS_TO_REMOVE, UNDEFINED
+from settings.constants import PARAMS_TO_REMOVE, RETRIEVAL, UNDEFINED
 from settings.visualization_config import VisualizationConfig
 
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
@@ -85,7 +85,7 @@ def set_config(cfg: VisualizationConfig) -> None:
 
     config['data_explorer']['types'] = {
         "prompt_type": [UNDEFINED] + prompt_types_without_extension,
-        "examples_type": [UNDEFINED] + list(examples_map.keys()),
+        "examples_type": [UNDEFINED, RETRIEVAL] + list(examples_map.keys()),
         "context_type": [UNDEFINED] + list(context_templates.keys()),
     }
 

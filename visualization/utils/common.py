@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from copy import deepcopy
+from dataclasses import fields
 import datetime
 import functools
 import json
@@ -26,6 +28,11 @@ from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 from dash import html
 from flask import current_app
 from joblib import Parallel, delayed
+from nemo_skills.inference.generate_solutions import (
+    GenerateSolutionsConfig,
+    InferenceConfig,
+)
+from nemo_skills.inference.prompt.utils import FewShotExamplesConfig, PromptConfig
 from settings.constants import (
     ANSWER_FIELD,
     ERROR_MESSAGE_TEMPLATE,
@@ -42,6 +49,7 @@ from nemo_skills.inference.prompt.few_shot_examples import examples_map
 from nemo_skills.utils import unroll_files
 
 custom_stats = {}
+default_examples = deepcopy(examples_map)
 general_custom_stats = {}
 deleted_stats = set()
 excluded_rows = set()
@@ -157,7 +165,7 @@ def get_height_adjustment() -> html.Iframe:
 
 @functools.lru_cache()
 def get_test_data(index: int, dataset: str) -> Tuple[Dict, int]:
-    if dataset == UNDEFINED or os.path.isfile(dataset) is False:
+    if not dataset or dataset == UNDEFINED or os.path.isfile(dataset) is False:
         return {QUESTION_FIELD: "", ANSWER_FIELD: ""}, 0
     with open(dataset) as file:
         tests = file.readlines()
@@ -469,3 +477,24 @@ def run_subprocess(command: str) -> Tuple[str, bool]:
         success = False
 
     return result.stdout.strip(), result.stderr.strip(), success
+
+
+def get_config(
+    config_class: Union[
+        GenerateSolutionsConfig, PromptConfig, InferenceConfig, FewShotExamplesConfig
+    ],
+    utils: Dict[str, str],
+    config: Dict,
+    params: Dict = {},
+) -> Union[GenerateSolutionsConfig, PromptConfig, InferenceConfig, FewShotExamplesConfig]:
+    return config_class(
+        **{
+            key: value
+            for key, value in {
+                **config,
+                **utils,
+            }.items()
+            if key in {field.name for field in fields(config_class)}
+        },
+        **params,
+    )

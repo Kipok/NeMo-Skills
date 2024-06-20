@@ -28,11 +28,17 @@ from layouts import (
     get_switch_layout,
     get_text_area_layout,
 )
-from settings.constants import FEW_SHOTS_INPUT, QUERY_INPUT_TYPE, SEPARATOR_DISPLAY, SEPARATOR_ID
-from utils.common import get_examples, get_utils_from_config
+from settings.constants import (
+    FEW_SHOTS_INPUT,
+    QUERY_INPUT_TYPE,
+    RETRIEVAL,
+    SEPARATOR_DISPLAY,
+    SEPARATOR_ID,
+)
+from utils.common import get_config, get_examples, get_utils_from_config
 
 from nemo_skills.code_execution.sandbox import get_sandbox
-from nemo_skills.inference.generate_solutions import GenerateSolutionsConfig, InferenceConfig
+from nemo_skills.inference.generate_solutions import InferenceConfig
 from nemo_skills.inference.prompt.utils import FewShotExamplesConfig, Prompt, PromptConfig
 from nemo_skills.inference.server.code_execution_model import get_code_execution_model
 
@@ -187,6 +193,14 @@ class ModeStrategies:
                             color="primary",
                             className="me-1",
                         ),
+                        dbc.Button(
+                            "retrieve",
+                            id="retrieve_button",
+                            outline=True,
+                            size="sm",
+                            color="primary",
+                            className="me-1",
+                        ),
                         get_switch_layout(
                             id={
                                 "type": "view_mode",
@@ -258,10 +272,16 @@ class ModeStrategies:
         )
 
     def get_prompt(self, utils: Dict, input_dict: Dict[str, str]) -> str:
-        utils = {key.split(SEPARATOR_ID)[-1]: value for key, value in utils.items()}
-        prompt_config = self._get_config(PromptConfig, utils, current_app.config['data_explorer']['prompt'])
+        utils = {
+            key.split(SEPARATOR_ID)[-1]: value
+            for key, value in utils.items()
+            if RETRIEVAL not in key
+        }
+        prompt_config = get_config(
+            PromptConfig, utils, current_app.config['data_explorer']['prompt']
+        )
 
-        prompt_config.few_shot_examples = self._get_config(
+        prompt_config.few_shot_examples = get_config(
             FewShotExamplesConfig,
             utils,
             current_app.config['data_explorer']['prompt']['few_shot_examples'],
@@ -309,23 +329,4 @@ class ModeStrategies:
                     "Also check that you have provided correct host, ssh_key_path and ssh_server parameters",
                 ]
             )
-        )
-
-    def _get_config(
-        self,
-        config_class: Union[GenerateSolutionsConfig, PromptConfig, InferenceConfig, FewShotExamplesConfig],
-        utils: Dict[str, str],
-        config: Dict,
-        params: Dict = {},
-    ) -> Union[GenerateSolutionsConfig, PromptConfig, InferenceConfig, FewShotExamplesConfig]:
-        return config_class(
-            **{
-                key: value
-                for key, value in {
-                    **config,
-                    **utils,
-                }.items()
-                if key in {field.name for field in fields(config_class)}
-            },
-            **params,
         )

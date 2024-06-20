@@ -38,13 +38,9 @@ PARAMS_TO_REMOVE = [
     'split_name',
     'example_dicts',
     'retriever',
-    'retrieval_file',
-    'retrieval_field',
-    'max_retrieved_chars',
-    'max_retrieved_chars_field',
-    'retrieved_entries',
 ]
 PARAMETERS_FILE_NAME = "visualization/results/parameters.json"
+RETRIEVAL = 'retrieval'
 STATS_KEYS = [
     'question_index',
     'question',

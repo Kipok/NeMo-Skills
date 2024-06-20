@@ -34,7 +34,7 @@ from settings.constants import (
     WHOLE_DATASET_MODE,
 )
 from settings.templates import summarize_results_template
-from utils.common import get_available_models, get_examples, run_subprocess
+from utils.common import get_available_models, get_config, get_examples, run_subprocess
 from utils.strategies.base_strategy import ModeStrategies
 
 from nemo_skills.evaluation.evaluate_results import EvaluateResultsConfig, evaluate_results
@@ -64,7 +64,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
         random_seed_start = utils['start_random_seed'] if params['range_random_mode'] else utils['random_seed']
         random_seed_end = utils['end_random_seed'] if params['range_random_mode'] else utils['random_seed'] + 1
 
-        generate_solutions_config = self._get_config(
+        generate_solutions_config = get_config(
             GenerateSolutionsConfig,
             utils,
             current_app.config['data_explorer'],
@@ -83,13 +83,13 @@ class WholeDatasetModeStrategy(ModeStrategies):
             current_app.config['data_explorer']['prompt'],
         )
 
-        generate_solutions_config.prompt.few_shot_examples = self._get_config(
+        generate_solutions_config.prompt.few_shot_examples = get_config(
             FewShotExamplesConfig,
             utils,
             current_app.config['data_explorer']['prompt']['few_shot_examples'],
         )
 
-        generate_solutions_config.inference = self._get_config(
+        generate_solutions_config.inference = get_config(
             InferenceConfig,
             utils,
             current_app.config['data_explorer']['inference'],

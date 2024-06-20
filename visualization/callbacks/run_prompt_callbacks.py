@@ -14,7 +14,6 @@
 
 from copy import deepcopy
 from dataclasses import asdict
-from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 import dash_bootstrap_components as dbc
@@ -30,18 +29,27 @@ from layouts import (
     get_single_prompt_output_layout,
     get_utils_field_representation,
 )
-from settings.constants import FEW_SHOTS_INPUT, QUERY_INPUT_TYPE, SEPARATOR_DISPLAY, SEPARATOR_ID, UNDEFINED
+from settings.constants import (
+    FEW_SHOTS_INPUT,
+    QUERY_INPUT_TYPE,
+    RETRIEVAL,
+    SEPARATOR_DISPLAY,
+    SEPARATOR_ID,
+    UNDEFINED,
+)
 from utils.common import (
+    default_examples,
     extract_query_params,
+    get_config,
     get_examples,
     get_test_data,
     get_utils_from_config,
     get_values_from_input_group,
 )
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
-
 from nemo_skills.inference.prompt.utils import (
     FewShotExamplesConfig,
+    Prompt,
     PromptConfig,
     context_templates,
     get_prompt_config,
@@ -68,19 +76,60 @@ def trigger_js(active_item: str, js_trigger: str) -> Tuple[str, str]:
         Output("js_container", "children", allow_duplicate=True),
         Output("js_trigger", "children", allow_duplicate=True),
     ],
-    Input("examples_type", "value"),
+    [
+        Input("examples_type", "value"),
+        Input('retrieve_button', 'n_clicks'),
+    ],
     State("js_trigger", "children"),
+    State('utils_group', 'children'),
+    State({"type": QUERY_INPUT_TYPE, "id": ALL}, "value"),
+    State({"type": QUERY_INPUT_TYPE, "id": ALL}, "id"),
     prevent_initial_call=True,
 )
-def update_examples_type(examples_type: str, js_trigger: str) -> Union[NoUpdate, dbc.AccordionItem]:
+def update_examples_type(
+    examples_type: str,
+    retrieve_n_click: int,
+    js_trigger: str,
+    utils: List[Dict],
+    query_params: List[str],
+    query_params_ids: List[Dict],
+) -> Union[NoUpdate, dbc.AccordionItem]:
     if not examples_type:
         examples_type = ""
-    size = len(
-        get_examples().get(
-            examples_type,
-            [],
+    if retrieve_n_click:
+        for key, value in default_examples.items():
+            if key == examples_type:
+                get_examples()[examples_type] = deepcopy(value)
+                break
+    if examples_type == RETRIEVAL:
+        utils = {
+            key.split(SEPARATOR_ID)[-1]: value
+            for key, value in get_values_from_input_group(utils).items()
+        }
+        utils.pop('examples_type', None)
+        prompt_config = get_config(
+            PromptConfig, utils, current_app.config['data_explorer']['prompt']
         )
-    )
+
+        prompt_config.few_shot_examples = get_config(
+            FewShotExamplesConfig,
+            utils,
+            current_app.config['data_explorer']['prompt']['few_shot_examples'],
+        )
+
+        prompt = Prompt(config=prompt_config)
+        get_examples()[examples_type] = prompt.build_examples_dict(
+            extract_query_params(query_params_ids, query_params)
+        )
+
+        size = utils['retrieved_entries']
+    else:
+        size = len(
+            get_examples().get(
+                examples_type,
+                [],
+            )
+        )
     return (
         RunPromptStrategyMaker().get_strategy().get_few_shots_div_layout(size),
         "",
@@ -103,14 +152,16 @@ def update_examples_type(examples_type: str, js_trigger: str) -> Union[NoUpdate,
             },
             "value",
         ),
-        Input('examples_type', "value"),
+        Input("dummy_output", "children"),
     ],
+    State('examples_type', "value"),
     State("js_trigger", "children"),
     prevent_initial_call=True,
 )
 def change_examples_page(
     page: int,
     view_mode: List[str],
+    dummy_output: str,
     examples_type: str,
     js_trigger: str,
 ) -> Tuple[Tuple[html.Div], int]:
