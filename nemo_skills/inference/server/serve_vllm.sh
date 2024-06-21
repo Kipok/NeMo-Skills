@@ -65,9 +65,9 @@ else
 fi
 
 # Check max_sequence_length is available or not
-if [ -n "$MAX_SEQUENCE_LENGTH" ]
+if [ -n "$MAX_SEQ_LEN" ]
 then
-      MAX_SEQUENCE_LENGTH="--max-model-length ${MAX_SEQUENCE_LENGTH}"
+      MAX_SEQUENCE_LENGTH="--max-model-len ${MAX_SEQ_LEN}"
 else
       MAX_SEQUENCE_LENGTH=""
 fi
