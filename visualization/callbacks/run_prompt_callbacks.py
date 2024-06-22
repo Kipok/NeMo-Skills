@@ -42,6 +42,7 @@ from utils.common import (
     extract_query_params,
     get_config,
     get_examples,
+    get_settings,
     get_test_data,
     get_utils_from_config,
     get_values_from_input_group,
@@ -107,14 +108,12 @@ def update_examples_type(
             for key, value in get_values_from_input_group(utils).items()
         }
         utils.pop('examples_type', None)
-        prompt_config = get_config(
-            PromptConfig, utils, current_app.config['data_explorer']['prompt']
-        )
+        prompt_config = get_config(PromptConfig, utils, get_settings())
 
         prompt_config.few_shot_examples = get_config(
             FewShotExamplesConfig,
             utils,
-            current_app.config['data_explorer']['prompt']['few_shot_examples'],
+            get_settings(),
         )
 
         prompt = Prompt(config=prompt_config)

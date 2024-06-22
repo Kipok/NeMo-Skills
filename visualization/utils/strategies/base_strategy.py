@@ -34,9 +34,11 @@ from settings.constants import (
     RETRIEVAL,
     SEPARATOR_DISPLAY,
     SEPARATOR_ID,
+    SETTING_PARAMS,
 )
-from utils.common import get_config, get_examples, get_utils_from_config
+from utils.common import get_config, get_examples, get_settings, get_utils_from_config
 
+from nemo_skills.code_execution.math_grader import extract_answer
 from nemo_skills.code_execution.sandbox import get_sandbox
 from nemo_skills.inference.generate_solutions import InferenceConfig
 from nemo_skills.inference.prompt.utils import FewShotExamplesConfig, Prompt, PromptConfig
@@ -46,11 +48,6 @@ from nemo_skills.inference.server.code_execution_model import get_code_execution
 class ModeStrategies:
     def __init__(self):
         self.sandbox = None
-        self.config = deepcopy(current_app.config['data_explorer'])
-        self.config.pop("server")
-        self.config.pop("sandbox")
-        self.config.pop("visualization_params")
-        self.config.pop("types")
 
     def sandbox_init(self):
         if self.sandbox is None:
@@ -71,10 +68,19 @@ class ModeStrategies:
                         value,
                     )
                     for name, value in sorted(
-                        get_utils_from_config(self.config).items(),
+                        get_utils_from_config(
+                            {
+                                key: value
+                                for key, value in current_app.config[
+                                    'data_explorer'
+                                ].items()
+                                if key not in SETTING_PARAMS
+                            }
+                        ).items(),
                         key=lambda item: (
                             1
-                            if item[0].split(SEPARATOR_DISPLAY)[-1] in current_app.config['data_explorer']['types']
+                            if item[0].split(SEPARATOR_DISPLAY)[-1]
+                            in current_app.config['data_explorer']['types']
                             else 0 if not isinstance(item[1], str) else 2
                         ),
                     )
@@ -101,7 +107,8 @@ class ModeStrategies:
         return utils_group_layout
 
     def get_few_shots_input_layout(self) -> List[dbc.AccordionItem]:
-        examples_type = self.config["prompt"]["few_shot_examples"]["examples_type"]
+        config = current_app.config['data_explorer']
+        examples_type = config["prompt"]["few_shot_examples"]["examples_type"]
         size = len(
             get_examples().get(
                 examples_type,
@@ -225,7 +232,7 @@ class ModeStrategies:
 
         logging.info(f"query to process: {params['prompts'][0]}")
 
-        inference_cfg = self._get_config(InferenceConfig, utils, current_app.config['data_explorer']['inference'])
+        inference_cfg = get_config(InferenceConfig, utils, get_settings())
 
         try:
             outputs = llm.generate(
@@ -243,9 +250,12 @@ class ModeStrategies:
         logging.info(f"query's answer: {outputs[0]}")
 
         try:
+            predicted_answer = extract_answer(outputs[0]['generation'])
             color, background, is_correct = (
                 ('#d4edda', '#d4edda', "correct")
-                if self.sandbox.is_output_correct(outputs[0]['predicted_answer'], params["expected_answer"])
+                if self.sandbox.is_output_correct(
+                    predicted_answer, params["expected_answer"]
+                )
                 else ("#fecccb", "#fecccb", "incorrect")
             )
         except Exception as e:
@@ -262,7 +272,7 @@ class ModeStrategies:
                 ),
                 html.Div(
                     (
-                        f"Answer {outputs[0]['predicted_answer']} is {is_correct}"
+                        f"Answer {predicted_answer} is {is_correct}"
                         if is_correct != "unknown"
                         else "Could not evaluate the answer"
                     ),
@@ -277,21 +287,20 @@ class ModeStrategies:
             for key, value in utils.items()
             if RETRIEVAL not in key
         }
-        prompt_config = get_config(
-            PromptConfig, utils, current_app.config['data_explorer']['prompt']
-        )
+        examples_type = utils.pop('examples_type', None)
+        utils["example_dicts"] = get_examples().get(
+            examples_type,
+            [],
+        )[: utils['num_few_shots']]
+        prompt_config = get_config(PromptConfig, utils, get_settings())
 
         prompt_config.few_shot_examples = get_config(
             FewShotExamplesConfig,
             utils,
-            current_app.config['data_explorer']['prompt']['few_shot_examples'],
+            get_settings(),
         )
 
         prompt = Prompt(config=prompt_config)
-        prompt.config.few_shot_examples.example_dicts = get_examples().get(
-            utils.get('examples_type', None),
-            [],
-        )
         return prompt.build_string(input_dict)
 
     def _get_search_prompt_layout(self) -> dbc.InputGroup:

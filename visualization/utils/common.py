@@ -41,6 +41,7 @@ from settings.constants import (
     PARAMS_TO_REMOVE,
     QUESTION_FIELD,
     SEPARATOR_DISPLAY,
+    SETTING_PARAMS,
     STATS_KEYS,
     UNDEFINED,
 )
@@ -90,13 +91,14 @@ def parse_model_answer(answer: str) -> List[Dict]:
             - 'output': The output of the code block.
 
     """
+    config = current_app.config['data_explorer']
     code_start, code_end = map(
         re.escape,
-        current_app.config['data_explorer']["visualization_params"]["code_separators"],
+        config["visualization_params"]["code_separators"],
     )
     output_start, output_end = map(
         re.escape,
-        current_app.config['data_explorer']["visualization_params"]["code_output_separators"],
+        config["visualization_params"]["code_output_separators"],
     )
     code_pattern = re.compile(fr'{code_start}(.*?){code_end}', re.DOTALL)
     code_output_pattern = re.compile(
@@ -196,12 +198,13 @@ def get_values_from_input_group(children: Iterable) -> Dict:
 
 
 def extract_query_params(query_params_ids: List[Dict], query_params: List[Dict]) -> Dict:
+    default_answer = {"question": "", "expected_answer": ""}
     try:
         query_params_extracted = {param_id['id']: param for param_id, param in zip(query_params_ids, query_params)}
     except ValueError:
-        query_params_extracted = {"question": "", "expected_answer": ""}
+        query_params_extracted = default_answer
 
-    return query_params_extracted
+    return query_params_extracted or default_answer
 
 
 def get_utils_from_config_helper(cfg: Dict, display_path: bool = True) -> Dict:
@@ -485,7 +488,6 @@ def get_config(
     ],
     utils: Dict[str, str],
     config: Dict,
-    params: Dict = {},
 ) -> Union[GenerateSolutionsConfig, PromptConfig, InferenceConfig, FewShotExamplesConfig]:
     return config_class(
         **{
@@ -496,5 +498,18 @@ def get_config(
             }.items()
             if key in {field.name for field in fields(config_class)}
         },
-        **params,
     )
+
+
+@functools.lru_cache(maxsize=1)
+def get_settings():
+    def get_settings_helper(config: Dict):
+        settings = {}
+        for key, value in config.items():
+            if key in SETTING_PARAMS:
+                settings[key] = value
+            if isinstance(value, dict):
+                settings = {**settings, **get_settings_helper(value)}
+        return settings
+
+    return get_settings_helper(current_app.config['data_explorer'])

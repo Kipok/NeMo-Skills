@@ -90,10 +90,6 @@ def set_config(cfg: VisualizationConfig) -> None:
     }
 
     config['data_explorer']['data_file'] = str(config['data_explorer']['data_file'])
-    # All parameters in config can be modified through the application except Server and Sandbox configs
-    # Following parameters are not used and should not be modified
-    for param in PARAMS_TO_REMOVE:
-        remove_field(config['data_explorer'], param)
 
 
 set_config()

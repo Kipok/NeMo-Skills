@@ -47,6 +47,7 @@ STATS_KEYS = [
 ]
 SEPARATOR_DISPLAY = '.'
 SEPARATOR_ID = '->'
+SETTING_PARAMS = ['server', 'sandbox', 'output_file', 'visualization_params', 'types']
 STATISTICS_FOR_WHOLE_DATASET = ["correct_answer", "wrong_answer", "no_answer"]
 UNDEFINED = "undefined"
 WHOLE_DATASET_MODE = "whole_dataset"
