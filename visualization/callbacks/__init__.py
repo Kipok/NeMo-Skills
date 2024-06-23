@@ -73,9 +73,16 @@ def set_config(cfg: VisualizationConfig) -> None:
                 }
         return retrieved_values
 
+    examples_types = list(examples_map.keys())
+    examples_type = cfg.prompt.few_shot_examples.examples_type
+    if examples_type == RETRIEVAL:
+        cfg.prompt.few_shot_examples.examples_type = examples_types[0]
+
     cfg.prompt = set_undefined(OmegaConf.to_container(cfg.prompt), cfg.prompt)
 
     config['data_explorer'] = asdict(OmegaConf.to_object(cfg))
+    if examples_type == RETRIEVAL:
+        config['data_explorer']['prompt']['few_shot_examples']['examples_type'] = examples_type
 
     for param in ['host', 'ssh_server', 'ssh_key_path']:
         if param not in config['data_explorer']['sandbox'] and param in config['data_explorer']['server']:
@@ -89,7 +96,7 @@ def set_config(cfg: VisualizationConfig) -> None:
 
     config['data_explorer']['types'] = {
         "prompt_type": [UNDEFINED] + prompt_types_without_extension,
-        "examples_type": [UNDEFINED, RETRIEVAL] + list(examples_map.keys()),
+        "examples_type": [UNDEFINED, RETRIEVAL] + examples_types,
         "context_type": [UNDEFINED] + list(context_templates.keys()),
     }
 
