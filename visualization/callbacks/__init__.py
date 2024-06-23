@@ -98,6 +98,7 @@ def set_config(cfg: VisualizationConfig) -> None:
         "prompt_type": [UNDEFINED] + prompt_types_without_extension,
         "examples_type": [UNDEFINED, RETRIEVAL] + examples_types,
         "context_type": [UNDEFINED] + list(context_templates.keys()),
+        "retrieval_field": [""]
     }
 
     config['data_explorer']['retrieval_fields'] = get_specific_fields(

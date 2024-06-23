@@ -68,19 +68,13 @@ class ModeStrategies:
                 if key not in SETTING_PARAMS
             }
         ).items()
-        if ('examples_type', RETRIEVAL) not in utils:
-            utils = filter(lambda x: x[0] not in RETRIEVAL_FIELDS, utils)
+        utils = list(filter(lambda x: x[0] not in RETRIEVAL_FIELDS, utils))
         input_group_layout = html.Div(
             (
                 [
                     get_input_group_layout(
                         name,
                         value,
-                        (
-                            {"type": RETRIEVAL, "id": name}
-                            if name in RETRIEVAL_FIELDS
-                            else None
-                        ),
                     )
                     for name, value in sorted(
                         utils,
@@ -115,7 +109,6 @@ class ModeStrategies:
 
     def get_few_shots_input_layout(self) -> List[dbc.AccordionItem]:
         config = current_app.config['data_explorer']
-        # examples_type = config["prompt"]["few_shot_examples"]["examples_type"]
         size = config["prompt"]["few_shot_examples"]["num_few_shots"]
         return [
             dbc.AccordionItem(

@@ -14,7 +14,8 @@
 
 from copy import deepcopy
 from dataclasses import asdict
-import logging
+import json
+import os
 from typing import Dict, List, Optional, Tuple, Union
 
 import dash_bootstrap_components as dbc
@@ -84,6 +85,7 @@ def trigger_js(active_item: str, js_trigger: str) -> Tuple[str, str]:
     [
         Input("examples_type", "value"),
         Input("num_few_shots", "value"),
+        Input('data_file', 'value'),
         Input('retrieve_button', 'n_clicks'),
         Input({"type": RETRIEVAL, "id": ALL}, "value"),
     ],
@@ -98,6 +100,7 @@ def trigger_js(active_item: str, js_trigger: str) -> Tuple[str, str]:
 def update_examples_type(
     examples_type: str,
     num_few_shots: int,
+    data_file: str,
     retrieve_n_click: int,
     retrieval_fields: List,
     js_trigger: str,
@@ -113,11 +116,14 @@ def update_examples_type(
                 get_examples()[examples_type] = deepcopy(value)
                 break
     data_file_index = 0
+    retrieval_field_index = -1
 
     for retrieval_index, util in enumerate(raw_utils):
         name = util['props']['children'][0]['props']['children']
-        if name in 'data_file':
+        if name == 'data_file':
             data_file_index = retrieval_index
+        if name == 'retrieval_field':
+            retrieval_field_index = retrieval_index
 
     if examples_type == RETRIEVAL:
         utils = {
@@ -140,6 +146,34 @@ def update_examples_type(
             )
         except (ValueError, KeyError) as e:
             get_examples()[examples_type] = []
+
+        if (
+            'retrieval_file' in utils
+            and utils['retrieval_file']
+            and os.path.isfile(utils['retrieval_file'])
+            and os.path.isfile(data_file)
+        ):            
+            with open(utils['retrieval_file'], 'r') as retrieval_file, open(data_file, 'r') as data_file:
+                types = current_app.config['data_explorer']['types']
+                sample = {
+                    key: value
+                    for key, value in json.loads(retrieval_file.readline()).items()
+                    if key in json.loads(data_file.readline())
+                }
+                types['retrieval_field'] = list(
+                    filter(
+                        lambda key: isinstance(sample[key], str), 
+                        sample.keys()
+                    )
+                )
+                if retrieval_field_index != -1:
+                    retrieval_field = raw_utils[retrieval_field_index]['props']['children'][1]['props']
+                    retrieval_field_value = raw_utils[retrieval_field_index]['props']['children'][1]['props']['value']
+                    retrieval_field['options'] = types['retrieval_field']
+                    if retrieval_field_value in types['retrieval_field']:
+                        retrieval_field['value'] = retrieval_field_value
+                    else:    
+                        retrieval_field['value'] = types['retrieval_field'][0]
 
         if (
             data_file_index + 1 < len(raw_utils)

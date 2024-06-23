@@ -191,11 +191,8 @@ def validation_parameters(name: str, value: Union[str, int, float]) -> Dict[str,
 
 def get_input_group_layout(
     name: str,
-    value: Union[str, int, float, bool],
-    id: Union[str, Dict] = None
+    value: Union[str, int, float, bool]
 ) -> dbc.InputGroup:
-    if id is None:
-        id = name.replace(SEPARATOR_DISPLAY, SEPARATOR_ID)
     input_function = dbc.Textarea
     additional_params = {
         "style": {
@@ -220,7 +217,7 @@ def get_input_group_layout(
             dbc.InputGroupText(name),
             input_function(
                 value=get_utils_field_representation(value),
-                id=id,
+                id=name.replace(SEPARATOR_DISPLAY, SEPARATOR_ID),
                 **additional_params,
             ),
         ],

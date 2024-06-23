@@ -523,7 +523,20 @@ def get_utils_dict(
 ):
     if id is None:
         id = name
-    if isinstance(value, (int, float)):
+    if name in current_app.config['data_explorer']['types'].keys():
+        template = {
+            'props': {
+                'id': id,
+                'options': [
+                    {"label": value, "value": value}
+                    for value in current_app.config['data_explorer']['types'][name]
+                ],
+                'value': current_app.config['data_explorer']['types'][name][0],
+            },
+            'type': 'Select',
+            'namespace': 'dash_bootstrap_components',
+        }
+    elif isinstance(value, (int, float)):
         float_params = {"step": 0.1} if isinstance(value, float) else {}
         template = {
             'props': {
