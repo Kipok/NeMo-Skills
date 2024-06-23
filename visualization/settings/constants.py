@@ -41,6 +41,13 @@ PARAMS_TO_REMOVE = [
 ]
 PARAMETERS_FILE_NAME = "visualization/results/parameters.json"
 RETRIEVAL = 'retrieval'
+RETRIEVAL_FIELDS = [
+    'max_retrieved_chars_field',
+    'retrieved_entries',
+    'retrieval_file',
+    'retrieval_field',
+    'max_retrieved_chars',
+]
 STATS_KEYS = [
     'question_index',
     'question',

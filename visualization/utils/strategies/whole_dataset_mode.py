@@ -30,6 +30,7 @@ from settings.constants import (
     OUTPUT_PATH,
     PARAMETERS_FILE_NAME,
     RETRIEVAL,
+    RETRIEVAL_FIELDS,
     SEPARATOR_ID,
     STATISTICS_FOR_WHOLE_DATASET,
     WHOLE_DATASET_MODE,
@@ -62,7 +63,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
         utils = {
             key.split(SEPARATOR_ID)[-1]: value
             for key, value in utils.items()
-            if RETRIEVAL not in key
+            if key != RETRIEVAL and key not in RETRIEVAL_FIELDS
         }
         logging.info(f"Whole dataset mode utils: {utils}")
         exmaples_type = utils.pop("examples_type", None)
@@ -70,6 +71,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
             exmaples_type,
             [],
         )[: utils['num_few_shots']]
+        utils['num_few_shots'] = min(len(example_dicts), utils['num_few_shots'])
         self.sandbox_init()
         runs_storage = get_available_models()
         config = current_app.config['data_explorer']

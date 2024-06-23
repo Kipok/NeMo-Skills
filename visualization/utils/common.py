@@ -183,16 +183,20 @@ def get_values_from_input_group(children: Iterable) -> Dict:
             if "id" in input_group_child["props"].keys() and "value" in input_group_child["props"].keys():
                 type_function = str
                 value = input_group_child["props"]["value"]
-
+                id = (
+                    input_group_child["props"]["id"]["id"]
+                    if isinstance(input_group_child["props"]["id"], Dict)
+                    else input_group_child["props"]["id"]
+                )
                 if value is None or value == UNDEFINED:
-                    values[input_group_child["props"]["id"]] = None
+                    values[id] = None
                     continue
                 if str(value).isdigit() or str(value).replace("-", "", 1).isdigit():
                     type_function = int
                 elif str(value).replace(".", "", 1).replace("-", "", 1).isdigit():
                     type_function = float
 
-                values[input_group_child["props"]["id"]] = type_function(str(value).replace('\\n', '\n'))
+                values[id] = type_function(str(value).replace('\\n', '\n'))
 
     return values
 
@@ -513,3 +517,49 @@ def get_settings():
         return settings
 
     return get_settings_helper(current_app.config['data_explorer'])
+
+def get_utils_dict(
+    name: Union[str, Dict], value: Union[str, int], id: Union[str, Dict] = None
+):
+    if id is None:
+        id = name
+    if isinstance(value, (int, float)):
+        float_params = {"step": 0.1} if isinstance(value, float) else {}
+        template = {
+            'props': {
+                'id': id,
+                'debounce': True,
+                'min': 0,
+                'type': 'number',
+                'value': value,
+                **float_params,
+            },
+            'type': 'Input',
+            'namespace': 'dash_bootstrap_components',
+        }
+    else:
+        template = {
+            'props': {
+                'id': id,
+                'debounce': True,
+                'style': {'width': '100%'},
+                'value': value,
+            },
+            'type': 'Textarea',
+            'namespace': 'dash_bootstrap_components',
+        }
+    return {
+        'props': {
+            'children': [
+                {
+                    'props': {'children': name},
+                    'type': 'InputGroupText',
+                    'namespace': 'dash_bootstrap_components',
+                },
+                template,
+            ],
+            'className': 'mb-3',
+        },
+        'type': 'InputGroup',
+        'namespace': 'dash_bootstrap_components',
+    }

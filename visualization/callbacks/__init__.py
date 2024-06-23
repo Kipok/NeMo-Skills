@@ -15,14 +15,14 @@
 import os
 from dataclasses import asdict
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 import dash_bootstrap_components as dbc
 import hydra
 from dash import Dash
 from flask import Flask
 from omegaconf import MISSING, DictConfig, OmegaConf
-from settings.constants import PARAMS_TO_REMOVE, RETRIEVAL, UNDEFINED
+from settings.constants import RETRIEVAL, RETRIEVAL_FIELDS, UNDEFINED
 from settings.visualization_config import VisualizationConfig
 
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
@@ -61,13 +61,17 @@ def set_config(cfg: VisualizationConfig) -> None:
                 setattr(cfg, key, UNDEFINED)
         return cfg
 
-    def remove_field(cfg: Dict, field: str) -> None:
-        for key, value in cfg.items():
+    def get_specific_fields(dict_cfg: Dict, fields: List[Dict]) -> Dict:
+        retrieved_values = {}
+        for key, value in dict_cfg.items():
+            if key in fields:
+                retrieved_values[key] = value
             if isinstance(value, Dict):
-                if field in value:
-                    value.pop(field)
-                    return
-                remove_field(cfg[key], field)
+                retrieved_values = {
+                    **retrieved_values,
+                    **get_specific_fields(value, fields),
+                }
+        return retrieved_values
 
     cfg.prompt = set_undefined(OmegaConf.to_container(cfg.prompt), cfg.prompt)
 
@@ -88,6 +92,10 @@ def set_config(cfg: VisualizationConfig) -> None:
         "examples_type": [UNDEFINED, RETRIEVAL] + list(examples_map.keys()),
         "context_type": [UNDEFINED] + list(context_templates.keys()),
     }
+
+    config['data_explorer']['retrieval_fields'] = get_specific_fields(
+        config['data_explorer'], RETRIEVAL_FIELDS
+    )
 
     config['data_explorer']['data_file'] = str(config['data_explorer']['data_file'])
 

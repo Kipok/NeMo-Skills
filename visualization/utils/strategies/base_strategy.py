@@ -32,6 +32,7 @@ from settings.constants import (
     FEW_SHOTS_INPUT,
     QUERY_INPUT_TYPE,
     RETRIEVAL,
+    RETRIEVAL_FIELDS,
     SEPARATOR_DISPLAY,
     SEPARATOR_ID,
     SETTING_PARAMS,
@@ -60,23 +61,29 @@ class ModeStrategies:
         condition: Callable[[str, Union[str, int, float, bool]], bool] = lambda key, value: True,
         disabled: bool = False,
     ) -> List[dbc.AccordionItem]:
+        utils = get_utils_from_config(
+            {
+                key: value
+                for key, value in current_app.config['data_explorer'].items()
+                if key not in SETTING_PARAMS
+            }
+        ).items()
+        if ('examples_type', RETRIEVAL) not in utils:
+            utils = filter(lambda x: x[0] not in RETRIEVAL_FIELDS, utils)
         input_group_layout = html.Div(
             (
                 [
                     get_input_group_layout(
                         name,
                         value,
+                        (
+                            {"type": RETRIEVAL, "id": name}
+                            if name in RETRIEVAL_FIELDS
+                            else None
+                        ),
                     )
                     for name, value in sorted(
-                        get_utils_from_config(
-                            {
-                                key: value
-                                for key, value in current_app.config[
-                                    'data_explorer'
-                                ].items()
-                                if key not in SETTING_PARAMS
-                            }
-                        ).items(),
+                        utils,
                         key=lambda item: (
                             1
                             if item[0].split(SEPARATOR_DISPLAY)[-1]
@@ -108,13 +115,8 @@ class ModeStrategies:
 
     def get_few_shots_input_layout(self) -> List[dbc.AccordionItem]:
         config = current_app.config['data_explorer']
-        examples_type = config["prompt"]["few_shot_examples"]["examples_type"]
-        size = len(
-            get_examples().get(
-                examples_type,
-                [],
-            )
-        )
+        # examples_type = config["prompt"]["few_shot_examples"]["examples_type"]
+        size = config["prompt"]["few_shot_examples"]["num_few_shots"]
         return [
             dbc.AccordionItem(
                 self.get_few_shots_div_layout(size),
@@ -285,13 +287,14 @@ class ModeStrategies:
         utils = {
             key.split(SEPARATOR_ID)[-1]: value
             for key, value in utils.items()
-            if RETRIEVAL not in key
+            if key != RETRIEVAL and key not in RETRIEVAL_FIELDS
         }
         examples_type = utils.pop('examples_type', None)
         utils["example_dicts"] = get_examples().get(
             examples_type,
             [],
         )[: utils['num_few_shots']]
+        utils['num_few_shots'] = min(len(utils["example_dicts"]), utils['num_few_shots'])
         prompt_config = get_config(PromptConfig, utils, get_settings())
 
         prompt_config.few_shot_examples = get_config(
