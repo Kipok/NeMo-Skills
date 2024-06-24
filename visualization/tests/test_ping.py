@@ -48,12 +48,13 @@ def dash_app():
                     'prompt_type': '',
                     'context_template': '',
                     'context_type': '',
-                    'few_shot_examples': {'examples_type': ''},
+                    'few_shot_examples': {'examples_type': '', 'num_few_shots': 0},
                 },
                 'types': {
                     'prompt_type': [],
                     'examples_type': [],
                     'context_type': [],
+                    'retrieval_field': [''],
                 },
                 'data_file': 'mock_data_file',
                 'visualization_params': {
