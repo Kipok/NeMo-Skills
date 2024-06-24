@@ -29,10 +29,10 @@ This page enables the analysis of model answers based on different parameters. I
 
 - **Chat** mode facilitates a conversation with the model and requires minimal parameter setup.
 - **Run one sample** mode allows you to send a single question to the model. It can be a question from the dataset (with parameters `data_file` or `dataset` and `split_name`) or a custom question. The answer is validated by comparing it with the `expected_answer` field.
-- **Run whole dataset** mode lets you launch the generation with chosen parameters on the entire dataset. Results are saved in `visualization/results/output-greedy.jsonl` and `visualization/results/metrics-greedy.jsonl`. If the "use random seed range" flag is enabled, each answer will be sampled with multiple random seeds in the range from `start_random_seed` to `end_random_seed`. After generation is done, you can review the results on the "Analyze" page. The parameters used for dataset launch are also recorded in the `visualization/results/parameters.jsonl` file and displayed on the "Analyze" page.
+- **Run whole dataset** mode lets you launch the generation with chosen parameters on the entire dataset. Results are saved in `visualization/results/output-greedy.jsonl` and `visualization/results/metrics-greedy.jsonl`. If the "use random seed range" flag is enabled, each answer will be sampled with multiple random seeds in the range from `start_random_seed` to `end_random_seed`. After generation is done, you can review the results on the "Analyze" page. The parameters used for the generation are also recorded in the `visualization/results/parameters.jsonl` file and displayed on the "Analyze" page.
 
 ## Analyze page
-To use the Analyze page, specify paths to the datasets you want to use (if not obtained through the "Inference" page). You can pass parameters via the command line with `++visualization_params.model_prediction.dataset1='/some_path/generation1/output-greedy.jsonl'` or add them in an additional config file.
+To use the Analyze page, specify paths to the generations you want to use (if not obtained through the "Inference" page). You can pass parameters via the command line with `++visualization_params.model_prediction.generation1='/some_path/generation1/output-greedy.jsonl'` or add them in an additional config file.
 
 ```yaml
 visualization_params:
@@ -44,7 +44,7 @@ visualization_params:
 The tool also supports comparison of multiple generations (e.g. 
  `generation2` in the config above). All files satisfying the given pattern will be considered for analysis.
 
-On this page, you can sort, filter, and compare generations. You can also add labels to the data and save your modified, filtered, and sorted generation by specifying `save_dataset_path`.
+On this page, you can sort, filter, and compare generations. You can also add labels to the data and save your modified, filtered, and sorted generation by specifying `save_generations_path`.
 
 ### Filtering
 You can create custom functions to filter data. There are two modes: Filter Files mode and Filter Questions mode.
