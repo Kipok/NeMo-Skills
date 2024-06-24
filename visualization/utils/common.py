@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from copy import deepcopy
-from dataclasses import fields
 import datetime
 import functools
 import json
@@ -22,17 +20,14 @@ import os
 import re
 import subprocess
 from collections import defaultdict
+from copy import deepcopy
+from dataclasses import fields
 from pathlib import Path
 from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from dash import html
 from flask import current_app
 from joblib import Parallel, delayed
-from nemo_skills.inference.generate_solutions import (
-    GenerateSolutionsConfig,
-    InferenceConfig,
-)
-from nemo_skills.inference.prompt.utils import FewShotExamplesConfig, PromptConfig
 from settings.constants import (
     ANSWER_FIELD,
     ERROR_MESSAGE_TEMPLATE,
@@ -46,7 +41,9 @@ from settings.constants import (
     UNDEFINED,
 )
 
+from nemo_skills.inference.generate_solutions import GenerateSolutionsConfig, InferenceConfig
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
+from nemo_skills.inference.prompt.utils import FewShotExamplesConfig, PromptConfig
 from nemo_skills.utils import unroll_files
 
 custom_stats = {}
@@ -487,9 +484,7 @@ def run_subprocess(command: str) -> Tuple[str, bool]:
 
 
 def get_config(
-    config_class: Union[
-        GenerateSolutionsConfig, PromptConfig, InferenceConfig, FewShotExamplesConfig
-    ],
+    config_class: Union[GenerateSolutionsConfig, PromptConfig, InferenceConfig, FewShotExamplesConfig],
     utils: Dict[str, str],
     config: Dict,
 ) -> Union[GenerateSolutionsConfig, PromptConfig, InferenceConfig, FewShotExamplesConfig]:
@@ -518,9 +513,8 @@ def get_settings():
 
     return get_settings_helper(current_app.config['data_explorer'])
 
-def get_utils_dict(
-    name: Union[str, Dict], value: Union[str, int], id: Union[str, Dict] = None
-):
+
+def get_utils_dict(name: Union[str, Dict], value: Union[str, int], id: Union[str, Dict] = None):
     if id is None:
         id = name
     if name in current_app.config['data_explorer']['types'].keys():
@@ -528,8 +522,7 @@ def get_utils_dict(
             'props': {
                 'id': id,
                 'options': [
-                    {"label": value, "value": value}
-                    for value in current_app.config['data_explorer']['types'][name]
+                    {"label": value, "value": value} for value in current_app.config['data_explorer']['types'][name]
                 ],
                 'value': current_app.config['data_explorer']['types'][name][0],
             },
