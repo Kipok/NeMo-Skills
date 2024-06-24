@@ -16,11 +16,12 @@ import json
 import logging
 import random
 from collections import defaultdict
-from itertools import chain, zip_longest
+from itertools import chain
 from typing import Dict, Optional
 
 import tqdm
 from sdp.processors.base_processor import BaseProcessor
+from tqdm.contrib.concurrent import process_map
 
 from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
 from nemo_skills.utils import unroll_files
@@ -58,81 +59,87 @@ class ReadData(BaseProcessor):
         if not self.add_correct and not self.add_incorrect:
             raise ValueError("At least one of `add_correct` and `add_incorrect` should be True")
 
-    def _read_preprocessed_data(self) -> int:
+    def _read_preprocessed_data(self, file_handle) -> int:
         samples = []
         questions = set()
-        for file_path in self.preprocessed_dataset_files:
-            with open(file_path, "rt", encoding="utf-8") as file_handle:
-                for line in tqdm.tqdm(file_handle):
-                    sample = json.loads(line)
-                    questions.add(sample["question"])
-                    # for backward compatibility
-                    if "generation" not in sample and "generated_solution" in sample:
-                        sample["generation"] = sample.pop("generated_solution")
-                    samples.append(sample)
+        for line in tqdm.tqdm(file_handle):
+            sample = json.loads(line)
+            questions.add(sample["question"])
+            # for backward compatibility
+            if "generation" not in sample and "generated_solution" in sample:
+                sample["generation"] = sample.pop("generated_solution")
+            samples.append(sample)
 
         return samples
 
-    def _read_raw_data(self) -> int:
+    def _parallel_read_file(self, args):
+        file_path, read_fn = args
+        with open(file_path, "rt", encoding="utf-8") as file_handle:
+            samples = read_fn(file_handle)
+        return samples
+
+    def _read_raw_data(self, file_handle) -> int:
         samples = []
-        questions = set()
-        file_handles = [
-            open(manifest, "rt", encoding="utf-8") for manifest in unroll_files(self.prediction_jsonl_files)
-        ]
-        for idx, lines in tqdm.tqdm(enumerate(zip_longest(*file_handles))):
+
+        for idx, file_line in enumerate(file_handle):
             if idx < self.skip_first:
                 continue
+            # if different files have different number of lines
+            if file_line is None:
+                continue
+            line_dict = json.loads(file_line)
+            # can be empty for incomplete generations
+            if not line_dict:
+                continue
 
-            seen_predictions = {}
-            for lidx, file_line in enumerate(lines):
-                # if different files have different number of lines
-                if file_line is None:
-                    continue
-                line_dict = json.loads(file_line)
-                # can be empty for incomplete generations
-                if not line_dict:
-                    continue
+            # skipping any incomplete generations
+            if "is_correct" not in line_dict:
+                LOG.warning("Found incomplete generations (is_correct field is missing) - skipping")
+                continue
 
-                questions.add(line_dict["question"])
-                if line_dict["question"] not in seen_predictions:
-                    seen_predictions[line_dict["question"]] = set()
+            if not self.add_correct and line_dict["is_correct"]:
+                continue
 
-                # skipping any incomplete generations
-                if "is_correct" not in line_dict:
-                    LOG.warning("Found incomplete generations (is_correct field is missing) - skipping")
-                    continue
+            if not self.add_incorrect and not line_dict["is_correct"]:
+                continue
 
-                if not self.add_correct and line_dict["is_correct"]:
-                    continue
+            # for backward compatibility
+            if "generation" not in line_dict and "generated_solution" in line_dict:
+                line_dict["generation"] = line_dict.pop("generated_solution")
 
-                if not self.add_incorrect and not line_dict["is_correct"]:
-                    continue
-
-                # for backward compatibility
-                if "generation" not in line_dict and "generated_solution" in line_dict:
-                    line_dict["generation"] = line_dict.pop("generated_solution")
-
-                if line_dict["generation"] in seen_predictions[line_dict["question"]]:
-                    continue
-
-                seen_predictions[line_dict["question"]].add(line_dict["generation"])
-                line_dict['filename'] = file_handles[lidx].name
-                samples.append(line_dict)
-
-        for handle in file_handles:
-            handle.close()
+            line_dict['filename'] = file_handle.name
+            samples.append(line_dict)
 
         return samples
+
+    def _unique_iterator(self, samples):
+        seen_predictions = defaultdict(set)
+        unique_samples = []
+        for sample in samples:
+            question = sample["question"]
+            if sample['generation'] in seen_predictions[question]:
+                continue
+
+            seen_predictions[question].add(sample['generation'])
+            yield sample
 
     def process(self):
         samples = []
         if self.prediction_jsonl_files:
-            samples.extend(self._read_raw_data())
+            args = [(file, self._read_raw_data) for file in unroll_files(self.prediction_jsonl_files)]
+            results = process_map(self._parallel_read_file, args, max_workers=4, chunksize=1)
+            samples.extend(list(chain(*results)))
         if self.preprocessed_dataset_files:
-            samples.extend(self._read_preprocessed_data())
+            args = [(file, self._read_preprocessed_data) for file in self.preprocessed_dataset_files]
+            results = process_map(self._parallel_read_file, args, max_workers=None, chunksize=1)
+            samples.extend(list(chain(*results)))
+        LOG.info("Total samples before deduplication: %d", len(samples))
+        samples_count = 0
         with open(self.output_manifest_file, "wt", encoding="utf-8") as fout:
-            for sample in samples:
+            for sample in self._unique_iterator(samples):
                 fout.write(json.dumps(sample) + "\n")
+                samples_count += 1
+        LOG.info("Total samples after deduplication: %d", samples_count)
 
 
 class GroupSamples(BaseProcessor):
@@ -232,6 +239,7 @@ class WriteFinalSftManifest(BaseProcessor):
             self.metadata = {}
 
     def process(self):
+        samples_count = 0
         with (
             open(self.input_manifest_file, "rt", encoding="utf-8") as fin,
             open(self.output_manifest_file, "wt", encoding="utf-8") as fout,
@@ -254,3 +262,6 @@ class WriteFinalSftManifest(BaseProcessor):
                     elem["output"] = elem.pop("generation")
                 elem.update(self.metadata)
                 fout.write(json.dumps(elem) + "\n")
+                samples_count += 1
+
+        LOG.info("Prepared dataset size: %d", samples_count)

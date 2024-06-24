@@ -13,8 +13,10 @@
 # limitations under the License.
 
 import json
+import logging
 import os
 import re
+import warnings
 from itertools import chain
 from math import isclose
 from typing import List
@@ -26,6 +28,8 @@ from tqdm.contrib.concurrent import process_map
 from nemo_skills.code_execution import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS
 from nemo_skills.synthetic_arithmetic.solve_expression import merge_solution_steps, solve_expression
 from nemo_skills.synthetic_arithmetic.utils import extract_expressions
+
+LOG = logging.getLogger(__file__)
 
 PATTERN_ANS = re.compile(r"\\boxed\{([^}]*)\}")
 PATTERN_CODE = re.compile(CODE_SEPARATORS[0])
@@ -39,6 +43,20 @@ class BaseFilter(BaseParallelProcessor):
         if self.should_apply:
             super().test()
 
+    def finalize(self, metrics: List):
+        LOG.info("Number of entries after processing: %d", self.number_of_entries)
+
+        if not metrics:
+            return
+
+        if 'num_removed' in metrics[0]:
+            num_removed_entries = sum(metric.get('num_removed', 0) for metric in metrics)
+            LOG.info("Number of removed entries: %d", num_removed_entries)
+
+        if 'num_modified' in metrics[0]:
+            num_modified_entries = sum(metric.get('num_modified', 0) for metric in metrics)
+            LOG.info("Number of modified entries: %d", num_modified_entries)
+
 
 class DropMultiBoxed(BaseFilter):
 
@@ -49,11 +67,11 @@ class DropMultiBoxed(BaseFilter):
 
     def process_dataset_entry(self, data_entry) -> List:
         if not self.should_apply:
-            return [DataEntry(data=data_entry)]
+            return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
         if len(PATTERN_ANS.findall(data_entry[self.solution_key])) > 1:
-            return [DataEntry(data=None)]
-        return [DataEntry(data=data_entry)]
+            return [DataEntry(data=None, metrics=dict(num_removed=1))]
+        return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
 
 class DropUselessCode(BaseFilter):
@@ -65,14 +83,14 @@ class DropUselessCode(BaseFilter):
 
     def process_dataset_entry(self, data_entry) -> List:
         if not self.should_apply:
-            return [DataEntry(data=data_entry)]
+            return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
         ans_match = PATTERN_ANS.search(data_entry[self.solution_key])
         code_match = PATTERN_CODE.search(data_entry[self.solution_key])
         if not ans_match or not code_match or ans_match.start() > code_match.start():
-            return [DataEntry(data=None)]
+            return [DataEntry(data=None, metrics=dict(num_removed=1))]
 
-        return [DataEntry(data=data_entry)]
+        return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
 
 class DropBrokenCode(BaseFilter):
@@ -83,7 +101,7 @@ class DropBrokenCode(BaseFilter):
 
     def process_dataset_entry(self, data_entry) -> List:
         if not self.should_apply:
-            return [DataEntry(data=data_entry)]
+            return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
         generation = data_entry[self.solution_key]
         code_start_indices = [match.start() for match in re.finditer(CODE_SEPARATORS[0], generation)]
@@ -95,18 +113,18 @@ class DropBrokenCode(BaseFilter):
             [len(code_start_indices), len(code_end_indices), len(code_out_start_indices), len(code_out_end_indices)]
         )
         if len(num_code_occs) != 1:
-            return [DataEntry(data=None)]
+            return [DataEntry(data=None, metrics=dict(num_removed=1))]
 
         if not len(code_end_indices):
-            return [DataEntry(data=data_entry)]
+            return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
         for code_start_idx, code_end_idx, code_out_start_idx, code_out_end_idx in zip(
             code_start_indices, code_end_indices, code_out_start_indices, code_out_end_indices
         ):
             if not (code_start_idx < code_end_idx < code_out_start_idx < code_out_end_idx):
-                return [DataEntry(data=None)]
+                return [DataEntry(data=None, metrics=dict(num_removed=1))]
 
-        return [DataEntry(data=data_entry)]
+        return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
 
 class TrimSolutions(BaseFilter):
@@ -118,7 +136,7 @@ class TrimSolutions(BaseFilter):
 
     def process_dataset_entry(self, data_entry) -> List:
         if not self.should_apply:
-            return [DataEntry(data=data_entry)]
+            return [DataEntry(data=data_entry, metrics=dict(num_modified=0))]
 
         output_lines = data_entry[self.solution_key].split("\n")
 
@@ -136,9 +154,10 @@ class TrimSolutions(BaseFilter):
             stop_idx = stop_idx + 1
 
         trimmed_output = "\n".join(output_lines[: stop_idx + 1])
+        is_modified = trimmed_output != data_entry[self.solution_key]
         data_entry[self.solution_key] = trimmed_output
 
-        return [DataEntry(data=data_entry)]
+        return [DataEntry(data=data_entry, metrics=dict(num_modified=int(is_modified)))]
 
 
 class DropIncorrectArithmetic(BaseFilter):
@@ -151,7 +170,7 @@ class DropIncorrectArithmetic(BaseFilter):
 
     def process_dataset_entry(self, data_entry: str) -> str:
         if not self.should_apply:
-            return [DataEntry(data=data_entry)]
+            return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
         for expression, _ in extract_expressions(data_entry[self.solution_key]):
             parts = expression.split("=")
@@ -162,14 +181,17 @@ class DropIncorrectArithmetic(BaseFilter):
 
             try:
                 solution_steps = solve_expression(expr)
-                if not isclose(eval(solution_steps[-1]), eval(ans), rel_tol=self.tolerance):
-                    return [DataEntry(data=None)]
+                # ignore eval warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=SyntaxWarning)
+                    if not isclose(eval(solution_steps[-1]), eval(ans), rel_tol=self.tolerance):
+                        return [DataEntry(data=None, metrics=dict(num_removed=1))]
             except KeyboardInterrupt:
                 raise
             except:
                 pass
 
-        return [DataEntry(data=data_entry)]
+        return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
 
 class SplitArithmetic(BaseFilter):
@@ -185,7 +207,7 @@ class SplitArithmetic(BaseFilter):
         For example `1 + 2 + 3 + 4 = 10` -> `1 + 2 + 3 + 4 = 3 + 3 + 4 = 6 + 4 = 10`.
         """
         if not self.should_apply:
-            return [DataEntry(data=data_entry)]
+            return [DataEntry(data=data_entry, metrics=dict(num_modified=0))]
 
         text = data_entry[self.solution_key]
         new_text = []
@@ -211,10 +233,13 @@ class SplitArithmetic(BaseFilter):
             solution = merge_solution_steps(solution_steps)
 
             try:
-                if eval(solution_steps[-1]) == eval(ans):
-                    new_text.append(text[last_end:start] + solution)
-                else:
-                    new_text.append(text[last_end:end])
+                # ignore eval warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=SyntaxWarning)
+                    if eval(solution_steps[-1]) == eval(ans):
+                        new_text.append(text[last_end:start] + solution)
+                    else:
+                        new_text.append(text[last_end:end])
 
                 last_end = end
             except KeyboardInterrupt:
@@ -225,8 +250,9 @@ class SplitArithmetic(BaseFilter):
 
         new_text.append(text[last_end:])
         data_entry[self.solution_key] = "".join(new_text)
+        is_modified = text != data_entry[self.solution_key]
 
-        return [DataEntry(data=data_entry)]
+        return [DataEntry(data=data_entry, metrics=dict(num_modified=int(is_modified)))]
 
 
 class CodeTextFilter(BaseParallelProcessor):
@@ -235,10 +261,10 @@ class CodeTextFilter(BaseParallelProcessor):
         self.text_filter_type = filter_type
         self.solution_key = solution_key
 
-    def process_dataset_entry(self, groupped_samples: List):
+    def process_dataset_entry(self, grouped_samples: List):
         code_solns = []
         text_solns = []
-        for sample in groupped_samples:
+        for sample in grouped_samples:
             if CODE_SEPARATORS[0] in sample[self.solution_key]:
                 code_solns.append(sample)
             else:
@@ -252,10 +278,10 @@ class CodeTextFilter(BaseParallelProcessor):
             filtered_predictions.extend(code_solns)
         elif self.text_filter_type == 'majority_code':
             filtered_predictions.extend(code_solns)
-            if len(code_solns) <= len(groupped_samples) // 2:
+            if len(code_solns) <= len(grouped_samples) // 2:
                 filtered_predictions.extend(text_solns)
         elif self.text_filter_type == 'majority_text':
-            if len(code_solns) > len(groupped_samples) // 2:
+            if len(code_solns) > len(grouped_samples) // 2:
                 filtered_predictions.extend(code_solns)
             else:
                 filtered_predictions.extend(text_solns)
@@ -266,8 +292,9 @@ class CodeTextFilter(BaseParallelProcessor):
                 filtered_predictions.extend(text_solns)
         else:
             raise NotImplementedError(f"Filtering method {self.text_filter_type} not implemented")
+        num_removed = len(grouped_samples) - len(filtered_predictions)
 
-        return [DataEntry(data=filtered_predictions)]
+        return [DataEntry(data=filtered_predictions, metrics=dict(num_removed=num_removed))]
 
     def process(self):
         self.prepare()

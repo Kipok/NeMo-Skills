@@ -31,7 +31,7 @@ def test_code_files():
         check=True,
     )
 
-    expected_md5 = "779c70a2d84d96997336bcd47b3e99f9"
+    expected_md5 = "5feef230065b71b0ee4debe54fde62bd"
     output_md5 = compute_md5(output_file)
 
     assert (
