@@ -97,15 +97,11 @@ def choose_base_model(
 def save_dataset(n_click: int, base_model: str) -> Tuple[List, bool]:
     if (
         not n_click
-        or not current_app.config['data_explorer']['visualization_params'][
-            'save_generations_path'
-        ]
+        or not current_app.config['data_explorer']['visualization_params']['save_generations_path']
         or not base_model
     ):
         return no_update
-    path = current_app.config['data_explorer']['visualization_params'][
-        'save_generations_path'
-    ]
+    path = current_app.config['data_explorer']['visualization_params']['save_generations_path']
     if not os.path.exists(path):
         os.mkdir(path)
 
