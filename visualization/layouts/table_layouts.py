@@ -74,7 +74,7 @@ def get_filter_text(available_filters: List[str] = [], mode: str = FILES_FILTERI
     elif mode == FILES_FILTERING:
         return (
             "Write an expression to filter the data\n"
-            + "Separate expressions for different datasets with &&\n"
+            + "Separate expressions for different generations with &&\n"
             + "You can use base_generation variable to access data from the current generation\n\n"
             + "For example:\ndata['generation1']['correct_responses'] > 0.5 && data[base_generation]['no_response'] < 0.2\n\n"
             + "The expression has to return bool.\n\n"
@@ -86,8 +86,8 @@ def get_filter_text(available_filters: List[str] = [], mode: str = FILES_FILTERI
     elif mode == QUESTIONS_FILTERING:
         return (
             "Write an expression to filter the data\n"
-            + "You can operate with a dictionary containing keys representing dataset names\n"
-            + "and a list of values as JSON data from your dataset from each file.\n"
+            + "You can operate with a dictionary containing keys representing generation names\n"
+            + "and a list of values as JSON data from your generation from each file.\n"
             + "You can use base_generation variable to access data from the current generation\n\n"
             + "For example:\ndata['generation1'][0]['is_correct'] != data[base_generation][0]['is_correct']\n\n"
             + "The expression has to return bool.\n\n"
