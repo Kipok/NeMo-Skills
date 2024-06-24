@@ -36,13 +36,7 @@ from settings.constants import (
     WHOLE_DATASET_MODE,
 )
 from settings.templates import summarize_results_template
-from utils.common import (
-    get_available_models,
-    get_config,
-    get_examples,
-    get_settings,
-    run_subprocess,
-)
+from utils.common import get_available_models, get_config, get_examples, get_settings, run_subprocess
 from utils.strategies.base_strategy import ModeStrategies
 
 from nemo_skills.evaluation.evaluate_results import EvaluateResultsConfig, evaluate_results
@@ -84,9 +78,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
         random_seed_start = utils['start_random_seed'] if params['range_random_mode'] else utils['random_seed']
         random_seed_end = utils['end_random_seed'] if params['range_random_mode'] else utils['random_seed'] + 1
 
-        generate_solutions_config = get_config(
-            GenerateSolutionsConfig, utils, get_settings()
-        )
+        generate_solutions_config = get_config(GenerateSolutionsConfig, utils, get_settings())
 
         generate_solutions_config.prompt = get_config(
             PromptConfig,

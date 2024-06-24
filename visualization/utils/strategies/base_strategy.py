@@ -62,11 +62,7 @@ class ModeStrategies:
         disabled: bool = False,
     ) -> List[dbc.AccordionItem]:
         utils = get_utils_from_config(
-            {
-                key: value
-                for key, value in current_app.config['data_explorer'].items()
-                if key not in SETTING_PARAMS
-            }
+            {key: value for key, value in current_app.config['data_explorer'].items() if key not in SETTING_PARAMS}
         ).items()
         utils = list(filter(lambda x: x[0] not in RETRIEVAL_FIELDS, utils))
         input_group_layout = html.Div(
@@ -80,8 +76,7 @@ class ModeStrategies:
                         utils,
                         key=lambda item: (
                             1
-                            if item[0].split(SEPARATOR_DISPLAY)[-1]
-                            in current_app.config['data_explorer']['types']
+                            if item[0].split(SEPARATOR_DISPLAY)[-1] in current_app.config['data_explorer']['types']
                             else 0 if not isinstance(item[1], str) else 2
                         ),
                     )
@@ -248,9 +243,7 @@ class ModeStrategies:
             predicted_answer = extract_answer(outputs[0]['generation'])
             color, background, is_correct = (
                 ('#d4edda', '#d4edda', "correct")
-                if self.sandbox.is_output_correct(
-                    predicted_answer, params["expected_answer"]
-                )
+                if self.sandbox.is_output_correct(predicted_answer, params["expected_answer"])
                 else ("#fecccb", "#fecccb", "incorrect")
             )
         except Exception as e:

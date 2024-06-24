@@ -23,9 +23,7 @@ from utils.common import get_examples
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
 
 
-def get_few_shots_by_id_layout(
-    page: int, examples_type: str, num_few_shots: int, view_mode: bool
-) -> Tuple[html.Div]:
+def get_few_shots_by_id_layout(page: int, examples_type: str, num_few_shots: int, view_mode: bool) -> Tuple[html.Div]:
     examples_list = get_examples().get(
         examples_type,
         [{}],
@@ -38,9 +36,7 @@ def get_few_shots_by_id_layout(
                 dbc.InputGroup(
                     [
                         dbc.InputGroupText(key),
-                        get_text_area_layout(
-                            {"type": FEW_SHOTS_INPUT, "id": key}, str(value), view_mode
-                        ),
+                        get_text_area_layout({"type": FEW_SHOTS_INPUT, "id": key}, str(value), view_mode),
                     ],
                     className="mb-3",
                 )

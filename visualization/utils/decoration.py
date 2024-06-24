@@ -24,9 +24,7 @@ from pygments.formatters import HtmlFormatter
 from pygments.lexers import PythonLexer
 
 
-def get_starts_with_tag_function(
-    tag: str, default_index_move: int
-) -> Callable[[str, int], Tuple[bool, int]]:
+def get_starts_with_tag_function(tag: str, default_index_move: int) -> Callable[[str, int], Tuple[bool, int]]:
     def starts_with_tag_func_templ(text: str, index: int):
         is_starts_with_tag = text.startswith(tag, index)
         if not is_starts_with_tag:
@@ -67,13 +65,9 @@ def proccess_tag(
     return start_index, index + 1
 
 
-def get_single_dollar_functions(
-    direction: int, default_index_move: int
-) -> Callable[[str, int], Tuple[bool, int]]:
+def get_single_dollar_functions(direction: int, default_index_move: int) -> Callable[[str, int], Tuple[bool, int]]:
     return lambda text, index: (
-        text[index] == '$'
-        and text[index - direction].isspace()
-        and not text[index + direction].isspace(),
+        text[index] == '$' and text[index - direction].isspace() and not text[index + direction].isspace(),
         index + default_index_move,
     )
 
@@ -211,9 +205,7 @@ def update_height_js(iframe_id: str) -> str:
     """
 
 
-def iframe_template(
-    header: str, content: str, style: Dict = {}, iframe_id: str = None
-) -> html.Iframe:
+def iframe_template(header: str, content: str, style: Dict = {}, iframe_id: str = None) -> html.Iframe:
     if not iframe_id:
         iframe_id = get_random_id()
 

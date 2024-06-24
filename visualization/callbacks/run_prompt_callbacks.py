@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from copy import deepcopy
-from dataclasses import asdict
 import json
 import os
+from copy import deepcopy
+from dataclasses import asdict
 from typing import Dict, List, Optional, Tuple, Union
 
 import dash_bootstrap_components as dbc
@@ -52,6 +52,7 @@ from utils.common import (
     get_values_from_input_group,
 )
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
+
 from nemo_skills.inference.prompt.utils import (
     FewShotExamplesConfig,
     Prompt,
@@ -126,10 +127,7 @@ def update_examples_type(
             retrieval_field_index = retrieval_index
 
     if examples_type == RETRIEVAL:
-        utils = {
-            key.split(SEPARATOR_ID)[-1]: value
-            for key, value in get_values_from_input_group(raw_utils).items()
-        }
+        utils = {key.split(SEPARATOR_ID)[-1]: value for key, value in get_values_from_input_group(raw_utils).items()}
         utils.pop('examples_type', None)
         prompt_config = get_config(PromptConfig, utils, get_settings())
 
@@ -152,7 +150,7 @@ def update_examples_type(
             and utils['retrieval_file']
             and os.path.isfile(utils['retrieval_file'])
             and os.path.isfile(data_file)
-        ):            
+        ):
             with open(utils['retrieval_file'], 'r') as retrieval_file, open(data_file, 'r') as data_file:
                 types = current_app.config['data_explorer']['types']
                 sample = {
@@ -160,43 +158,30 @@ def update_examples_type(
                     for key, value in json.loads(retrieval_file.readline()).items()
                     if key in json.loads(data_file.readline())
                 }
-            types['retrieval_field'] = list(
-                filter(
-                    lambda key: isinstance(sample[key], str), 
-                    sample.keys()
-                )
-            )
+            types['retrieval_field'] = list(filter(lambda key: isinstance(sample[key], str), sample.keys()))
             if retrieval_field_index != -1:
                 retrieval_field = raw_utils[retrieval_field_index]['props']['children'][1]['props']
                 retrieval_field_value = raw_utils[retrieval_field_index]['props']['children'][1]['props']['value']
                 retrieval_field['options'] = types['retrieval_field']
                 if retrieval_field_value in types['retrieval_field']:
                     retrieval_field['value'] = retrieval_field_value
-                else:    
+                else:
                     retrieval_field['value'] = types['retrieval_field'][0]
 
-        if (
-            raw_utils[data_file_index + 1]['props']['children'][0]['props']['children']
-            not in RETRIEVAL_FIELDS
-        ):
+        if raw_utils[data_file_index + 1]['props']['children'][0]['props']['children'] not in RETRIEVAL_FIELDS:
             for retrieval_field in RETRIEVAL_FIELDS:
                 raw_utils.insert(
                     data_file_index + 1,
                     get_utils_dict(
                         retrieval_field,
-                        current_app.config['data_explorer']['retrieval_fields'][
-                            retrieval_field
-                        ],
+                        current_app.config['data_explorer']['retrieval_fields'][retrieval_field],
                         {"type": RETRIEVAL, "id": retrieval_field},
                     ),
                 )
     else:
         while (
             data_file_index + 1 < len(raw_utils)
-            and raw_utils[data_file_index + 1]['props']['children'][0]['props'][
-                'children'
-            ]
-            in RETRIEVAL_FIELDS
+            and raw_utils[data_file_index + 1]['props']['children'][0]['props']['children'] in RETRIEVAL_FIELDS
         ):
             raw_utils.pop(data_file_index + 1)
 
@@ -208,9 +193,7 @@ def update_examples_type(
     )
     return (
         raw_utils,
-        RunPromptStrategyMaker()
-        .get_strategy()
-        .get_few_shots_div_layout(min(num_few_shots, size)),
+        RunPromptStrategyMaker().get_strategy().get_few_shots_div_layout(min(num_few_shots, size)),
         "",
         js_trigger + " ",
     )
@@ -249,9 +232,7 @@ def change_examples_page(
     if not examples_type:
         examples_type = ""
     return (
-        get_few_shots_by_id_layout(
-            page, examples_type, num_few_shots, view_mode and len(view_mode)
-        ),
+        get_few_shots_by_id_layout(page, examples_type, num_few_shots, view_mode and len(view_mode)),
         '',
         js_trigger + '',
     )
@@ -330,9 +311,7 @@ def del_example(
         return (
             last_page - 1,
             prev_pagination_page,
-            get_few_shots_by_id_layout(
-                prev_pagination_page, examples_type, num_few_shots, view_mode
-            ),
+            get_few_shots_by_id_layout(prev_pagination_page, examples_type, num_few_shots, view_mode),
             '',
             js_trigger + ' ',
         )
