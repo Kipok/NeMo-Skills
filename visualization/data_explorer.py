@@ -30,5 +30,5 @@ if __name__ == "__main__":
     app.layout = get_main_page_layout()
     app.run(
         host='localhost',
-        port='8000',
+        port='8080',
     )
