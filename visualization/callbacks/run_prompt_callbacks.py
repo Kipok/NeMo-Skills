@@ -160,26 +160,23 @@ def update_examples_type(
                     for key, value in json.loads(retrieval_file.readline()).items()
                     if key in json.loads(data_file.readline())
                 }
-                types['retrieval_field'] = list(
-                    filter(
-                        lambda key: isinstance(sample[key], str), 
-                        sample.keys()
-                    )
+            types['retrieval_field'] = list(
+                filter(
+                    lambda key: isinstance(sample[key], str), 
+                    sample.keys()
                 )
-                if retrieval_field_index != -1:
-                    retrieval_field = raw_utils[retrieval_field_index]['props']['children'][1]['props']
-                    retrieval_field_value = raw_utils[retrieval_field_index]['props']['children'][1]['props']['value']
-                    retrieval_field['options'] = types['retrieval_field']
-                    if retrieval_field_value in types['retrieval_field']:
-                        retrieval_field['value'] = retrieval_field_value
-                    else:    
-                        retrieval_field['value'] = types['retrieval_field'][0]
+            )
+            if retrieval_field_index != -1:
+                retrieval_field = raw_utils[retrieval_field_index]['props']['children'][1]['props']
+                retrieval_field_value = raw_utils[retrieval_field_index]['props']['children'][1]['props']['value']
+                retrieval_field['options'] = types['retrieval_field']
+                if retrieval_field_value in types['retrieval_field']:
+                    retrieval_field['value'] = retrieval_field_value
+                else:    
+                    retrieval_field['value'] = types['retrieval_field'][0]
 
         if (
-            data_file_index + 1 < len(raw_utils)
-            and raw_utils[data_file_index + 1]['props']['children'][0]['props'][
-                'children'
-            ]
+            raw_utils[data_file_index + 1]['props']['children'][0]['props']['children']
             not in RETRIEVAL_FIELDS
         ):
             for retrieval_field in RETRIEVAL_FIELDS:
