@@ -62,7 +62,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
         logging.info(f"Whole dataset mode utils: {utils}")
         exmaples_type = utils.pop("examples_type", None)
         example_dicts = get_examples().get(
-            exmaples_type,
+            examples_type,
             [],
         )[: utils['num_few_shots']]
         utils['num_few_shots'] = min(len(example_dicts), utils['num_few_shots'])
