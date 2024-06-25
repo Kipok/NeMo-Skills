@@ -60,7 +60,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
             if key != RETRIEVAL and key not in RETRIEVAL_FIELDS
         }
         logging.info(f"Whole dataset mode utils: {utils}")
-        exmaples_type = utils.pop("examples_type", None)
+        examples_type = utils.pop("examples_type", None)
         example_dicts = get_examples().get(
             examples_type,
             [],
