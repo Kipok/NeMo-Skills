@@ -14,6 +14,14 @@
 
 from setuptools import find_packages, setup
 
+
+def parse_requirements(filename):
+    with open(filename) as f:
+        return f.read().splitlines()
+
+# Read the requirements from the requirements.txt file
+requirements = parse_requirements('requirements.txt')
+
 setup(
     name="nemo_skills",
     version="0.3.0",
@@ -23,20 +31,8 @@ setup(
     license="Apache License, Version 2.0",
     url="https://github.com/Kipok/NeMo-Skills",
     packages=find_packages(include=["nemo_skills*"]),
-    python_requires=">=3.8",
-    install_requires=[
-        'hydra-core',
-        'tqdm',
-        'pyyaml',
-        'numpy',
-        'requests',
-        'backoff',
-        'sympy',
-        'rank_bm25',
-        'openai',
-        'huggingface_hub',
-        'sdp @ git+https://github.com/NVIDIA/NeMo-speech-data-processor'
-    ],
+    python_requires=">=3.10",
+    install_requires=requirements,
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.10",
