@@ -114,7 +114,6 @@ class ReadData(BaseProcessor):
 
     def _unique_iterator(self, samples):
         seen_predictions = defaultdict(set)
-        unique_samples = []
         for sample in samples:
             question = sample["question"]
             if sample['generation'] in seen_predictions[question]:
@@ -240,6 +239,7 @@ class WriteFinalSftManifest(BaseProcessor):
 
     def process(self):
         samples_count = 0
+        seen_predictions = defaultdict(set)
         with (
             open(self.input_manifest_file, "rt", encoding="utf-8") as fin,
             open(self.output_manifest_file, "wt", encoding="utf-8") as fout,
@@ -249,6 +249,13 @@ class WriteFinalSftManifest(BaseProcessor):
             # only looping over the correct samples (unless asked for incorrect)
             for line in fin:
                 elem = json.loads(line)
+
+                question = elem["question"]
+                # deduplication
+                if elem['generation'] in seen_predictions[question]:
+                    continue
+                seen_predictions[question].add(elem['generation'])
+
                 if self.chat_format:
                     elem['conversations'] = [
                         {'value': elem['question'], 'from': 'User', 'canonical_form': ''},

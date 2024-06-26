@@ -37,11 +37,11 @@ PATTERN_CODE = re.compile(CODE_SEPARATORS[0])
 
 class BaseFilter(BaseParallelProcessor):
     def __init__(self, **kwargs):
+        if 'in_memory_chunksize' not in kwargs:
+            kwargs['in_memory_chunksize'] = 100000000
+        if 'chunksize' not in kwargs:
+            kwargs['chunksize'] = 100000
         super().__init__(**kwargs)
-
-    def test(self):
-        if self.should_apply:
-            super().test()
 
     def finalize(self, metrics: List):
         LOG.info("Number of entries after processing: %d", self.number_of_entries)
@@ -60,15 +60,11 @@ class BaseFilter(BaseParallelProcessor):
 
 class DropMultiBoxed(BaseFilter):
 
-    def __init__(self, should_apply: bool = False, solution_key: str = "generation", **kwargs):
+    def __init__(self, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
-        self.should_apply = should_apply
 
     def process_dataset_entry(self, data_entry) -> List:
-        if not self.should_apply:
-            return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
-
         if len(PATTERN_ANS.findall(data_entry[self.solution_key])) > 1:
             return [DataEntry(data=None, metrics=dict(num_removed=1))]
         return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
@@ -76,15 +72,11 @@ class DropMultiBoxed(BaseFilter):
 
 class DropUselessCode(BaseFilter):
 
-    def __init__(self, should_apply: bool = False, solution_key: str = "generation", **kwargs):
+    def __init__(self, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
-        self.should_apply = should_apply
 
     def process_dataset_entry(self, data_entry) -> List:
-        if not self.should_apply:
-            return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
-
         ans_match = PATTERN_ANS.search(data_entry[self.solution_key])
         code_match = PATTERN_CODE.search(data_entry[self.solution_key])
         if not ans_match or not code_match or ans_match.start() > code_match.start():
@@ -94,15 +86,11 @@ class DropUselessCode(BaseFilter):
 
 
 class DropBrokenCode(BaseFilter):
-    def __init__(self, should_apply: bool = False, solution_key: str = "generation", **kwargs):
+    def __init__(self, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
-        self.should_apply = should_apply
 
     def process_dataset_entry(self, data_entry) -> List:
-        if not self.should_apply:
-            return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
-
         generation = data_entry[self.solution_key]
         code_start_indices = [match.start() for match in re.finditer(CODE_SEPARATORS[0], generation)]
         code_end_indices = [match.start() for match in re.finditer(CODE_SEPARATORS[1], generation)]
@@ -129,15 +117,11 @@ class DropBrokenCode(BaseFilter):
 
 class TrimSolutions(BaseFilter):
 
-    def __init__(self, should_apply: bool = False, solution_key: str = "generation", **kwargs):
+    def __init__(self, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
-        self.should_apply = should_apply
 
     def process_dataset_entry(self, data_entry) -> List:
-        if not self.should_apply:
-            return [DataEntry(data=data_entry, metrics=dict(num_modified=0))]
-
         output_lines = data_entry[self.solution_key].split("\n")
 
         stop_idx = 0
@@ -162,16 +146,12 @@ class TrimSolutions(BaseFilter):
 
 class DropIncorrectArithmetic(BaseFilter):
 
-    def __init__(self, should_apply: bool = True, solution_key: str = "generation", tolerance=1e-4, **kwargs):
+    def __init__(self, solution_key: str = "generation", tolerance=1e-4, **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
-        self.should_apply = should_apply
         self.tolerance = tolerance
 
     def process_dataset_entry(self, data_entry: str) -> str:
-        if not self.should_apply:
-            return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
-
         for expression, _ in extract_expressions(data_entry[self.solution_key]):
             parts = expression.split("=")
             if len(parts) < 2:
@@ -196,19 +176,15 @@ class DropIncorrectArithmetic(BaseFilter):
 
 class SplitArithmetic(BaseFilter):
 
-    def __init__(self, should_apply: bool = True, solution_key: str = "generation", **kwargs):
+    def __init__(self, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
-        self.should_apply = should_apply
 
     def process_dataset_entry(self, data_entry: str) -> str:
         """
         Extends short arithmetic expressions solutions to step-by-step ones
         For example `1 + 2 + 3 + 4 = 10` -> `1 + 2 + 3 + 4 = 3 + 3 + 4 = 6 + 4 = 10`.
         """
-        if not self.should_apply:
-            return [DataEntry(data=data_entry, metrics=dict(num_modified=0))]
-
         text = data_entry[self.solution_key]
         new_text = []
         last_end = 0
@@ -257,6 +233,10 @@ class SplitArithmetic(BaseFilter):
 
 class CodeTextFilter(BaseParallelProcessor):
     def __init__(self, filter_type, solution_key='generation', **kwargs):
+        if 'in_memory_chunksize' not in kwargs:
+            kwargs['in_memory_chunksize'] = 100000000
+        if 'chunksize' not in kwargs:
+            kwargs['chunksize'] = 100000
         super().__init__(**kwargs)
         self.text_filter_type = filter_type
         self.solution_key = solution_key
@@ -321,3 +301,13 @@ class CodeTextFilter(BaseParallelProcessor):
                     fout.write("\n")
 
         self.finalize(metrics)
+
+    def finalize(self, metrics: List):
+        LOG.info("Number of entries after processing: %d", self.number_of_entries)
+
+        if not metrics:
+            return
+
+        if 'num_removed' in metrics[0]:
+            num_removed_entries = sum(metric.get('num_removed', 0) for metric in metrics)
+            LOG.info("Number of removed entries: %d", num_removed_entries)
