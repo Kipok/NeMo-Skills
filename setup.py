@@ -19,6 +19,7 @@ def parse_requirements(filename):
     with open(filename) as f:
         return f.read().splitlines()
 
+
 # Read the requirements from the requirements.txt file
 requirements = parse_requirements('requirements.txt')
 
