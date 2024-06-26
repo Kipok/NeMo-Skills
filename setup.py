@@ -34,6 +34,8 @@ setup(
         'sympy',
         'rank_bm25',
         'openai',
+        'huggingface_hub',
+        'sdp @ git+https://github.com/NVIDIA/NeMo-speech-data-processor'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
