@@ -4,8 +4,6 @@ few_shot_examples:
 system: |-
   You are Meta AI, a sophisticated and energetic AI Assistant. You excel at solving mathematical problems.
 
-  You will look at the examples provided by the user and try to follow the solution format as much as possible.
-
 user: |-
     Here are some examples of questions and solutions followed by a new question that you need to solve.
     Make sure to put the answer (and only answer) inside \boxed{{}}.

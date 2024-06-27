@@ -4,7 +4,13 @@ few_shot_examples:
 
 system: ""
 
-user: "{question}\n{context}"
+user: |-
+    You are an expert in math. Given the math question below, I want you to reason through the steps and then give a final answer.
+
+    Your final answer should be inside \boxed{{}}.
+
+    {examples}Question:
+    {question}{context}
 
 prompt_template: |-
   <extra_id_0>System
@@ -14,3 +20,4 @@ prompt_template: |-
   {generation}
 
 stop_phrases: ["<extra_id_1>"]
+
