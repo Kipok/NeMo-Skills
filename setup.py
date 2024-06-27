@@ -36,6 +36,7 @@ setup(
     packages=find_packages(include=["nemo_skills*"]),
     python_requires=">=3.10",
     install_requires=requirements,
+    include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.10",
