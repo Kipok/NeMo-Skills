@@ -61,7 +61,7 @@ class BM25Retriever:
 
 @nested_dataclass
 class FewShotExamplesConfig:
-    template: str = MISSING
+    template: str = ""
     num_few_shots: int = 0
 
     examples_type: Optional[str] = None
@@ -241,11 +241,11 @@ def get_prompt_config(prompt_type: str) -> PromptConfig:
 # and so most often will require changes to the code anyway
 context_templates = {
     "empty": "",
-    "reference_solution": "\n\nReference solution (do not copy it):\n{reference_solution}\n\n",
-    "masked_solution": "\n\nReference solution:\n{masked_reference_solution}\n\n",
-    "table": "\n\nUse the following table to answer the question:\n{table}\n\n",
+    "reference_solution": "\n\nReference solution (do not copy it):\n{reference_solution}",
+    "masked_solution": "\n\nReference solution:\n{masked_reference_solution}",
+    "table": "\n\nUse the following table to answer the question:\n{table}",
     "table_solution": (
         "\n\nUse the following table to answer the question:\n{table}\n"
-        "Reference solution (do not copy it):\n{reference_solution}\n\n"
+        "Reference solution (do not copy it):\n{reference_solution}"
     ),
 }

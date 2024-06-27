@@ -1,7 +1,3 @@
-few_shot_examples:
-  template: ""
-  num_few_shots: 0
-
 system: ""
 
 user: "{question}{context}"
