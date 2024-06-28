@@ -56,3 +56,6 @@ python3 ${SCRIPT_DIR}/gsm8k-masked/prepare.py --split_name train_full
 
 echo "Preparing human-eval"
 python3 ${SCRIPT_DIR}/human-eval/prepare.py   # test set
+
+echo "Preparing mbpp"
+python3 ${SCRIPT_DIR}/mbpp/prepare.py   # test set

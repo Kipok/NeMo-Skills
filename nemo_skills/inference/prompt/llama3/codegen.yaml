@@ -7,7 +7,7 @@ user: |-
     @@ Instruction
     Here is the given code to do completion:
     ```python
-    {prompt}
+    {question}
     ```
     Please continue to complete the function with python programming language. You are not allowed to modify the given code and do the completion only.
 

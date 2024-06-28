@@ -89,6 +89,7 @@ JOB_NAME = "eval-{model_name}"
 EXTRA_EVAL_ARGS = {
     # some benchmarks require specific extra arguments, which are defined here
     'human-eval': '++eval_type=code ++eval_config.dataset=humaneval',
+    'mbpp': '++eval_type=code ++eval_config.dataset=mbpp',
 }
 
 if __name__ == "__main__":
