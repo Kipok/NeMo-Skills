@@ -16,7 +16,6 @@
 
 import argparse
 import glob
-import json
 import logging
 import subprocess
 import sys
@@ -24,6 +23,9 @@ from pathlib import Path
 
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
+sys.path.append(str(Path(__file__).absolute().parents[0]))
+
+from compute_metrics import compute_metrics
 
 from nemo_skills.utils import setup_logging
 
@@ -62,110 +64,94 @@ if __name__ == "__main__":
         LOG.info(f'Running compute_metrics.py for {benchmark}')
         try:
             if benchmark in ['human-eval', 'mbpp']:
-                results[benchmark] = {}
-                if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
-                    LOG.info("Greedy results (base)")
-                    cmd = (
-                        f'{sys.executable} {current_folder}/compute_metrics.py '
-                        f'    --prediction_jsonl_files={benchmark_path}/output-greedy.jsonl '
-                        f'    --save_metrics_file={benchmark_path}/metrics-greedy.json '
-                        f'    --eval_type=code '
-                    )
-                    subprocess.run(cmd, shell=True, check=True)
-                    with open(f'{benchmark_path}/metrics-greedy.json', 'rt', encoding="utf-8") as fin:
-                        results[benchmark]['greedy'] = json.load(fin)
-                sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
-                if len(sampling_outputs) > 0:
-                    LOG.info(f"pass@{len(sampling_outputs)} results (base)")
-                    cmd = (
-                        f'{sys.executable} {current_folder}/compute_metrics.py '
-                        f'    --prediction_jsonl_files="{benchmark_path}/output-rs*.jsonl" '
-                        f'    --save_metrics_file={benchmark_path}/metrics-pass.json '
-                        f'    --aggregation_mode=best '
-                        f'    --eval_type=code '
-                    )
-                    subprocess.run(cmd, shell=True, check=True)
-                    with open(f'{benchmark_path}/metrics-pass.json', 'rt', encoding="utf-8") as fin:
-                        results[benchmark][f'pass@{len(sampling_outputs)}'] = json.load(fin)
-
-                results[benchmark + '-plus'] = {}
-                if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
-                    LOG.info("Greedy results (plus)")
-                    cmd = (
-                        f'{sys.executable} {current_folder}/compute_metrics.py '
-                        f'    --prediction_jsonl_files={benchmark_path}/output-greedy.jsonl '
-                        f'    --save_metrics_file={benchmark_path}/metrics-greedy.json '
-                        f'    --is_correct_key=is_correct-plus '
-                        f'    --eval_type=code '
-                    )
-                    subprocess.run(cmd, shell=True, check=True)
-                    with open(f'{benchmark_path}/metrics-greedy.json', 'rt', encoding="utf-8") as fin:
-                        results[benchmark + '-plus']['greedy'] = json.load(fin)
-                sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
-                if len(sampling_outputs) > 0:
-                    LOG.info(f"pass@{len(sampling_outputs)} results (plus)")
-                    cmd = (
-                        f'{sys.executable} {current_folder}/compute_metrics.py '
-                        f'    --prediction_jsonl_files="{benchmark_path}/output-rs*.jsonl" '
-                        f'    --save_metrics_file={benchmark_path}/metrics-pass.json '
-                        f'    --aggregation_mode=best '
-                        f'    --is_correct_key=is_correct-plus '
-                        f'    --eval_type=code '
-                    )
-                    subprocess.run(cmd, shell=True, check=True)
-                    with open(f'{benchmark_path}/metrics-pass.json', 'rt', encoding="utf-8") as fin:
-                        results[benchmark + '-plus'][f'pass@{len(sampling_outputs)}'] = json.load(fin)
-
+                for suffix in ["", "-plus"]:
+                    results[benchmark + suffix] = {}
+                    if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
+                        LOG.info(f"Greedy results (base{suffix})")
+                        correct_answer, wrong_answer, no_answer, total = compute_metrics(
+                            prediction_jsonl_files=[f"{benchmark_path}/output-greedy.jsonl"],
+                            eval_type="code",
+                        )
+                        results[benchmark + suffix]['greedy'] = {
+                            "num_entries": total,
+                            "correct_answer": correct_answer,
+                            "wrong_answer": wrong_answer,
+                            "no_answer": no_answer,
+                        }
+                    sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
+                    if len(sampling_outputs) > 0:
+                        LOG.info(f"pass@{len(sampling_outputs)} results (base{suffix})")
+                        correct_answer, wrong_answer, no_answer, total = compute_metrics(
+                            prediction_jsonl_files=sampling_outputs,
+                            aggregation_mode="best",
+                            is_correct_key=f'is_correct{suffix}',
+                            eval_type="code",
+                        )
+                        results[benchmark + suffix][f'pass@{len(sampling_outputs)}'] = {
+                            "num_entries": total,
+                            "correct_answer": correct_answer,
+                            "wrong_answer": wrong_answer,
+                            "no_answer": no_answer,
+                        }
             else:
                 results[benchmark] = {}
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
                     LOG.info("Greedy results")
-                    cmd = (
-                        f'{sys.executable} {current_folder}/compute_metrics.py '
-                        f'    --prediction_jsonl_files={benchmark_path}/output-greedy.jsonl '
-                        f'    --save_metrics_file={benchmark_path}/metrics-greedy.json '
+                    correct_answer, wrong_answer, no_answer, total = compute_metrics(
+                        prediction_jsonl_files=[f"{benchmark_path}/output-greedy.jsonl"],
                     )
-                    subprocess.run(cmd, shell=True, check=True)
-                    with open(f'{benchmark_path}/metrics-greedy.json', 'rt', encoding="utf-8") as fin:
-                        results[benchmark]['greedy'] = json.load(fin)
+                    results[benchmark]['greedy'] = {
+                        "num_entries": total,
+                        "correct_answer": correct_answer,
+                        "wrong_answer": wrong_answer,
+                        "no_answer": no_answer,
+                    }
+
                 sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
                 if len(sampling_outputs) > 0:
                     LOG.info(f"majority@{len(sampling_outputs)} results")
-                    cmd = (
-                        f'{sys.executable} {current_folder}/compute_metrics.py '
-                        f'    --prediction_jsonl_files="{benchmark_path}/output-rs*.jsonl" '
-                        f'    --save_metrics_file={benchmark_path}/metrics-majority.json '
-                        f'    --aggregation_mode=majority '
+                    correct_answer, wrong_answer, no_answer, total = compute_metrics(
+                        prediction_jsonl_files=sampling_outputs,
+                        aggregation_mode="majority",
                     )
-                    subprocess.run(cmd, shell=True, check=True)
-                    with open(f'{benchmark_path}/metrics-majority.json', 'rt', encoding="utf-8") as fin:
-                        results[benchmark][f'majority@{len(sampling_outputs)}'] = json.load(fin)
+                    results[benchmark][f'pass@{len(sampling_outputs)}'] = {
+                        "num_entries": total,
+                        "correct_answer": correct_answer,
+                        "wrong_answer": wrong_answer,
+                        "no_answer": no_answer,
+                    }
                     LOG.info(f"pass@{len(sampling_outputs)} results")
-                    cmd = (
-                        f'{sys.executable} {current_folder}/compute_metrics.py '
-                        f'    --prediction_jsonl_files="{benchmark_path}/output-rs*.jsonl" '
-                        f'    --save_metrics_file={benchmark_path}/metrics-pass.json '
-                        f'    --aggregation_mode=best '
+                    correct_answer, wrong_answer, no_answer, total = compute_metrics(
+                        prediction_jsonl_files=sampling_outputs,
+                        aggregation_mode="best",
                     )
-                    subprocess.run(cmd, shell=True, check=True)
-                    with open(f'{benchmark_path}/metrics-pass.json', 'rt', encoding="utf-8") as fin:
-                        results[benchmark][f'pass@{len(sampling_outputs)}'] = json.load(fin)
+                    results[benchmark][f'pass@{len(sampling_outputs)}'] = {
+                        "num_entries": total,
+                        "correct_answer": correct_answer,
+                        "wrong_answer": wrong_answer,
+                        "no_answer": no_answer,
+                    }
+
         except subprocess.CalledProcessError as e:
             LOG.error(f"Error running compute_metrics.py for {benchmark}: {e}")
 
     # summarizing results in a .csv file
+    lines_to_write = []
+    to_write = 'benchmark,decoding,num_entries,correct_answer,wrong_answer,no_answer'
+    LOG.info(to_write)
+    lines_to_write.append(to_write + '\n')
+    for benchmark, benchmark_results in results.items():
+        for decoding, decoding_results in benchmark_results.items():
+            to_write = (
+                f'{benchmark},{decoding},{decoding_results["num_entries"]},'
+                f'{decoding_results["correct_answer"]:.2f},'
+                f'{decoding_results["wrong_answer"]:.2f},'
+                f'{decoding_results["no_answer"]:.2f}'
+            )
+            LOG.info(to_write)
+            lines_to_write.append(to_write + '\n')
+
     with open(f'{args.results_folder}/results.csv', 'wt', encoding="utf-8") as fout:
-        to_write = 'benchmark,decoding,num_entries,correct_answer,wrong_answer,no_answer'
-        LOG.info(to_write)
-        fout.write(to_write + '\n')
-        for benchmark, benchmark_results in results.items():
-            for decoding, decoding_results in benchmark_results.items():
-                to_write = (
-                    f'{benchmark},{decoding},{decoding_results["num_entries"]},'
-                    f'{decoding_results["correct_answer"]:.2f},'
-                    f'{decoding_results["wrong_answer"]:.2f},'
-                    f'{decoding_results["no_answer"]:.2f}'
-                )
-                LOG.info(to_write)
-                fout.write(to_write + '\n')
+        for line_to_write in lines_to_write:
+            fout.write(line_to_write + '\n')
     LOG.info(f"Summarized results are available in {args.results_folder}/results.csv")

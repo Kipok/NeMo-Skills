@@ -42,8 +42,12 @@ in the Hydra format.
 """
 
 
-def get_greedy_cmd(benchmark, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments=""):
+def get_greedy_cmd(
+    benchmark, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments="", eval_map=None
+):
     extra_eval_args = f"{EXTRA_EVAL_ARGS.get(benchmark, '')} {extra_eval_args}"
+    if eval_map:
+        extra_eval_args = f"+prompt={eval_map.get(benchmark, eval_map['default'])} {extra_eval_args}"
     return f"""echo "Evaluating benchmark {benchmark}" && \
 python nemo_skills/inference/generate_solutions.py \
     server.server_type={{server_type}} \
@@ -56,13 +60,14 @@ python nemo_skills/evaluation/evaluate_results.py \
 """
 
 
-def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments=""):
+def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments="", eval_map=None):
     extra_arguments = f" inference.random_seed={random_seed} inference.temperature=0.7 {extra_arguments}"
     return get_greedy_cmd(
         benchmark,
         output_name=f"output-rs{random_seed}.jsonl",
         extra_eval_args=extra_eval_args,
         extra_arguments=extra_arguments,
+        eval_map=eval_map,
     )
 
 
@@ -108,6 +113,17 @@ if __name__ == "__main__":
         "Use <benchmark>:0 to only run greedy decoding.",
     )
     wrapper_args.add_argument(
+        "--prompt_folder",
+        default=None,
+        help="Folder with prompts for different benchmarks (inside nemo_skills/inference/prompt). "
+        "Need to contain eval_map.py (see llama3 for example).",
+    )
+    wrapper_args.add_argument(
+        "--model_version",
+        default=None,
+        help="Is used to pick prompts for benchmarks from eval_map.py in prompt_folder.",
+    )
+    wrapper_args.add_argument(
         "--num_nodes",
         type=int,
         default=1,
@@ -142,6 +158,18 @@ if __name__ == "__main__":
         args.server_type, args.num_gpus, args.num_nodes, args.model_path.name
     )
 
+    if any([args.prompt_folder, args.model_version]):
+        if not all([args.prompt_folder, args.model_version]):
+            raise ValueError("Both prompt_folder and model_version need to be specified if one of them is specified.")
+        sys.path.append(
+            str(Path(__file__).absolute().parents[1] / 'nemo_skills' / 'inference' / 'prompt' / args.prompt_folder)
+        )
+        from eval_map import EVAL_MAP
+
+        if args.model_version not in EVAL_MAP:
+            raise ValueError(f"Model version {args.model_version} is not in the eval map.")
+        eval_map = EVAL_MAP[args.model_version]
+
     format_dict = {
         "model_path": args.model_path,
         "model_name": args.model_path.name,
@@ -160,11 +188,15 @@ if __name__ == "__main__":
     BENCHMARKS = {k: int(v) for k, v in [b.split(":") for b in args.benchmarks]}
 
     eval_cmds = [
-        get_greedy_cmd(benchmark, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments)
+        get_greedy_cmd(
+            benchmark, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments, eval_map=eval_map
+        )
         for benchmark in BENCHMARKS.keys()
     ]
     eval_cmds += [
-        get_sampling_cmd(benchmark, rs, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments)
+        get_sampling_cmd(
+            benchmark, rs, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments, eval_map=eval_map
+        )
         for benchmark, rs_num in BENCHMARKS.items()
         for rs in range(args.starting_seed, args.starting_seed + rs_num)
     ]
