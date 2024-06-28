@@ -58,6 +58,7 @@ def test_data_scripts():
         'math-masked/validation-sft.jsonl',
         'math-masked/validation-sft-chat.jsonl',
         'human-eval/test.jsonl',
+        'mbpp/test.jsonl',
     ]
     for file in expected_files:
         assert (Path(__file__).absolute().parents[1] / "datasets" / file).exists()
