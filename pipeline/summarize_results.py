@@ -61,15 +61,14 @@ if __name__ == "__main__":
         benchmark = str(Path(benchmark_path).name)
         if not Path(benchmark_path).is_dir():
             continue
-        LOG.info(f'Running compute_metrics.py for {benchmark}')
         try:
             if benchmark in ['human-eval', 'mbpp']:
                 for suffix in ["", "-plus"]:
                     results[benchmark + suffix] = {}
                     if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
-                        LOG.info(f"Greedy results (base{suffix})")
                         correct_answer, wrong_answer, no_answer, total = compute_metrics(
                             prediction_jsonl_files=[f"{benchmark_path}/output-greedy.jsonl"],
+                            is_correct_key=f'is_correct{suffix}',
                             eval_type="code",
                         )
                         results[benchmark + suffix]['greedy'] = {
@@ -80,7 +79,6 @@ if __name__ == "__main__":
                         }
                     sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
                     if len(sampling_outputs) > 0:
-                        LOG.info(f"pass@{len(sampling_outputs)} results (base{suffix})")
                         correct_answer, wrong_answer, no_answer, total = compute_metrics(
                             prediction_jsonl_files=sampling_outputs,
                             aggregation_mode="best",
@@ -96,7 +94,6 @@ if __name__ == "__main__":
             else:
                 results[benchmark] = {}
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
-                    LOG.info("Greedy results")
                     correct_answer, wrong_answer, no_answer, total = compute_metrics(
                         prediction_jsonl_files=[f"{benchmark_path}/output-greedy.jsonl"],
                     )
@@ -109,7 +106,6 @@ if __name__ == "__main__":
 
                 sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
                 if len(sampling_outputs) > 0:
-                    LOG.info(f"majority@{len(sampling_outputs)} results")
                     correct_answer, wrong_answer, no_answer, total = compute_metrics(
                         prediction_jsonl_files=sampling_outputs,
                         aggregation_mode="majority",
@@ -120,7 +116,6 @@ if __name__ == "__main__":
                         "wrong_answer": wrong_answer,
                         "no_answer": no_answer,
                     }
-                    LOG.info(f"pass@{len(sampling_outputs)} results")
                     correct_answer, wrong_answer, no_answer, total = compute_metrics(
                         prediction_jsonl_files=sampling_outputs,
                         aggregation_mode="best",

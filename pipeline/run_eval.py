@@ -47,7 +47,7 @@ def get_greedy_cmd(
 ):
     extra_eval_args = f"{EXTRA_EVAL_ARGS.get(benchmark, '')} {extra_eval_args}"
     if eval_map:
-        extra_eval_args = f"+prompt={eval_map.get(benchmark, eval_map['default'])} {extra_eval_args}"
+        extra_arguments = f"+prompt={eval_map.get(benchmark, eval_map['default'])} {extra_arguments}"
     return f"""echo "Evaluating benchmark {benchmark}" && \
 python nemo_skills/inference/generate_solutions.py \
     server.server_type={{server_type}} \
