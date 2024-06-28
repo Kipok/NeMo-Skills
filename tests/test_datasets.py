@@ -18,7 +18,9 @@ from pathlib import Path
 
 def test_data_scripts():
     subprocess.run(
-        f'bash {Path(__file__).absolute().parents[1] / "datasets" / "prepare_all.sh"}', shell=True, check=True
+        f'bash {Path(__file__).absolute().parents[1] / "datasets" / "prepare_all.sh"}',
+        shell=True,
+        check=True,
     )
 
     # checking that all expected files are created
@@ -26,6 +28,7 @@ def test_data_scripts():
         'algebra222/test.jsonl',
         'asdiv/test.jsonl',
         'gsm-hard/test.jsonl',
+        'gsm-hard/test_rounded.jsonl',
         'mawps/test.jsonl',
         'svamp/test.jsonl',
         'tabmwp/train.jsonl',
@@ -38,6 +41,7 @@ def test_data_scripts():
         'gsm8k/validation-sft-chat.jsonl',
         'gsm8k/test.jsonl',
         'gsm-plus/test.jsonl',
+        'gsm-plus/test_rounded.jsonl',
         'gsm-ic-2step/test.jsonl',
         'gsm-ic-mstep/test.jsonl',
         'functional/test.jsonl',

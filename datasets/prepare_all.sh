@@ -41,3 +41,9 @@ echo "Preparing gsm8k-masked"
 python3 ${SCRIPT_DIR}/gsm8k-masked/prepare.py --split_name train
 python3 ${SCRIPT_DIR}/gsm8k-masked/prepare.py --split_name validation
 python3 ${SCRIPT_DIR}/gsm8k-masked/prepare.py --split_name train_full
+
+# add rounding instructions
+echo "Preparing gsm-hard rounding"
+python3 ${SCRIPT_DIR}/add_rounding_instructions.py --path ${SCRIPT_DIR}/gsm-hard/test.jsonl --save_path ${SCRIPT_DIR}/gsm-hard/test_rounded.jsonl
+echo "Preparing gsm-plus rounding"
+python3 ${SCRIPT_DIR}/add_rounding_instructions.py --path ${SCRIPT_DIR}/gsm-plus/test.jsonl --save_path ${SCRIPT_DIR}/gsm-plus/test_rounded.jsonl
