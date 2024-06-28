@@ -160,9 +160,6 @@ def get_output_single(output_ids, input_length, max_output_len, tokenizer, eos_t
     if len(eos_ids) > 0:
         outputs = outputs[: eos_ids[0]]
     outputs = outputs.tolist()
-    # somehow sometimes it produces tokens out of range..
-    outputs = [elem if elem < tokenizer.vocab_size else tokenizer.vocab_size - 1 for elem in outputs]
-    outputs = [elem if 0 <= elem else 0 for elem in outputs]
     return tokenizer.decode(outputs)
 
 
@@ -247,7 +244,8 @@ def from_dir(
         free_gpu_memory_fraction=free_gpu_memory_fraction,
         max_attention_window=max_attention_window_size,
         sink_token_length=sink_token_length,
-        enable_block_reuse=True,
+        # TODO: there is an accuracy degradation because of this and no speed gain. Likely a bug in trtllm
+        # enable_block_reuse=True,
     )
 
     if max_batch_size is None:
