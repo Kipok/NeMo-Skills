@@ -16,10 +16,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-# adding nemo_skills to python path to avoid requiring installation
-sys.path.append(str(Path(__file__).absolute().parents[1]))
-
-from nemo_skills.inference.prompt.utils import datasets
+datasets = [d.name for d in (Path(__file__).parents[0]).glob("*") if d.is_dir() and d.name != "__pycache__"]
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Prepare all datasets')
