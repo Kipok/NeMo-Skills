@@ -43,6 +43,7 @@ in the Hydra format.
 
 
 def get_greedy_cmd(benchmark, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments=""):
+    extra_eval_args = f"{EXTRA_EVAL_ARGS.get(benchmark, '')} {extra_eval_args}"
     return f"""echo "Evaluating benchmark {benchmark}" && \
 python nemo_skills/inference/generate_solutions.py \
     server.server_type={{server_type}} \
@@ -65,14 +66,6 @@ def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments
     )
 
 
-# default number of samples for majority voting
-BENCHMARKS = {
-    "gsm8k": 8,
-    "math": 4,
-    "tabmwp": 4,
-}
-
-
 SLURM_CMD = """
 nvidia-smi && \
 cd /code && \
@@ -93,6 +86,11 @@ fi \
 MOUNTS = "{NEMO_SKILLS_CODE}:/code,{model_path}:/model,{output_dir}:/results"
 JOB_NAME = "eval-{model_name}"
 
+EXTRA_EVAL_ARGS = {
+    # some benchmarks require specific extra arguments, which are defined here
+    'human-eval': '++eval_type=code ++eval_config.dataset=humaneval',
+}
+
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser(usage=WRAPPER_HELP + '\n\n' + SCRIPT_HELP + '\n\nscript arguments:\n\n' + HELP_MESSAGE)
@@ -105,7 +103,6 @@ if __name__ == "__main__":
     wrapper_args.add_argument(
         "--benchmarks",
         nargs="+",
-        default=[],
         help="Need to be in a format <benchmark>:<num samples for majority voting>. "
         "Use <benchmark>:0 to only run greedy decoding.",
     )
@@ -159,8 +156,7 @@ if __name__ == "__main__":
     Path(args.output_dir).mkdir(exist_ok=True, parents=True)
 
     # if benchmarks are specified, only run those
-    if args.benchmarks:
-        BENCHMARKS = {k: int(v) for k, v in [b.split(":") for b in args.benchmarks]}
+    BENCHMARKS = {k: int(v) for k, v in [b.split(":") for b in args.benchmarks]}
 
     eval_cmds = [
         get_greedy_cmd(benchmark, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments)
