@@ -14,6 +14,7 @@
 
 import json
 import logging
+import shutil
 import sys
 from argparse import Namespace
 from dataclasses import field
@@ -68,27 +69,41 @@ def evaluate_results(cfg: EvaluateResultsConfig):
         # TODO: need to move it to a separate docker (either our sandbox or separate srun)
         from evalplus.evaluate import evaluate
 
-        # for now greedy only
-        assert len(cfg.prediction_jsonl_files) == 1
-        with open(cfg.prediction_jsonl_files[0]) as f:
-            samples = [preprocess_code(json.loads(line)) for line in f]
-        with open(cfg.prediction_jsonl_files[0][:-6] + '-processed.jsonl', "w") as f:
-            for sample in samples:
-                f.write(json.dumps(sample) + "\n")
-        eval_config = {
-            "samples": cfg.prediction_jsonl_files[0][:-6] + '-processed.jsonl',
-            "base_only": False,
-            "parallel": None,
-            "i_just_wanna_run": False,
-            "test_details": False,
-            "min_time_limit": 1,
-            "gt_time_limit_factor": 4.0,
-            "mini": False,
-            "noextreme": False,
-            "version": "default",
-        }
-        eval_config.update(OmegaConf.to_container(cfg.eval_config))
-        evaluate(Namespace(**eval_config))
+        # processing each generation separately (TODO: evalplus can do it together, but need to figure out the format)
+        for jsonl_file in cfg.prediction_jsonl_files:
+            with open(jsonl_file) as f:
+                samples = [preprocess_code(json.loads(line)) for line in f]
+            # all changes will be done with a new key "completion", so it's ok to write to the same file
+            with open(jsonl_file, "wt", encoding="utf-8") as f:
+                for sample in samples:
+                    f.write(json.dumps(sample) + "\n")
+            eval_config = {
+                "samples": jsonl_file,
+                "base_only": False,
+                "parallel": None,
+                "i_just_wanna_run": False,
+                "test_details": False,
+                "min_time_limit": 1,
+                "gt_time_limit_factor": 4.0,
+                "mini": False,
+                "noextreme": False,
+                "version": "default",
+            }
+            eval_config.update(OmegaConf.to_container(cfg.eval_config))
+            evaluate(Namespace(**eval_config))
+            with open(jsonl_file[:-6] + '_eval_results.json', 'rt', encoding="utf-8") as fin:
+                evalplus_grades = json.load(fin)
+            # adding is_correct key to allow compute_metrics to work
+            with open(jsonl_file, "wt", encoding="utf-8") as f:
+                for sample in samples:
+                    sample['is_correct'] = evalplus_grades['eval'][sample['task_id']][0]['base_status'] == "pass"
+                    sample['is_correct-plus'] = (
+                        sample['is_correct'] and evalplus_grades['eval'][sample['task_id']][0]['plus_status'] == "pass"
+                    )
+                    f.write(json.dumps(sample) + "\n")
+
+            # moving eval file as otherwise evalplus does not want to recompute metrics if it's present..
+            shutil.move(jsonl_file[:-6] + '_eval_results.json', jsonl_file[:-6] + '_eval_results-saved.json')
 
 
 HELP_MESSAGE = get_help_message(

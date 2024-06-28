@@ -61,39 +61,95 @@ if __name__ == "__main__":
             continue
         LOG.info(f'Running compute_metrics.py for {benchmark}')
         try:
-            results[benchmark] = {}
-            if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
-                LOG.info("Greedy results")
-                cmd = (
-                    f'{sys.executable} {current_folder}/compute_metrics.py '
-                    f'    --prediction_jsonl_files={benchmark_path}/output-greedy.jsonl '
-                    f'    --save_metrics_file={benchmark_path}/metrics-greedy.json '
-                )
-                subprocess.run(cmd, shell=True, check=True)
-                with open(f'{benchmark_path}/metrics-greedy.json', 'rt', encoding="utf-8") as fin:
-                    results[benchmark]['greedy'] = json.load(fin)
-            sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
-            if len(sampling_outputs) > 0:
-                LOG.info(f"majority@{len(sampling_outputs)} results")
-                cmd = (
-                    f'{sys.executable} {current_folder}/compute_metrics.py '
-                    f'    --prediction_jsonl_files="{benchmark_path}/output-rs*.jsonl" '
-                    f'    --save_metrics_file={benchmark_path}/metrics-majority.json '
-                    f'    --aggregation_mode=majority '
-                )
-                subprocess.run(cmd, shell=True, check=True)
-                with open(f'{benchmark_path}/metrics-majority.json', 'rt', encoding="utf-8") as fin:
-                    results[benchmark][f'majority@{len(sampling_outputs)}'] = json.load(fin)
-                LOG.info(f"pass@{len(sampling_outputs)} results")
-                cmd = (
-                    f'{sys.executable} {current_folder}/compute_metrics.py '
-                    f'    --prediction_jsonl_files="{benchmark_path}/output-rs*.jsonl" '
-                    f'    --save_metrics_file={benchmark_path}/metrics-pass.json '
-                    f'    --aggregation_mode=best '
-                )
-                subprocess.run(cmd, shell=True, check=True)
-                with open(f'{benchmark_path}/metrics-pass.json', 'rt', encoding="utf-8") as fin:
-                    results[benchmark][f'pass@{len(sampling_outputs)}'] = json.load(fin)
+            if benchmark in ['human-eval', 'mbpp']:
+                results[benchmark] = {}
+                if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
+                    LOG.info("Greedy results (base)")
+                    cmd = (
+                        f'{sys.executable} {current_folder}/compute_metrics.py '
+                        f'    --prediction_jsonl_files={benchmark_path}/output-greedy.jsonl '
+                        f'    --save_metrics_file={benchmark_path}/metrics-greedy.json '
+                        f'    --eval_type=code '
+                    )
+                    subprocess.run(cmd, shell=True, check=True)
+                    with open(f'{benchmark_path}/metrics-greedy.json', 'rt', encoding="utf-8") as fin:
+                        results[benchmark]['greedy'] = json.load(fin)
+                sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
+                if len(sampling_outputs) > 0:
+                    LOG.info(f"pass@{len(sampling_outputs)} results (base)")
+                    cmd = (
+                        f'{sys.executable} {current_folder}/compute_metrics.py '
+                        f'    --prediction_jsonl_files="{benchmark_path}/output-rs*.jsonl" '
+                        f'    --save_metrics_file={benchmark_path}/metrics-pass.json '
+                        f'    --aggregation_mode=best '
+                        f'    --eval_type=code '
+                    )
+                    subprocess.run(cmd, shell=True, check=True)
+                    with open(f'{benchmark_path}/metrics-pass.json', 'rt', encoding="utf-8") as fin:
+                        results[benchmark][f'pass@{len(sampling_outputs)}'] = json.load(fin)
+
+                results[benchmark + '-plus'] = {}
+                if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
+                    LOG.info("Greedy results (plus)")
+                    cmd = (
+                        f'{sys.executable} {current_folder}/compute_metrics.py '
+                        f'    --prediction_jsonl_files={benchmark_path}/output-greedy.jsonl '
+                        f'    --save_metrics_file={benchmark_path}/metrics-greedy.json '
+                        f'    --is_correct_key=is_correct-plus '
+                        f'    --eval_type=code '
+                    )
+                    subprocess.run(cmd, shell=True, check=True)
+                    with open(f'{benchmark_path}/metrics-greedy.json', 'rt', encoding="utf-8") as fin:
+                        results[benchmark + '-plus']['greedy'] = json.load(fin)
+                sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
+                if len(sampling_outputs) > 0:
+                    LOG.info(f"pass@{len(sampling_outputs)} results (plus)")
+                    cmd = (
+                        f'{sys.executable} {current_folder}/compute_metrics.py '
+                        f'    --prediction_jsonl_files="{benchmark_path}/output-rs*.jsonl" '
+                        f'    --save_metrics_file={benchmark_path}/metrics-pass.json '
+                        f'    --aggregation_mode=best '
+                        f'    --is_correct_key=is_correct-plus '
+                        f'    --eval_type=code '
+                    )
+                    subprocess.run(cmd, shell=True, check=True)
+                    with open(f'{benchmark_path}/metrics-pass.json', 'rt', encoding="utf-8") as fin:
+                        results[benchmark + '-plus'][f'pass@{len(sampling_outputs)}'] = json.load(fin)
+
+            else:
+                results[benchmark] = {}
+                if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
+                    LOG.info("Greedy results")
+                    cmd = (
+                        f'{sys.executable} {current_folder}/compute_metrics.py '
+                        f'    --prediction_jsonl_files={benchmark_path}/output-greedy.jsonl '
+                        f'    --save_metrics_file={benchmark_path}/metrics-greedy.json '
+                    )
+                    subprocess.run(cmd, shell=True, check=True)
+                    with open(f'{benchmark_path}/metrics-greedy.json', 'rt', encoding="utf-8") as fin:
+                        results[benchmark]['greedy'] = json.load(fin)
+                sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
+                if len(sampling_outputs) > 0:
+                    LOG.info(f"majority@{len(sampling_outputs)} results")
+                    cmd = (
+                        f'{sys.executable} {current_folder}/compute_metrics.py '
+                        f'    --prediction_jsonl_files="{benchmark_path}/output-rs*.jsonl" '
+                        f'    --save_metrics_file={benchmark_path}/metrics-majority.json '
+                        f'    --aggregation_mode=majority '
+                    )
+                    subprocess.run(cmd, shell=True, check=True)
+                    with open(f'{benchmark_path}/metrics-majority.json', 'rt', encoding="utf-8") as fin:
+                        results[benchmark][f'majority@{len(sampling_outputs)}'] = json.load(fin)
+                    LOG.info(f"pass@{len(sampling_outputs)} results")
+                    cmd = (
+                        f'{sys.executable} {current_folder}/compute_metrics.py '
+                        f'    --prediction_jsonl_files="{benchmark_path}/output-rs*.jsonl" '
+                        f'    --save_metrics_file={benchmark_path}/metrics-pass.json '
+                        f'    --aggregation_mode=best '
+                    )
+                    subprocess.run(cmd, shell=True, check=True)
+                    with open(f'{benchmark_path}/metrics-pass.json', 'rt', encoding="utf-8") as fin:
+                        results[benchmark][f'pass@{len(sampling_outputs)}'] = json.load(fin)
         except subprocess.CalledProcessError as e:
             LOG.error(f"Error running compute_metrics.py for {benchmark}: {e}")
 
