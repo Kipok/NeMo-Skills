@@ -15,6 +15,8 @@
 import argparse
 import json
 import os
+import subprocess
+import sys
 import urllib.request
 from pathlib import Path
 
@@ -48,12 +50,14 @@ if __name__ == "__main__":
             "reversing_operation",
         ],
     )
+    parser.add_argument("--add_rounding_instructions", type=bool, default=True)
     args = parser.parse_args()
 
+    split_name = "test"
     data_folder = Path(__file__).absolute().parent
     data_folder.mkdir(exist_ok=True)
-    original_file = str(data_folder / "original_test.jsonl")
-    output_file = str(data_folder / "test.jsonl")
+    original_file = str(data_folder / f"original_{split_name}.jsonl")
+    output_file = str(data_folder / f"{split_name}.jsonl")
 
     if not os.path.exists(original_file):
         urllib.request.urlretrieve(URL, original_file)
@@ -91,3 +95,13 @@ if __name__ == "__main__":
                         entry["expected_answer"] = int(entry["expected_answer"])
 
                 test_full.write(json.dumps(entry) + "\n")
+
+    if args.add_rounding_instructions:
+        data_folder = Path(__file__).absolute().parent
+        file = str(data_folder / f"{split_name}.jsonl")
+        output_file = str(data_folder / f"{split_name}_rounded.jsonl")
+        subprocess.run(
+            f"{sys.executable} {data_folder.parent}/add_rounding_instructions.py --path {file} --save_path {output_file}",
+            shell=True,
+            check=True,
+        )
