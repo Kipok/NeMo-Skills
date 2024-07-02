@@ -36,16 +36,8 @@ def prepare_for_sft(data, prompt_type, dataset, chat_format=False):
         # and our solution format is different, but we need to populate that field for the code to work
         if chat_format:
             elem['conversations'] = [
-                {
-                    'value': original_elem['question'],
-                    'from': 'User',
-                    'canonical_form': '',
-                },
-                {
-                    'value': original_elem["reference_solution"],
-                    'from': 'Assistant',
-                    'canonical_form': '',
-                },
+                {'value': original_elem['question'], 'from': 'User', 'canonical_form': ''},
+                {'value': original_elem["reference_solution"], 'from': 'Assistant', 'canonical_form': ''},
             ]
             elem['system'] = prompt_config.system
             elem['mask'] = 'User'
