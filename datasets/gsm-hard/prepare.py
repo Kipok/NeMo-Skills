@@ -15,10 +15,13 @@
 import argparse
 import json
 import os
-import subprocess
 import sys
 import urllib.request
 from pathlib import Path
+
+sys.path.append(str(Path(__file__).parents[1]))
+
+from utils import add_rounding_instruction
 
 URL = "https://huggingface.co/datasets/reasoning-machines/gsm-hard/raw/main/gsmhardv2.jsonl"
 
@@ -46,6 +49,11 @@ if __name__ == "__main__":
     if not os.path.exists(original_file):
         urllib.request.urlretrieve(URL, original_file)
 
+    file_rounded = None
+    if args.add_rounding_instructions:
+        output_file_rounded = str(data_folder / f"{split_name}_rounded.jsonl")
+        file_rounded = open(output_file_rounded, "w")
+
     with open(original_file, "r") as fin, open(output_file, "wt", encoding="utf-8") as fout:
         for line in fin:
             original_entry = json.loads(line)
@@ -58,13 +66,8 @@ if __name__ == "__main__":
                 new_entry["expected_answer"] = int(new_entry["expected_answer"])
 
             fout.write(json.dumps(new_entry) + "\n")
+            if file_rounded:
+                file_rounded.write(json.dumps(add_rounding_instruction(new_entry)) + "\n")
 
-    if args.add_rounding_instructions:
-        data_folder = Path(__file__).absolute().parent
-        file = str(data_folder / f"{split_name}.jsonl")
-        output_file = str(data_folder / f"{split_name}_rounded.jsonl")
-        subprocess.run(
-            f"{sys.executable} {data_folder.parent}/add_rounding_instructions.py --path {file} --save_path {output_file}",
-            shell=True,
-            check=True,
-        )
+    if file_rounded:
+        file_rounded.close()

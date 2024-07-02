@@ -14,6 +14,7 @@
 
 import sys
 from pathlib import Path
+from typing import Dict, List
 
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
@@ -35,8 +36,16 @@ def prepare_for_sft(data, prompt_type, dataset, chat_format=False):
         # and our solution format is different, but we need to populate that field for the code to work
         if chat_format:
             elem['conversations'] = [
-                {'value': original_elem['question'], 'from': 'User', 'canonical_form': ''},
-                {'value': original_elem["reference_solution"], 'from': 'Assistant', 'canonical_form': ''},
+                {
+                    'value': original_elem['question'],
+                    'from': 'User',
+                    'canonical_form': '',
+                },
+                {
+                    'value': original_elem["reference_solution"],
+                    'from': 'Assistant',
+                    'canonical_form': '',
+                },
             ]
             elem['system'] = prompt_config.system
             elem['mask'] = 'User'
@@ -48,3 +57,20 @@ def prepare_for_sft(data, prompt_type, dataset, chat_format=False):
         elem["dataset"] = dataset
         prepared_data.append(elem)
     return prepared_data
+
+
+def add_rounding_instruction(data: Dict) -> Dict:
+    try:
+        float(data['expected_answer'])
+        number_of_values = 0
+        if '.' in str(data['expected_answer']):
+            number_of_values = len(str(data['expected_answer']).split('.')[1])
+        if number_of_values == 0:
+            data['question'] += ' Express the answer as an integer.'
+        elif number_of_values == 1:
+            data['question'] += ' Round the answer to one decimal place.'
+        else:
+            data['question'] += f' Round the answer to {number_of_values} decimal places.'
+    except ValueError:
+        pass
+    return data

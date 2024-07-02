@@ -15,10 +15,13 @@
 import argparse
 import json
 import os
-import subprocess
 import sys
 import urllib.request
 from pathlib import Path
+
+sys.path.append(str(Path(__file__).parents[1]))
+
+from utils import add_rounding_instruction
 
 URL = "https://huggingface.co/datasets/qintongli/GSM-Plus/resolve/main/gsmplus_test.jsonl?download=true"
 
@@ -62,6 +65,11 @@ if __name__ == "__main__":
     if not os.path.exists(original_file):
         urllib.request.urlretrieve(URL, original_file)
 
+    file_rounded = None
+    if args.add_rounding_instructions:
+        output_file_rounded = str(data_folder / f"{split_name}_rounded.jsonl")
+        file_rounded = open(output_file_rounded, 'w')
+
     with open(original_file, "rt") as original, open(output_file, "w") as test_full:
         original_data = [json.loads(line) for line in original.readlines()]
         for original_entry in original_data:
@@ -96,12 +104,9 @@ if __name__ == "__main__":
 
                 test_full.write(json.dumps(entry) + "\n")
 
-    if args.add_rounding_instructions:
-        data_folder = Path(__file__).absolute().parent
-        file = str(data_folder / f"{split_name}.jsonl")
-        output_file = str(data_folder / f"{split_name}_rounded.jsonl")
-        subprocess.run(
-            f"{sys.executable} {data_folder.parent}/add_rounding_instructions.py --path {file} --save_path {output_file}",
-            shell=True,
-            check=True,
-        )
+                if file_rounded:
+                    entry_rounded = add_rounding_instruction(entry)
+                    file_rounded.write(json.dumps(entry_rounded) + "\n")
+
+    if file_rounded:
+        file_rounded.close()
