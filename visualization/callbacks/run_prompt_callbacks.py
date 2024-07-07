@@ -244,18 +244,17 @@ def change_examples_page(
         Output("few_shots_pagination", "active_page", allow_duplicate=True),
     ],
     Input("add_example_button", "n_clicks"),
-    State('examples_type', "value"),
+    [
+        State('examples_type', "value"),
+        State("few_shots_pagination", "max_value"),
+    ],
     prevent_initial_call=True,
 )
-def add_example(
-    n_clicks: int,
-    examples_type: str,
-) -> Tuple[int, int, int]:
+def add_example(n_clicks: int, examples_type: str, last_page: int) -> Tuple[int, int, int]:
     if not examples_type:
         examples_type = ""
     if examples_type not in get_examples():
         get_examples()[examples_type] = []
-    last_page = len(get_examples()[examples_type])
     examples_type_keys = list(get_examples().keys())[0] if not len(get_examples()[examples_type]) else examples_type
     get_examples()[examples_type].append({key: "" for key in get_examples()[examples_type_keys][0].keys()})
     return (last_page + 1, last_page + 1)
@@ -273,7 +272,7 @@ def add_example(
     [
         State("few_shots_pagination", "active_page"),
         State('examples_type', "value"),
-        State("num_few_shots", "value"),
+        State("few_shots_pagination", "max_value"),
         State(
             {
                 "type": "view_mode",
@@ -289,7 +288,7 @@ def del_example(
     n_clicks: int,
     page: int,
     examples_type: str,
-    num_few_shots: int,
+    last_page: int,
     view_mode: List[str],
     js_trigger: str,
 ) -> Tuple[
@@ -304,14 +303,13 @@ def del_example(
         examples_type = ""
     if examples_type not in get_examples():
         get_examples()[examples_type] = []
-    last_page = len(get_examples()[examples_type])
     if last_page:
         prev_pagination_page = page if page < last_page else page - 1
         get_examples()[examples_type].pop(page - 1)
         return (
             last_page - 1,
             prev_pagination_page,
-            get_few_shots_by_id_layout(prev_pagination_page, examples_type, num_few_shots, view_mode),
+            get_few_shots_by_id_layout(prev_pagination_page, examples_type, last_page - 1, view_mode),
             '',
             js_trigger + ' ',
         )
@@ -381,6 +379,15 @@ def update_examples(
     prevent_initial_call=True,
 )
 def update_prompt_type(prompt_type: str, js_trigger: str) -> Union[NoUpdate, dbc.AccordionItem]:
+    if (
+        "used_prompt" in current_app.config['data_explorer']['prompt']
+        and prompt_type == current_app.config['data_explorer']['prompt']['used_prompt']
+    ):
+        output_len = len(get_utils_from_config(asdict(PromptConfig(few_shot_examples=FewShotExamplesConfig()))).keys())
+        return [no_update] * (output_len + 2)
+
+    current_app.config['data_explorer']['prompt']['used_prompt'] = prompt_type
+
     if prompt_type not in map(lambda name: name.split('.')[0], prompt_types):
         output_len = len(get_utils_from_config(asdict(PromptConfig(few_shot_examples=FewShotExamplesConfig()))).keys())
         return [no_update] * (output_len + 2)
