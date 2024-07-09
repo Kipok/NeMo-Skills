@@ -110,6 +110,8 @@ def preprocess_latex(text: str) -> str:
         '\n'
         + text.replace('\\[', '\n$$\n')
         .replace('\\]', '\n$$\n')
+        .replace('\\(', ' $')
+        .replace('\\)', '$ ')
         .replace('=', ' = ')
         .replace('+', ' + ')
         .replace('-', ' - ')
