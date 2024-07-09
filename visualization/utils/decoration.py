@@ -15,7 +15,6 @@
 import random
 import re
 import string
-from pickle import MARK
 from typing import Callable, Dict, List, Optional, Tuple
 
 from ansi2html import Ansi2HTMLConverter
