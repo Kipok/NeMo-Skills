@@ -37,7 +37,7 @@ URL = "https://huggingface.co/datasets/reasoning-machines/gsm-hard/raw/main/gsmh
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--add_rounding_instructions", type=bool, default=True)
+    parser.add_argument("--no_rounding_instructions", action='store_true')
     args = parser.parse_args()
 
     split_name = "test"
@@ -50,7 +50,7 @@ if __name__ == "__main__":
         urllib.request.urlretrieve(URL, original_file)
 
     file_rounded = None
-    if args.add_rounding_instructions:
+    if not args.no_rounding_instructions:
         output_file_rounded = str(data_folder / f"{split_name}_rounded.jsonl")
         file_rounded = open(output_file_rounded, "w")
 

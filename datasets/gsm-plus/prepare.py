@@ -23,7 +23,7 @@ sys.path.append(str(Path(__file__).parents[1]))
 
 from utils import add_rounding_instruction
 
-URL = "https://huggingface.co/datasets/qintongli/GSM-Plus/resolve/main/gsmplus_test.jsonl?download=true"
+URL = "https://huggingface.co/datasets/qintongli/GSM-Plus/resolve/main/data/test-00000-of-00001.jsonl?download=true"
 
 # Data Format
 #
@@ -53,7 +53,7 @@ if __name__ == "__main__":
             "reversing_operation",
         ],
     )
-    parser.add_argument("--add_rounding_instructions", type=bool, default=True)
+    parser.add_argument("--no_rounding_instructions", action='store_true')
     args = parser.parse_args()
 
     split_name = "test"
@@ -66,7 +66,7 @@ if __name__ == "__main__":
         urllib.request.urlretrieve(URL, original_file)
 
     file_rounded = None
-    if args.add_rounding_instructions:
+    if not args.no_rounding_instructions:
         output_file_rounded = str(data_folder / f"{split_name}_rounded.jsonl")
         file_rounded = open(output_file_rounded, 'w')
 
