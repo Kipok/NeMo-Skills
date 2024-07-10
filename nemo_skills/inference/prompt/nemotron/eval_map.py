@@ -22,4 +22,5 @@ EVAL_MAP = {
     'instruct': {  # nemotron-instruct
         'default': 'nemotron/zeroshot',
     },
+    
 }
