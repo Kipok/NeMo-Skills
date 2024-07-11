@@ -27,6 +27,7 @@ from layouts import (
     get_single_prompt_output_layout,
     get_switch_layout,
     get_text_area_layout,
+    get_text_modes_layout,
 )
 from settings.constants import (
     FEW_SHOTS_INPUT,
@@ -64,7 +65,6 @@ class ModeStrategies:
         utils = get_utils_from_config(
             {key: value for key, value in current_app.config['data_explorer'].items() if key not in SETTING_PARAMS}
         ).items()
-        utils = list(filter(lambda x: x[0] not in RETRIEVAL_FIELDS, utils))
         input_group_layout = html.Div(
             (
                 [
@@ -93,6 +93,7 @@ class ModeStrategies:
                             id="range_random_seed_mode",
                             labels=["use random seed range"],
                             disabled=[disabled],
+                            additional_params={'switch': True},
                         ),
                         input_group_layout,
                     ]
@@ -117,12 +118,9 @@ class ModeStrategies:
         self, query_data: Dict[str, str], is_prompt_search: bool = True
     ) -> List[dbc.AccordionItem]:
         switch_layout = [
-            get_switch_layout(
-                {
-                    "type": "view_mode",
-                    "id": QUERY_INPUT_TYPE,
-                },
-                ["view mode"],
+            get_text_modes_layout(
+                QUERY_INPUT_TYPE,
+                False,
             )
         ]
         search_layout = [self._get_search_prompt_layout()] if is_prompt_search else []
@@ -144,19 +142,19 @@ class ModeStrategies:
         ]
 
     def get_query_input_children_layout(
-        self, query_data: Dict[str, str], view_mode: bool = False
+        self, query_data: Dict[str, str], text_modes: List[str] = []
     ) -> List[dbc.InputGroup]:
         return [
             dbc.InputGroup(
                 [
                     dbc.InputGroupText(key),
                     get_text_area_layout(
-                        {
+                        id={
                             "type": QUERY_INPUT_TYPE,
                             "id": key,
                         },
-                        value,
-                        view_mode,
+                        value=str(value),
+                        text_modes=text_modes,
                     ),
                 ],
                 className="mb-3",
@@ -198,13 +196,7 @@ class ModeStrategies:
                             color="primary",
                             className="me-1",
                         ),
-                        get_switch_layout(
-                            id={
-                                "type": "view_mode",
-                                "id": FEW_SHOTS_INPUT,
-                            },
-                            labels=["view mode"],
-                        ),
+                        get_text_modes_layout(FEW_SHOTS_INPUT, False),
                     ]
                 ),
                 dbc.Container(id="few_shots_pagination_content"),
@@ -279,8 +271,9 @@ class ModeStrategies:
         utils["example_dicts"] = get_examples().get(
             examples_type,
             [],
-        )[: utils['num_few_shots']]
-        utils['num_few_shots'] = min(len(utils["example_dicts"]), utils['num_few_shots'])
+        )[: utils.get('num_few_shots', -1)]
+        len_example_dicts = len(utils["example_dicts"])
+        utils['num_few_shots'] = min(len_example_dicts, utils.get('num_few_shots', len_example_dicts))
         prompt_config = get_config(PromptConfig, utils, get_settings())
 
         prompt_config.few_shot_examples = get_config(
