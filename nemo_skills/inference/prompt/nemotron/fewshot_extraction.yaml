@@ -1,12 +1,10 @@
-
-\\
 few_shot_examples:
   template: "Raw answer:\n{original_answer}\n\n{context}Extracted answer:\n{generation}\n\n\n\n\n\n"
 
 system: ""
     # I will provide you with original answer for a math task. Your job is to extract answers in terms of tuples, with latex code inside. 
 user: |-
-    I will provide you with original answer for a math task. Your job is to extract answers in a consistent latex format. If you have single answer extract it as is if you have multiple answer extract as tuple or tuple of tuples etc. If you have inequalities or conditional answer extract as latex cases.
+    I will provide you with original answer for a math task. Your job is to extract answers in a consistent latex format. If you have single answer extract it as is if you have multiple answer extract as tuple or tuple of tuples etc. If you have inequalities or conditional answer extract as latex cases. Do not forget to follow the examples.
     {examples}Raw answer:
     {original_answer}
 

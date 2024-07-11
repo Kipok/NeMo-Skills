@@ -35,7 +35,7 @@ tuple_extraction = [
     {
         "original_answer": "$5 \\le x \\le 10$",
         "generation": """
-        5 \\le x \\le 10
+        [5, 10]
 """.strip(),
     },
 ]
