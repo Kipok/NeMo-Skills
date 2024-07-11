@@ -4,7 +4,15 @@ few_shot_examples:
 system: ""
     # I will provide you with original answer for a math task. Your job is to extract answers in terms of tuples, with latex code inside. 
 user: |-
-    I will provide you with original answer for a math task. Your job is to extract answers in a consistent latex format. If you have single answer extract it as is if you have multiple answer extract as tuple or tuple of tuples etc. If you have inequalities or conditional answer extract as latex cases. Do not forget to follow the examples.
+    I will provide you with raw answer for a math task.
+    Your job is to extract answers in latex.
+    If you have single answer, extract it as is.
+    If you have multiple answers, extract as tuple or tuple of tuples.
+    If you have inequalities or conditional answer extract as latex cases.
+    Do not forget to follow the examples.
+    Write only the extracted answer.
+    DO NOT ADD ANY ADDITIONAL TEXT.
+    
     {examples}Raw answer:
     {original_answer}
 
