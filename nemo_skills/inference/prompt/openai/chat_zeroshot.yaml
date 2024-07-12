@@ -10,10 +10,10 @@ system: |-
 
 user: |-
     Question:
-    {question}
+    {question}{context}
 
-    {context}
-
+# <..._start> and <..._end> are special tokens that are not directly visible to the model.
+# They are used to parse the prompt into parts in our inference pipeline.
 prompt_template: |-
   <system_start>{system}<system_end>
   <user_start>{user}<user_end>
