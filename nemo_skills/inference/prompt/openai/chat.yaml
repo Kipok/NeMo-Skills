@@ -1,5 +1,5 @@
 few_shot_examples:
-  template: "Example question:\n{question}\n\n{context}Example solution:\n{generation}\n\n\n\n\n\n"
+  template: "Question:\n{question}{context}\n\nMy solution:\n{generation}\n\n\n\n\n\n"
 
 system: |-
   You're an expert mathematician. Your goal is to solve the math problem below.
