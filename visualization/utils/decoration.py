@@ -64,7 +64,7 @@ def proccess_tag(
         count -= is_end_token
         if count == 0:
             break
-    return start_index, index + 1
+    return start_index, index
 
 
 def get_single_dollar_functions(direction: int, default_index_move: int) -> Callable[[str, int], Tuple[bool, int]]:
@@ -108,20 +108,13 @@ def proccess_plain_text(text: str) -> str:
 
 
 def preprocess_latex(text: str, escape: bool = True) -> str:
-    text = (
-        '\n'
-        + text.replace('\\[', '\n$$\n')
-        .replace('\\]', '\n$$\n')
-        .replace('\\(', ' $')
-        .replace('\\)', '$ ')
-        .replace('=', ' = ')
-        .replace('+', ' + ')
-        .replace('-', ' - ')
-        .replace('*', ' * ')
-        .replace('/', ' / ')
-        .replace('  ', ' ')
-        + '\n'
-    )
+    text = '\n' + text.replace('\\[', '\n$$\n').replace('\\]', '\n$$\n').replace('\\(', ' $').replace('\\)', '$ ')
+
+    for op in ['=', '+', '-', '*', '/']:
+        text = text.replace(op + '$', op + ' $')
+        text = text.replace('$' + op, '$ ' + op)
+
+    text += '\n'
     index = 1
     texts = []
     start_plain_text_index = -1
