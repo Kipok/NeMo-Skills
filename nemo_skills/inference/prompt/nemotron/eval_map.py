@@ -16,11 +16,10 @@
 # can have a default key that will be used if benchmark name is not in dict
 
 EVAL_MAP = {
-    'base': { 
+    'base': {
         'default': 'nemotron/fewshot',
     },
     'instruct': {  # nemotron-instruct
         'default': 'nemotron/zeroshot',
     },
-    
 }
