@@ -110,8 +110,12 @@ def proccess_plain_text(text: str) -> str:
 def preprocess_latex(text: str, escape: bool = True) -> str:
     text = '\n' + text.replace('\\[', '\n$$\n').replace('\\]', '\n$$\n').replace('\\(', ' $').replace('\\)', '$ ')
 
-    for op in ['=', '+', '-', '*', '/']:
+    right_side_operations = ['-', '=', '+', '*', '/']
+    left_side_operations = ['=', '+', '*', '/']
+    for op in right_side_operations:
         text = text.replace(op + '$', op + ' $')
+
+    for op in left_side_operations:
         text = text.replace('$' + op, '$ ' + op)
 
     text += '\n'
