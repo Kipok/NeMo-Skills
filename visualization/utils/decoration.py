@@ -34,7 +34,7 @@ def get_starts_with_tag_function(tag: str, default_index_move: int) -> Callable[
         elif '{' not in tag:
             returning_index = index + len(tag)
         else:
-            returning_index = text.find('}', index) % (len(text) + 1) + 1
+            returning_index = text.find('}', index) % (len(text) + 1)
 
         return is_starts_with_tag, returning_index
 
@@ -64,7 +64,7 @@ def proccess_tag(
         count -= is_end_token
         if count == 0:
             break
-    return start_index, index
+    return start_index, index + 1
 
 
 def get_single_dollar_functions(direction: int, default_index_move: int) -> Callable[[str, int], Tuple[bool, int]]:
