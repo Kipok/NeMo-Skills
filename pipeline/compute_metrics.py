@@ -183,10 +183,8 @@ class IFEval:
         # this shouldn't do any heavy calculation, but just read the metric from existing json entry
         # all the heavy lifting should be done in the evaluation script
         if aggregation_mode == "best":
-            self._update_single_stat(
-                self.strict_stats, [predictions[i]['strict_eval'] for i in range(len(predictions))]
-            )
-            self._update_single_stat(self.loose_stats, [predictions[i]['loose_eval'] for i in range(len(predictions))])
+            self._update_single_stat(self.strict_stats, [pred['strict_eval'] for pred in predictions])
+            self._update_single_stat(self.loose_stats, [pred['loose_eval'] for pred in predictions])
         elif aggregation_mode == "first":
             self._update_single_stat(self.strict_stats, [predictions[0]['strict_eval']])
             self._update_single_stat(self.loose_stats, [predictions[0]['loose_eval']])
