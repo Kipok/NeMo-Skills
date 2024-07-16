@@ -76,9 +76,10 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
     evaluator = MathEval()
 
     majority_answers = []
+    all_predictions = []
     for idx, predictions in enumerate(zip_longest(*file_handles)):
         data = read_predictions(predictions, evaluator, cfg.allow_incomplete)
-
+        all_predictions.append(data)
         # TODO: currently majority does not take into account equivalent answers written in a different way
         valid_answers_and_results = [
             (elem['predicted_answer'], elem['is_correct']) for elem in data if elem['predicted_answer'] is not None
@@ -109,19 +110,10 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
 
     # writing the majority answers back to the files
     file_handles = [open(file, "wt", encoding="utf-8") for file in unroll_files(cfg.prediction_jsonl_files)]
-    for idx, cur_data in enumerate(all_data):
-        if idx == max_samples:
-            break
+    for idx, predictions in enumerate(all_predictions):
         for lidx, handle in enumerate(file_handles):
-            line = cur_data[lidx]
-            if not line:  # could have missing predictions
-                continue
-            line_dict = json.loads(line)
-            if not line_dict:
-                handle.write(line)
-                continue
-            line_dict["expected_answer"] = majority_answers[idx]
-            handle.write(json.dumps(line_dict) + "\n")
+            predictions[lidx]["expected_answer"] = majority_answers[idx]
+            handle.write(json.dumps(predictions[lidx]) + "\n")
 
     for file_handle in file_handles:
         file_handle.close()
