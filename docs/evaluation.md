@@ -38,7 +38,7 @@ different GPU types or with different inference frameworks.
 
    ```
    python pipeline/compute_metrics.py \
-     --prediction_jsonl_files ./test-results/gsm8k/output-greedy.jsonl
+     --prediction_jsonl_files ./test-results/gsm8k/output-greedy.jsonl \
      --benchmark gsm8k
    ```
 
