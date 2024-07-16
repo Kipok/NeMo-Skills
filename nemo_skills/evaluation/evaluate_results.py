@@ -27,6 +27,7 @@ from omegaconf import MISSING, OmegaConf
 
 from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
 from nemo_skills.evaluation.code_utils import preprocess_code
+from nemo_skills.evaluation.settings import GRADING_MAP
 from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging
 
 LOG = logging.getLogger(__file__)
@@ -138,22 +139,15 @@ def ifeval(cfg):
         (parent_dir / 'eval_results_strict.jsonl').unlink()
 
 
-eval_map = {
-    "math": math_eval,
-    "code": code_eval,
-    "ifeval": ifeval,
-}
-
-
 @hydra.main(version_base=None, config_name="base_evaluate_results_config")
 def evaluate_results(cfg: EvaluateResultsConfig):
     cfg = EvaluateResultsConfig(_init_nested=True, **cfg)
     LOG.info("Config used: %s", cfg)
 
-    if cfg.eval_type not in eval_map:
+    if cfg.eval_type not in GRADING_MAP:
         raise ValueError(f"Unknown eval_type: {cfg.eval_type}")
 
-    eval_map[cfg.eval_type](cfg)
+    GRADING_MAP[cfg.eval_type](cfg)
 
 
 HELP_MESSAGE = get_help_message(
