@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import sys
+from collections import Counter
 from itertools import zip_longest
 from typing import Any
 
 import hydra
 from omegaconf import MISSING
 
+from nemo_skills.evaluation.metrics import MathEval, read_predictions
 from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging, unroll_files
 
 LOG = logging.getLogger(__file__)
@@ -69,73 +72,59 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
     LOG.info("Config used: %s", cfg)
 
     file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(cfg.prediction_jsonl_files)]
+    # currently majority is only defined for math evals
+    evaluator = MathEval()
 
-    # for idx, lines in enumerate(zip_longest(*file_handles)):
-    #     data = []
-    #     for line in lines:
-    #         if not line:  # could have missing predictions
-    #             if not cfg.allow_incomplete:
-    #                 raise RuntimeError("Some data is missing!")
-    #             data.append(evaluator.fill_up_missing())
-    #             continue
-    #         line_dict = json.loads(line)
-    #         if not line_dict:
-    #             if not allow_incomplete:
-    #                 raise RuntimeError("Some data is missing!")
-    #             data.append(evaluator.fill_up_missing())
-    #             continue
-    #         if evaluator.is_incomplete(line_dict):
-    #             if not allow_incomplete:
-    #                 raise RuntimeError("Some data is missing!")
-    #             data.append(evaluator.fill_up_missing())
-    #             continue
-    #         data.append(line_dict)
+    majority_answers = []
+    for idx, predictions in enumerate(zip_longest(*file_handles)):
+        data = read_predictions(predictions, evaluator, cfg.allow_incomplete)
 
-    #     evaluator.update(data, aggregation_mode)
+        # TODO: currently majority does not take into account equivalent answers written in a different way
+        valid_answers_and_results = [
+            (elem['predicted_answer'], elem['is_correct']) for elem in data if elem['predicted_answer'] is not None
+        ]
+        if len(valid_answers_and_results) == 0:
+            majority_answers.append(cfg.default_answer)
+            continue
+        (majority_answer, _), num_votes = Counter(valid_answers_and_results).most_common(1)[0]
 
-    # for file_handle in file_handles:
-    #     file_handle.close()
+        if num_votes <= cfg.min_votes:
+            majority_answers.append(cfg.default_answer)
+            continue
 
-    # return evaluator.get_metrics()
+        if cfg.drop_negative_answers:
+            try:
+                majority_answer = float(majority_answer)
+            except ValueError:
+                majority_answers.append(cfg.default_answer)
+                continue
+            if majority_answer < 0:
+                majority_answers.append(cfg.default_answer)
+                continue
 
-    #     # TODO: currently majority does not take into account equivalent answers written in a different way
-    #     valid_answers_and_results = [
-    #         (ans, is_correct) for ans, is_correct in zip(pred_answers, evaluations) if ans is not None
-    #     ]
-    #     if len(valid_answers_and_results) == 0:
-    #         total_no_answer += 1
-    #         majority_answers.append("None123")
-    #     else:
-    #         majority_result = Counter(valid_answers_and_results).most_common(1)[0]
-    #         try:
-    #             majority_answer = float(majority_result[0][0])
-    #         except:
-    #             majority_answer = -1
-    #         if majority_result[1] <= 10 or majority_answer < 0:
-    #             majority_answers.append("None123")  # need to not match any of the answers
-    #         else:
-    #             if majority_answer != int(majority_answer):
-    #                 print(majority_result, idx)
-    #             majority_answers.append(int(majority_answer))
-    #         total_correct += majority_result[0][1]
+        majority_answers.append(majority_answer)
 
-    #     file_handles = [open(file, "wt", encoding="utf-8") for file in unroll_files(prediction_jsonl_files)]
-    #     for idx, cur_data in enumerate(all_data):
-    #         if idx == max_samples:
-    #             break
-    #         for lidx, handle in enumerate(file_handles):
-    #             line = cur_data[lidx]
-    #             if not line:  # could have missing predictions
-    #                 continue
-    #             line_dict = json.loads(line)
-    #             if not line_dict:
-    #                 handle.write(line)
-    #                 continue
-    #             line_dict["expected_answer"] = majority_answers[idx]
-    #             handle.write(json.dumps(line_dict) + "\n")
+    for file_handle in file_handles:
+        file_handle.close()
 
-    #     for file_handle in file_handles:
-    #         file_handle.close()
+    # writing the majority answers back to the files
+    file_handles = [open(file, "wt", encoding="utf-8") for file in unroll_files(cfg.prediction_jsonl_files)]
+    for idx, cur_data in enumerate(all_data):
+        if idx == max_samples:
+            break
+        for lidx, handle in enumerate(file_handles):
+            line = cur_data[lidx]
+            if not line:  # could have missing predictions
+                continue
+            line_dict = json.loads(line)
+            if not line_dict:
+                handle.write(line)
+                continue
+            line_dict["expected_answer"] = majority_answers[idx]
+            handle.write(json.dumps(line_dict) + "\n")
+
+    for file_handle in file_handles:
+        file_handle.close()
 
 
 HELP_MESSAGE = get_help_message(FillMajorityAnswerConfig)

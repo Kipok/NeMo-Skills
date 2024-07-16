@@ -175,6 +175,30 @@ class IFEval:
         self.total = 0
 
 
+def read_predictions(predictions, evaluator, allow_incomplete=False):
+    data = []
+    for prediction in predictions:
+        if not prediction:  # could have missing predictions
+            if not allow_incomplete:
+                raise RuntimeError("Some data is missing!")
+            data.append(evaluator.fill_up_missing())
+            continue
+        prediction_dict = json.loads(prediction)
+        if not prediction_dict:
+            if not allow_incomplete:
+                raise RuntimeError("Some data is missing!")
+            data.append(evaluator.fill_up_missing())
+            continue
+        if evaluator.is_incomplete(prediction_dict):
+            if not allow_incomplete:
+                raise RuntimeError("Some data is missing!")
+            data.append(evaluator.fill_up_missing())
+            continue
+        data.append(prediction_dict)
+
+    return data
+
+
 def compute_metrics(
     prediction_jsonl_files,
     evaluator,
@@ -185,29 +209,10 @@ def compute_metrics(
     file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(prediction_jsonl_files)]
 
     evaluator.reset()
-    for idx, lines in enumerate(zip_longest(*file_handles)):
+    for idx, predictions in enumerate(zip_longest(*file_handles)):
         if idx == max_samples:
             break
-        data = []
-        for line in lines:
-            if not line:  # could have missing predictions
-                if not allow_incomplete:
-                    raise RuntimeError("Some data is missing!")
-                data.append(evaluator.fill_up_missing())
-                continue
-            line_dict = json.loads(line)
-            if not line_dict:
-                if not allow_incomplete:
-                    raise RuntimeError("Some data is missing!")
-                data.append(evaluator.fill_up_missing())
-                continue
-            if evaluator.is_incomplete(line_dict):
-                if not allow_incomplete:
-                    raise RuntimeError("Some data is missing!")
-                data.append(evaluator.fill_up_missing())
-                continue
-            data.append(line_dict)
-
+        data = read_predictions(predictions, evaluator, allow_incomplete)
         evaluator.update(data, aggregation_mode)
 
     for file_handle in file_handles:
