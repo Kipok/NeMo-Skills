@@ -139,7 +139,7 @@ class IFEval:
     def is_incomplete(self, elem):
         incomplete = 'loose_eval' not in elem or 'strict_eval' not in elem
         if incomplete:
-            return False
+            return True
         return (
             'follow_instruction_list' not in elem['loose_eval']
             or 'follow_instruction_list' not in elem['strict_eval']
