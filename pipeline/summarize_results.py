@@ -100,22 +100,22 @@ if __name__ == "__main__":
     lines_to_write = []
     for benchmark, benchmark_results in results.items():
         max_widths = {}
-        max_widths['evaluation mode'] = len('evaluation mode')
+        max_widths['evaluation_mode'] = len('evaluation_mode')
         for eval_mode, metrics in benchmark_results.items():
             for metric_key, metric_value in metrics.items():
                 max_widths[metric_key] = max(
                     max_widths.get(metric_key, len(metric_key)),
                     len(f"{metric_value:.2f}" if isinstance(metric_value, float) else str(metric_value)),
                 )
-            max_widths['evaluation mode'] = max(max_widths['evaluation mode'], len(eval_mode))
+            max_widths['evaluation_mode'] = max(max_widths['evaluation_mode'], len(eval_mode))
 
         total_width = sum(max_widths.values()) + (len(max_widths) - 1) * 3
         print(f' {benchmark} '.center(total_width, '-'))
-        headers = ['evaluation mode'] + list(list(benchmark_results.values())[0].keys())
+        headers = ['evaluation_mode'] + list(list(benchmark_results.values())[0].keys())
         print(' | '.join([f'{header:<{max_widths[header]}}' for header in headers]))
 
         for eval_mode, metrics in benchmark_results.items():
-            values = [f'{eval_mode:<{max_widths["evaluation mode"]}}']
+            values = [f'{eval_mode:<{max_widths["evaluation_mode"]}}']
             for metric_key, metric_value in metrics.items():
                 if isinstance(metric_value, float):
                     metric_value = f"{metric_value:.2f}"
