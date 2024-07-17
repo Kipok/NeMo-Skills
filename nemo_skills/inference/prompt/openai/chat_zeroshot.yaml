@@ -1,6 +1,3 @@
-few_shot_examples:
-  template: ""
-
 system: |-
   You're an expert mathematician. Your goal is to solve the math problem below.
   To achieve this you always follow these steps:
@@ -19,4 +16,4 @@ prompt_template: |-
   <user_start>{user}<user_end>
   <assistant_start>{generation}
 
-stop_phrases: []
+stop_phrases: []  # automatically stops on turn token
