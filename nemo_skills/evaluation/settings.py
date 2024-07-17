@@ -32,6 +32,8 @@ MATH_BENCHMARKS = [
     'mawps',
     'svamp',
     'tabmwp',
+    'math-odyssey',
+    'aime-2024',
 ]
 CODE_BENCHMARKS = ['human-eval', 'mbpp']
 
