@@ -9,3 +9,4 @@ rank_bm25
 requests
 sympy
 tqdm
+bs4
