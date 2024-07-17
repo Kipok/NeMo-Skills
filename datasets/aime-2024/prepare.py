@@ -126,7 +126,7 @@ if __name__ == "__main__":
     data_folder = Path(__file__).absolute().parent
     original_file = str(data_folder / "original_test.json")
     data_folder.mkdir(exist_ok=True)
-    output_file = str(data_folder / f"test.jsonl")
+    output_file = str(data_folder / "test.jsonl")
 
     data = []
 
