@@ -19,15 +19,12 @@ import subprocess
 from argparse import Namespace
 from pathlib import Path
 
-from omegaconf import OmegaConf
-
-from nemo_skills.code_execution.sandbox import get_sandbox
-from nemo_skills.evaluation.code_utils import preprocess_code
-
 LOG = logging.getLogger(__file__)
 
 
 def math_eval(cfg):
+    from nemo_skills.code_execution.sandbox import get_sandbox
+
     sandbox = get_sandbox(**cfg.sandbox)
     sandbox.batch_evaluate_results(
         prediction_jsonl_files=cfg.prediction_jsonl_files,
@@ -38,6 +35,9 @@ def math_eval(cfg):
 def code_eval(cfg):
     # TODO: need to move it to a separate docker (either our sandbox or separate srun)
     from evalplus.evaluate import evaluate
+    from omegaconf import OmegaConf
+
+    from nemo_skills.evaluation.code_utils import preprocess_code
 
     # processing each generation separately (TODO: evalplus can do it together, but need to figure out the format)
     for jsonl_file in cfg.prediction_jsonl_files:

@@ -17,7 +17,6 @@
 import argparse
 import glob
 import json
-import logging
 import subprocess
 import sys
 from collections import defaultdict
@@ -28,6 +27,8 @@ sys.path.append(str(Path(__file__).absolute().parents[1]))
 sys.path.append(str(Path(__file__).absolute().parents[0]))
 
 from compute_metrics import EVALUATOR_MAP, compute_metrics
+
+from nemo_skills.evaluation.metrics import MathEval
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -58,7 +59,7 @@ if __name__ == "__main__":
         if not Path(benchmark_path).is_dir():
             continue
         try:
-            evaluator = EVALUATOR_MAP[benchmark]()
+            evaluator = EVALUATOR_MAP.get(benchmark, MathEval)()
             if benchmark in ['human-eval', 'mbpp']:
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
                     results[benchmark]['greedy'] = compute_metrics(
