@@ -72,8 +72,10 @@ class BaseModel(abc.ABC):
     ):
         self.server_host = host
         self.server_port = port
-        self.ssh_server = os.getenv("NEMO_SKILLS_SSH_SERVER", ssh_server)
-        self.ssh_key_path = os.getenv("NEMO_SKILLS_SSH_KEY_PATH", ssh_key_path)
+        if ssh_server is None:
+            self.ssh_server = os.getenv("NEMO_SKILLS_SSH_SERVER")
+        if ssh_key_path is None:
+            self.ssh_key_path = os.getenv("NEMO_SKILLS_SSH_KEY_PATH")
 
         if self.ssh_server and self.ssh_key_path:
             import sshtunnel_requests
@@ -212,13 +214,21 @@ class NemoModel(BaseModel):
 class OpenAIModel(BaseModel):
     def __init__(
         self,
-        model,
+        model=None,
         base_url=None,
         api_key=None,
         **kwargs,
     ):
         super().__init__(**kwargs)
         from openai import OpenAI
+
+        if model is None:
+            model = os.getenv("NEMO_SKILLS_OPENAI_MODEL")
+            if model is None:
+                raise ValueError("model argument is required for OpenAI model.")
+
+        if base_url is None:
+            base_url = os.getenv("NEMO_SKILLS_OPENAI_BASE_URL")
 
         if api_key is None:
             if base_url is not None and 'api.nvidia.com' in base_url:
