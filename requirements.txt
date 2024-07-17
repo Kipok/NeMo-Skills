@@ -1,4 +1,5 @@
 backoff
+bs4
 evalplus @ git+https://github.com/evalplus/evalplus@c91370f
 huggingface_hub
 hydra-core
@@ -9,4 +10,3 @@ rank_bm25
 requests
 sympy
 tqdm
-bs4
