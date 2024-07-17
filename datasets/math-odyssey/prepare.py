@@ -32,7 +32,7 @@ URL = "https://raw.githubusercontent.com/protagolabs/odyssey-math/main/final-ody
 def identify_label(answer_endings, answer):
     for ending in answer_endings:
         if answer.endswith(ending):
-            answer = answer[:-(len(ending))]
+            answer = answer[: -(len(ending))]
             break
     return answer
 
@@ -48,14 +48,22 @@ if __name__ == "__main__":
 
     data = []
 
-    #### For this dataset, it contains 387 examples, but the answers have varying ending formats. 
+    #### For this dataset, it contains 387 examples, but the answers have varying ending formats.
     #### I manually checked all the different types and extracted only the answers
-    answer_endings = ["\\\\\n\\noindent", "\\\\\n\n\\noindent", "\\\\\n\t\\noindent", ".\n\n\\noindent", 
-                      "\n\n\\noindent", "\\\\\n\n  \n\t\\noindent", "\\\\ \n\t\\noindent", "\\\\\n\n\t\\noindent"]
+    answer_endings = [
+        "\\\\\n\\noindent",
+        "\\\\\n\n\\noindent",
+        "\\\\\n\t\\noindent",
+        ".\n\n\\noindent",
+        "\n\n\\noindent",
+        "\\\\\n\n  \n\t\\noindent",
+        "\\\\ \n\t\\noindent",
+        "\\\\\n\n\t\\noindent",
+    ]
     with open(original_file, "rt", encoding="utf-8") as fin:
         for index, line in enumerate(fin):
             new_entry = {}
-            
+
             original_entry = json.loads(line)  # Convert JSON line to dictionary
             key = list(original_entry.keys())[0]
             original_entry = original_entry[key]
@@ -65,11 +73,13 @@ if __name__ == "__main__":
             for ending in answer_endings:
                 if answer.endswith(ending):
                     ### remove all white space and remove all $ sign so that we can match previous formats
-                    answer = answer[:-(len(ending))].strip()
+                    answer = answer[: -(len(ending))].strip()
                     if answer.startswith("\\") or answer.endswith("\\"):
                         answer = answer.strip('\\').strip()
-                    if answer[-1] == '.': answer = answer[:-1]
-                    if "$" in answer: answer = answer.replace('$', '').strip()
+                    if answer[-1] == '.':
+                        answer = answer[:-1]
+                    if "$" in answer:
+                        answer = answer.replace('$', '').strip()
 
             new_entry["expected_answer"] = answer
             new_entry["original_answer"] = original_entry["answer"]
@@ -82,4 +92,3 @@ if __name__ == "__main__":
     with open(output_file, "wt", encoding="utf-8") as fout:
         for entry in data:
             fout.write(json.dumps(entry) + "\n")
-
