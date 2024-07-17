@@ -39,7 +39,7 @@ def identify_label(answer_endings, answer):
 
 if __name__ == "__main__":
     data_folder = Path(__file__).absolute().parent
-    original_file = str(data_folder / f"original_test.json")
+    original_file = str(data_folder / "original_test.json")
     data_folder.mkdir(exist_ok=True)
     output_file = str(data_folder / f"test.jsonl")
 
