@@ -21,6 +21,7 @@ from typing import Any
 
 import hydra
 from omegaconf import MISSING
+from tqdm import tqdm
 
 from nemo_skills.evaluation.metrics import MathEval, read_predictions
 from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging, unroll_files
@@ -53,57 +54,65 @@ class FillMajorityAnswerConfig:
     # are common, should be set to False
     drop_negative_answers: bool = False
 
+    # will not use any non-integer answers as this might indicates bad problems
+    drop_noninteger_answers: bool = False
+
     def __post_init__(self):
         """Building data_file from dataset/split_name if not provided directly."""
         if isinstance(self.prediction_jsonl_files, str):
             self.prediction_jsonl_files = self.prediction_jsonl_files.split(" ")
-
-        if self.min_votes < 0:
-            self.min_votes = len(self.prediction_jsonl_files) // 2
 
 
 cs = hydra.core.config_store.ConfigStore.instance()
 cs.store(name="base_fill_majority_answer_conifg", node=FillMajorityAnswerConfig)
 
 
-@hydra.main(version_base=None, config_name="base_fill_majority_answer_config")
+@hydra.main(version_base=None, config_name="base_fill_majority_answer_conifg")
 def fill_majority_answer(cfg: FillMajorityAnswerConfig):
     cfg = FillMajorityAnswerConfig(_init_nested=True, **cfg)
     LOG.info("Config used: %s", cfg)
 
     file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(cfg.prediction_jsonl_files)]
+    if cfg.min_votes < 0:
+        cfg.min_votes = len(file_handles) // 2
+
     # currently majority is only defined for math evals
     evaluator = MathEval()
 
     majority_answers = []
     all_predictions = []
-    for idx, predictions in enumerate(zip_longest(*file_handles)):
+    retained_questions = 0
+    for idx, predictions in enumerate(tqdm(zip_longest(*file_handles))):
         data = read_predictions(predictions, evaluator, cfg.allow_incomplete)
         all_predictions.append(data)
         # TODO: currently majority does not take into account equivalent answers written in a different way
         valid_answers_and_results = [
             (elem['predicted_answer'], elem['is_correct']) for elem in data if elem['predicted_answer'] is not None
         ]
+        majority_answers.append(cfg.default_answer)
         if len(valid_answers_and_results) == 0:
-            majority_answers.append(cfg.default_answer)
             continue
         (majority_answer, _), num_votes = Counter(valid_answers_and_results).most_common(1)[0]
 
         if num_votes <= cfg.min_votes:
-            majority_answers.append(cfg.default_answer)
             continue
 
-        if cfg.drop_negative_answers:
+        if cfg.drop_negative_answers or cfg.drop_noninteger_answers:
             try:
                 majority_answer = float(majority_answer)
             except ValueError:
-                majority_answers.append(cfg.default_answer)
-                continue
-            if majority_answer < 0:
-                majority_answers.append(cfg.default_answer)
                 continue
 
-        majority_answers.append(majority_answer)
+            if cfg.drop_negative_answers and majority_answer < 0:
+                continue
+
+            if cfg.drop_noninteger_answers and not majority_answer.is_integer():
+                continue
+
+        majority_answers[-1] = majority_answer
+        retained_questions += 1
+
+    LOG.info("Total questions: %d, retained questions: %d", len(all_predictions), retained_questions)
 
     for file_handle in file_handles:
         file_handle.close()
