@@ -98,7 +98,7 @@ def get_battles_from_judgment(scores, WEIGHT=3):
 
     for score in scores:
         # game 1
-        output = {"model_a": "baseline", "model_b": 'candidate'}
+        output = {"model_a": "candidate", "model_b": 'baseline'}
 
         assert len(score) == 2
         cur_score = score[0]
@@ -124,7 +124,7 @@ def get_battles_from_judgment(scores, WEIGHT=3):
             arena_hard_battles = pd.concat([arena_hard_battles, pd.DataFrame([output] * weight)])
 
         # game 2
-        output = {"model_a": "baseline", "model_b": 'candidate'}
+        output = {"model_a": "candidate", "model_b": 'baseline'}
 
         cur_score = score[1]
 

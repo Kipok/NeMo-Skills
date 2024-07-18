@@ -16,11 +16,10 @@ import json
 import logging
 import shutil
 import subprocess
-import sys
 from argparse import Namespace
 from pathlib import Path
 
-from nemo_skills.utils import nested_dataclass
+from nemo_skills.utils import nested_dataclass, unroll_files
 
 LOG = logging.getLogger(__file__)
 
@@ -43,7 +42,7 @@ def code_grader(cfg):
     from nemo_skills.evaluation.code_utils import preprocess_code
 
     # processing each generation separately (TODO: evalplus can do it together, but need to figure out the format)
-    for jsonl_file in cfg.prediction_jsonl_files:
+    for jsonl_file in unroll_files(cfg.prediction_jsonl_files):
         with open(jsonl_file) as f:
             samples = [preprocess_code(json.loads(line)) for line in f]
         # all changes will be done with a new key "completion", so it's ok to write to the same file
@@ -80,7 +79,7 @@ def code_grader(cfg):
 
 
 def if_grader(cfg):
-    for jsonl_file in cfg.prediction_jsonl_files:
+    for jsonl_file in unroll_files(cfg.prediction_jsonl_files):
         parent_dir = Path(jsonl_file).absolute().parent
         cmd = (
             'cd /opt/benchmarks/google-research && python -m instruction_following_eval.evaluation_main '
@@ -122,9 +121,6 @@ class ArenaGraderConfig:
     base_url: str | None = None
     judge_model: str = "gpt-4-1106-preview"
     # defaults to True to avoid regenerating judgements unless necessary
-    # note that if will only pick up intermediate generations, but if generation
-    # has completed fully, this flag will be ignored and will always re-do everything
-    # TODO: fix that?
     skip_filled: bool = True
 
 
@@ -148,34 +144,39 @@ def arena_grader(cfg):
     prompt = Prompt(config=get_prompt_config('openai/arena-judge'))
 
     # assuming everything fits in memory for simplicity
-    if eval_config.use_batch_api:
-        for jsonl_file in cfg.prediction_jsonl_files:
-            data_points = []
-            with open(jsonl_file, 'rt', encoding='utf-8') as fin:
-                for line in fin:
-                    data_point = json.loads(line)
-                    # adding required fields for judgement prompt
-                    to_add = data_point.copy()
-                    to_add['answer_1'] = data_point['generation']
-                    to_add['answer_2'] = data_point['baseline_answer']
-                    to_add['judgement_mode'] = 'gen-base'
-                    data_points.append(to_add)
-                    # reversing the answers
-                    to_add = data_point.copy()
-                    to_add['answer_2'] = data_point['generation']
-                    to_add['answer_1'] = data_point['baseline_answer']
-                    to_add['judgement_mode'] = 'base-gen'
-                    data_points.append(to_add)
+    for jsonl_file in unroll_files(cfg.prediction_jsonl_files):
+        with open(jsonl_file, 'rt', encoding='utf-8') as fin:
+            data = [json.loads(line) for line in fin]
 
-            metadata = llm.generate_batch(
+        if eval_config.skip_filled and all(
+            'judgement-gen-base' in data_point and 'judgement-base-gen' in data_point for data_point in data
+        ):
+            continue
+
+        data_points = []
+
+        if eval_config.use_batch_api:
+            for data_point in data:
+                # adding required fields for judgement prompt
+                to_add = data_point.copy()
+                to_add['answer_1'] = data_point['generation']
+                to_add['answer_2'] = data_point['baseline_answer']
+                data_points.append(to_add)
+                # reversing the answers
+                to_add = data_point.copy()
+                to_add['answer_2'] = data_point['generation']
+                to_add['answer_1'] = data_point['baseline_answer']
+                data_points.append(to_add)
+
+            request_metadata = llm.batch_generate(
                 prompts=[prompt.build_string(data_point) for data_point in data_points],
                 tokens_to_generate=eval_config.tokens_to_generate,
             )
-    else:
-        for jsonl_file in cfg.prediction_jsonl_files:
-            with open(jsonl_file, 'rt', encoding='utf-8') as fin:
-                data = [json.loads(line) for line in fin]
-
+            print(request_metadata)
+            # saving the request id to be able to retrieve results when they are ready
+            with open(jsonl_file + '-batch-request-id', 'wt', encoding='utf-8') as fout:
+                fout.write(json.dumps({'request_id': request_metadata.id}))
+        else:
             output_file = jsonl_file + '-judgement'
             starting_idx = 0
             if eval_config.skip_filled:
@@ -188,7 +189,6 @@ def arena_grader(cfg):
 
             # saving to a tmp file to avoid corrupting original generation in case something goes wrong
             with open(output_file, "at" if eval_config.skip_filled else "wt", encoding="utf-8", buffering=1) as fout:
-                data_points = []
                 for data_point in tqdm(data, initial=starting_idx, total=len(data) + starting_idx):
                     # adding required fields for judgement prompt
                     to_add = data_point.copy()
@@ -233,3 +233,6 @@ def arena_grader(cfg):
                 for data_point, judgement_line in zip(data, fin):
                     data_point.update(json.loads(judgement_line))
                     fout.write(json.dumps(data_point) + "\n")
+
+            # removing judgement file
+            Path(output_file).unlink()

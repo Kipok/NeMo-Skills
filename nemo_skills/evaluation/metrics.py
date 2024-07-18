@@ -12,23 +12,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import abc
 import json
 import logging
 import re
-import sys
 from collections import Counter
 from itertools import zip_longest
 from pathlib import Path
-
-# adding nemo_skills to python path to avoid requiring installation
-sys.path.append(str(Path(__file__).absolute().parents[1]))
 
 from nemo_skills.utils import unroll_files
 
 LOG = logging.getLogger(__file__)
 
 
-class MathEval:
+class BaseEval(abc.ABC):
+    @abc.abstractmethod
+    def fill_up_missing(self):
+        pass
+
+    @abc.abstractmethod
+    def is_incomplete(self, elem):
+        pass
+
+    @abc.abstractmethod
+    def update(self, predictions, aggregation_mode):
+        pass
+
+    @abc.abstractmethod
+    def get_metrics(self):
+        pass
+
+    @abc.abstractmethod
+    def reset(self):
+        pass
+
+    def setup(self, prediction_jsonl_files):
+        pass
+
+
+class MathEval(BaseEval):
     def __init__(self):
         self.reset()
 
@@ -85,7 +107,7 @@ class MathEval:
         self.total = 0
 
 
-class CodeEval:
+class CodeEval(BaseEval):
     def __init__(self):
         self.reset()
 
@@ -128,7 +150,7 @@ class CodeEval:
         self.total = 0
 
 
-class IFEval:
+class IFEval(BaseEval):
     def __init__(self):
         self.reset()
 
@@ -176,9 +198,39 @@ class IFEval:
         self.total = 0
 
 
-class ArenaEval:
+class ArenaEval(BaseEval):
     def __init__(self):
         self.reset()
+
+    def setup(self, prediction_jsonl_files):
+        # checking if judgements are ready and fusing them with predictions
+        # might get permission errors when running locally, since original file
+        # is generated inside docker. Is there any way around that?
+        for jsonl_file in unroll_files(prediction_jsonl_files):
+            if Path(jsonl_file + '-batch-request-id').exists():
+                with open(jsonl_file + '-batch-request-id', 'rt', encoding='utf-8') as fin:
+                    request_id = json.load(fin)['request_id']
+                from nemo_skills.inference.server.model import get_model
+
+                llm = get_model(server_type='openai', model='gpt-4-1106-preview')
+                metadata, outputs = llm.get_batch_results(request_id)
+
+                if outputs is None:
+                    raise RuntimeError(f"Judgements are not ready yet! Current status: {metadata}")
+
+                with open(jsonl_file, 'rt', encoding='utf-8') as fin:
+                    predictions = [json.loads(line) for line in fin]
+
+                with open(jsonl_file, 'wt', encoding='utf-8') as fout:
+                    for idx, output in enumerate(outputs):
+                        if idx % 2 == 0:
+                            prediction = predictions[idx // 2]
+                            prediction['judgement-gen-base'] = output['generation']
+                        else:
+                            prediction['judgement-base-gen'] = output['generation']
+                            fout.write(json.dumps(prediction) + '\n')
+
+                Path(jsonl_file + '-batch-request-id').unlink()
 
     def _get_judge_score(self, judgment):
         # adapted from https://github.com/lm-sys/arena-hard-auto/blob/main/gen_judgment.py
@@ -193,15 +245,10 @@ class ArenaEval:
             return None
 
     def fill_up_missing(self):
-        return {'loose_eval': {'follow_all_instructions': False}, 'strict_eval': {'follow_all_instructions': False}}
+        return {'judgement-gen-base': '', 'judgement-base-gen': '', 'generation': ''}
 
     def is_incomplete(self, elem):
-        incomplete = 'loose_eval' not in elem or 'strict_eval' not in elem
-        if incomplete:
-            return False
-        return (
-            'follow_all_instructions' not in elem['loose_eval'] or 'follow_all_instructions' not in elem['strict_eval']
-        )
+        return 'judgement-gen-base' not in elem or 'judgement-base-gen' not in elem or 'generation' not in elem
 
     def update(self, predictions, aggregation_mode):
         """Updating the evaluation results with the current element.
@@ -301,9 +348,10 @@ def compute_metrics(
     max_samples=-1,
     aggregation_mode='first',
 ):
-    file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(prediction_jsonl_files)]
-
     evaluator.reset()
+    evaluator.setup(prediction_jsonl_files)
+
+    file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(prediction_jsonl_files)]
     for idx, predictions in enumerate(zip_longest(*file_handles)):
         if idx == max_samples:
             break
