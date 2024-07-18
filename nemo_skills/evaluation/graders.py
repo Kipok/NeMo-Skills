@@ -18,6 +18,7 @@ import shutil
 import subprocess
 from argparse import Namespace
 from pathlib import Path
+from typing import Optional
 
 from nemo_skills.utils import nested_dataclass, unroll_files
 
@@ -118,7 +119,7 @@ class ArenaGraderConfig:
     batch_size: int = 100  # lower if running into rate limits
     tokens_to_generate: int = 4096  # will auto-lower to max possible for NGC models
     use_batch_api: bool = True  # only supported for OpenAI models!
-    base_url: str | None = None
+    base_url: Optional[str] = None
     judge_model: str = "gpt-4-1106-preview"
     # defaults to True to avoid regenerating judgements unless necessary
     skip_filled: bool = True
