@@ -14,6 +14,7 @@
 
 import json
 import logging
+import re
 import shutil
 import subprocess
 import sys
@@ -111,6 +112,18 @@ def if_grader(cfg):
 
 
 def arena_grader(cfg):
+    def get_score(judgment):
+        pattern = re.compile('\[\[([AB<>=]+)\]\]')
+        # adapted from https://github.com/lm-sys/arena-hard-auto/blob/main/gen_judgment.py
+        matches = pattern.findall(judgment)
+        matches = [m for m in matches if m != ""]
+        if len(set(matches)) == 0:
+            return None
+        elif len(set(matches)) == 1:
+            return matches[0].strip("\n")
+        else:
+            return None
+
     # currently only support api models for simplicity
     def write_judgements(data_file, judge_model='gpt-4-1106-preview', base_url=None, batch_size=10):
         data_file = Path(data_file).absolute()
@@ -124,21 +137,24 @@ def arena_grader(cfg):
             f'++output_file={parent_dir}/judgement.jsonl '
             f'{"++server.base_url=" + base_url if base_url else ""} '
             f'++batch_size={batch_size} '
+            f'++inference.tokens_to_generate=2048 '  # TODO: this should ideally be as large as possible, but need a tokenizer
         )
+        # TODO: number_of_judgment_attempts ?
         subprocess.run(cmd, shell=True, check=True)
 
         # fusing judge responses back into the generation file
         with open(parent_dir / 'judgement.jsonl', 'rt', encoding="utf-8") as f:
-            judge_results = [json.loads(line)['generation'] for line in f]
+            judgements = [json.loads(line)['generation'] for line in f]
 
-        with open(data_file, 'rt', encoding='utf-8') as fin:
+        with open(str(data_file)[:-4], 'rt', encoding='utf-8') as fin:
             samples = [json.loads(line) for line in fin]
 
-        for sample, judge_result in zip(samples, judge_results):
-            sample['judge_result'].append(judge_result)
+        for sample, judgement in zip(samples, judgements):
+            sample['judgements'].append(judgement)
+            sample['judge_scores'].append(get_score(judgement))
 
         # writing back to the original file without -tmp
-        with open(data_file[:-4], "wt", encoding="utf-8") as fout:
+        with open(str(data_file)[:-4], "wt", encoding="utf-8") as fout:
             for sample in samples:
                 fout.write(json.dumps(sample) + "\n")
 
@@ -150,11 +166,11 @@ def arena_grader(cfg):
             samples = [json.loads(line) for line in fin]
 
         # TODO: caching?
+        # need to create a tmp file to not override the generation key
         with open(jsonl_file + '-tmp', "wt", encoding="utf-8") as fout:
             for sample in samples:
                 sample['answer_1'] = sample.pop('generation')
                 sample['answer_2'] = sample['baseline_answer']
-                sample['judge_result'] = []
                 fout.write(json.dumps(sample) + "\n")
 
         write_judgements(data_file=jsonl_file + '-tmp', **cfg.eval_config)

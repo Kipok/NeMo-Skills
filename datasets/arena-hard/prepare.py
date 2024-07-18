@@ -45,4 +45,8 @@ if __name__ == "__main__":
             assert len(data['turns']) == 1
             data['question'] = data.pop('turns')[0]['content']
             data['baseline_answer'] = baseline_answers[data['question_id']]
+            # will be filled by the evaluation script
+            data['judgements'] = []
+            data['judge_scores'] = []
+
             fout.write(json.dumps(data) + "\n")

@@ -100,7 +100,7 @@ class CodeEval:
         Args:
             predictions (list[dict]): aggregated predictions across all generations.
                 The content of the file is benchmark specific.
-            aggregation_mode (str): "best", "majority", "first", etc. Might vary by benchmark.
+            aggregation_mode (str): "best", "first", etc. Might vary by benchmark.
         """
         # this shouldn't do any heavy calculation, but just read the metric from existing json entry
         # all the heavy lifting should be done in the evaluation script
@@ -148,7 +148,7 @@ class IFEval:
         Args:
             predictions (list[dict]): aggregated predictions across all generations.
                 The content of the file is benchmark specific.
-            aggregation_mode (str): "best", "majority", "first", etc. Might vary by benchmark.
+            aggregation_mode (str): "best", "first", etc. Might vary by benchmark.
         """
         # this shouldn't do any heavy calculation, but just read the metric from existing json entry
         # all the heavy lifting should be done in the evaluation script
@@ -172,6 +172,82 @@ class IFEval:
     def reset(self):
         self.total_correct_loose = 0
         self.total_correct_strict = 0
+        self.total = 0
+
+
+class ArenaEval:
+    def __init__(self):
+        self.reset()
+
+    def fill_up_missing(self):
+        return {'loose_eval': {'follow_all_instructions': False}, 'strict_eval': {'follow_all_instructions': False}}
+
+    def is_incomplete(self, elem):
+        incomplete = 'loose_eval' not in elem or 'strict_eval' not in elem
+        if incomplete:
+            return False
+        return (
+            'follow_all_instructions' not in elem['loose_eval'] or 'follow_all_instructions' not in elem['strict_eval']
+        )
+
+    def update(self, predictions, aggregation_mode):
+        """Updating the evaluation results with the current element.
+
+        Args:
+            predictions (list[dict]): aggregated predictions across all generations.
+                The content of the file is benchmark specific.
+            aggregation_mode (str): "best", "first", etc. Might vary by benchmark.
+        """
+        # this shouldn't do any heavy calculation, but just read the metric from existing json entry
+        # all the heavy lifting should be done in the evaluation script
+        self.total += 1
+        self.scores.append([])
+        if aggregation_mode == "best":
+            # adding the best score out of all the generations
+            possible_scores = ['A>>B', 'A>B', 'A=B', 'B>A', 'B>>A']
+            for possible_score in possible_scores:
+                # picking the best available score
+                if any([elem['judge_scores'][0] == possible_score for elem in predictions]):
+                    self.scores[-1].append(possible_score)
+                    best_id = [elem['judge_scores'][0] for elem in predictions].index(possible_score)
+                    self.lengths += len(predictions[best_id]['generation'])
+                    break
+            else:
+                self.scores[-1].append(None)  # in case judge didn't generate a valid score
+            # second score is grading swapped answers, so we iterate from the end
+            for possible_score in possible_scores[::-1]:
+                # picking the best available score
+                if any([elem['judge_scores'][1] == possible_score for elem in predictions]):
+                    self.scores[-1].append(possible_score)
+                    best_id = [elem['judge_scores'][1] for elem in predictions].index(possible_score)
+                    self.lengths += len(predictions[best_id]['generation'])
+                    break
+            else:
+                self.scores[-1].append(None)  # in case judge didn't generate a valid score
+        elif aggregation_mode == "first":
+            self.lengths += len(predictions[0]['generation'])
+            self.scores[-1] = predictions[0]['judge_scores']
+        else:
+            raise ValueError(f"Unsupported mode {aggregation_mode}")
+
+    def get_metrics(self):
+        # run the score aggregation using arena-hard logic
+        # currently needs sklearn, which is not ideal, but let's just error-out if it's not installed
+        try:
+            from nemo_skills.evaluation.arena_utils import get_aggregate_score
+        except ImportError:
+            raise ImportError(
+                "Please install scikit-learn to be able to bootstrap battle results and calculate accurate elo scores"
+            )
+
+        metrics = {'num_entries': self.total}
+        metrics.update(get_aggregate_score(self.scores))
+        metrics['avg_response_length'] = self.lengths / self.total
+        return metrics
+
+    def reset(self):
+        self.scores = []  # list of lists
+        self.lengths = 0
         self.total = 0
 
 
