@@ -216,7 +216,7 @@ class ArenaEval:
         self.total += 1
         self.scores.append([])
         if aggregation_mode == "best":
-            judge_scores = [self._get_judge_score(elem['judgements'][0]) for elem in predictions]
+            judge_scores = [self._get_judge_score(elem['judgement-gen-base']) for elem in predictions]
             # adding the best score out of all the generations
             possible_scores = ['A>>B', 'A>B', 'A=B', 'B>A', 'B>>A']
             for possible_score in possible_scores:
@@ -229,7 +229,7 @@ class ArenaEval:
             else:
                 self.scores[-1].append(None)  # in case judge didn't generate a valid score
 
-            judge_scores = [self._get_judge_score(elem['judgements'][1]) for elem in predictions]
+            judge_scores = [self._get_judge_score(elem['judgement-base-gen']) for elem in predictions]
             # second score is grading swapped answers, so we iterate from the end
             for possible_score in possible_scores[::-1]:
                 # picking the best available score
@@ -242,7 +242,10 @@ class ArenaEval:
                 self.scores[-1].append(None)  # in case judge didn't generate a valid score
         elif aggregation_mode == "first":
             self.lengths += len(predictions[0]['generation'])
-            self.scores[-1] = [self._get_judge_score(judgement) for judgement in predictions[0]['judgements']]
+            self.scores[-1] = [
+                self._get_judge_score(predictions[0]['judgement-gen-base']),
+                self._get_judge_score(predictions[0]['judgement-base-gen']),
+            ]
         else:
             raise ValueError(f"Unsupported mode {aggregation_mode}")
 

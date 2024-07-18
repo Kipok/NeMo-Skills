@@ -47,5 +47,7 @@ if __name__ == "__main__":
             data['baseline_answer'] = baseline_answers[data['question_id']]
             # will be filled by the evaluation script
             data['judgements'] = []
+            # original code sets different temperature for different categories
+            # TODO: do we need to do the same or greedy is good enough?
 
             fout.write(json.dumps(data) + "\n")

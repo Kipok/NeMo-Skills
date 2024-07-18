@@ -14,12 +14,13 @@
 
 import json
 import logging
-import re
 import shutil
 import subprocess
 import sys
 from argparse import Namespace
 from pathlib import Path
+
+from nemo_skills.utils import nested_dataclass
 
 LOG = logging.getLogger(__file__)
 
@@ -111,67 +112,124 @@ def if_grader(cfg):
         (parent_dir / 'eval_results_strict.jsonl').unlink()
 
 
+@nested_dataclass
+class ArenaGraderConfig:
+    """NOTE: cannot have any nested structures due to coming from a dictionary"""
+
+    batch_size: int = 100  # lower if running into rate limits
+    tokens_to_generate: int = 4096  # will auto-lower to max possible for NGC models
+    use_batch_api: bool = True  # only supported for OpenAI models!
+    base_url: str | None = None
+    judge_model: str = "gpt-4-1106-preview"
+    # defaults to True to avoid regenerating judgements unless necessary
+    # note that if will only pick up intermediate generations, but if generation
+    # has completed fully, this flag will be ignored and will always re-do everything
+    # TODO: fix that?
+    skip_filled: bool = True
+
+
 def arena_grader(cfg):
-    # currently only support api models for simplicity
-    def write_judgements(data_file, judge_model='gpt-4-1106-preview', base_url=None, batch_size=10):
-        data_file = Path(data_file).absolute()
-        parent_dir = Path(__file__).absolute().parent
-        cmd = (
-            f'{sys.executable} {Path(__file__).absolute().parents[2]}/nemo_skills/inference/generate_solutions.py '
-            f'+prompt=openai/arena-judge '
-            f'++server.server_type=openai '
-            f'++server.model={judge_model} '
-            f'++data_file={data_file} '
-            f'++output_file={parent_dir}/judgement.jsonl '
-            f'{"++server.base_url=" + base_url if base_url else ""} '
-            f'++batch_size={batch_size} '
-            f'++inference.tokens_to_generate=2048 '  # TODO: this should ideally be as large as possible, but need a tokenizer
-        )
-        # TODO: number_of_judgment_attempts ?
-        subprocess.run(cmd, shell=True, check=True)
+    from tqdm import tqdm
 
-        # fusing judge responses back into the generation file
-        with open(parent_dir / 'judgement.jsonl', 'rt', encoding="utf-8") as f:
-            judgements = [json.loads(line)['generation'] for line in f]
+    from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
+    from nemo_skills.inference.server.model import get_model
 
-        with open(str(data_file)[:-4], 'rt', encoding='utf-8') as fin:
-            samples = [json.loads(line) for line in fin]
+    eval_config = ArenaGraderConfig(**cfg.eval_config)
+    assert eval_config.batch_size % 2 == 0  # required due to how everything is implement, can fix later
 
-        for sample, judgement in zip(samples, judgements):
-            sample['judgements'].append(judgement)
+    if eval_config.use_batch_api and eval_config.base_url:
+        raise ValueError("Batch API is only supported for OpenAI models!")
 
-        # writing back to the original file without -tmp
-        with open(str(data_file)[:-4], "wt", encoding="utf-8") as fout:
-            for sample in samples:
-                fout.write(json.dumps(sample) + "\n")
+    llm = get_model(
+        server_type='openai',
+        base_url=eval_config.base_url,
+        model=eval_config.judge_model,
+    )
+    prompt = Prompt(config=get_prompt_config('openai/arena-judge'))
 
-        (parent_dir / 'judgement.jsonl').unlink()
+    # assuming everything fits in memory for simplicity
+    if eval_config.use_batch_api:
+        for jsonl_file in cfg.prediction_jsonl_files:
+            data_points = []
+            with open(jsonl_file, 'rt', encoding='utf-8') as fin:
+                for line in fin:
+                    data_point = json.loads(line)
+                    # adding required fields for judgement prompt
+                    to_add = data_point.copy()
+                    to_add['answer_1'] = data_point['generation']
+                    to_add['answer_2'] = data_point['baseline_answer']
+                    to_add['judgement_mode'] = 'gen-base'
+                    data_points.append(to_add)
+                    # reversing the answers
+                    to_add = data_point.copy()
+                    to_add['answer_2'] = data_point['generation']
+                    to_add['answer_1'] = data_point['baseline_answer']
+                    to_add['judgement_mode'] = 'base-gen'
+                    data_points.append(to_add)
 
-    for jsonl_file in cfg.prediction_jsonl_files:
-        # preparing input generation file by adding baseline answers
-        with open(jsonl_file, 'rt', encoding='utf-8') as fin:
-            samples = [json.loads(line) for line in fin]
+            metadata = llm.generate_batch(
+                prompts=[prompt.build_string(data_point) for data_point in data_points],
+                tokens_to_generate=eval_config.tokens_to_generate,
+            )
+    else:
+        for jsonl_file in cfg.prediction_jsonl_files:
+            with open(jsonl_file, 'rt', encoding='utf-8') as fin:
+                data = [json.loads(line) for line in fin]
 
-        # TODO: caching?
-        # need to create a tmp file to not override the generation key
-        with open(jsonl_file + '-tmp', "wt", encoding="utf-8") as fout:
-            for sample in samples:
-                sample['answer_1'] = sample.pop('generation')
-                sample['answer_2'] = sample['baseline_answer']
-                fout.write(json.dumps(sample) + "\n")
+            output_file = jsonl_file + '-judgement'
+            starting_idx = 0
+            if eval_config.skip_filled:
+                try:
+                    with open(output_file, "rt", encoding="utf-8") as fin:
+                        starting_idx = len(fin.readlines())
+                except FileNotFoundError:
+                    LOG.warning(f"File `{output_file}` not found, starting from scratch")
+            data = data[starting_idx:]
 
-        write_judgements(data_file=jsonl_file + '-tmp', **cfg.eval_config)
+            # saving to a tmp file to avoid corrupting original generation in case something goes wrong
+            with open(output_file, "at" if eval_config.skip_filled else "wt", encoding="utf-8", buffering=1) as fout:
+                data_points = []
+                for data_point in tqdm(data, initial=starting_idx, total=len(data) + starting_idx):
+                    # adding required fields for judgement prompt
+                    to_add = data_point.copy()
+                    to_add['answer_1'] = data_point['generation']
+                    to_add['answer_2'] = data_point['baseline_answer']
+                    to_add['judgement_mode'] = 'gen-base'
+                    data_points.append(to_add)
+                    # reversing the answers
+                    to_add = data_point.copy()
+                    to_add['answer_2'] = data_point['generation']
+                    to_add['answer_1'] = data_point['baseline_answer']
+                    to_add['judgement_mode'] = 'base-gen'
+                    data_points.append(to_add)
 
-        # switching the order of answers
-        with open(jsonl_file, 'rt', encoding='utf-8') as fin:
-            samples = [json.loads(line) for line in fin]
+                    if len(data_points) == eval_config.batch_size:
+                        outputs = llm.generate(
+                            prompts=[prompt.build_string(data_point) for data_point in data_points],
+                            tokens_to_generate=eval_config.tokens_to_generate,
+                        )
+                        to_write = {}
+                        for idx, (output, original_data_point) in enumerate(zip(outputs, data_points)):
+                            to_write[f'judgement-{original_data_point["judgement_mode"]}'] = output['generation']
+                            if idx % 2 != 0:
+                                fout.write(json.dumps(to_write) + "\n")
+                                to_write = {}
+                        data_points = []
 
-        with open(jsonl_file + '-tmp', "wt", encoding="utf-8") as fout:
-            for sample in samples:
-                sample['answer_1'] = sample['baseline_answer']
-                sample['answer_2'] = sample.pop('generation')
-                fout.write(json.dumps(sample) + "\n")
+                # collecting the final batch
+                if len(data_points) > 0:
+                    outputs = llm.generate(
+                        prompts=[prompt.build_string(data_point) for data_point in data_points],
+                        tokens_to_generate=eval_config.tokens_to_generate,
+                    )
+                    for output, original_data_point in zip(outputs, data_points):
+                        fout.write(
+                            json.dumps({f'judgement-{original_data_point["judgement_mode"]}': output['generation']})
+                            + "\n"
+                        )
 
-        write_judgements(data_file=jsonl_file + '-tmp', **cfg.eval_config)
-
-        Path(jsonl_file + '-tmp').unlink()
+            # fusing back into original file
+            with open(jsonl_file, 'wt', encoding='utf-8') as fout, open(output_file, 'rt', encoding='utf-8') as fin:
+                for data_point, judgement_line in zip(data, fin):
+                    data_point.update(json.loads(judgement_line))
+                    fout.write(json.dumps(data_point) + "\n")

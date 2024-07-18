@@ -252,6 +252,7 @@ class OpenAIModel(BaseModel):
         repetition_penalty: float = 1.0,
         random_seed: int = 0,
         stop_phrases: list[str] | None = None,
+        reduce_generation_tokens_if_error: bool = True,
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
         if stop_phrases is None:
@@ -272,6 +273,7 @@ class OpenAIModel(BaseModel):
                         repetition_penalty=repetition_penalty,
                         random_seed=random_seed,
                         stop_phrases=stop_phrases,
+                        reduce_generation_tokens_if_error=reduce_generation_tokens_if_error,
                     )
                 )
 
@@ -365,18 +367,48 @@ class OpenAIModel(BaseModel):
         repetition_penalty: float,
         random_seed: int,
         stop_phrases: list[str],
+        reduce_generation_tokens_if_error: bool = True,
     ) -> str:
+        import openai
+
         messages = self._parse_prompt(prompt)
-        response = self.client.chat.completions.create(
-            model=self.model,
-            temperature=temperature,
-            top_p=top_p,
-            max_tokens=tokens_to_generate,
-            presence_penalty=repetition_penalty,
-            seed=random_seed,
-            stop=stop_phrases,
-            messages=messages,
-        ).choices[0]
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                temperature=temperature,
+                top_p=top_p,
+                max_tokens=tokens_to_generate,
+                presence_penalty=repetition_penalty,
+                seed=random_seed,
+                stop=stop_phrases,
+                messages=messages,
+            ).choices[0]
+        except openai.BadRequestError as e:
+            # this likely only works for Nvidia-hosted models
+            if not reduce_generation_tokens_if_error:
+                raise
+            msg = e.body['detail']
+            # expected message:
+            # This model's maximum context length is N tokens.
+            # However, you requested X tokens (Y in the messages, Z in the completion).
+            # Please reduce the length of the messages or completion.
+            if msg.startswith("This model's maximum context length is"):
+                numbers = re.findall(r"\d+", msg)
+                max_tokens = int(numbers[0]) - int(numbers[2])
+                LOG.warning("Reached max tokens! Reducing the number of tokens to generate to %d", max_tokens)
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    temperature=temperature,
+                    top_p=top_p,
+                    max_tokens=max_tokens,
+                    presence_penalty=repetition_penalty,
+                    seed=random_seed,
+                    stop=stop_phrases,
+                    messages=messages,
+                ).choices[0]
+            else:
+                raise
+
         output = response.message.content
         return output
 
