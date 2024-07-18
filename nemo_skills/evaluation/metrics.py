@@ -14,6 +14,7 @@
 
 import json
 import logging
+import re
 import sys
 from collections import Counter
 from itertools import zip_longest
@@ -179,6 +180,18 @@ class ArenaEval:
     def __init__(self):
         self.reset()
 
+    def _get_judge_score(self, judgment):
+        # adapted from https://github.com/lm-sys/arena-hard-auto/blob/main/gen_judgment.py
+        pattern = re.compile('\[\[([AB<>=]+)\]\]')
+        matches = pattern.findall(judgment)
+        matches = [m for m in matches if m != ""]
+        if len(set(matches)) == 0:
+            return None
+        elif len(set(matches)) == 1:
+            return matches[0].strip("\n")
+        else:
+            return None
+
     def fill_up_missing(self):
         return {'loose_eval': {'follow_all_instructions': False}, 'strict_eval': {'follow_all_instructions': False}}
 
@@ -203,30 +216,33 @@ class ArenaEval:
         self.total += 1
         self.scores.append([])
         if aggregation_mode == "best":
+            judge_scores = [self._get_judge_score(elem['judgements'][0]) for elem in predictions]
             # adding the best score out of all the generations
             possible_scores = ['A>>B', 'A>B', 'A=B', 'B>A', 'B>>A']
             for possible_score in possible_scores:
                 # picking the best available score
-                if any([elem['judge_scores'][0] == possible_score for elem in predictions]):
+                if any([score == possible_score for score in judge_scores]):
                     self.scores[-1].append(possible_score)
-                    best_id = [elem['judge_scores'][0] for elem in predictions].index(possible_score)
+                    best_id = judge_scores.index(possible_score)
                     self.lengths += len(predictions[best_id]['generation'])
                     break
             else:
                 self.scores[-1].append(None)  # in case judge didn't generate a valid score
+
+            judge_scores = [self._get_judge_score(elem['judgements'][1]) for elem in predictions]
             # second score is grading swapped answers, so we iterate from the end
             for possible_score in possible_scores[::-1]:
                 # picking the best available score
-                if any([elem['judge_scores'][1] == possible_score for elem in predictions]):
+                if any([score == possible_score for score in judge_scores]):
                     self.scores[-1].append(possible_score)
-                    best_id = [elem['judge_scores'][1] for elem in predictions].index(possible_score)
+                    best_id = judge_scores.index(possible_score)
                     self.lengths += len(predictions[best_id]['generation'])
                     break
             else:
                 self.scores[-1].append(None)  # in case judge didn't generate a valid score
         elif aggregation_mode == "first":
             self.lengths += len(predictions[0]['generation'])
-            self.scores[-1] = predictions[0]['judge_scores']
+            self.scores[-1] = [self._get_judge_score(judgement) for judgement in predictions[0]['judgements']]
         else:
             raise ValueError(f"Unsupported mode {aggregation_mode}")
 

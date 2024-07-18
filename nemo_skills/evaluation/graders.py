@@ -112,18 +112,6 @@ def if_grader(cfg):
 
 
 def arena_grader(cfg):
-    def get_score(judgment):
-        pattern = re.compile('\[\[([AB<>=]+)\]\]')
-        # adapted from https://github.com/lm-sys/arena-hard-auto/blob/main/gen_judgment.py
-        matches = pattern.findall(judgment)
-        matches = [m for m in matches if m != ""]
-        if len(set(matches)) == 0:
-            return None
-        elif len(set(matches)) == 1:
-            return matches[0].strip("\n")
-        else:
-            return None
-
     # currently only support api models for simplicity
     def write_judgements(data_file, judge_model='gpt-4-1106-preview', base_url=None, batch_size=10):
         data_file = Path(data_file).absolute()
@@ -151,7 +139,6 @@ def arena_grader(cfg):
 
         for sample, judgement in zip(samples, judgements):
             sample['judgements'].append(judgement)
-            sample['judge_scores'].append(get_score(judgement))
 
         # writing back to the original file without -tmp
         with open(str(data_file)[:-4], "wt", encoding="utf-8") as fout:

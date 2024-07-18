@@ -47,6 +47,5 @@ if __name__ == "__main__":
             data['baseline_answer'] = baseline_answers[data['question_id']]
             # will be filled by the evaluation script
             data['judgements'] = []
-            data['judge_scores'] = []
 
             fout.write(json.dumps(data) + "\n")

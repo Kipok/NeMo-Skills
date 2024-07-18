@@ -282,6 +282,80 @@ class OpenAIModel(BaseModel):
 
         return outputs
 
+    def batch_generate(
+        self,
+        prompts: list[str],
+        tokens_to_generate: int = 512,
+        temperature: float = 0.0,
+        top_p: float = 0.95,
+        top_k: int = 0,
+        repetition_penalty: float = 1.0,
+        random_seed: int = 0,
+        stop_phrases: list[str] | None = None,
+    ) -> list[dict]:
+        # only supported by the OpenAI endpoint!
+        if stop_phrases is None:
+            stop_phrases = []
+        if top_k != 0:
+            raise ValueError("`top_k` is not supported by OpenAI API, please set it to default value `0`.")
+
+        # preparing the requests jsonl file
+        with open("requests.jsonl", "wt", encoding='utf-8') as fout:
+            for idx, prompt in enumerate(prompts):
+                fout.write(
+                    json.dumps(
+                        {
+                            "custom_id": f"{idx}",
+                            "method": "POST",
+                            "url": "/v1/chat/completions",
+                            "body": {
+                                "model": self.model,
+                                "messages": self._parse_prompt(prompt),
+                                "max_tokens": tokens_to_generate,
+                                "temperature": temperature,
+                                "top_p": top_p,
+                                "presence_penalty": repetition_penalty,
+                                "seed": random_seed,
+                                "stop": stop_phrases,
+                            },
+                        }
+                    )
+                    + "\n"
+                )
+
+        with open("requests.jsonl", "rb") as batch_file_handle:
+            batch_file_id = self.client.files.create(file=batch_file_handle, purpose="batch").id
+
+            metadata = self.client.batches.create(
+                input_file_id=batch_file_id,
+                endpoint="/v1/chat/completions",
+                completion_window="24h",  # the only supported value, but should finish faster
+                metadata={"description": "batch job"},
+            )
+
+        return metadata
+
+    def get_batch_results(self, batch_id):
+        metadata = self.client.batches.retrieve(batch_id)
+        outputs = None
+        if metadata.status == 'completed' and metadata.output_file_id is not None:
+            file_response = self.client.files.content(metadata.output_file_id)
+            responses = file_response.text
+            outputs = []
+            for line in responses.split('\n')[:-1]:
+                data = json.loads(line)
+                outputs.append(
+                    {
+                        'custom_id': data['custom_id'],
+                        'generation': data['response']['body']['choices'][0]['message']['content'],
+                    }
+                )
+            outputs = sorted(outputs, key=lambda x: int(x['custom_id']))
+            for output in outputs:
+                output.pop('custom_id')
+
+        return metadata, outputs
+
     def _send_request(
         self,
         prompt: str,
