@@ -19,6 +19,7 @@ import logging
 import os
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Union
 
 import requests
@@ -217,6 +218,7 @@ class OpenAIModel(BaseModel):
         model=None,
         base_url=None,
         api_key=None,
+        max_parallel_requests: int = 100,  # can adjust to avoid rate-limiting
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -238,6 +240,7 @@ class OpenAIModel(BaseModel):
 
         self.model = model
         self.client = OpenAI(api_key=api_key, base_url=base_url)
+        self.max_parallel_requests = max_parallel_requests
 
     def generate(
         self,
@@ -256,18 +259,23 @@ class OpenAIModel(BaseModel):
         if top_k != 0:
             raise ValueError("`top_k` is not supported by OpenAI API, please set it to default value `0`.")
 
-        outputs = []
-        for prompt in prompts:
-            response = self._send_request(
-                prompt=prompt,
-                tokens_to_generate=tokens_to_generate,
-                temperature=temperature,
-                top_p=top_p,
-                repetition_penalty=repetition_penalty,
-                random_seed=random_seed,
-                stop_phrases=stop_phrases,
-            )
-            outputs.append({'generation': response})
+        futures = []
+        with ThreadPoolExecutor(max_workers=self.max_parallel_requests) as executor:
+            for prompt in prompts:
+                futures.append(
+                    executor.submit(
+                        self._send_request,
+                        prompt=prompt,
+                        tokens_to_generate=tokens_to_generate,
+                        temperature=temperature,
+                        top_p=top_p,
+                        repetition_penalty=repetition_penalty,
+                        random_seed=random_seed,
+                        stop_phrases=stop_phrases,
+                    )
+                )
+
+        outputs = [{'generation': future.result()} for future in futures]
 
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)

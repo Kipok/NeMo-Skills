@@ -16,13 +16,14 @@ import json
 import logging
 import shutil
 import subprocess
+import sys
 from argparse import Namespace
 from pathlib import Path
 
 LOG = logging.getLogger(__file__)
 
 
-def math_eval(cfg):
+def math_grader(cfg):
     from nemo_skills.code_execution.sandbox import get_sandbox
 
     sandbox = get_sandbox(**cfg.sandbox)
@@ -32,7 +33,7 @@ def math_eval(cfg):
     )
 
 
-def code_eval(cfg):
+def code_grader(cfg):
     # TODO: need to move it to a separate docker (either our sandbox or separate srun)
     from evalplus.evaluate import evaluate
     from omegaconf import OmegaConf
@@ -76,7 +77,7 @@ def code_eval(cfg):
         shutil.move(jsonl_file[:-6] + '_eval_results.json', jsonl_file[:-6] + '_eval_results-saved.json')
 
 
-def ifeval(cfg):
+def if_grader(cfg):
     for jsonl_file in cfg.prediction_jsonl_files:
         parent_dir = Path(jsonl_file).absolute().parent
         cmd = (
@@ -107,3 +108,67 @@ def ifeval(cfg):
         # removing metric files to avoid reusing them
         (parent_dir / 'eval_results_loose.jsonl').unlink()
         (parent_dir / 'eval_results_strict.jsonl').unlink()
+
+
+def arena_grader(cfg):
+    # currently only support api models for simplicity
+    def write_judgements(data_file, judge_model='gpt-4-1106-preview', base_url=None, batch_size=10):
+        data_file = Path(data_file).absolute()
+        parent_dir = Path(__file__).absolute().parent
+        cmd = (
+            f'{sys.executable} {Path(__file__).absolute().parents[2]}/nemo_skills/inference/generate_solutions.py '
+            f'+prompt=openai/arena-judge '
+            f'++server.server_type=openai '
+            f'++server.model={judge_model} '
+            f'++data_file={data_file} '
+            f'++output_file={parent_dir}/judgement.jsonl '
+            f'{"++server.base_url=" + base_url if base_url else ""} '
+            f'++batch_size={batch_size} '
+        )
+        subprocess.run(cmd, shell=True, check=True)
+
+        # fusing judge responses back into the generation file
+        with open(parent_dir / 'judgement.jsonl', 'rt', encoding="utf-8") as f:
+            judge_results = [json.loads(line)['generation'] for line in f]
+
+        with open(data_file, 'rt', encoding='utf-8') as fin:
+            samples = [json.loads(line) for line in fin]
+
+        for sample, judge_result in zip(samples, judge_results):
+            sample['judge_result'].append(judge_result)
+
+        # writing back to the original file without -tmp
+        with open(data_file[:-4], "wt", encoding="utf-8") as fout:
+            for sample in samples:
+                fout.write(json.dumps(sample) + "\n")
+
+        (parent_dir / 'judgement.jsonl').unlink()
+
+    for jsonl_file in cfg.prediction_jsonl_files:
+        # preparing input generation file by adding baseline answers
+        with open(jsonl_file, 'rt', encoding='utf-8') as fin:
+            samples = [json.loads(line) for line in fin]
+
+        # TODO: caching?
+        with open(jsonl_file + '-tmp', "wt", encoding="utf-8") as fout:
+            for sample in samples:
+                sample['answer_1'] = sample.pop('generation')
+                sample['answer_2'] = sample['baseline_answer']
+                sample['judge_result'] = []
+                fout.write(json.dumps(sample) + "\n")
+
+        write_judgements(data_file=jsonl_file + '-tmp', **cfg.eval_config)
+
+        # switching the order of answers
+        with open(jsonl_file, 'rt', encoding='utf-8') as fin:
+            samples = [json.loads(line) for line in fin]
+
+        with open(jsonl_file + '-tmp', "wt", encoding="utf-8") as fout:
+            for sample in samples:
+                sample['answer_1'] = sample['baseline_answer']
+                sample['answer_2'] = sample.pop('generation')
+                fout.write(json.dumps(sample) + "\n")
+
+        write_judgements(data_file=jsonl_file + '-tmp', **cfg.eval_config)
+
+        Path(jsonl_file + '-tmp').unlink()
