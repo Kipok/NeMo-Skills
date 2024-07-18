@@ -299,6 +299,8 @@ class ArenaEval(BaseEval):
     def get_metrics(self):
         # run the score aggregation using arena-hard logic
         # currently needs sklearn, which is not ideal, but let's just error-out if it's not installed
+        # it's also not going to work on clusters unless there is python 3.10 and all packages are installed
+        # so currently need to be done inside the container or with some custom setup
         try:
             from nemo_skills.evaluation.arena_utils import get_aggregate_score
         except ImportError:

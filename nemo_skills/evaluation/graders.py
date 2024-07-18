@@ -173,10 +173,12 @@ def arena_grader(cfg):
                 prompts=[prompt.build_string(data_point) for data_point in data_points],
                 tokens_to_generate=eval_config.tokens_to_generate,
             )
-            print(request_metadata)
             # saving the request id to be able to retrieve results when they are ready
             with open(jsonl_file + '-batch-request-id', 'wt', encoding='utf-8') as fout:
                 fout.write(json.dumps({'request_id': request_metadata.id}))
+            LOG.info('Submitted batch evaluation request to OpenAI. Please wait for the results to be ready.')
+            LOG.info('The current status and final results can be accessed through summarize_results.py')
+            LOG.info('Request metadata: %s', str(request_metadata))
         else:
             output_file = jsonl_file + '-judgement'
             starting_idx = 0
