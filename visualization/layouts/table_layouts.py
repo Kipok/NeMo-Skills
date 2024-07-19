@@ -612,7 +612,7 @@ def get_general_stats_layout(
         "generations per sample": (overall_samples / dataset_size if dataset_size else 0),
         **custom_stats,
     }
-    return [html.Div([html.Div(f'{name}: {value}') for name, value in stats.items()])]
+    return [html.Div([html.Pre(f'{name}: {value}') for name, value in stats.items()])]
 
 
 def get_sorting_answers_layout(base_model: str, sorting_function: str, models: List[str]) -> List[html.Tr]:

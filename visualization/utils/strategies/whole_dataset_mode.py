@@ -149,7 +149,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
             [
                 html.Div(
                     [
-                        html.Pre(f'Done. Results are in folder\n{metrics_directory}'),
+                        html.Pre(f'Done. The results are in the folder\n{metrics_directory}'),
                         dash_table.DataTable(
                             id='table',
                             columns=[{"name": i, "id": i} for i in df.columns],

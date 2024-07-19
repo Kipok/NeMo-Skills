@@ -248,7 +248,7 @@ class ModeStrategies:
                         outputs[0]['generation'],
                     ),
                     style={"border": f"2px solid {color}"},
-                    switch_is_active=True,
+                    is_formatted=True,
                 ),
                 html.Div(
                     (
