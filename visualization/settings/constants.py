@@ -33,7 +33,12 @@ ONE_SAMPLE_MODE = "one_sample"
 METRICS = "metrics"
 OUTPUT = "output"
 OUTPUT_PATH = "{}-{}.jsonl"
-PARAMS_FOR_WHOLE_DATASET_ONLY = ['offset', 'max_samples', 'batch_size']
+PARAMS_FOR_WHOLE_DATASET_ONLY = [
+    'offset',
+    'max_samples',
+    'batch_size',
+    'generation_name',
+]
 PARAMS_TO_REMOVE = [
     'output_file',
     'dataset',

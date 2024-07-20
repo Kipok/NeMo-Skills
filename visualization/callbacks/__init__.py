@@ -104,6 +104,7 @@ def set_config(cfg: VisualizationConfig) -> None:
     config['data_explorer']['retrieval_fields'] = get_specific_fields(config['data_explorer'], RETRIEVAL_FIELDS)
 
     config['data_explorer']['data_file'] = str(config['data_explorer']['data_file'])
+    config['data_explorer']['generation_name'] = 'default_name'
 
 
 set_config()

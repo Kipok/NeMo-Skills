@@ -84,36 +84,36 @@ def choose_base_model(
 
 
 @app.callback(
-    [
-        Output("save_dataset_modal", "children", allow_duplicate=True),
-        Output("save_dataset_modal", "is_open"),
-    ],
-    [
-        Input("save_dataset", "n_clicks"),
-    ],
-    [State("base_model_answers_selector", "value")],
+    Output("save_dataset_modal", "is_open", allow_duplicate=True),
+    Input("save_dataset", "n_clicks"),
     prevent_initial_call=True,
 )
-def save_dataset(n_click: int, base_model: str) -> Tuple[List, bool]:
-    if (
-        not n_click
-        or not current_app.config['data_explorer']['visualization_params']['save_generations_path']
-        or not base_model
-    ):
+def open_save_dataset_modal(n1: int) -> bool:
+    ctx = callback_context
+    if not ctx.triggered:
         return no_update
-    path = current_app.config['data_explorer']['visualization_params']['save_generations_path']
-    if not os.path.exists(path):
-        os.mkdir(path)
 
-    if not os.path.exists(os.path.join(path, base_model)):
-        path = os.path.join(path, base_model)
-    else:
-        i = 0
-        while os.path.exists(os.path.join(path, f'{base_model}_{i}')):
-            i += 1
-        path = os.path.join(path, f'{base_model}_{i}')
+    return True
 
-    os.mkdir(path)
+
+@app.callback(
+    [Output("save_dataset_modal", "is_open", allow_duplicate=True), Output('error_message', 'children')],
+    Input("save_dataset_button", "n_clicks"),
+    [
+        State("base_model_answers_selector", "value"),
+        State("save_path", "value"),
+    ],
+    prevent_initial_call=True,
+)
+def save_dataset(n_click: int, base_model: str, save_path: str) -> Tuple[List, bool]:
+    if not n_click or not save_path or not base_model:
+        return no_update, no_update
+
+    if not os.path.exists(save_path):
+        try:
+            os.mkdir(save_path)
+        except:
+            return True, html.Pre(f'could not save generations by path {save_path}')
 
     new_data = {}
 
@@ -125,10 +125,10 @@ def save_dataset(n_click: int, base_model: str) -> Tuple[List, bool]:
             new_data[file_name].append({key: value for key, value in file_data.items() if key not in EXTRA_FIELDS})
 
     for file_name, data in new_data.items():
-        with open(os.path.join(path, file_name + '.jsonl'), 'w') as file:
+        with open(os.path.join(save_path, file_name + '.jsonl'), 'w') as file:
             file.write("\n".join([json.dumps(line) for line in data]))
 
-    return f'dataset is saved into {path}', True
+    return False, ''
 
 
 @app.callback(

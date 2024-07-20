@@ -70,10 +70,10 @@ class WholeDatasetModeStrategy(ModeStrategies):
         runs_storage = get_available_models()
         config = current_app.config['data_explorer']
         results_path = config['visualization_params']['results_path']
-        run_index = len(runs_storage)
+        generation_name = config['generation_name'] or str(len(runs_storage))
         metrics_directory = os.path.join(
             results_path,
-            str(run_index),
+            generation_name,
         )
         random_seed_start = utils['start_random_seed'] if params['range_random_mode'] else utils['random_seed']
         random_seed_end = utils['end_random_seed'] if params['range_random_mode'] else utils['random_seed'] + 1
@@ -127,14 +127,14 @@ class WholeDatasetModeStrategy(ModeStrategies):
         logging.info("Summarize results")
         summarize_results = summarize_results_template.format(
             results_path=results_path,
-            benchmarks=str(run_index),
+            benchmarks=generation_name,
         )
 
         _, errors, success = run_subprocess(summarize_results)
         if not success:
             return html.Pre(f"Something went wrong\n{errors}")
 
-        runs_storage[str(run_index)] = {
+        runs_storage[generation_name] = {
             "utils": utils,
             "examples": example_dicts,
         }
