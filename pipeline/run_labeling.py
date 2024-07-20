@@ -67,10 +67,7 @@ def run_script(format_dict, seed, extra_arguments, partition=None, dependency=No
 
     if dependency is not None:
         extra_sbatch_args.append(f"--dependency=afterany:{dependency}")
-
-    print("HERE:")
-    print(SLURM_CMD.format(**format_dict))
-    print("=======================")
+    
     job_id = launch_job(
         cmd=SLURM_CMD.format(**format_dict),
         num_nodes=num_nodes,
