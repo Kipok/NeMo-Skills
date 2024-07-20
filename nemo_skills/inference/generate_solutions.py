@@ -139,11 +139,13 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                 break
 
             data_points.append(data_point)
-
+            for data_point in data_points:
+                print(prompt.build_string(data_point))
+                print("=====================================")
             if len(data_points) == cfg.batch_size:
                 # batch-computing the outputs
                 outputs = llm.generate(
-                    prompts=[prompt.build_string(data_point) for data_point in data_points],
+                    prompts=[prompt.build_string(data_point).replace("  ", " ") for data_point in data_points],
                     stop_phrases=list(cfg.prompt.stop_phrases),
                     **asdict(cfg.inference),
                 )

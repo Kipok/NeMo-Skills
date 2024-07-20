@@ -29,6 +29,6 @@ if __name__ == "__main__":
     app.title = "Data Explorer"
     app.layout = get_main_page_layout()
     app.run(
-        host='localhost',
+        host='0.0.0.0',
         port='8080',
     )
