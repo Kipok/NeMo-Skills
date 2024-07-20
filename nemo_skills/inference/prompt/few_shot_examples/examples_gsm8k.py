@@ -709,16 +709,16 @@ data_augmentation = [
 
 critical_thinking = [
     {
-        "question": "Toulouse has twice as many sheep as Charleston. Charleston has 4 times as many sheep as Seattle. How many sheep do Toulouse, Charleston, and Seattle have together if Seattle has 20 sheep?",
-        "perturbed_question": "Toulouse has twice as many sheep as Charleston. Charleston has 4 times as many sheep as Seattle. How many sheep do Toulouse, Charleston, and Seattle have together?",
+        "question": "Stefan goes to a restaurant to eat dinner with his family. They order an appetizer that costs $10 and 4 entrees that are $20 each. If they tip 20% of the total for the waiter, what is the total amount of money that they spend at the restaurant?",
+        "perturbed_question": "Stefan goes to a restaurant to eat dinner with his family. They order an expensive appetizer and 4 entrees that are $20 each. If they tip 20% of the total for the waiter, what is the total amount of money that they spend at the restaurant?",
     },
     {
-        "question": "Janet’s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?",
-        "perturbed_question": "Janet’s ducks lay eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?",
+        "question": "The gauge on a water tank shows that the tank is 1/3 full of water. To fill the tank, 16 gallons of water are added. How many gallons of water does the tank hold when full?",
+        "perturbed_question": "The gauge on a water tank shows that the tank is not full. To fill the tank, 16 gallons of water are added. How many gallons of water does the tank hold when full?",
     },
     {
-        "question": "Toula went to the bakery and bought various types of pastries. She bought 3 dozen donuts which cost $68 per dozen, 2 dozen mini cupcakes which cost $80 per dozen, and 6 dozen mini cheesecakes for $55 per dozen. How much was the total cost?",
-        "perturbed_question": "Toula went to the bakery and bought various types of pastries. She bought 3 dozen donuts, 2 dozen mini cupcakes, and 6 dozen mini cheesecakes. How much was the total cost?",
+        "question": "Ben has 8 apples more than Phillip does. Tom has three eighths as many apples at Ben has. If Phillip has 40 apples, how many apples does Tom have?",
+        "perturbed_question": "Ben has 8 apples more than Phillip does. Tom has three eighths as many apples at Ben has. How many apples does Tom have?",
     },
 ]
 
