@@ -150,7 +150,7 @@ class CodeEval(BaseEval):
         self.total = 0
 
 
-class IFEval:
+class IFEval(BaseEval):
     # loosely adapted from
     # https://github.com/google-research/google-research/blob/master/instruction_following_eval/evaluation_main.py
 
