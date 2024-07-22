@@ -60,7 +60,7 @@ jobs:
         export NEMO_SKILLS_CONFIG=cluster_configs/local.yaml
         export NEMO_SKILLS_TEST_HF_MODEL=/mnt/datadrive/nemo-skills-data/Meta-Llama-3-8B
         set -o pipefail # this will make sure next line returns non-0 exit code if tests fail
-        python -m pytest tests/test_conversion.py --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=nemo_skills --cov=pipeline --durations=30 -rs -vvv | tee pytest-coverage.txt
+        python -m pytest tests/gpu-tests/test_conversion.py --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov=nemo_skills --cov=pipeline --durations=30 -rs -vvv | tee pytest-coverage.txt
 
   cluster-tests:
     runs-on: ubuntu-latest
