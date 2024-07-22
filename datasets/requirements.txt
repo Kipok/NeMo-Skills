@@ -1,0 +1,4 @@
+bs4
+evalplus @ git+https://github.com/evalplus/evalplus@c91370f
+pyyaml
+requests
