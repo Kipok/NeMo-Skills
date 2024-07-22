@@ -36,7 +36,7 @@ python nemo_skills/conversion/hf_to_trtllm.py \
     --model_dir /model \
     --output_dir /tmp/trtllm \
     --dtype float16 \
-    --tp_size 2 \
+    --tp_size 1 \
 && trtllm-build \
     --checkpoint_dir /tmp/trtllm \
     --output_dir /output/trtllm-model \
