@@ -44,7 +44,7 @@ def set_config(cfg: VisualizationConfig) -> None:
     prompt_types_without_extension = list(map(lambda name: name.split('.')[0], prompt_types))
 
     for name in prompt_types_without_extension:
-        if get_prompt_config(name) == cfg.prompt:
+        if asdict(get_prompt_config(name)) == cfg.prompt:
             prompt_type = name
             break
 
