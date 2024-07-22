@@ -209,7 +209,7 @@ class IFEval:
         Args:
             predictions (list[dict]): aggregated predictions across all generations.
                 The content of the file is benchmark specific.
-            aggregation_mode (str): "best", "majority", "first", etc. Might vary by benchmark.
+            aggregation_mode (str): "best", "first", etc. Might vary by benchmark.
         """
         # this shouldn't do any heavy calculation, but just read the metric from existing json entry
         # all the heavy lifting should be done in the evaluation script
