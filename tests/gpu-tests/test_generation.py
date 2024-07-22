@@ -29,6 +29,7 @@ sys.path.append(str(Path(__file__).absolute().parents[1]))
 from nemo_skills.evaluation.metrics import MathEval, compute_metrics
 
 
+@pytest.mark.gpu
 def test_trtllm_run_eval():
     model_path = os.getenv('NEMO_SKILLS_TEST_TRTLLM_MODEL')
     if not model_path:
@@ -41,7 +42,7 @@ python pipeline/run_eval.py \
     --server_type tensorrt_llm \
     --output_dir {output_path} \
     --benchmarks gsm8k:0 \
-    --num_gpus 2 \
+    --num_gpus 1 \
     --num_nodes 1 \
     +prompt=openmathinstruct/base \
     ++prompt.few_shot_examples.examples_type=gsm8k_only_code \
@@ -67,6 +68,7 @@ python pipeline/run_eval.py \
     assert metrics['num_entries'] == 20
 
 
+@pytest.mark.gpu
 def test_vllm_run_eval():
     model_path = os.getenv('NEMO_SKILLS_TEST_HF_MODEL')
     if not model_path:
@@ -79,7 +81,7 @@ python pipeline/run_eval.py \
     --server_type vllm \
     --output_dir {output_path} \
     --benchmarks gsm8k:0 \
-    --num_gpus 2 \
+    --num_gpus 1 \
     --num_nodes 1 \
     +prompt=openmathinstruct/base \
     ++prompt.few_shot_examples.examples_type=gsm8k_only_code \
@@ -105,6 +107,7 @@ python pipeline/run_eval.py \
     assert metrics['num_entries'] == 20
 
 
+@pytest.mark.gpu
 def test_trtllm_run_eval_retrieval():
     model_path = os.getenv('NEMO_SKILLS_TEST_TRTLLM_MODEL')
     if not model_path:
@@ -117,7 +120,7 @@ python pipeline/run_eval.py \
     --server_type tensorrt_llm \
     --output_dir {output_path} \
     --benchmarks math:0 \
-    --num_gpus 2 \
+    --num_gpus 1 \
     --num_nodes 1 \
     +prompt=openmathinstruct/reference \
     ++prompt.few_shot_examples.retrieval_field=question  \
@@ -143,6 +146,7 @@ python pipeline/run_eval.py \
     assert metrics['num_entries'] == 20
 
 
+@pytest.mark.gpu
 def test_trtllm_run_labeling():
     model_path = os.getenv('NEMO_SKILLS_TEST_TRTLLM_MODEL')
     if not model_path:
@@ -154,7 +158,7 @@ python pipeline/run_labeling.py \
     --model_path {model_path} \
     --server_type tensorrt_llm \
     --output_dir {output_path} \
-    --num_gpus 2 \
+    --num_gpus 1 \
     --num_nodes 1 \
     +prompt=openmathinstruct/base \
     ++prompt.few_shot_examples.examples_type=gsm8k_only_code \
@@ -182,6 +186,7 @@ python pipeline/run_labeling.py \
     assert metrics['num_entries'] == 20
 
 
+@pytest.mark.gpu
 def test_nemo_run_eval():
     model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
     if not model_path:
@@ -194,7 +199,7 @@ python pipeline/run_eval.py \
     --server_type nemo \
     --output_dir {output_path} \
     --benchmarks gsm8k:0 \
-    --num_gpus 2 \
+    --num_gpus 1 \
     --num_nodes 1 \
     +prompt=openmathinstruct/base \
     ++prompt.few_shot_examples.examples_type=gsm8k_only_code \
