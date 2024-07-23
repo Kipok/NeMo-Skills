@@ -726,6 +726,22 @@ critical_thinking = [
     },
 ]
 
+distractor = [
+    {
+        "question": "Stefan goes to a restaurant to eat dinner with his family. They order an appetizer that costs $10 and 4 entrees that are $20 each. If they tip 20% of the total for the waiter, what is the total amount of money that they spend at the restaurant?",
+        "perturbed_question": "Stefan goes to a restaurant to eat dinner with his family. They order an appetizer that costs $10 and 4 entrees that are $20 each. The family also bought a large chocolate cake in a nearby cafe for $45. If they tip 20% of the total for the waiter, what is the total amount of money that they spend at the restaurant?",
+    },
+    {
+        "question": "The gauge on a water tank shows that the tank is 1/3 full of water. To fill the tank, 16 gallons of water are added. How many gallons of water does the tank hold when full?",
+        "perturbed_question": "The gauge on a water tank shows that the tank is 1/3 full of water. There are 32 tanks in the building, one on each floor. To fill the tank, 16 gallons of water are added. How many gallons of water does the tank hold when full?",
+    },
+    {
+        "question": "Ben has 8 apples more than Phillip does. Tom has three eighths as many apples at Ben has. If Phillip has 40 apples, how many apples does Tom have?",
+        "perturbed_question": "Ben has 8 apples more than Phillip does. Ben bought his apples on a farmer's market that opens every Sunday but Phillip got his apples at a grocery store. Tom has three eighths as many apples at Ben has. Tom always wanted to go to the farmers market and spend his $100 on apples and pears. If Phillip has 40 apples, how many apples does Tom have?",
+
+    },
+]
+
 examples_map = {
     "gsm8k_standard_few_shot": standard_eight_shot,
     "gsm8k_text_with_code": text_with_code,

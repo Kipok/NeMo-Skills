@@ -1,0 +1,22 @@
+few_shot_examples:
+  template: "Question:\n{question}{context}\n\nPerturb the above question:\n{perturbed_question}\n\n\n\n\n\n"
+
+system: ""
+
+user: |-
+    You are an AI assistant that excels at rephrasing questions.
+    Your objective is to rewrite a given math question using the specified perturbation strategy.
+    The reprased question should be reasonable, understandable, and can be answered by humans.
+    Perturbation strategy: involves introducing distracting conditions that have no impact on the final answer and solution. These introduced conditions should be relevant to the topic of the original question and preferably include numerical values. However, the rewritten problem must maintain an identical solution to that of the original problem. Follow the given examples.
+
+    {examples}Question:\n{question}{context}\n\nPerturb the above question:\n
+
+prompt_template: |-
+  <extra_id_0>System
+  {system}
+  <extra_id_1>User
+  {user}
+  <extra_id_1>Assistant
+  {generation}
+
+stop_phrases: ["\n\n\n\n\n\n", "<extra_id_1>"]
