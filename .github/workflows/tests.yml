@@ -90,4 +90,4 @@ jobs:
         nvidia-smi
         export NEMO_SKILLS_CONFIG=cluster_configs/local.yaml
         set -o pipefail # this will make sure next line returns non-0 exit code if tests fail
-        ./tests/gpu-tests/run.sh /mnt/datadrive/Meta-Llama-3-8B
+        ./tests/gpu-tests/run.sh /mnt/datadrive/nemo-skills-data/Meta-Llama-3-8B
