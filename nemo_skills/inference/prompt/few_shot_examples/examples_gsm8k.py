@@ -711,17 +711,17 @@ critical_thinking = [
     {
         "question": "Stefan goes to a restaurant to eat dinner with his family. They order an appetizer that costs $10 and 4 entrees that are $20 each. If they tip 20% of the total for the waiter, what is the total amount of money that they spend at the restaurant?",
         "perturbed_question": "Stefan goes to a restaurant to eat dinner with his family. They order an expensive appetizer and 4 entrees that are $20 each. If they tip 20% of the total for the waiter, what is the total amount of money that they spend at the restaurant?",
-        "generation": "The question is missing some crucial information needed to solve it. Specifically, there is no information provided about the cost of the appetizer. \\boxed{None}."
+        "generation": "The question is missing some crucial information needed to solve it. Specifically, there is no information provided about the cost of the appetizer. \\boxed{Insufficient Information}."
     },
     {
         "question": "The gauge on a water tank shows that the tank is 1/3 full of water. To fill the tank, 16 gallons of water are added. How many gallons of water does the tank hold when full?",
         "perturbed_question": "The gauge on a water tank shows that the tank is not full. To fill the tank, 16 gallons of water are added. How many gallons of water does the tank hold when full?",
-        "generation": "The question doen't specify how full the tank is, making it impossible to answer the question. \\boxed{None}."
+        "generation": "The question doen't specify how full the tank is, making it impossible to answer the question. \\boxed{Insufficient Information}."
     },
     {
         "question": "Ben has 8 apples more than Phillip does. Tom has three eighths as many apples at Ben has. If Phillip has 40 apples, how many apples does Tom have?",
         "perturbed_question": "Ben has 8 apples more than Phillip does. Tom has three eighths as many apples at Ben has. How many apples does Tom have?",
-        "generation": "The question cannot be answered with the given data. \\boxed{None}."
+        "generation": "The question cannot be answered with the given data. \\boxed{Insufficient Information}."
 
     },
 ]
