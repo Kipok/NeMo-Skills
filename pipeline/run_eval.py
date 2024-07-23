@@ -29,6 +29,7 @@ except (ImportError, TypeError):
 To see all supported agruments, nemo_skills package needs to be installed.
 Please note that it is not recommended to install Python packages on a slurm cluster login node.
 """
+from nemo_skills.evaluation.settings import EXTRA_EVAL_ARGS, EXTRA_GENERATION_ARGS
 from nemo_skills.utils import setup_logging
 
 SCRIPT_HELP = """
@@ -46,6 +47,7 @@ def get_greedy_cmd(
     benchmark, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments="", eval_map=None
 ):
     extra_eval_args = f"{EXTRA_EVAL_ARGS.get(benchmark, '')} {extra_eval_args}"
+    extra_arguments = f"{EXTRA_GENERATION_ARGS.get(benchmark, '')} {extra_arguments}"
     if eval_map:
         extra_arguments = f"+prompt={eval_map.get(benchmark, eval_map['default'])} {extra_arguments}"
     return f"""echo "Evaluating benchmark {benchmark}" && \
@@ -76,6 +78,8 @@ nvidia-smi && \
 cd /code && \
 export PYTHONPATH=$PYTHONPATH:/code && \
 export HF_TOKEN={HF_TOKEN} && \
+export NVIDIA_API_KEY={NVIDIA_API_KEY} && \
+export OPENAI_API_KEY={OPENAI_API_KEY} && \
 if [ $SLURM_PROCID -eq 0 ]; then \
     {{ {server_start_cmd} 2>&1 | tee /tmp/server_logs.txt & }} && sleep 1 && \
     echo "Waiting for the server to start" && \
@@ -91,11 +95,6 @@ fi \
 MOUNTS = "{NEMO_SKILLS_CODE}:/code,{model_path}:/model,{output_dir}:/results"
 JOB_NAME = "eval-{model_name}"
 
-EXTRA_EVAL_ARGS = {
-    # some benchmarks require specific extra arguments, which are defined here
-    'human-eval': '++eval_type=code ++eval_config.dataset=humaneval',
-    'mbpp': '++eval_type=code ++eval_config.dataset=mbpp',
-}
 
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
@@ -178,7 +177,10 @@ if __name__ == "__main__":
         "server_start_cmd": server_start_cmd,
         "server_type": args.server_type,
         "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
-        "HF_TOKEN": os.getenv("HF_TOKEN", ""),  # needed for some of the models, so making an option to pass it in
+        # needed for some of the models, so making an option to pass it in
+        "HF_TOKEN": os.getenv("HF_TOKEN", ""),
+        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
+        "NVIDIA_API_KEY": os.getenv("NVIDIA_API_KEY", ""),
         "server_wait_string": server_wait_string,
     }
 

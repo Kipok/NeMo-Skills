@@ -17,7 +17,6 @@
 # you'd also need 2+ GPUs to run this test
 # the metrics are assuming llama3-8b-base as the model and will fail for other models
 
-import json
 import os
 import subprocess
 import sys
@@ -25,8 +24,8 @@ from pathlib import Path
 
 import pytest
 
-sys.path.append(str(Path(__file__).absolute().parents[2] / 'pipeline'))
-from compute_metrics import compute_metrics
+sys.path.append(str(Path(__file__).absolute().parents[1]))
+from nemo_skills.evaluation.metrics import MathEval, compute_metrics
 
 
 def test_sft_pipeline():
@@ -59,5 +58,5 @@ python pipeline/run_pipeline.py \
 
     # only checking the total, since model is tiny
     for gen_file in ['gsm8k/output-greedy.jsonl', 'gsm8k/output-rs0.jsonl', 'math/output-greedy.jsonl']:
-        *_, total = compute_metrics([f"{output_path}/nemo-skills-exps/results/test/{gen_file}"])
-        assert total == 4
+        metrics = compute_metrics([f"{output_path}/nemo-skills-exps/results/test/{gen_file}"], MathEval())
+        assert metrics['num_entries'] == 4

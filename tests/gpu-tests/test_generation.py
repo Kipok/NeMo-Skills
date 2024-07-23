@@ -25,8 +25,8 @@ from pathlib import Path
 
 import pytest
 
-sys.path.append(str(Path(__file__).absolute().parents[2] / 'pipeline'))
-from compute_metrics import compute_metrics
+sys.path.append(str(Path(__file__).absolute().parents[1]))
+from nemo_skills.evaluation.metrics import MathEval, compute_metrics
 
 
 def test_trtllm_run_eval():
@@ -62,9 +62,9 @@ python pipeline/run_eval.py \
         assert elem['error_message'] != '<not_executed>'
 
     # running compute_metrics to check that results are expected
-    correct_answer, wrong_answer, no_answer, total = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"])
-    assert (int(correct_answer), int(wrong_answer), int(no_answer)) == (35, 60, 5)
-    assert total == 20
+    metrics = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"], MathEval())
+    assert (int(metrics['correct_answer']), int(metrics['wrong_answer']), int(metrics['no_answer'])) == (35, 60, 5)
+    assert metrics['num_entries'] == 20
 
 
 def test_vllm_run_eval():
@@ -100,9 +100,9 @@ python pipeline/run_eval.py \
         assert elem['error_message'] != '<not_executed>'
 
     # running compute_metrics to check that results are expected
-    correct_answer, wrong_answer, no_answer, total = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"])
-    assert (int(correct_answer), int(wrong_answer), int(no_answer)) == (40, 55, 5)
-    assert total == 20
+    metrics = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"], MathEval())
+    assert (int(metrics['correct_answer']), int(metrics['wrong_answer']), int(metrics['no_answer'])) == (40, 55, 5)
+    assert metrics['num_entries'] == 20
 
 
 def test_trtllm_run_eval_retrieval():
@@ -138,9 +138,9 @@ python pipeline/run_eval.py \
         assert elem['error_message'] == '<not_executed>'
 
     # running compute_metrics to check that results are expected
-    correct_answer, wrong_answer, no_answer, total = compute_metrics([f"{output_path}/math/output-greedy.jsonl"])
-    assert (int(correct_answer), int(wrong_answer), int(no_answer)) == (20, 65, 15)
-    assert total == 20
+    metrics = compute_metrics([f"{output_path}/math/output-greedy.jsonl"], MathEval())
+    assert (int(metrics['correct_answer']), int(metrics['wrong_answer']), int(metrics['no_answer'])) == (20, 65, 15)
+    assert metrics['num_entries'] == 20
 
 
 def test_trtllm_run_labeling():
@@ -177,9 +177,9 @@ python pipeline/run_labeling.py \
         assert elem['error_message'] != '<not_executed>'
 
     # running compute_metrics to check that results are expected
-    correct_answer, wrong_answer, no_answer, total = compute_metrics([f"{output_path}/output-rs0.jsonl"])
-    assert (int(correct_answer), int(wrong_answer), int(no_answer)) == (35, 50, 15)
-    assert total == 20
+    metrics = compute_metrics([f"{output_path}/output-rs0.jsonl"], MathEval())
+    assert (int(metrics['correct_answer']), int(metrics['wrong_answer']), int(metrics['no_answer'])) == (35, 50, 15)
+    assert metrics['num_entries'] == 20
 
 
 def test_nemo_run_eval():
@@ -215,6 +215,6 @@ python pipeline/run_eval.py \
         assert elem['error_message'] != '<not_executed>'
 
     # running compute_metrics to check that results are expected
-    correct_answer, wrong_answer, no_answer, total = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"])
-    assert (int(correct_answer), int(wrong_answer), int(no_answer)) == (95, 5, 0)
-    assert total == 20
+    metrics = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"], MathEval())
+    assert (int(metrics['correct_answer']), int(metrics['wrong_answer']), int(metrics['no_answer'])) == (95, 5, 0)
+    assert metrics['num_entries'] == 20
