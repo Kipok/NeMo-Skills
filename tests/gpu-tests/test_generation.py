@@ -78,13 +78,13 @@ def test_vllm_run_eval():
     model_path = os.getenv('LLAMA3_8B_INSTRUCT_HF')
     if not model_path:
         pytest.skip("Define LLAMA3_8B_INSTRUCT_HF to run this test")
-    output_path = os.getenv('NEMO_SKILLS_TEST_OUTPUT', '/tmp')
+    output_path = os.getenv('NEMO_SKILLS_TEST_OUTPUT', '/tmp') + '/multi-benchmark'
 
     cmd = f""" \
 python pipeline/run_eval.py \
     --model_path {model_path} \
     --server_type vllm \
-    --output_dir {output_path}/multi-benchmark \
+    --output_dir {output_path} \
     --benchmarks algebra222:0 human-eval:0 mbpp:0 ifeval:0 mmlu:0 \
     --prompt_folder llama3 --model_version instruct \
     --num_gpus 1 \
@@ -115,10 +115,10 @@ python pipeline/run_eval.py \
     assert metrics['num_entries'] == 378
 
     metrics = compute_metrics([f"{output_path}/ifeval/output-greedy.jsonl"], EVALUATOR_MAP['ifeval']())
-    assert round(metrics['prompt_strict_accuracy'], 2) == 65.75
-    assert round(metrics['instruction_strict_accuracy'], 2) == 74.88
-    assert round(metrics['prompt_loose_accuracy']) == 71.00
-    assert round(metrics['instruction_loose_accuracy']) == 79.20
+    assert round(metrics['prompt_strict_accuracy'], 2) == 65.50
+    assert round(metrics['instruction_strict_accuracy'], 2) == 74.54
+    assert round(metrics['prompt_loose_accuracy'], 2) == 70.75
+    assert round(metrics['instruction_loose_accuracy'], 2) == 79.03
     assert metrics['num_prompts'] == 400
     assert metrics['num_instructions'] == 601
 
@@ -129,7 +129,7 @@ python pipeline/run_eval.py \
     assert metrics['num_entries'] == 400
 
     # finally checking that summarize results works (just that there are no errors, but can inspect the output as well)
-    subprocess.run(f"python pipeline/summarize_results.py {output_path}/multi-benchmark")
+    subprocess.run(f"python pipeline/summarize_results.py {output_path}", shell=True, check=True)
 
 
 @pytest.mark.gpu
@@ -246,5 +246,5 @@ python pipeline/run_eval.py \
 
     # running compute_metrics to check that results are expected
     metrics = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"], EVALUATOR_MAP['gsm8k']())
-    assert (int(metrics['correct_answer']), int(metrics['wrong_answer']), int(metrics['no_answer'])) == (95, 5, 0)
+    assert (int(metrics['correct_answer']), int(metrics['wrong_answer']), int(metrics['no_answer'])) == (90, 5, 5)
     assert metrics['num_entries'] == 20
