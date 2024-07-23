@@ -751,5 +751,6 @@ examples_map = {
     "gsm8k_only_sympy": only_sympy,
     "gsm8k_code_with_sympy": code_with_sympy,
     "gsm8k_data_augmentation": data_augmentation,
-    "gsm8k_critical_thinking": critical_thinking
+    "gsm8k_critical_thinking": critical_thinking,
+    "gsm8k_distractor": distractor
 }
