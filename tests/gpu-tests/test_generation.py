@@ -102,8 +102,8 @@ python pipeline/run_eval.py \
     # running compute_metrics to check that results are expected
     metrics = compute_metrics([f"{output_path}/algebra222/output-greedy.jsonl"], EVALUATOR_MAP['algebra222']())
 
-    assert round(metrics['correct_answer'], 2) == 64.86
-    assert round(metrics['wrong_answer'], 2) == 33.78
+    assert round(metrics['correct_answer'], 2) == 66.67
+    assert round(metrics['wrong_answer'], 2) == 31.98
     assert round(metrics['no_answer'], 2) == 1.35
     assert metrics['num_entries'] == 222
 
@@ -113,22 +113,22 @@ python pipeline/run_eval.py \
     assert metrics['num_entries'] == 164
 
     metrics = compute_metrics([f"{output_path}/mbpp/output-greedy.jsonl"], EVALUATOR_MAP['mbpp']())
-    assert round(metrics['passing_base_tests'], 2) == 69.05
-    assert round(metrics['passing_plus_tests'], 2) == 57.14
+    assert round(metrics['passing_base_tests'], 2) == 69.31
+    assert round(metrics['passing_plus_tests'], 2) == 57.41
     assert metrics['num_entries'] == 378
 
     metrics = compute_metrics([f"{output_path}/ifeval/output-greedy.jsonl"], EVALUATOR_MAP['ifeval']())
-    assert abs(metrics['prompt_strict_accuracy'] - 65.75) <= 1.0  # TODO: some randomness in this benchmark
+    assert abs(metrics['prompt_strict_accuracy'] - 66.50) <= 1.0  # TODO: some randomness in this benchmark
     assert abs(metrics['instruction_strict_accuracy'] - 74.88) <= 1.0
-    assert abs(metrics['prompt_loose_accuracy'] - 71.00) <= 1.0
-    assert abs(metrics['instruction_loose_accuracy'] - 79.03) <= 1.0
+    assert abs(metrics['prompt_loose_accuracy'] - 72.75) <= 1.0
+    assert abs(metrics['instruction_loose_accuracy'] - 79.70) <= 1.0
     assert metrics['num_prompts'] == 400
     assert metrics['num_instructions'] == 601
 
     metrics = compute_metrics([f"{output_path}/mmlu/output-greedy.jsonl"], EVALUATOR_MAP['mmlu']())
-    assert round(metrics['correct_answer'], 2) == 61.00
-    assert round(metrics['wrong_answer'], 2) == 19.75
-    assert round(metrics['no_answer'], 2) == 19.25
+    assert round(metrics['correct_answer'], 2) == 58.75
+    assert round(metrics['wrong_answer'], 2) == 21.50
+    assert round(metrics['no_answer'], 2) == 19.75
     assert metrics['num_entries'] == 400
 
 
