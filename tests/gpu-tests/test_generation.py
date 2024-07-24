@@ -96,6 +96,9 @@ python pipeline/run_eval.py \
 """
     subprocess.run(cmd, shell=True)
 
+    # checking that summarize results works (just that there are no errors, but can inspect the output as well)
+    subprocess.run(f"python pipeline/summarize_results.py {output_path}", shell=True, check=True)
+
     # running compute_metrics to check that results are expected
     metrics = compute_metrics([f"{output_path}/algebra222/output-greedy.jsonl"], EVALUATOR_MAP['algebra222']())
 
@@ -127,9 +130,6 @@ python pipeline/run_eval.py \
     assert round(metrics['wrong_answer'], 2) == 19.75
     assert round(metrics['no_answer'], 2) == 19.25
     assert metrics['num_entries'] == 400
-
-    # finally checking that summarize results works (just that there are no errors, but can inspect the output as well)
-    subprocess.run(f"python pipeline/summarize_results.py {output_path}", shell=True, check=True)
 
 
 @pytest.mark.gpu
