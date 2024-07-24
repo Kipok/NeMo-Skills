@@ -82,6 +82,7 @@ jobs:
         pip install .
         pip install -r datasets/requirements.txt
         pip install pytest pytest-cov pytest-timeout
+        python datasets/prepare.py
     - name: Run GPU tests
       timeout-minutes: 60
       env:

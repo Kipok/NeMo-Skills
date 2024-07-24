@@ -115,10 +115,10 @@ python pipeline/run_eval.py \
     assert metrics['num_entries'] == 378
 
     metrics = compute_metrics([f"{output_path}/ifeval/output-greedy.jsonl"], EVALUATOR_MAP['ifeval']())
-    assert abs(round(metrics['prompt_strict_accuracy'], 2), 65.75) <= 1.0  # TODO: some randomness in this benchmark
-    assert abs(round(metrics['instruction_strict_accuracy'], 2), 74.88) <= 1.0
-    assert abs(round(metrics['prompt_loose_accuracy'], 2), 71.00) <= 1.0
-    assert abs(round(metrics['instruction_loose_accuracy'], 2), 79.03) <= 1.0
+    assert abs(metrics['prompt_strict_accuracy'] - 65.75) <= 1.0  # TODO: some randomness in this benchmark
+    assert abs(metrics['instruction_strict_accuracy'] - 74.88) <= 1.0
+    assert abs(metrics['prompt_loose_accuracy'] - 71.00) <= 1.0
+    assert abs(metrics['instruction_loose_accuracy'] - 79.03) <= 1.0
     assert metrics['num_prompts'] == 400
     assert metrics['num_instructions'] == 601
 
