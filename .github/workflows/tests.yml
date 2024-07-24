@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
     - name: Set up Python 3.10
       uses: actions/setup-python@v3
       with:
@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
     # we want to be more conservative with python version here as some clusters might have older installed
     - name: Set up Python 3.8
       uses: actions/setup-python@v3
@@ -71,7 +71,7 @@ jobs:
     runs-on: self-hosted-nemo-skills
     if: ${{ github.event.label.name == 'run GPU tests' }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v3
       with:
         path: ${{ github.run_id }}
     - name: Set up Python 3.10
