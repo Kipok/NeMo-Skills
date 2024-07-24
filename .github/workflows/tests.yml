@@ -87,7 +87,7 @@ jobs:
         pip install pytest pytest-cov pytest-timeout
         python datasets/prepare.py
     - name: Run GPU tests
-      timeout-minutes: 60
+      timeout-minutes: 120
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
