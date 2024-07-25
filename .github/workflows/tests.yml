@@ -1,4 +1,4 @@
-name: Unit tests
+name: CPU tests
 
 on:
   pull_request:
