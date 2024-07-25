@@ -3,7 +3,7 @@ name: GPU tests
 on:
   pull_request:
     branches: [ "main" ]
-    types: [ "labeled" ]
+    types: [opened, synchronize, reopened, labeled]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
