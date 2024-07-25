@@ -16,9 +16,11 @@ import json
 import logging
 import shutil
 import subprocess
+from collections import defaultdict
 from argparse import Namespace
 from pathlib import Path
 from typing import Optional
+from os import path
 
 from nemo_skills.utils import nested_dataclass, unroll_files
 
@@ -111,6 +113,50 @@ def if_grader(cfg):
         (parent_dir / 'eval_results_loose.jsonl').unlink()
         (parent_dir / 'eval_results_strict.jsonl').unlink()
 
+
+def bfcl_grader(cfg):
+    """Grader for Berkeley Function Calling Leaderboard."""
+    for jsonl_file in unroll_files(cfg.prediction_jsonl_files): 
+        # Create the result and score folder
+        # Right now calling the folder what Llama3-8B-Instruct would create but it is only used for extracting functions out of the output
+        # TODO fix these hardcoded paths
+        _REPO_ROOT_DIR = "/opt/benchmarks/gorilla/berkeley-function-call-leaderboard"
+        _RESULT_DIR = path.join(_REPO_ROOT_DIR, "result/meta-llama_Meta-Llama-3-8B-Instruct")
+        _SCORE_DIR = path.join(_REPO_ROOT_DIR, "score")
+        
+        cmd = (
+            f'mkdir -p {_RESULT_DIR} && mkdir {_SCORE_DIR}' 
+        )
+        output_dir = path.join(path.join(_REPO_ROOT_DIR, _RESULT_DIR))
+
+        # Read results and dump them in separate test-wise files in output_dir
+        with open(jsonl_file, "rt", encoding="utf-8") as f:
+            samples = [json.loads(line) for line in f]
+            test_category_dict = defaultdict(list)
+            for sample in samples:
+                sample["result"] = sample["generation"]
+                test_category = sample["test_category"]
+                test_category_dict[test_category].append(sample)
+
+            for test_category, test_samples in test_category_dict.items():
+                output_file = path.join(output_dir, f"gorilla_openfunctions_v1_test_{test_category}.json")
+                with open(output_file, "w") as writer:
+                    for test_sample in test_samples:
+                        writer.write(json.dumps(test_sample) + "\n")
+
+        # Run the evaluation
+        cmd = (
+            f'cd {path.join(_REPO_ROOT_DIR, "eval_checker")}' 
+            '&& python eval_runner.py --model meta-llama/Meta-Llama-3-8B-Instruct --test ast'
+        )
+        subprocess.run(cmd, shell=True, check=True)
+
+        # Remove the output files and copy the score
+        cmd = f'rm {_RESULT_DIR}/*'
+        subprocess.run(cmd, shell=True, check=True)
+        # && cp {_SCORE_DIR}/data.csv '
+        
+        
 
 @nested_dataclass
 class ArenaGraderConfig:
