@@ -1,5 +1,5 @@
 few_shot_examples:
-  template: "Question:\n{question_text}\n\nClassification:\n{classification}\n\n{context}"
+  template: "Question:\n{question}\n\nClassification:\n{classification}\n\n{context}"
 
 system: |-
     You're an expert in mathematics and logic, specializing in identifying proof questions.
@@ -26,7 +26,7 @@ user: |-
 
     Now, classify the following question:
     Question:
-    {question_text}
+    {question}
 
     {context}
 
