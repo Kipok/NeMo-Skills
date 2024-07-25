@@ -51,10 +51,37 @@ class BaseEval(abc.ABC):
 
 
 class MathEval(BaseEval):
+    def setup(self, prediction_jsonl_files):
+        # checking if judgements are ready and fusing them with predictions
+        # might get permission errors when running locally, since original file
+        # is generated inside docker. Is there any way around that?
+        for jsonl_file in unroll_files(prediction_jsonl_files):
+            if Path(jsonl_file + '-batch-request-id').exists():
+                with open(jsonl_file + '-batch-request-id', 'rt', encoding='utf-8') as fin:
+                    request_id = json.load(fin)['request_id']
+                from nemo_skills.inference.server.model import get_model
+
+                llm = get_model(server_type='openai', model='gpt-4-1106-preview')
+                metadata, outputs = llm.get_batch_results(request_id)
+
+                if outputs is None:
+                    raise RuntimeError(f"Judgements are not ready yet! Current status: {metadata}")
+
+                with open(jsonl_file, 'rt', encoding='utf-8') as fin:
+                    predictions = [json.loads(line) for line in fin]
+
+                with open(jsonl_file, 'wt', encoding='utf-8') as fout:
+                    for prediction, output in zip(predictions, outputs):
+                        prediction['judgement'] = output['generation']
+                        fout.write(json.dumps(prediction) + '\n')
+
+                Path(jsonl_file + '-batch-request-id').unlink()
+
     def __init__(self):
         self.reset()
 
     def fill_up_missing(self):
+        # TODO: add missing judgement checks, but how to aggregate?
         return {'predicted_answer': None, 'is_correct': False}
 
     def is_incomplete(self, elem):
@@ -71,40 +98,75 @@ class MathEval(BaseEval):
         # this shouldn't do any heavy calculation, but just read the metric from existing json entry
         # all the heavy lifting should be done in the evaluation script
         self.total += 1
+        # TODO: rename is_correc since it's only for sympy now?
+        if 'is_correct' in predictions[0]:
+            self.has_sympy = True
+        if 'judgement' in predictions[0]:
+            self.has_judge = True
+
         if aggregation_mode == "best":
-            self.total_correct += any([elem['is_correct'] for elem in predictions])
+            if self.has_sympy:
+                self.correct_sympy += any([elem['is_correct'] for elem in predictions])
+            if self.has_judge:
+                self.correct_judge += any([elem['judgement'].strip() == "Yes" for elem in predictions])
             if all([elem['predicted_answer'] is None for elem in predictions]):
-                self.total_no_answer += 1
+                self.no_answer += 1
         elif aggregation_mode == "majority":
             # TODO: currently majority does not take into account equivalent answers written in a different way
-            valid_answers_and_results = [
-                (elem['predicted_answer'], elem['is_correct'])
-                for elem in predictions
-                if elem['predicted_answer'] is not None
-            ]
-            if len(valid_answers_and_results) == 0:
-                self.total_no_answer += 1
-            else:
-                majority_result = Counter(valid_answers_and_results).most_common(1)[0][0]
-                self.total_correct += majority_result[1]
+            # TODO: DRY
+            if self.has_sympy:
+                valid_answers_and_results = [
+                    (elem['predicted_answer'], elem['is_correct'])
+                    for elem in predictions
+                    if elem['predicted_answer'] is not None
+                ]
+
+                if len(valid_answers_and_results) == 0:
+                    self.no_answer += 1
+                else:
+                    majority_result = Counter(valid_answers_and_results).most_common(1)[0][0]
+                    self.correct_sympy += majority_result[1]
+            if self.has_judge:
+                valid_answers_and_results = [
+                    (elem['predicted_answer'], elem['judgement'].strip() == "Yes")
+                    for elem in predictions
+                    if elem['predicted_answer'] is not None
+                ]
+
+                if len(valid_answers_and_results) == 0:
+                    self.no_answer += 1
+                else:
+                    majority_result = Counter(valid_answers_and_results).most_common(1)[0][0]
+                    self.correct_sympy += majority_result[1]
         elif aggregation_mode == "first":
-            self.total_correct += predictions[0]['is_correct']
-            self.total_no_answer += predictions[0]['predicted_answer'] is None
+            if self.has_sympy:
+                self.correct_sympy += predictions[0]['is_correct']
+            if self.has_judge:
+                self.correct_judge += predictions[0]['judgement'].strip() == "Yes"
+            self.no_answer += predictions[0]['predicted_answer'] is None
         else:
             raise ValueError(f"Unsupported mode {aggregation_mode}")
 
     def get_metrics(self):
-        return {
+        metrics = {
             "num_entries": self.total,
-            "correct_answer": self.total_correct / self.total * 100.0,
-            "wrong_answer": (self.total - self.total_correct - self.total_no_answer) / self.total * 100.0,
-            "no_answer": self.total_no_answer / self.total * 100.0,
+            "sympy_correct_answer": self.correct_sympy / self.total * 100.0,
+            "judge_correct_answer": self.correct_judge / self.total * 100.0,
+            "no_answer": self.no_answer / self.total * 100.0,
         }
+        if self.has_sympy:
+            metrics["sympy_correct_answer"] = self.correct_sympy / self.total * 100.0
+        if self.has_judge:
+            metrics["judge_correct_answer"] = self.correct_judge / self.total * 100.0
+        return metrics
 
     def reset(self):
-        self.total_correct = 0
-        self.total_no_answer = 0
+        self.correct_sympy = 0
+        self.correct_judge = 0
+        self.no_answer = 0
         self.total = 0
+        self.has_sympy = False
+        self.has_judge = False
 
 
 class CodeEval(BaseEval):
