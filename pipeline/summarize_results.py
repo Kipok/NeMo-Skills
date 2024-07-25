@@ -59,7 +59,8 @@ if __name__ == "__main__":
             continue
         try:
             evaluator = EVALUATOR_MAP.get(benchmark, MathEval)()
-            if benchmark in ['human-eval', 'mbpp']:
+            results[benchmark] = {}
+            if evaluator is not MathEval:
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
                     results[benchmark]['greedy'] = compute_metrics(
                         prediction_jsonl_files=[f"{benchmark_path}/output-greedy.jsonl"],
@@ -73,7 +74,6 @@ if __name__ == "__main__":
                         aggregation_mode="best",
                     )
             else:
-                results[benchmark] = {}
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
                     results[benchmark]['greedy'] = compute_metrics(
                         prediction_jsonl_files=[f"{benchmark_path}/output-greedy.jsonl"],
@@ -97,6 +97,8 @@ if __name__ == "__main__":
 
     lines_to_write = []
     for benchmark, benchmark_results in results.items():
+        if not benchmark_results:
+            continue
         max_widths = {}
         max_widths['evaluation_mode'] = len('evaluation_mode')
         for eval_mode, metrics in benchmark_results.items():
