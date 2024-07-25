@@ -148,16 +148,12 @@ class MathEval(BaseEval):
             raise ValueError(f"Unsupported mode {aggregation_mode}")
 
     def get_metrics(self):
-        metrics = {
-            "num_entries": self.total,
-            "sympy_correct_answer": self.correct_sympy / self.total * 100.0,
-            "judge_correct_answer": self.correct_judge / self.total * 100.0,
-            "no_answer": self.no_answer / self.total * 100.0,
-        }
+        metrics = {"num_entries": self.total}
         if self.has_sympy:
             metrics["sympy_correct_answer"] = self.correct_sympy / self.total * 100.0
         if self.has_judge:
             metrics["judge_correct_answer"] = self.correct_judge / self.total * 100.0
+        metrics["no_answer"] = self.no_answer / self.total * 100.0
         return metrics
 
     def reset(self):

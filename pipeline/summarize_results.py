@@ -17,7 +17,6 @@
 import argparse
 import glob
 import json
-import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -93,7 +92,7 @@ if __name__ == "__main__":
                         evaluator=evaluator,
                         aggregation_mode="best",
                     )
-        except:
+        except Exception as e:
             print(f"Error running compute_metrics.py for {benchmark}: {e}")
 
     lines_to_write = []
