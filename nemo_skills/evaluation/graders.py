@@ -17,7 +17,7 @@ import logging
 import shutil
 import subprocess
 from argparse import Namespace
-from dataclasses import field
+from dataclasses import asdict, field
 from pathlib import Path
 from typing import Optional
 
@@ -30,21 +30,26 @@ LOG = logging.getLogger(__file__)
 class MathGraderConfig:
     # Sandbox configuration {sandbox_params}
     sandbox: dict = field(default_factory=lambda: {'sandbox_type': 'local'})
-    num_parallel_requests: int = (100,)
-    in_memory_lines: int = (1500,)
-    include_percentage: bool = (True,)
-    tolerance: float = (1e-4,)
-    timeout: float = (10.0,)
-    ignore_cache: bool = (False,)
+    num_parallel_requests: int = 100
+    in_memory_lines: int = 1500
+    include_percentage: bool = True
+    tolerance: float = 1e-4
+    timeout: float = 10.0
+    ignore_cache: bool = False
+
+    extract_from_boxed: bool = True
+    # only used if extract_from_boxed is False
+    extract_regex: str = r"The final answer is (.+)$"
 
 
 def math_grader(cfg):
     from nemo_skills.code_execution.sandbox import get_sandbox
 
     eval_config = MathGraderConfig(**cfg.eval_config)
-    print(eval_config)
     sandbox = get_sandbox(**eval_config.sandbox)
-    1 / 0
+    eval_config = asdict(eval_config)
+    eval_config.pop('sandbox')
+    print(eval_config)
     sandbox.batch_evaluate_results(
         prediction_jsonl_files=cfg.prediction_jsonl_files,
         **eval_config,
