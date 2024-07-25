@@ -71,12 +71,9 @@ if __name__ == "__main__":
             with open(local_path) as reader:
                 for idx, line in enumerate(reader):
                     instance = json.loads(line.strip())
-                    # if "function" in instance:
                     instance["function"] = language_specific_pre_processing(instance["function"], test_category)
-                    # if "question" in instance:
                     instance["question"] = augment_prompt_by_languge(instance["question"], test_category)
                     instance["test_category"] = test_category
-
                     if test_category != "relevance":
                         instance["expected_answer"] = answers[idx]
                     writer.write(json.dumps(instance) + "\n")
@@ -90,6 +87,9 @@ if __name__ == "__main__":
         #     local_path = path.join(data_folder, test_file)
         #     url_path = path.join(URL_PREFIX, test_file)
         #     urllib.request.urlretrieve(url_path, local_path)
+        
+        # # Github can issue a 104 Error
+        # time.sleep(0.1)
 
         # # Update the REST test with APIs
         # print("\nPreparing REST API test:")
