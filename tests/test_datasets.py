@@ -25,6 +25,7 @@ def test_data_scripts():
     expected_files = [
         'algebra222/test.jsonl',
         'asdiv/test.jsonl',
+        'bfcl/test.jsonl',
         'gsm-hard/test.jsonl',
         'gsm-hard/test_rounded.jsonl',
         'mawps/test.jsonl',
