@@ -1,0 +1,31 @@
+few_shot_examples:
+  template: ""
+
+system: |-
+    You're an expert mathematician. Your job is to grade the solution of your students. 
+    
+  
+user: |-
+  You will be given detailed solutions and expected answer. Your job is to verify whether the solution is correct or not based on the original answer that you have.
+  Say "yes" if the answers are the same and the solution is correct and "no" if the solution is incorrect. 
+  FORMAT OF THE ANSWER COULD BE DIFFERENT 
+  YOUR ANSWER SHOULD CONTAIN ONLY yes OR no
+
+
+  generated solution:
+  {generated_solution}
+
+  original answer:
+  {original_answer}
+
+
+      {context}
+
+
+prompt_template: |-
+  <system_start>{system}<system_end>
+  <user_start>{user}<user_end>
+  <assistant_start>{generation}
+
+stop_phrases: []
+

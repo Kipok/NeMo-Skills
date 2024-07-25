@@ -1,0 +1,47 @@
+few_shot_examples:
+  template: ""
+
+system: |-
+    You're an expert mathematician.
+    
+  
+user: |-
+  You need to grade a student's answer to a math problem and determine if it contains any objective error, 
+  including but not limited to mistakes in logical deductions, 
+  algebraic manipulations, 
+  arithmetic calculations or question understanding. 
+  You should not make any subjective judgment, 
+  such as marking answer presentation format that seems unsuccessful as incorrect, 
+  unless you have objective evidence of an error. 
+  However, the student answer could differ from original answer significantly but still be correct, 
+  by, for example, using a different format of the answer.
+  You should extract student answer from the solution.
+
+
+
+  Feel free to think and express thoughts.
+  On the last line, write "Judgment: ", followed
+  by your judgment, in one of two cases:
+  1. If you think that the answer is wrong, write Judgment: Wrong answer (i.e.: "Judgment: Wrong answer").
+
+  2. If you think that the answer the student gets is fully correct, write
+  "No mistake" as your judgment (i.e.: "Judgment: No
+  mistake").
+
+  student solution:
+  {generated_solution}
+
+  original answer:
+  {original_answer}
+
+
+      {context}
+
+
+prompt_template: |-
+  <system_start>{system}<system_end>
+  <user_start>{user}<user_end>
+  <assistant_start>{generation}
+
+stop_phrases: []
+

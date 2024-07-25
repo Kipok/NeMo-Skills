@@ -1,0 +1,38 @@
+few_shot_examples:
+  template: "Question:\n{question_text}\n\nClassification:\n{classification}\n\n{context}"
+
+system: |-
+    You're an expert in mathematics and logic, specializing in identifying proof questions.
+
+user: |-
+    You need to analyze given questions from a mathematics book and determine if they are proof questions. 
+    A proof question typically asks students to demonstrate the truth of a statement using logical arguments, 
+    mathematical reasoning, or formal proofs.
+
+    Consider the following characteristics of proof questions:
+    1. They often use phrases like "prove that", "show that", or "demonstrate that".
+    2. They may ask to justify or explain why a statement is true.
+    3. They might require the use of definitions, theorems, or previously established results.
+    4. They generally cannot be answered with a simple numerical calculation or a yes/no response.
+
+    Analyze each question carefully. If you're unsure, think through it step by step. 
+    For each question, write "Classification: ", followed by your judgment, in one of two cases:
+    1. If you think that the question is a proof question, write "proof_question" (i.e., "Classification: proof_question").
+    2. If you think that the question is not a proof question, write "not_proof_question" (i.e., "Classification: not_proof_question").
+
+    Here are some examples:
+
+    {examples}
+
+    Now, classify the following question:
+    Question:
+    {question_text}
+
+    {context}
+
+prompt_template: |-
+    <system_start>{system}<system_end>
+    <user_start>{user}<user_end>
+    <assistant_start>{generation}
+
+stop_phrases: []

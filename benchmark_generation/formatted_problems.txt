@@ -1,0 +1,920 @@
+
+===================================Problem 1====================================
+
+QUESTION:
+Solve the equation $1+\sin x+\cos x+\sin 2x+\cos 2x=0.$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+The equation can be written in the following form: $$(\sin x+\cos x)^2+(\sin
+x+\cos x)+(\cos^2 x-\sin^2 x)=0,$$ that is $$(\sin x+\cos x)(1+2\cos x)=0.$$
+Equating each of the expressions in the brackets to zero, we find the roots.
+{\it Answer:} $x_1=-\frac{\pi }{4}+k\pi,\ x_2=\pm \frac{2\pi }{3}+2k\pi $.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\[
+\left\{
+\begin{array}{ll}
+-\frac{\pi }{4}+k\pi \\
+\pm \frac{2\pi }{3}+2k\pi
+\end{array}
+\right.
+\]
+
+================================================================================
+
+===================================Problem 2====================================
+
+QUESTION:
+Solve the equation $\sin^3 x\cos x-\sin x\cos^3 x=\frac{1}{4}.$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+The equation can be writ ten as $$4\sin x\cos x(\sin^2 x-\cos^2 x)=1,$$ that is
+$$-2\sin 2x\cos 2x=-4\sin 4x=1.$$ {\it Answer:} $x=-\frac{\pi }{8}+k\cdot
+\frac{\pi }{2}\ (k=0,\pm 1,\pm 2,\ldots )$.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+$$-\frac{\pi }{8}+k\cdot \frac{\pi }{2} \ (k=0,\pm 1,\pm 2,\ldots )$$
+
+================================================================================
+
+===================================Problem 3====================================
+
+QUESTION:
+Given an arithmetic progression $a_1,\ldots,a_n,a_{n+1},\ldots $ prove that the
+equalities $$a_1^2-C_n^1 a_2^2+\ldots +(-1)^n C_n^n a_{n+1}^2=0$$ hold for $n\ge
+3$.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+We carry out the proof by induction. For $n=3$ it readily follows that
+$$a_1^2-3(a_1+d)^2+3(a_1+2d)^2-(a_1+3d)^2=0.$$ Suppose we have already
+established that for a certain $n$ and any arithmetic progression
+$x_1,x_2,\ldots,x_{n+1}$ the identity $$x_1^2-C_n^1 x_2^2+\ldots +(-1)^n C_n^n
+x_{n+1}^2=0$$ holds. Then passing to $n+1$ as in the preceding problem we obtain
+$$a_1^2-C_{n+1}^1 a_2^2+C_{n+1}^2 a_3^2+\ldots +(-1)^n C_{n+1}^n a_{n+1}^2
++(-1)^{n+1}C_{n+1}^{n+1}a_{n+2}^2$$ $$=[a_1^2-C_n^1 a_2^2+\ldots +(-1)^n C_n^n
+a_{n+1}^2] -[a_2^2-C_n^1 a_3^2+\ldots +(-1)^n C_n^n a_{n+2}^2]=0,$$ and thus the
+required formula has been proved. It should be noted that for an arithmetic
+progression $a_1,a_2,\ldots,a_n,a_{n+1}$ the more general formula $$a_1^k-C_n^1
+a_2^k+C_n^2 a_3^k-\ldots +(-1)^{n-1}C_n^{n-1}a_n^k +(-1)^n C_n^n a_{n+1}^k=0$$
+holds where $k\ge 1$ is an integer.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+0
+
+================================================================================
+
+===================================Problem 4====================================
+
+QUESTION:
+Solve the equation $\frac{1-\tan x}{1+\tan x}=1+\sin 2x.$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+The equation makes no sense for $x=\frac{\pi }{2}+k\pi $ and for $x=-\frac{\pi
+}{4}+k\pi $. For all the other values of $x$ it is equivalent to the equation
+$$\frac{\cos x-\sin x}{\cos x+\sin x}=1+\sin 2x.$$ After simple transformations
+we obtain $$\sin x(3+\sin 2x+\cos 2x)=0.$$ It is obvious that the equation $\sin
+2x+\cos 2x+3=0$ has no solution, and therefore, the original equation is reduced
+to the equation $\sin x=0$. {\it Answer:} $x=k\pi $.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\( k\pi \)
+
+================================================================================
+
+===================================Problem 5====================================
+
+QUESTION:
+In how many ways can a pack of 36 cards be split in two so that each portion
+contains two aces?
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Any splitting of the pack indicated in the statement of the problem is
+equivalent to selecting 16 cards out of the 32 cards that are not aces and two
+aces out of the four aces. The first selection can be accomplished in
+$C_{32}^{16}$ ways, and the second in $C_4^2$ ways. Since every selection of the
+above 16 cards can be combined with any selection of two aces, the total number
+of ways in which the pack can be split is equal to $C_{32}^{16}C_4^2$.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+$$105 \times 6 = 630$$
+
+================================================================================
+
+===================================Problem 6====================================
+
+QUESTION:
+Prove that the sum of the products of the altitudes of an acute triangle by
+their segments from the orthocenter to the corresponding vertices equals half-
+sum of the squares of the sides. Generalize this assertion to the case of an
+obtuse triangle.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Let $ABC$ be an acute triangle, and $AD$, $BE$ and $CF$ be its altitudes which
+intersect at a point $O$ (Fig. 67). Each of the quadrilaterals $BDOF$, $CEOD$
+and $AFOE$ is inscribed in a circle. According to the theorem on the product of
+a secant of a circle by its outer portion, we have \begin{align*} & AD\cdot
+AO=AB\cdot AF=AC\cdot AE,\\ & BE\cdot BO=BC\cdot BD=BA\cdot BF,\\ & CF\cdot
+CO=CA\cdot CE=CB\cdot CD. \end{align*} Adding together these equalities we
+obtain $$2(AD\cdot AO+BE\cdot BO+CF\cdot CO) =AB\cdot AF+BC\cdot BD+CA\cdot
+CE+AC\cdot AE$$ $$+BA\cdot BF+CB\cdot CD =AB(AF+BF)+BC(BD+CD)+CA(CE+AE)$$
+$$=(AB)^2+(BC)^2+(CA)^2,$$ which is what we set out to prove. In the case of an
+obtuse triangle the product corresponding to the obtuse angle should be taken
+with the minus sign.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\[
+\frac{(AB)^2 + (BC)^2 + (CA)^2}{2}
+\]
+
+================================================================================
+
+===================================Problem 7====================================
+
+QUESTION:
+Prove that for any positive integer $n$ the quantity $a_n=\frac{a^n-b^n}{\sqrt
+5}$ where $a=\frac{1+\sqrt 5}{2}$ and $b=\frac{1-\sqrt 5}{2}$ is a positive
+integer.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Apparently, $a+b= 1$ and $ab=-1$. Using this, we can write \begin{align*}
+a_n=a_n(a+b) & =\frac{a^{n+1}-ab^n+a^nb-b^{n+1}}{\sqrt 5}\\ &
+=\frac{a^{n+1}-b^{n+1}}{\sqrt 5}-\frac{a^{n-1}-b^{n-1}}{\sqrt 5}, \end{align*}
+that is $a_n=a_{n+1}-a_{n-1}$ which implies $a_{n+1}=a_n+a_{n-1}$. It follows
+that if for some $n$ the numbers $a_{n-1}$ and $a_n$ are positive integers, then
+$a_{n+1}$ is also a positive integer. Consequently, by induction, $a_{n+2}$,
+$a_{n+3}$ etc. are also positive integers. But we have $a_1=1$ and $a_2=1$, and
+hence all $a_n$ are positive integers for $n > 2$.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+1
+
+================================================================================
+
+===================================Problem 8====================================
+
+QUESTION:
+Solve the equation $2+\cos x=2\tan \frac{x}{2}.$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Write the equation in the following form: $$\cos^2 \frac{x}{2}-\sin^2
+\frac{x}{2} =2\left(\frac{\sin\frac{x}{2}}{\cos\frac{x}{2}}-1\right).$$ After
+some simple transformations it is reduced to the equation
+$$\left(\cos\frac{x}{2}-\sin\frac{x}{2}\right) \left(3\cos^2 \frac{x}{2}+2\sin^2
+\frac{x}{2}+\sin\frac{x}{2}\cos\frac{x}{2} \right)=0.$$ The equation $$3\cos^2
+\frac{x}{2}+2\sin^2 \frac{x}{2}+\sin\frac{x}{2}\cos\frac{x}{2}=0$$ is equivalent
+to the equation $$2\tan^2 \frac{x}{2}+\tan\displaystyle\frac{x}{2}+3=0$$ and has
+no real solutions. {\it Answer:} $x=\displaystyle\frac{\pi }{2}+2k\pi $.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\(\left( \frac{\pi}{2} + 2k\pi \right)\)
+
+================================================================================
+
+===================================Problem 9====================================
+
+QUESTION:
+Solve the equation $\sin\left(\frac{\pi
+}{10}+\frac{3x}{2}\right)=2\sin\left(\frac{3\pi }{10} -\frac{x}{2}\right).$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Put $\frac{3\pi }{10}-\frac{x}{2}=y$, then $\frac{\pi }{10}+\frac{3x}{2}=\pi
+-3\left(\frac{3\pi }{10}-\frac{x}{2}\right) =\pi -3y$, and the equation takes
+the form $$\sin 3y=2\sin y.$$ With the aid of formula (7), page 73, the last
+equation can be transformed to the form $$\sin y(4\sin ^2 y-1)=0. \eqno(1)$$
+Equation (1) has the following solutions: $$y_1=k\pi , y_2=(-1)^k \frac{\pi
+}{6}+k\pi , y_3=(-1)^{k+1}\frac{\pi }{6}+k\pi.$$ Returning to the argument
+$x=\frac{3\pi }{5}-2y$ we finally obtain the solutions of the original equation:
+$$x_1=\frac{3\pi }{5}-2k\pi , x_2=\frac{3\pi }{5}+(-1)^{k+1}\frac{\pi }{3}-k\pi
+, x_3=\frac{3\pi }{5}+(-1)^k \frac{\pi }{3}-k\pi .$$
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\[
+\left( \frac{3\pi }{5}-2k\pi , \frac{3\pi }{5}+(-1)^{k+1}\frac{\pi }{3}-k\pi ,
+\frac{3\pi }{5}+(-1)^k \frac{\pi }{3}-k\pi \right)
+\]
+
+================================================================================
+
+===================================Problem 10===================================
+
+QUESTION:
+Prove that at least one of the feet of the perpendiculars drawn from an
+arbitrary interior point of a convex polygon to its sides lies on the side
+itself but not on its extension.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Let $M$ be an interior point of a convex polygon, and $AB$ its side whose
+distance from $M$ is the least.   We shall prove that the foot $P$ of the
+perpendicular drawn from $M$ to $AB$ lies on $AB$ but not on its extension (Fig.
+92). Indeed, if $P$ lies on the extension of $AB$, then $MP$ intersects a side
+$l$ of the polygon at a point $Q$, and, since the polygon is convex, $MQ < MP$.
+But the distance $DM$ from $M$ to $l$ is less than $MQ$, and. consequently, less
+than $MP$ which contradicts the choice of the side $AB$.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+N/A
+
+================================================================================
+
+===================================Problem 11===================================
+
+QUESTION:
+Two persons deposited equal sums of money in a savings bank. One of them
+withdrew his money after $m$ months and received $p$ roubles, and the other
+withdrew the money after $n$ months and received $q$ roubles. How much money did
+either person deposit and what interest does the savings bank pay?
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+If $x$ is the original sum of money each person deposited and $y$ is the
+interest paid by the savings bank, then $$x+x\frac{y}{100}\cdot \frac{m}{12}=p,
+x+x\frac{y}{100}\cdot \frac{n}{12}=q.$$ Multiplying the first equation by $n$
+and the second by $m$, and subtracting the latter equation from the former, we
+find $$x=\frac{pn-qm}{n-m}.$$ Now taking the original system and subtracting the
+second equation from the first one we get $$\frac{xy}{1200}(m-n)=p-q$$ whence we
+obtain $$y=\frac{1200(p-q)}{qm-pn}\%.$$
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\(\left( \frac{pn-qm}{n-m}, \frac{1200(p-q)}{qm-pn} \right)\)
+
+================================================================================
+
+===================================Problem 12===================================
+
+QUESTION:
+All the three face angles of a trihedral angle are acute and one of them is
+equal to $\alpha $. The dihedral angles whose edges are the sides of this face
+angle are equal to $\beta $ and $\gamma $ respectively. Find the other two face
+angles.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+From a point $S$ other than the vertex $C$ of the trihedral angle (see Fig. 158)
+and lying on the edge of the trihedral angle which is not a side of the face
+angle $\alpha $, drop the perpendiculars $SB$ and $SD$ onto the sides of this
+face angle. Also draw the perpendicular $SA$ to the corresponding face. Denote
+the sought-for angles by $\beta _1$ and $\gamma _1$, that is $$\angle SCB=\gamma
+_1, \angle SCD=\beta _1.$$ Let then $\angle ABC=\alpha '$ and $\angle ACD=\alpha
+''$. Putting $CA =a$, we find from the right triangles $CBA$, $SBA$ and $SBC$
+the expression $$\tan\gamma _1=\frac{SB}{CB}=\frac{a\sin\alpha '}{a\cos\gamma
+\cos \alpha '} =\sec \gamma \tan \alpha '.$$ We similarly obtain $$\tan \beta
+_1=\sec\beta \tan \alpha ''.$$ The problem is thus reduced to finding $\tan
+\alpha '$ and $\tan \alpha ''$. We have $\alpha '+\alpha ''=\alpha $. Computing
+the line segment $SA$ by two different methods, we find $$SA=a\sin \alpha '\tan
+\gamma \mbox{and} SA=a\sin \alpha ''\tan \beta .$$   It follows that $\sin
+\alpha '=\sin \alpha ''\tan \beta \cot \gamma $ and, hence, $$\sin \alpha
+'=\sin(\alpha -\alpha ')\frac{\tan\beta }{\tan\gamma } =(\sin \alpha \cos \alpha
+'-\cos \alpha \sin \alpha ')\tan \beta \cot \gamma .$$ Dividing both members of
+the last equality by $\cos \alpha '$, we get $$\tan \alpha '=\frac{\sin \alpha
+\tan\beta \cot \gamma }{1+\cos \alpha \tan \beta \cot \gamma }.$$ Interchanging
+$\beta $ and $\gamma $ we find $$\tan \alpha ''=\frac{\sin \alpha \tan \gamma
+\cot \beta } {1+\cos \alpha \tan \gamma \cot \beta }.$$ We thus finally obtain
+$$\tan \gamma _1=\frac{\sin \alpha \tan \beta \csc \gamma } {1+\cos \alpha \tan
+\beta \cot \gamma }$$ and $$\tan \beta _1=\frac{\sin \alpha \tan \gamma \csc
+\beta } {2+\cos \alpha \tan \gamma \cot \beta }.$$
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\[
+\left( \frac{\sin \alpha \tan \beta \csc \gamma } {1+\cos \alpha \tan \beta \cot
+\gamma }, \frac{\sin \alpha \tan \gamma \csc \beta } {2+\cos \alpha \tan \gamma
+\cot \beta } \right)
+\]
+
+================================================================================
+
+===================================Problem 13===================================
+
+QUESTION:
+Solve the equation $$\sqrt [m]{(1+x)^2}-\sqrt [m]{(1-x)^2}=\sqrt [m]{1-x^2}.$$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+By substitution we verify that $x=1$ is not a root. Therefore, after both sides
+have been divided by $\sqrt [m]{(1-x)^2}$ the equation turns into the equivalent
+equation $$\sqrt [m]{\left(\frac{1+x}{1-x}\right)^2}-1 =\sqrt
+[m]{\frac{1+x}{1-x}}.$$ Denoting $\sqrt [m]{\frac{1+x}{1-x}}$ by $t$ we get the
+equation $t^2-1=t$, i.e. $t^2-t-1=0$. Whence we find $t_1=\frac{1+\sqrt 5}{2}$
+and $t_2=\frac{1-\sqrt 5}{2}$. Since the second value is negative, then if $m$
+is even, the value $t_2$ should be discarded according to our convention
+concerning the roots of equations. Thus, for even $m$ we have $$\sqrt
+[m]{\frac{1+x}{1-x}}=\frac{1+\sqrt 5}{2}, \frac{1+x}{1-x}=\left(\frac{1+\sqrt
+5}{2}\right)^m$$ and, consequently, $$x=\frac{\left(\frac{1+\sqrt
+5}{2}\right)^m-1} {\left(\frac{1+\sqrt 5}{2}\right)^m+1}.$$ If $m$ is odd, the
+equation has the roots, namely $$x_{1,2}=\frac{\left(\frac{1\pm \sqrt
+5}{2}\right)^m-1} {\left(\frac{1\pm \sqrt 5}{2}\right)^m+1}.$$
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\[
+\begin{cases}
+\frac{\left(\frac{1+\sqrt{5}}{2}\right)^m -
+1}{\left(\frac{1+\sqrt{5}}{2}\right)^m + 1} & \text{if } m \text{ is even} \\
+\left( \frac{\left(\frac{1+\sqrt{5}}{2}\right)^m -
+1}{\left(\frac{1+\sqrt{5}}{2}\right)^m + 1},
+\frac{\left(\frac{1-\sqrt{5}}{2}\right)^m -
+1}{\left(\frac{1-\sqrt{5}}{2}\right)^m + 1} \right) & \text{if } m \text{ is
+odd}
+\end{cases}
+\]
+
+================================================================================
+
+===================================Problem 14===================================
+
+QUESTION:
+Three travelers $A$, $B$ and $C$ are crossing a water obstacle $s$ km wide. A is
+swimming at a speed of $v$ km/h, and $B$ and $C$ are in a motor boat going at
+$v_1$ km/h. Some time after the start $C$ decides to swim the rest of the
+distance, his speed being equal to that of $A$. At this moment $B$ decides to
+pick up $A$ and turns back. $A$ then takes the motor boat and continues his way
+with $B$. All the three travelers simultaneously arrive at the opposite bank.
+How long did the crossing take?
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Let $x$ be the distance between the bank the travelers started from and the
+place where $C$ left the motor boat. Note that $A$ caught the boat at the same
+distance from the opposite bank. Indeed, the only distinction between the ways
+in which $A$ and $C$ crossed the water obstacle is that $C$ started out in the
+motor boat and then swam and $A$ first swam and then took the motor boat. Since
+they swam at an equal speed $v$ $(v\ne v_1)$ and the crossing took them equal
+times, the above distances should be equal. Taking this note into consideration,
+we easily set up the equation $$\frac{x+s-2(s-x)}{v_1}=\frac{s-x}{v},$$ its left
+member expressing the time of motion of the boat from the start to the point
+where it meets $A$ and its right member being equal to the time of motion of $A$
+from the start to that point. The above equation yields
+$$x=\frac{s(v+v_1)}{3v+v_1}.$$ Therefore the duration of the crossing is equal
+to $$T=\frac{s-x}{v}+\frac{x}{v_1}=\frac{s}{v_1}\cdot \frac{v+3v_1}{3v+v_1}.$$
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\[
+\frac{s}{v_1} \cdot \frac{v+3v_1}{3v+v_1}
+\]
+
+================================================================================
+
+===================================Problem 15===================================
+
+QUESTION:
+A right triangle with legs $a_1$ and $b_1$ is cut off from a quadrilateral with
+sides $a$ and $b$. How must the quadrilateral of maximum area with sides
+parallel to those of the initial quadrilateral be cut off from the remaining
+part of the quadrilateral?
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Let a right triangle with vertex $C$ and legs $a_1$ and $b_1$ be cut off from a
+rectangle $ABCD$ with sides $a$ and $b$. Consider the pentagon $ABEFD$ thus
+obtained (Fig. 137). It is clear that one of the vertices (say $C_1$) of the
+sought-for rectangle $AB_1C_1D_1$ must lie on the line segment $EF$. The problem
+is thus reduced to finding the position of this vertex.  To find the point $C_1$
+extend the sides $AB$ and $AD$ of the rectangle to intersect the extension of
+the line segment $EF$. This results in a triangle $AMN$. Let $$AM=m, AN=n
+\mbox{and} B_1C_1=AD_1=x.$$ The similarity of the triangles $AMN$ and $D_1C_1N$
+implies that $$\frac{C_1D_1}{m}=\frac{n-x}{n},$$ whence we find
+$$C_1D_1=\frac{m}{n}(n-x).$$ Hence, for the area $S$ of the rectangle
+$AB_1C_1D_1$ which is equal to $AD_1\cdot C_1D_1$ we get the expression
+$$S=\frac{m}{n}(n-x)x.$$ Transforming this expression to the form
+$$S=\frac{m}{n}\left[\frac{n^2}{4}-\left(\frac{n}{2}-x\right)^2\right],
+\eqno(1)$$ we conclude that the greatest value of $S$ is attained when
+$\frac{n}{2}-x=0$, i.e. for $x=\frac{n}{2}$. Let $C_0$ be the position of the
+vertex $C_1$ corresponding to $x=\frac{n}{2}$. Noting that expression (1) for
+$S$ decreases when $\left|\frac{n}{2}-x\right|$ increases, i.e. when the point
+$C_1$ moves from the point $C_0$ to the vertex $M$ or $F$, we find that there
+are three possible cases here, namely: (1) The point $C_0$ lies on the line
+segment $EF$; then the vertex $C_1$ of the required rectangle coincides with
+$C_0$. (2) The point $C_0$ lies on the line segment $ME$; then $C_1$ must
+coincide with $E$. (3) The point $C_0$ lies on the line segment $FN$; then $C_1$
+must coincide with $F$. We now must establish a criterion for distinguishing
+between these cases with the aid of the magnitudes of the quantities $a$, $a_1$,
+$b$ and $b_1$ given in the formulation of the problem. Let us first find the
+quantity $n$. The similarity of the triangles $ECF$ and $NDF$ implies that
+$$\frac{n-b}{a-a_1}=\frac{b_1}{a_1}$$ whence we find
+$$n=b+\frac{b_1}{a_1}(a-a_1). \eqno(2)$$ Now note that the point $C_0$ is within
+the line segment $EF$ if the inequalities $b-b_1<x<b$ are fulfilled.
+Substituting $x=\frac{n}{2}$ with the known value of $n$ into the above we
+obtain $$b-b_1<\frac{b}{2}+\displaystyle\frac{b_1}{2a_1}(a-a_1)<b.$$ The latter
+inequalities are readily transformed to the form
+$$-1<\displaystyle\frac{a}{a_1}-\displaystyle\frac{b}{b_1}<1. \eqno(3)$$ If the
+inequality $-1<\displaystyle\frac{a}{a_1}-\displaystyle\frac{b}{b_1}$ is
+violated, the point $C_0$ falls on the line segment $ME$, and if the inequality
+$\displaystyle\frac{a}{a_1}-\displaystyle\frac{b}{b_1}<1$ does not hold, $C_0$
+falls on $FN$. Thus, we arrive at the following final results: if for given $a$,
+$b$, $a_1$ and $b_1$ both inequalities (3) are fulfilled, then the vertex $C_1$
+of the rectangle of the greatest area lies within the line segment $EF$, and the
+side $x$ of this rectangle is computed by the formula
+$$x=\displaystyle\frac{b}{2}+\displaystyle\frac{b}{2a_1}(a-a_1).$$ If the left
+inequality in (3) does not hold true, the vertex $C_1$ coincides with the point
+$E$, and if the right inequality is not fulfilled, then $C_1$ coincides with
+$F$.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\[
+\begin{cases}
+\frac{b}{2} + \frac{b_1}{2a_1}(a - a_1) & \text{if } -1 < \frac{a}{a_1} -
+\frac{b}{b_1} < 1 \\
+E & \text{if } -1 \geq \frac{a}{a_1} - \frac{b}{b_1} \\
+F & \text{if } \frac{a}{a_1} - \frac{b}{b_1} \geq 1
+\end{cases}
+\]
+
+================================================================================
+
+===================================Problem 16===================================
+
+QUESTION:
+Solve the system of equations $$\left\{\begin{array}{lll} \tan x+\tan
+y=1,\medskip \\ \cos x\cos y=\frac{1}{\sqrt 2}. \end{array}\right.$$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+The first equation can be written in the form $$\frac{\sin (x+y)}{\cos x\cos
+y}=1,$$ whence, by virtue of the second equation, we obtain $$\sin (x+y)=\cos
+x\cos y=\frac{\sqrt 2}{2}.$$ Hence, either $$x+y=\frac{\pi }{4}+2k\pi \eqno(1)$$
+or $$x+y=-\frac{\pi }{4}+(2k+1)\pi . \eqno(2)$$ The second equation of the
+original system can be transformed to the form $$\cos (x+y)+\cos (x-y)=\sqrt
+2.$$ It follows that $$\cos (x-y)=\sqrt 2-\cos (x+y). \eqno(3)$$ If (1) holds,
+then $\cos (x+y)=\frac{\sqrt 2}{2}$, and from (3) we find $$\cos
+(x-y)=\frac{\sqrt 2}{2}, x-y=\pm\frac{\pi }{4}+2l\pi .$$ If (2) holds, then
+$\cos (x+y)=-\frac{\sqrt 2}{2}$ and $\cos (x-y)=\frac{3\sqrt 2}{2}$ which is
+impossible. Thus we have the system of equations $$\left\{\begin{array}{lll}
+x+y=\frac{\pi }{4}+2k\pi ,\medskip \\ x-y=\pm \frac{\pi }{4}+2l\pi
+\end{array}\right. \eqno(4)$$ for finding $x$ and $y$. According to the choice
+of the sign in the second equation of system (4), we obtain the solutions
+$$x_1=\frac{\pi }{4}+(k+l)\pi , y_1=(k-l)\pi $$ and $$x_2=(k+l)\pi ,
+y_2=\frac{\pi }{4}+(k-l)\pi .$$
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\[
+\left\{
+\begin{array}{ll}
+\left(\frac{\pi }{4}+(k+l)\pi, (k-l)\pi \right) \\
+\left((k+l)\pi, \frac{\pi }{4}+(k-l)\pi \right)
+\end{array}
+\right.
+\]
+
+================================================================================
+
+===================================Problem 17===================================
+
+QUESTION:
+Let $0<\alpha _1<\alpha _2<\ldots <\alpha _n<\frac{\pi }{2}$. Prove that
+$$\tan\alpha _1<\frac{\sin \alpha _1+\ldots +\sin \alpha _n} {\cos \alpha
+_1+\ldots +\cos\alpha _n}<\tan \alpha _n.$$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Since to a greater angle in the first quadrant there corresponds a greater value
+of the tangent, we can write $$\tan \alpha _1<\tan \alpha _i<\tan \alpha _n
+\eqno(1)$$ for $i=1,2,\ldots ,n$. Besides, $\cos \alpha _i>0$ $(i=1,2,\ldots
+,n)$. Therefore, inequalities (1) can be rewritten in the form $$\tan \alpha _1
+\cos \alpha _i<\sin \alpha _i<\tan \alpha _n\cos \alpha _i. \eqno(2)$$ Let us
+make $i$ in inequality (2) assume the values $1,2,\ldots ,n$ and add together
+all the inequalities thus obtained. This results in \begin{align*} \tan \alpha
+_1(\cos \alpha _1+\ldots +\cos \alpha _n) & <\sin \alpha _1+\ldots +\sin \alpha
+_n\\ & <\tan \alpha _n(\cos \alpha _1+\ldots +\cos \alpha _n). \tag{3}
+\end{align*} Dividing all the members of inequalities (3) by $\cos \alpha
+_1+\ldots +\cos \alpha _n$ (which is permissible since $\cos \alpha _1+\ldots
++\cos \alpha _n>0$) we obtain $$\tan \alpha _1<\frac{\sin \alpha _1+\ldots +\sin
+\alpha _n} {\cos \alpha _1+\ldots +\cos \alpha _n}<\tan \alpha _n.$$
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\[
+\begin{cases}
+\tan \alpha _1 < \frac{\sin \alpha _1 + \ldots + \sin \alpha _n}{\cos \alpha _1
++ \ldots + \cos \alpha _n} < \tan \alpha _n
+\end{cases}
+\]
+
+================================================================================
+
+===================================Problem 18===================================
+
+QUESTION:
+Find an arithmetic progression if it is known that the ratio of the sum of the
+first $n$ terms to the sum of the $kn$ subsequent terms is independent of~$n$.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Let $$\frac{a_1+a_2+\ldots +a_n}{a_{n+1}+a_{n+2}+\ldots +a_{n+kn}}=c. \eqno(1)$$
+Denote the common difference of the progression by $d$. We are only interested
+in the case $d\ne 0$ since for $d=0$ all terms of the progression are equal and
+the equality (1) is automatically fulfilled. Using the formula for the sum of
+terms of an arithmetic progression we get from (1) the equality
+$$\frac{n}{2}[a_1+a_1+d(n-1)]=\frac{kn}{2}[a_1+nd+a_1+(n+kn-1)d]c$$ from which,
+after canceling $\frac{n}{2}$ and rearranging the terms, we find
+$$(2a_1-2a_1kc-d+cdk)+n(d-cdk^2-2cdk)=0.$$ Since this equality holds for any $n$
+we conclude that $$2a_1-2a_1kc-d+cdk=0 \mbox{and} d-cdk^2-2cdk=0.$$ Canceling
+out $d\ne 0$ in the second equality we obtain $$c=\frac{1}{k(k+2)}. \eqno(2)$$
+The first equality can be represented in the form $$(2a_1-d)(1-ck)=0.$$ By
+virtue of (2), the second factor is different from zero and hence $d=2a_1$.
+Thus, if $d\ne 0$ equality (1) can be valid for all $n$ only in the case of the
+progression $$a,3a,5a,\ldots  (a\ne 0). \eqno(3)$$ Now it is easy to verify
+directly that progression (3) in fact satisfies the condition of the problem.
+Thus, the sought-for progression is given by (3).
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+(3a, 5a, 7a, ...)
+
+================================================================================
+
+===================================Problem 19===================================
+
+QUESTION:
+Solve the equation $8\sin^6 x+3\cos 2x+2\cos 4x+1=0.$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Applying the formulas $$\sin ^2 \alpha =\frac{1-\cos 2\alpha }{2} \mbox{and}
+\cos 2\alpha =2\cos ^2 \alpha -1$$ we rewrite the equation in the form $$(1-\cos
+2x)^3+3\cos 2x+2(2\cos ^2 2x-1)+1=0,$$ or $$7\cos ^2 2x-\cos ^3 2x=0,$$ whence
+$$\cos 2x=0, x=\frac{\pi }{4}+k\frac{\pi }{2}.$$
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\(\left( \frac{\pi}{4} + k\frac{\pi}{2} \right)\)
+
+================================================================================
+
+===================================Problem 20===================================
+
+QUESTION:
+Show that the equality $$a^2+b^2+c^2=bc+ac+ab,$$ where $a$, $b$ and $c$ are real
+numbers, implies $a=b=c$.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Multiply both members of the equality by 2 and transpose its right member to the
+left. After simple transformations we get $$2(a^2+b^2+c^2-ab-ac-bc)
+=a^2-2ab+b^2+a^2-2ac+c^2+b^2-2bc+c^2$$ $$=(a-b)^2+(a-c)^2+(b-c)^2=0.$$ Since
+$a$, $b$ and $c$ are real, the latter relation is only possible if $a=b=c$.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\(a = b = c\)
+
+================================================================================
+
+===================================Problem 21===================================
+
+QUESTION:
+Solve the equation $$\sqrt {x-4a+16}=2\sqrt {x-2a+4}-\sqrt x.$$ For what real
+values of $a$ is the equation solvable?
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Transposing $\sqrt x$ to the left-hand side and squaring both members of the
+equation we get $$\sqrt x\cdot \sqrt {x-4a+16}=x-2a.$$ Squaring then both sides
+of the resulting equation we find that $x=\frac{a^2}{4}$ is the only root of the
+equation. Substituting it into the equation we obtain $$\sqrt
+{a^2-16a+64}=2\sqrt {a^2-8a+16}-\sqrt {a^2},$$ which implies, since the radicals
+are positive, the relation $$|a-8|=2|a-4|-|a|. \eqno(1)$$ For $a\ge 0$ equality
+(1) is fulfilled. Consequently, for $a\ge 8$ the original equation has a root
+$x=\frac{a^2}{4}$. For $4\le a<8$ condition (1) is not fulfilled because $8-a\ne
+2(a-4)-a$. For $0\le a<4$ condition (1) takes the form $$8-a=2(4-a)-a$$ and is
+only fulfilled for $a=0$. Finally, for $a < 0$ condition (1) turns into the
+identity $8-a=2(4-a)+a$. Hence, for $a\ge 8$ and $a\le 0$ the equation has the
+only root $x=\frac{a^2}{4}$. For $0 < a < 8$ there are no roots at all.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\[
+\begin{cases}
+a \ge 8 \\
+a \le 0
+\end{cases}
+\]
+
+================================================================================
+
+===================================Problem 22===================================
+
+QUESTION:
+The legs of a right triangle are equal to $b$ and $c$. Find the length of the
+bisector of the right angle.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Let $AD$ be the bisector of the right angle $A$ in $\triangle ABC$, and $DE
+\perp AC$ (Fig. 9). Since $\angle DAE=\frac{\pi }{4}$, we have
+$$AE=DE=\frac{x}{\sqrt 2}$$ where $x= AD$ is the sought-for length. We obviously
+have $$\frac{ED}{AB}=\frac{CE}{CA}, \mbox{ i.e. } \frac{\frac{x}{\sqrt
+2}}{c}=\frac{b-\frac{x}{\sqrt 2}}{b}.$$ Hence, $x=\frac{bc\sqrt 2}{b+c}$.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\(\frac{bc\sqrt 2}{b+c}\)
+
+================================================================================
+
+===================================Problem 23===================================
+
+QUESTION:
+A regular hexagonal pyramid with face angle at the vertex equal to $\alpha $ is
+intersected by a plane passing at an angle $\beta $ to the base through its
+longest diagonal. Find the ratio of the area of the plane section to the area of
+the base.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Let $S$ be the vertex of the pyramid, $SO$ the altitude and $BN= NC$ (Fig. 157).
+Designate the side of the base of the pyramid by $a$. Let us introduce the
+auxiliary parameter $\frac{SM}{SN}=\lambda $. The similarity of the triangles
+implies that $$EF=a\lambda, KM=a\frac{\sqrt 3}{2}\lambda .$$   From $\triangle
+MKO$ we obtain $$OM=\frac{KM}{\cos\beta }=\frac{a\lambda }{2\cos\beta }\sqrt
+3.$$ The section area is equal to $$\frac{1}{2}(AD+EF)OM=\frac{1}{2}(2a+\lambda
+a)\frac{\sqrt 3}{2} \cdot \frac{\lambda }{\cos\beta }a=\frac{\sqrt 3}{4\cos
+\beta } \lambda (\lambda +2)a^2.$$ The area of the base, as the area of a
+regular hexagon with side $a$, is equal to $6\cdot \frac{a^2\sqrt 3}{4}$. Thus,
+the sought-for ratio of the areas is equal to $$\frac{1}{6\cos\beta }\lambda
+(\lambda +2). \eqno(2)$$ Consequently, the problem is now reduced to finding
+$\lambda $. For this purpose, put $\angle  SNO=\varphi $. Then, by the law of
+sines, we obtain from $\triangle SOM$ the expression $$SM=SO\cdot
+\frac{\sin\left(\frac{\pi }{2}-\beta \right)}{\sin(\beta +\varphi )} =SO\cdot
+\frac{\cos\beta }{\sin(\beta +\varphi )}.$$ Since $SO=SN\cdot \sin\varphi $, we
+can write $$\lambda =\frac{SM}{SN}=\frac{\cos\beta \sin\varphi }{\sin(\beta
++\varphi )} =\displaystyle\frac{1}{1+\tan\beta \cos\varphi }. \eqno(3)$$
+Finally, we proceed to find $\cot \varphi $. To this end, note that
+$$SN=\displaystyle\frac{a}{2}\cot\displaystyle\frac{\alpha }{2},
+ON=\displaystyle\frac{a\sqrt 3}{2},$$ $$SO=\sqrt
+{SN^2-ON^2}=\displaystyle\frac{a}{2}\sqrt {\cos^2 \displaystyle\frac{\alpha
+}{2}-3}$$ and, hence, $$\cot\varphi
+=\displaystyle\frac{ON}{SO}=\displaystyle\frac{\sqrt 3}{\sqrt {\cot^2
+\displaystyle\frac{\alpha }{2} -3}}.$$ Substituting this value into formula (3),
+we obtain $$\lambda =\displaystyle\frac{\sqrt {\cos^2 \displaystyle\frac{\alpha
+}{2}-3}} {\sqrt {\cot^2 \displaystyle\frac{\alpha }{2}-3}+\sqrt 3\tan\beta }.$$
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\[
+\frac{1}{6\cos\beta }\lambda (\lambda +2)
+\]
+
+================================================================================
+
+===================================Problem 24===================================
+
+QUESTION:
+Prove that if two intersecting chords are drawn from the endpoints of a diameter
+of a circle, then the sum of the products of each chord by its segment from the
+endpoint of the diameter to the point of intersection is a constant quantity.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Let $AB$ be a diameter of a circle and $E$ the point of intersection of its
+chords $AD$ and $BC$ (Fig. 104). We have $$AE\cdot AD=AE^2+AE\cdot
+ED=AC^2+EC^2+AE\cdot ED.$$ By the property of intersecting chords, we can write
+$AE\cdot ED=BE\cdot EC.$ Therefore \begin{align*} AE\cdot AD &
+=AC^2+EC^2+BE\cdot EC =AC^2+EC\cdot BC\\ & =AC^2+(BC-BE)BC =AC^2+BC^2-BE\cdot BC
+\end{align*} and thus, finally, $AE\cdot AD+BE\cdot BC=AB^2.$
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\( AB^2 \)
+
+================================================================================
+
+===================================Problem 25===================================
+
+QUESTION:
+Construct a geometric progression $$1,q,q^2,\ldots,q^n,\ldots $$ with $|q|<1$
+whose every term differs from the sum of all subsequent terms by a given
+constant factor $k$. For what values of $k$ is the problem solvable?
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+By the hypothesis, we have $|q|<1$ and, consequently,
+$$q^n=k(q^{n+1}+q^{n+2}+\ldots )=kq^{n+1}\frac{1}{1-q}. \eqno(1)$$ Hence,
+$1-q=kq$ and thus, if the problem has a solution, we have $$q=\frac{1}{k+1}.
+\eqno(2)$$ It is, however, easily seen that if, conversely, equality (2) implies
+that $|q|<1$, then the equality (2) implies equality (1), and the corresponding
+progression satisfies the condition of the problem. Thus, the problem is
+solvable for any $k$ satisfying the inequality $\left|\frac{1}{k+1}\right|<1$.
+The latter holds for $k > 0$ and $k<-2$.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\[
+\begin{cases}
+k > 0 \\
+k < -2
+\end{cases}
+\]
+
+================================================================================
+
+===================================Problem 26===================================
+
+QUESTION:
+Given a frustum of a cone whose altitude is the mean proportional between the
+diameters of the bases. Prove that it is possible to inscribe a sphere in the
+given frustum.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Consider the trapezoid $ABCD$ in the axial section of the cone shown in Fig.
+213. Let $E$ and $F$ be the midpoints of its bases, and $O$ the midpoint of
+$EF$. We also construct $OM\perp CD$, $ON\perp EF$ and $CP\perp AD$, and $\angle
+MON=\angle PCD=\alpha $. To solve the problem it is sufficient to prove that $OM
+= OE$. Let us introduce the notation $EC=r$, $DF=R$, $OM=x$ and
+$OE=\frac{h}{2}$. Then we have $$x=ON\cos\alpha =\frac{R+r}{2}\cos\alpha .$$ For
+the triangle $CPD$ we can write $$h=CD\cos \alpha =\sqrt
+{(R-r)^2+CP^2}\cos\alpha .$$ But, by the hypothesis, $CP^2=4Rr$ and therefore
+$$h=\sqrt {(R-r^2)+4Rr}\cos\alpha =(R+r)\cos\alpha .$$ Thus, $x=\frac{h}{2}$
+which is what we set out to prove.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+
+
+================================================================================
+
+===================================Problem 27===================================
+
+QUESTION:
+Solve the inequality $$\log_\frac{1}{3}[\log_4 (x^2-5)]>0.$$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+The original inequality is equivalent to the relation $$0<\log_4 (x^2-5)<1,$$
+whence we find that $1<x^2-5<4$ or $6<x^2<9$ or $\sqrt 6<|x|<3$. {\it Answer:}
+$\sqrt 6<x<3$ and $-3<x<-\sqrt 6$.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\[
+\begin{cases}
+\sqrt{6} < x < 3 \\
+-3 < x < -\sqrt{6}
+\end{cases}
+\]
+
+================================================================================
+
+===================================Problem 28===================================
+
+QUESTION:
+Solve the equation $$(0.4)^{\log^3 x+1}=(6.25)^{2-\log x^3}.$$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Using the fact that $0.4=\frac{2}{5}$ and $6.25=\left(\frac{5}{2}\right)^2$ we
+reduce the original equation to the form $$\left(\frac{2}{5}\right)^{\log^2 x+1}
+=\left(\frac{2}{5}\right)^{2(\log x^2-2)}.$$ Equating the exponents we pass to
+the equation $$\log^2 x-6\log x+5=0.$$ After solving it we find $$(\log x)_1=1,\
+x_1=10 \mbox{and} (\log x)_2=5,\ x_2=10^5.$$
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+(10, 100000)
+
+================================================================================
+
+===================================Problem 29===================================
+
+QUESTION:
+Find the locus of points for which the sum of their distances from two given
+straight lines $m$ and $l$ is equal to the length a of a given line segment.
+Consider the cases of intersecting and parallel lines.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+In the case of intersecting straight lines the required locus of points consists
+of four line segments forming a rectangle $ABCD$ whose two vertices are on the
+given straight lines $l$ and $m$ and the other two vertices are at the given
+distance $a$ from them (Fig. 125).  {\it Proof.} Let $M$ be a point such that
+$MK\perp l$, $ML\perp m$ and $MK+ML=a$ where $a$ is the length of the given line
+segment. Through $M$ draw a straight line $AB$ so that $OA = OB$ and $MN \| OB$.
+Let $AP \perp OB$ and $Q$ be the point of intersection of $AP$ and $MN$. The
+equality $AN=MN$ shows that $MK = AQ$ and, hence, $$AP=AQ+QP=MK+ML=a.$$
+Consequently, the point $A$ is a vertex of the above rectangle. The same is true
+for the point $B$, and hence the point $M$ lies on a side of this rectangle.
+Conversely, if $M$ lies on a side of this rectangle, then reversing the argument
+we see that $$MK+ML=AP=a.$$ If the given straight lines $l$ and $m$ are parallel
+and the distance between them is equal to $h$, then the desired locus of points
+exists only if $a\ge h$ and is a pair of straight lines parallel to the given
+ones for $a > h$ or the whole strip contained between $l$ and $m$ for $a=h$.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\[
+\begin{cases}
+\text{Rectangle } ABCD & \text{(intersecting lines)} \\
+a \ge h & \text{(parallel lines)}
+\end{cases}
+\]
+
+================================================================================
+
+===================================Problem 30===================================
+
+QUESTION:
+Solve the equation $32\cos^6 x-\cos 6x=1.$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+Using the identity $$\cos ^6x=\left(\frac{1+\cos 2x}{2}\right)^3
+=\frac{1}{8}(1+3\cos 2x+3\cos ^2 2x+\cos ^3 2x)$$ and the formula $$\cos
+6x=4\cos ^3 2x-3\cos 2x$$ (see (8) page 73), we reduce the equation to the form
+$$4\cos ^2 2x+5\cos 2x+1=0. \eqno(1)$$ From (1) we find $$(\cos 2x)_1=-1, (\cos
+2x)_2=-\frac{1}{4}.$$ {\it Answer:} $x_1=\left(k+\frac{1}{2}\right)\pi $;
+$x_2=\pm \frac{1}{2}\arccos \left(-\frac{1}{4}\right)+k\pi $.
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+\[
+\begin{cases}
+\left(k+\frac{1}{2}\right)\pi \\
+\pm \frac{1}{2}\arccos \left(-\frac{1}{4}\right)+k\pi
+\end{cases}
+\]
+
+================================================================================

@@ -1,0 +1,40 @@
+few_shot_examples:
+  template: "Raw answer:\n{original_answer}\n\n{context}Extracted answer:\n{generation}\n\n\n\n\n\n"
+
+system: |-
+    You're an expert mathematician.
+    
+  
+user: |-
+  You will be given tasks and their detailed solutions. Your job is to extract only the final answers from these solutions. Follow these guidelines strictly:
+
+  Extract only the values.
+  Do not include variable names, units of measurement, or any additional text.
+  For a single answer, extract it as is.
+  For multiple answers, extract them as a tuple or tuple of tuples.
+  For inequalities or conditional answers, use LaTeX cases.
+  If the solution includes complex numbers, include them in the tuple format.
+  For ranges or intervals, use the appropriate notation (e.g., [a, b] for closed intervals).
+  If the solution includes different cases for different conditions, clearly separate them using LaTeX cases.
+  For approximate answers, ensure the values are rounded to the appropriate decimal places as given in the solution.
+  Ensure consistency in format as demonstrated in the examples.
+  Examples are provided for reference.
+
+  Write only the extracted answers without any additional text or processing.
+
+  {examples}
+
+  Problem:
+  {question}
+  Solution:
+  {solution}
+      {context}
+
+
+prompt_template: |-
+  <system_start>{system}<system_end>
+  <user_start>{user}<user_end>
+  <assistant_start>{generation}
+
+stop_phrases: []
+
