@@ -225,13 +225,18 @@ class IFEval(BaseEval):
     def get_metrics(self):
         prompt_total = self.strict_stats['prompt']['total']
         inst_total = self.strict_stats['instruction']['total']
+        prompt_strict = self.strict_stats['prompt']['correct'] / prompt_total * 100.0
+        inst_strict = self.strict_stats['instruction']['correct'] / inst_total * 100.0
+        prompt_loose = self.loose_stats['prompt']['correct'] / prompt_total * 100.0
+        inst_loose = self.loose_stats['instruction']['correct'] / inst_total * 100.0
         return {
             "num_prompts": prompt_total,
             "num_instructions": inst_total,
-            "prompt_strict_accuracy": self.strict_stats['prompt']['correct'] / prompt_total * 100.0,
-            "instruction_strict_accuracy": self.strict_stats['instruction']['correct'] / inst_total * 100.0,
-            "prompt_loose_accuracy": self.loose_stats['prompt']['correct'] / prompt_total * 100.0,
-            "instruction_loose_accuracy": self.loose_stats['instruction']['correct'] / inst_total * 100.0,
+            "average_score": (prompt_strict + inst_strict + prompt_loose + inst_loose) / 4,
+            "prompt_strict_accuracy": prompt_strict,
+            "instruction_strict_accuracy": inst_strict,
+            "prompt_loose_accuracy": prompt_loose,
+            "instruction_loose_accuracy": inst_loose,
         }
 
     def reset(self):
