@@ -13,11 +13,11 @@ export NEMO_SKILLS_TEST_OUTPUT=/tmp/nemo_skills_test_output
 mkdir -p $NEMO_SKILLS_TEST_OUTPUT
 
 # first running the conversion tests
-# pytest tests/gpu-tests/test_conversion.py -k test_hf_trtllm_conversion -s
+pytest tests/gpu-tests/test_conversion.py -k test_hf_trtllm_conversion -s
 export NEMO_SKILLS_TEST_TRTLLM_MODEL=$NEMO_SKILLS_TEST_OUTPUT/trtllm-model
-# pytest tests/gpu-tests/test_conversion.py -k test_hf_nemo_conversion -s
+pytest tests/gpu-tests/test_conversion.py -k test_hf_nemo_conversion -s
 export NEMO_SKILLS_TEST_NEMO_MODEL=$NEMO_SKILLS_TEST_OUTPUT/model.nemo
-# pytest tests/gpu-tests/test_conversion.py -k test_nemo_hf_conversion -s
+pytest tests/gpu-tests/test_conversion.py -k test_nemo_hf_conversion -s
 # using the back-converted model to check that it's reasonable
 export NEMO_SKILLS_TEST_HF_MODEL=$NEMO_SKILLS_TEST_OUTPUT/hf-model
 
@@ -27,7 +27,7 @@ export LLAMA3_8B_BASE_HF=$NEMO_SKILLS_TEST_HF_MODEL
 export LLAMA3_8B_INSTRUCT_HF=$2
 
 # then running the rest of the tests
-pytest tests/gpu-tests/test_generation.py -s -k trtllm
+pytest tests/gpu-tests/test_generation.py -s
 
 # for sft we are using the tiny random llama model to run much faster
 python pipeline/launcher.py \
