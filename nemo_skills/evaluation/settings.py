@@ -17,7 +17,7 @@
 # to happen in eval_map.py inside prompt folder for specific models
 
 from nemo_skills.evaluation.graders import arena_grader, bfcl_grader, code_grader, if_grader, math_grader
-from nemo_skills.evaluation.metrics import ArenaEval, CodeEval, IFEval, MathEval
+from nemo_skills.evaluation.metrics import ArenaEval, CodeEval, IFEval, MathEval, BFCLEval
 
 MATH_BENCHMARKS = [
     'algebra222',
@@ -43,6 +43,7 @@ EVALUATOR_MAP = {
     "ifeval": IFEval,
     "arena-hard": ArenaEval,
     "mmlu": MathEval,  # TODO: update this
+    "bfcl": BFCLEval
 }
 
 for benchmark in MATH_BENCHMARKS:

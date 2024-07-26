@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import abc
+import csv
 import json
 import logging
 import re
@@ -368,6 +369,68 @@ class ArenaEval(BaseEval):
         self.scores = []  # list of lists
         self.lengths = 0
         self.total = 0
+
+
+class BFCLEval(BaseEval):
+    def __init__(self):
+        self.reset()
+
+    def fill_up_missing(self):
+        pass
+    
+    def is_incomplete(self, elem):
+        pass
+
+    def update(self, predictions, aggregation_mode):
+        pass
+
+    def setup(self, prediction_jsonl_files):
+        score_file = Path(prediction_jsonl_files[0]).parent / "data.csv"
+        print(f"Score file here: {score_file}")
+        
+        with open(score_file, mode='r') as file:
+            # Create a CSV reader object
+            csv_reader = csv.reader(file)
+            
+            # Read the header
+            header = next(csv_reader)
+            overall_acc_idx, ast_acc_idx, exec_acc_idx, relevance_acc_idx = 0, 0, 0, 0
+            for elem_idx, elem in enumerate(header):
+                if elem == "Overall Acc":
+                    overall_acc_idx = elem_idx
+                elif elem == "AST Summary":
+                    ast_acc_idx = elem_idx
+                elif elem == "Exec Summary":
+                    exec_acc_idx = elem_idx
+                elif elem == "Relevance Detection":
+                    relevance_acc_idx = elem_idx
+
+            # Read the data rows
+            data = []
+            for row in csv_reader:
+                data.append(row)
+
+            # Only one model would have been evaluated 
+            assert (len(data) == 1)
+            self.overall_acc = data[0][overall_acc_idx]
+            self.ast_acc = data[0][ast_acc_idx]
+            self.exec_acc = data[0][exec_acc_idx]
+            self.relevanc_acc = data[0][relevance_acc_idx]
+
+    def get_metrics(self):
+        return {
+            "overall_acc": self.overall_acc,
+            "ast_acc": self.ast_acc,
+            "exec_acc": self.exec_acc,
+            "relevanc_acc": self.relevanc_acc
+        }
+
+    def reset(self):
+        self.overall_acc = 0.0
+        self.ast_acc = 0.0
+        self.exec_acc = 0.0
+        self.relevanc_acc = 0.0
+
 
 
 def read_predictions(predictions, evaluator, allow_incomplete=False):
