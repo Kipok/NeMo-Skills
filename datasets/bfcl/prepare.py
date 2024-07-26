@@ -17,7 +17,7 @@ import urllib.request
 import json
 from os import path
 from pathlib import Path
-from utils import process_rest_file, augment_prompt_by_languge, language_specific_pre_processing
+from utils import process_api_in_file, augment_prompt_by_languge, language_specific_pre_processing
 import subprocess
 import time
 
@@ -71,12 +71,9 @@ if __name__ == "__main__":
             with open(local_path) as reader:
                 for idx, line in enumerate(reader):
                     instance = json.loads(line.strip())
-                    # if "function" in instance:
                     instance["function"] = language_specific_pre_processing(instance["function"], test_category)
-                    # if "question" in instance:
                     instance["question"] = augment_prompt_by_languge(instance["question"], test_category)
                     instance["test_category"] = test_category
-
                     if test_category != "relevance":
                         instance["expected_answer"] = answers[idx]
                     writer.write(json.dumps(instance) + "\n")
@@ -85,14 +82,19 @@ if __name__ == "__main__":
             time.sleep(0.1)
             
         print("\nPreparing Execution tests:")
-        for test, test_file in EXEC_TEST_FILE_MAPPING.items():
+        for test_category, test_file in EXEC_TEST_FILE_MAPPING.items():
             print(f"- Downloading {test_file}")
             local_path = path.join(data_folder, test_file)
             url_path = path.join(URL_PREFIX, test_file)
             urllib.request.urlretrieve(url_path, local_path)
 
-        # Update the REST test with APIs
-        print("\nPreparing REST API test:")
-        rest_test_file = path.join(data_folder, EXEC_TEST_FILE_MAPPING["rest"])
-        process_rest_file(rest_test_file)
+            process_api_in_file(local_path)
+
+            with open(local_path) as reader:
+                for idx, line in enumerate(reader):
+                    instance = json.loads(line.strip())
+                    instance["function"] = language_specific_pre_processing(instance["function"], test_category)
+                    instance["question"] = augment_prompt_by_languge(instance["question"], test_category)
+                    instance["test_category"] = test_category
+                    writer.write(json.dumps(instance) + "\n")
 

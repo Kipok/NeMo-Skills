@@ -9,7 +9,7 @@ system: |-
 user: |-
   Question: {question}
   Here is a list of functions in JSON format that you can invoke:
-  {context}. 
+  {function}. 
   
   Should you decide to return the function call(s), put it in the format of [func1(params_name=params_value, params_name2=params_value2...), func2(params)]
   NO other text MUST be included. 
