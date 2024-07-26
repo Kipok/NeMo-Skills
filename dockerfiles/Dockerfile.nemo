@@ -54,7 +54,7 @@ RUN pip uninstall -y apex && \
         git fetch origin $APEX_TAG && \
         git checkout FETCH_HEAD; \
     fi && \
-    pip install install -v --no-build-isolation --disable-pip-version-check --no-cache-dir --config-settings "--build-option=--cpp_ext --cuda_ext --fast_layer_norm --distributed_adam --deprecated_fused_adam" ./
+    pip install -v --no-build-isolation --disable-pip-version-check --no-cache-dir --config-settings "--build-option=--cpp_ext --cuda_ext --fast_layer_norm --distributed_adam --deprecated_fused_adam" ./
 
 # place any util pkgs here
 RUN pip install --upgrade-strategy only-if-needed nvidia-pytriton==$PYTRITON_VERSION
@@ -100,8 +100,12 @@ RUN pip install -r /opt/requirements.txt
 # for ifeval benchmark
 # TODO: can we get just a single folder?
 RUN mkdir /opt/benchmarks
+
 RUN git clone https://github.com/google-research/google-research.git /opt/benchmarks/google-research --depth=1 && \
     pip install langdetect absl-py immutabledict nltk && \
     python -c "import nltk; nltk.download('punkt')"
+
+RUN git clone https://github.com/ShishirPatil/gorilla.git /opt/benchmarks/gorilla --depth=1 && \
+    pip install tree_sitter==0.21.3 tree-sitter-java==0.21.0 tree-sitter-javascript==0.21.4 shortuuid==1.0.13 mistralai==0.4.2 anthropic==0.31.1 openai==1.35.13 cohere==5.5.8
 
 WORKDIR /workspace
