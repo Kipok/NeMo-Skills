@@ -67,6 +67,6 @@ user: |-
 prompt_template: |-
   <system_start>{system}<system_end>
   <user_start>{user}<user_end>
-  <assistant_start>{generation}
+  <assistant_start>
 
 stop_phrases: []  # automatically stops on turn token

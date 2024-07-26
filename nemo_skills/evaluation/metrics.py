@@ -104,11 +104,14 @@ class MathEval(BaseEval):
         if 'judgement' in predictions[0]:
             self.has_judge = True
 
+        current_correct_sympy = False
+        current_correct_judge = False
+
         if aggregation_mode == "best":
             if self.has_sympy:
-                self.correct_sympy += any([elem['is_correct'] for elem in predictions])
+                current_correct_sympy = any([elem['is_correct'] for elem in predictions])
             if self.has_judge:
-                self.correct_judge += any(["Yes" in elem['judgement'] for elem in predictions])
+                current_correct_judge = any(["Yes" in elem['judgement'] for elem in predictions])
             if all([elem['predicted_answer'] is None for elem in predictions]):
                 self.no_answer += 1
         elif aggregation_mode == "majority":
@@ -125,7 +128,7 @@ class MathEval(BaseEval):
                     self.no_answer += 1
                 else:
                     majority_result = Counter(valid_answers_and_results).most_common(1)[0][0]
-                    self.correct_sympy += majority_result[1]
+                    current_correct_sympy = majority_result[1]
             if self.has_judge:
                 valid_answers_and_results = [
                     (elem['predicted_answer'], "Yes" in elem['judgement'])
@@ -137,28 +140,41 @@ class MathEval(BaseEval):
                     self.no_answer += 1
                 else:
                     majority_result = Counter(valid_answers_and_results).most_common(1)[0][0]
-                    self.correct_sympy += majority_result[1]
+                    current_correct_judge = majority_result[1]
         elif aggregation_mode == "first":
             if self.has_sympy:
-                self.correct_sympy += predictions[0]['is_correct']
+                current_correct_sympy += predictions[0]['is_correct']
             if self.has_judge:
-                self.correct_judge += "Yes" in predictions[0]['judgement']
+                current_correct_judge += "Yes" in predictions[0]['judgement']
             self.no_answer += predictions[0]['predicted_answer'] is None
         else:
             raise ValueError(f"Unsupported mode {aggregation_mode}")
 
+        if self.has_sympy:
+            self.correct_sympy += current_correct_sympy
+        if self.has_judge:
+            self.correct_judge += current_correct_judge
+        if self.has_sympy and self.has_judge:
+            self.both_correct += current_correct_sympy and current_correct_judge
+            self.any_correct += current_correct_sympy or current_correct_judge
+
     def get_metrics(self):
         metrics = {"num_entries": self.total}
         if self.has_sympy:
-            metrics["sympy_correct_answer"] = self.correct_sympy / self.total * 100.0
+            metrics["sympy_correct"] = self.correct_sympy / self.total * 100.0
         if self.has_judge:
-            metrics["judge_correct_answer"] = self.correct_judge / self.total * 100.0
+            metrics["judge_correct"] = self.correct_judge / self.total * 100.0
+        if self.has_sympy and self.has_judge:
+            metrics["both_correct"] = self.both_correct / self.total * 100.0
+            metrics["any_correct"] = self.any_correct / self.total * 100.0
         metrics["no_answer"] = self.no_answer / self.total * 100.0
         return metrics
 
     def reset(self):
         self.correct_sympy = 0
         self.correct_judge = 0
+        self.both_correct = 0
+        self.any_correct = 0
         self.no_answer = 0
         self.total = 0
         self.has_sympy = False

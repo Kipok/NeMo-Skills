@@ -435,7 +435,9 @@ class OpenAIModel(BaseModel):
             {"role": "user", "content": user_message},
         ]
         try:
-            messages.append({"role": "assistant", "content": generation_pattern.search(prompt).group(1)})
+            assistant_message = generation_pattern.search(prompt).group(1)
+            if assistant_message:
+                messages.append({"role": "assistant", "content": assistant_message})
         except AttributeError:
             pass
         return messages
