@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import urllib.request
 import json
-from os import path
-from pathlib import Path
-from utils import process_api_in_file, augment_prompt_by_languge, language_specific_pre_processing
+import os
 import subprocess
 import time
+import urllib.request
+from os import path
+from pathlib import Path
+
+from utils import augment_prompt_by_languge, language_specific_pre_processing, process_api_in_file
 
 URL_PREFIX = "https://raw.githubusercontent.com/ShishirPatil/gorilla/main/berkeley-function-call-leaderboard/data/"
 
@@ -31,7 +32,7 @@ AST_TEST_FILE_MAPPING = {
     "multiple_function": "gorilla_openfunctions_v1_test_multiple_function.json",
     "parallel_multiple_function": "gorilla_openfunctions_v1_test_parallel_multiple_function.json",
     "java": "gorilla_openfunctions_v1_test_java.json",
-    "javascript": "gorilla_openfunctions_v1_test_javascript.json",     
+    "javascript": "gorilla_openfunctions_v1_test_javascript.json",
 }
 
 EXEC_TEST_FILE_MAPPING = {
@@ -44,12 +45,12 @@ EXEC_TEST_FILE_MAPPING = {
 
 
 if __name__ == "__main__":
-    root_folder = Path(__file__).absolute().parent 
+    root_folder = Path(__file__).absolute().parent
     output_file = root_folder / f"test.jsonl"
-    
+
     data_folder = root_folder / "data"
     data_folder.mkdir(exist_ok=True)
-    
+
     with open(output_file, "w") as writer:
         # First process the AST test
         print("Preparing AST tests:")
@@ -77,10 +78,10 @@ if __name__ == "__main__":
                     if test_category != "relevance":
                         instance["expected_answer"] = answers[idx]
                     writer.write(json.dumps(instance) + "\n")
-            
+
             # Github can issue a 104 Error
             time.sleep(0.1)
-            
+
         print("\nPreparing Execution tests:")
         for test_category, test_file in EXEC_TEST_FILE_MAPPING.items():
             print(f"- Downloading {test_file}")
@@ -97,4 +98,3 @@ if __name__ == "__main__":
                     instance["question"] = augment_prompt_by_languge(instance["question"], test_category)
                     instance["test_category"] = test_category
                     writer.write(json.dumps(instance) + "\n")
-

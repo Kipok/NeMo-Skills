@@ -17,7 +17,7 @@
 # to happen in eval_map.py inside prompt folder for specific models
 
 from nemo_skills.evaluation.graders import arena_grader, bfcl_grader, code_grader, if_grader, math_grader
-from nemo_skills.evaluation.metrics import ArenaEval, CodeEval, IFEval, MathEval, BFCLEval
+from nemo_skills.evaluation.metrics import ArenaEval, BFCLEval, CodeEval, IFEval, MathEval
 
 MATH_BENCHMARKS = [
     'algebra222',
@@ -39,12 +39,7 @@ CODE_BENCHMARKS = ['human-eval', 'mbpp']
 
 
 # ------------------------------- metrics settings -----------------------------
-EVALUATOR_MAP = {
-    "ifeval": IFEval,
-    "arena-hard": ArenaEval,
-    "mmlu": MathEval,  # TODO: update this
-    "bfcl": BFCLEval
-}
+EVALUATOR_MAP = {"ifeval": IFEval, "arena-hard": ArenaEval, "mmlu": MathEval, "bfcl": BFCLEval}  # TODO: update this
 
 for benchmark in MATH_BENCHMARKS:
     EVALUATOR_MAP[benchmark] = MathEval
@@ -60,6 +55,7 @@ EXTRA_EVAL_ARGS = {
     'mbpp': '++eval_type=code ++eval_config.dataset=mbpp',
     'ifeval': '++eval_type=ifeval',
     'arena-hard': '++eval_type=arena',
+    'bfcl': '++eval_type=bfcl',
 }
 
 # TODO: better name?
