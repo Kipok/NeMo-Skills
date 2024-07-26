@@ -127,27 +127,27 @@ def bfcl_grader(cfg):
         _RESULT_DIR = path.join(_REPO_ROOT_DIR, "result/meta-llama_Meta-Llama-3-8B-Instruct")
         _SCORE_DIR = path.join(_REPO_ROOT_DIR, "score")
         
-        cmd = (
-            f'cd {_REPO_ROOT_DIR} && mkdir -p {_RESULT_DIR} && mkdir {_SCORE_DIR}' 
-        )
+        cmd = f'mkdir -p {_RESULT_DIR} && mkdir -p {_SCORE_DIR}' 
+        subprocess.run(cmd, shell=True, check=True)
+
         output_dir = path.join(path.join(_REPO_ROOT_DIR, _RESULT_DIR))
 
         # Prepare the API file content
         if eval_category != "ast":
             api_keys_required = ["RAPID-API-KEY", "EXCHANGERATE-API-KEY", "OMDB-API-KEY", "GEOCODE-API-KEY"]
+            api_keys = []
             try:
                 api_keys = [
-                    {api_key: os.environ[api_key]} for api_key in api_keys_required
+                    {api_key: os.environ[api_key.replace("-", "_")]} for api_key in api_keys_required
                 ]
             except KeyError:
                 raise SystemExit(f"Missing APIs, check environment variable - {api_keys_required}")
             
-            API_FILE = "function_credential_config.json"
+            API_FILE = path.join(_REPO_ROOT_DIR, "function_credential_config.json")
             with open(API_FILE, "w") as writer:
-                writer.write(str(api_keys) + "\n")
+                json.dump(api_keys, writer)
             
-            subprocess.run('python apply_function_credential_config.py', shell=True, check=True)
-
+            subprocess.run(f'cd {_REPO_ROOT_DIR} && python apply_function_credential_config.py', shell=True, check=True)
 
 
         # Read results and dump them in separate test-wise files in output_dir
@@ -168,7 +168,7 @@ def bfcl_grader(cfg):
         # Run the evaluation
         # Allow for selective eval
         cmd = (
-            f'cd eval_checker && python eval_runner.py --model meta-llama/Meta-Llama-3-8B-Instruct --test {eval_category}'
+            f'cd {path.join(_REPO_ROOT_DIR, "eval_checker")} && python eval_runner.py --model meta-llama/Meta-Llama-3-8B-Instruct --test {eval_category}'
         )
         subprocess.run(cmd, shell=True, check=True)
 
