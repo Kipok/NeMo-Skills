@@ -60,6 +60,7 @@ EXTRA_EVAL_ARGS = {
     'mbpp': '++eval_type=code ++eval_config.dataset=mbpp',
     'ifeval': '++eval_type=ifeval',
     'arena-hard': '++eval_type=arena',
+    'bfcl': '++eval_type=bfcl',
 }
 
 # TODO: better name?
