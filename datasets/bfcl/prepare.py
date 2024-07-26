@@ -84,15 +84,15 @@ if __name__ == "__main__":
             # Github can issue a 104 Error
             time.sleep(0.1)
             
-        # print("\nPreparing Execution tests:")
-        # for test, test_file in EXEC_TEST_FILE_MAPPING.items():
-        #     print(f"- Downloading {test_file}")
-        #     local_path = path.join(data_folder, test_file)
-        #     url_path = path.join(URL_PREFIX, test_file)
-        #     urllib.request.urlretrieve(url_path, local_path)
+        print("\nPreparing Execution tests:")
+        for test, test_file in EXEC_TEST_FILE_MAPPING.items():
+            print(f"- Downloading {test_file}")
+            local_path = path.join(data_folder, test_file)
+            url_path = path.join(URL_PREFIX, test_file)
+            urllib.request.urlretrieve(url_path, local_path)
 
-        # # Update the REST test with APIs
-        # print("\nPreparing REST API test:")
-        # rest_test_file = path.join(data_folder, EXEC_TEST_FILE_MAPPING["rest"])
-        # process_rest_file(rest_test_file)
+        # Update the REST test with APIs
+        print("\nPreparing REST API test:")
+        rest_test_file = path.join(data_folder, EXEC_TEST_FILE_MAPPING["rest"])
+        process_rest_file(rest_test_file)
 
