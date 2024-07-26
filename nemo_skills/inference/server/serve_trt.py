@@ -425,7 +425,9 @@ def _stream(
         matching_stop_word = None
         # checking every half of the required tokens to have overlapping checks
         if idx < num_tokens_to_check - 1 or idx % (num_tokens_to_check // 2) != 0:
+            idx += 1
             continue
+
         seq_length = output['sequence_lengths']
         generation_suffix = output['output_ids'][0, 0, seq_length[0] - num_tokens_to_check : seq_length[0]]
         out_string = get_output_single(generation_suffix, 0, num_tokens_to_check, tokenizer, end_id)
