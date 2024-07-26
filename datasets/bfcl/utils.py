@@ -39,7 +39,7 @@ def _replace_placeholders(data, replacement_dict):
 
 
 # Function adapted from - https://github.com/ShishirPatil/gorilla/blob/main/berkeley-function-call-leaderboard/apply_function_credential_config.py
-def process_rest_file(file_path):
+def process_api_in_file(file_path):
     api_key_dict = {}
     try:
         api_key_dict = {
