@@ -1,7 +1,7 @@
 """Preprocessing utils adapted from the gorilla library"""
 
-import os
 import json
+import os
 
 API_KEYS_REQUIRED = [
     "RAPID_API_KEY",  # Get key from - https://rapidapi.com/hub
@@ -11,7 +11,6 @@ API_KEYS_REQUIRED = [
 ]
 
 KEY_PREFIX = "YOUR-"
-
 
 
 # Function adapted from - https://github.com/ShishirPatil/gorilla/blob/main/berkeley-function-call-leaderboard/apply_function_credential_config.py
@@ -42,13 +41,10 @@ def _replace_placeholders(data, replacement_dict):
 def process_api_in_file(file_path):
     api_key_dict = {}
     try:
-        api_key_dict = {
-            (KEY_PREFIX + api_key.replace("_", "-")): os.environ[api_key] for api_key in API_KEYS_REQUIRED 
-        }
+        api_key_dict = {(KEY_PREFIX + api_key.replace("_", "-")): os.environ[api_key] for api_key in API_KEYS_REQUIRED}
         # print(api_key_dict)
     except KeyError:
-         raise SystemExit(f"Missing APIs, check environment variable - {API_KEYS_REQUIRED}")
-
+        raise SystemExit(f"Missing APIs, check environment variable - {API_KEYS_REQUIRED}")
 
     modified_data = []
     with open(file_path, "r") as f:
@@ -61,7 +57,7 @@ def process_api_in_file(file_path):
             except json.JSONDecodeError:
                 print("Invalid JSON line skipped.")
                 continue
-            
+
     with open(file_path, "w") as f:
         for i, modified_line in enumerate(modified_data):
             f.write(modified_line)
@@ -69,7 +65,7 @@ def process_api_in_file(file_path):
                 f.write("\n")
 
     print(f"API key placeholders have been replaced for {file_path}")
-    
+
 
 # Adapted from here - https://github.com/ShishirPatil/gorilla/blob/main/berkeley-function-call-leaderboard/model_handler/utils.py
 def augment_prompt_by_languge(prompt, test_category):
@@ -87,32 +83,22 @@ def language_specific_pre_processing(function, test_category):
     if type(function) is dict:
         function = [function]
     if len(function) == 0:
-       return function
+        return function
     for item in function:
         properties = item["parameters"]["properties"]
         if test_category == "java":
             for key, value in properties.items():
                 if value["type"] == "Any" or value["type"] == "any":
-                    properties[key][
-                        "description"
-                    ] += "This parameter can be of any type of Java object."
-                    properties[key]["description"] += (
-                        "This is Java" + value["type"] + " in string representation."
-                    )
+                    properties[key]["description"] += "This parameter can be of any type of Java object."
+                    properties[key]["description"] += "This is Java" + value["type"] + " in string representation."
         elif test_category == "javascript":
             for key, value in properties.items():
                 if value["type"] == "Any" or value["type"] == "any":
-                    properties[key][
-                        "description"
-                    ] += "This parameter can be of any type of Javascript object."
+                    properties[key]["description"] += "This parameter can be of any type of Javascript object."
                 else:
                     if "description" not in properties[key]:
                         properties[key]["description"] = ""
                     properties[key]["description"] += (
-                        "This is Javascript "
-                        + value["type"]
-                        + " in string representation."
+                        "This is Javascript " + value["type"] + " in string representation."
                     )
         return function
-
-

@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import json
 import logging
+import os
 import shutil
 import subprocess
-from collections import defaultdict
 from argparse import Namespace
+from collections import defaultdict
+from os import path
 from pathlib import Path
 from typing import Optional
-from os import path
 
 from nemo_skills.utils import nested_dataclass, unroll_files
 
@@ -119,15 +119,15 @@ def bfcl_grader(cfg):
     """Grader for Berkeley Function Calling Leaderboard."""
     eval_category = "all"
 
-    for jsonl_file in unroll_files(cfg.prediction_jsonl_files): 
+    for jsonl_file in unroll_files(cfg.prediction_jsonl_files):
         # Create the result and score folder
         # Right now calling the folder what Llama3-8B-Instruct would create but it is only used for extracting functions out of the output
         # TODO fix these hardcoded paths
         _REPO_ROOT_DIR = "/opt/benchmarks/gorilla/berkeley-function-call-leaderboard"
         _RESULT_DIR = path.join(_REPO_ROOT_DIR, "result/meta-llama_Meta-Llama-3-8B-Instruct")
         _SCORE_DIR = path.join(_REPO_ROOT_DIR, "score")
-        
-        cmd = f'mkdir -p {_RESULT_DIR} && mkdir -p {_SCORE_DIR}' 
+
+        cmd = f'mkdir -p {_RESULT_DIR} && mkdir -p {_SCORE_DIR}'
         subprocess.run(cmd, shell=True, check=True)
 
         output_dir = path.join(path.join(_REPO_ROOT_DIR, _RESULT_DIR))
@@ -137,18 +137,17 @@ def bfcl_grader(cfg):
             api_keys_required = ["RAPID-API-KEY", "EXCHANGERATE-API-KEY", "OMDB-API-KEY", "GEOCODE-API-KEY"]
             api_keys = []
             try:
-                api_keys = [
-                    {api_key: os.environ[api_key.replace("-", "_")]} for api_key in api_keys_required
-                ]
+                api_keys = [{api_key: os.environ[api_key.replace("-", "_")]} for api_key in api_keys_required]
             except KeyError:
                 raise SystemExit(f"Missing APIs, check environment variable - {api_keys_required}")
-            
+
             API_FILE = path.join(_REPO_ROOT_DIR, "function_credential_config.json")
             with open(API_FILE, "w") as writer:
                 json.dump(api_keys, writer)
-            
-            subprocess.run(f'cd {_REPO_ROOT_DIR} && python apply_function_credential_config.py', shell=True, check=True)
 
+            subprocess.run(
+                f'cd {_REPO_ROOT_DIR} && python apply_function_credential_config.py', shell=True, check=True
+            )
 
         # Read results and dump them in separate test-wise files in output_dir
         with open(jsonl_file, "rt", encoding="utf-8") as f:
@@ -167,9 +166,7 @@ def bfcl_grader(cfg):
 
         # Run the evaluation
         # Allow for selective eval
-        cmd = (
-            f'cd {path.join(_REPO_ROOT_DIR, "eval_checker")} && python eval_runner.py --model meta-llama/Meta-Llama-3-8B-Instruct --test {eval_category}'
-        )
+        cmd = f'cd {path.join(_REPO_ROOT_DIR, "eval_checker")} && python eval_runner.py --model meta-llama/Meta-Llama-3-8B-Instruct --test {eval_category}'
         subprocess.run(cmd, shell=True, check=True)
 
         # Remove the output files and copy the score
@@ -177,8 +174,7 @@ def bfcl_grader(cfg):
         cmd = f'rm {_RESULT_DIR}/* && cp -r {_SCORE_DIR}/* {parent_dir}'
         subprocess.run(cmd, shell=True, check=True)
         # && cp {_SCORE_DIR}/data.csv '
-        
-        
+
 
 @nested_dataclass
 class ArenaGraderConfig:

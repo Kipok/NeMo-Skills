@@ -377,7 +377,7 @@ class BFCLEval(BaseEval):
 
     def fill_up_missing(self):
         pass
-    
+
     def is_incomplete(self, elem):
         pass
 
@@ -387,11 +387,11 @@ class BFCLEval(BaseEval):
     def setup(self, prediction_jsonl_files):
         score_file = Path(prediction_jsonl_files[0]).parent / "data.csv"
         print(f"Score file here: {score_file}")
-        
+
         with open(score_file, mode='r') as file:
             # Create a CSV reader object
             csv_reader = csv.reader(file)
-            
+
             # Read the header
             header = next(csv_reader)
             overall_acc_idx, ast_acc_idx, exec_acc_idx, relevance_acc_idx = 0, 0, 0, 0
@@ -410,8 +410,8 @@ class BFCLEval(BaseEval):
             for row in csv_reader:
                 data.append(row)
 
-            # Only one model would have been evaluated 
-            assert (len(data) == 1)
+            # Only one model would have been evaluated
+            assert len(data) == 1
             self.overall_acc = data[0][overall_acc_idx]
             self.ast_acc = data[0][ast_acc_idx]
             self.exec_acc = data[0][exec_acc_idx]
@@ -422,7 +422,7 @@ class BFCLEval(BaseEval):
             "overall_acc": self.overall_acc,
             "ast_acc": self.ast_acc,
             "exec_acc": self.exec_acc,
-            "relevanc_acc": self.relevanc_acc
+            "relevanc_acc": self.relevanc_acc,
         }
 
     def reset(self):
@@ -430,7 +430,6 @@ class BFCLEval(BaseEval):
         self.ast_acc = 0.0
         self.exec_acc = 0.0
         self.relevanc_acc = 0.0
-
 
 
 def read_predictions(predictions, evaluator, allow_incomplete=False):
