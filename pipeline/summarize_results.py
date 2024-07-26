@@ -17,6 +17,7 @@
 import argparse
 import glob
 import json
+import logging
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -28,6 +29,7 @@ sys.path.append(str(Path(__file__).absolute().parents[0]))
 from compute_metrics import EVALUATOR_MAP, compute_metrics
 
 from nemo_skills.evaluation.metrics import MathEval
+from nemo_skills.utils import setup_logging
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -41,7 +43,10 @@ if __name__ == "__main__":
         default=[],
         help="Specify benchmarks to run. If not specified, all benchmarks in the results_folder will be used.",
     )
+    parser.add_argument("--debug", action="store_true", help="Print debug information")
     args = parser.parse_args()
+
+    setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not args.debug else logging.DEBUG)
 
     # running compute_metrics.py to get greedy, majority and pass @k results for all benchmarks available
     benchmarks = glob.glob(f'{args.results_folder}/*')

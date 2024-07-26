@@ -157,6 +157,14 @@ class MathEval(BaseEval):
         if self.has_sympy and self.has_judge:
             self.both_correct += current_correct_sympy and current_correct_judge
             self.any_correct += current_correct_sympy or current_correct_judge
+            if current_correct_sympy != current_correct_judge:
+                LOG.debug(
+                    "Discrepancy between sympy (%s) and LLM checkers (%s).\nPredicted answer: %s\nExpected answer: %s",
+                    bool(current_correct_sympy),
+                    bool(current_correct_judge),
+                    predictions[0]['predicted_answer'],
+                    predictions[0]['expected_answer'],
+                )
 
     def get_metrics(self):
         metrics = {"num_entries": self.total}
