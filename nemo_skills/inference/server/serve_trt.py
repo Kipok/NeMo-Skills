@@ -402,8 +402,8 @@ def _stream(
     idx = 0
     finished_reqs = 0
     while finished_reqs < len(request_ids):
-        responses = runner.session.await_responses()
-
+        multi_responses = runner.session.await_responses(request_ids)
+        responses = [response for responses in multi_responses for response in responses]
         for response in responses:
             if response.result.is_final:
                 finished_reqs += 1
@@ -428,9 +428,9 @@ def _stream(
             continue
         seq_length = output['sequence_lengths']
         generation_suffix = output['output_ids'][0, 0, seq_length[0] - num_tokens_to_check : seq_length[0]]
-        output_string = get_output_single(generation_suffix, 0, num_tokens_to_check, tokenizer, end_id)
+        out_string = get_output_single(generation_suffix, 0, num_tokens_to_check, tokenizer, end_id)
         for stop_word in stop_words_list:
-            if stop_word in output_string:
+            if stop_word in out_string:
                 matching_stop_word = stop_word
                 break
 
@@ -439,18 +439,16 @@ def _stream(
             break
         idx += 1
 
-    output_string = get_output(output['output_ids'], input_lengths, output['sequence_lengths'][0], tokenizer, end_id)[
-        0
-    ]
+    out_string = get_output(output['output_ids'], input_lengths, output['sequence_lengths'][0], tokenizer, end_id)[0]
     for stop_word in stop_words_list:
-        if stop_word in output_string:
+        if stop_word in out_string:
             matching_stop_word = stop_word
             break
     if matching_stop_word is not None:
-        output_string = remove_stop_tokens(output_string, stop_words_list)
+        out_string = remove_stop_tokens(out_string, stop_words_list)
         # adding it back, since we only need to remove what's *after* the stop phrase
-        output_string += matching_stop_word
-    return output_string
+        out_string += matching_stop_word
+    return out_string
 
 
 class TensorRTLLM:
