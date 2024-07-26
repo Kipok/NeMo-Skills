@@ -60,6 +60,7 @@ if __name__ == "__main__":
         try:
             evaluator = EVALUATOR_MAP.get(benchmark, MathEval)()
             results[benchmark] = {}
+            # TODO: we should just return all available aggregations from compute_metrics directly
             if evaluator is not MathEval:
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
                     results[benchmark]['greedy'] = compute_metrics(

@@ -39,6 +39,17 @@ class SympyGraderConfig:
 
 
 @nested_dataclass
+class LlmGraderConfig:
+    batch_size: int = 100  # lower if running into rate limits
+    tokens_to_generate: int = 4096  # will auto-lower to max possible for NGC models
+    use_batch_api: bool = True  # only supported for OpenAI models!
+    base_url: Optional[str] = None
+    judge_model: str = "gpt-4-1106-preview"
+    # defaults to True to avoid regenerating judgements unless necessary
+    skip_filled: bool = True
+
+
+@nested_dataclass
 class MathGraderConfig:
     # Sandbox configuration {sandbox_params}
     grading_type: str = "sympy"  # sympy or llm
@@ -61,8 +72,8 @@ def math_grader(cfg):
         sandbox.batch_evaluate_results(
             prediction_jsonl_files=cfg.prediction_jsonl_files,
             **grading_config,
-            extract_from_boxed=eval_config['extract_from_boxed'],
-            extract_regex=eval_config['extract_regex'],
+            extract_from_boxed=eval_config.extract_from_boxed,
+            extract_regex=eval_config.extract_regex,
         )
         return
 
@@ -72,7 +83,7 @@ def math_grader(cfg):
     from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
     from nemo_skills.inference.server.model import get_model
 
-    grading_config = LlmGraderConfig(**cfg.eval_config.grading_config)
+    grading_config = LlmGraderConfig(**eval_config.grading_config)
 
     if grading_config.use_batch_api and grading_config.base_url:
         raise ValueError("Batch API is only supported for OpenAI models!")
@@ -101,8 +112,8 @@ def math_grader(cfg):
                 to_add = data_point.copy()
                 to_add['predicted_answer'] = extract_answer(
                     data_point['generation'],
-                    extract_from_boxed=cfg.eval_config.extract_from_boxed,
-                    extract_regex=cfg.eval_config.extract_regex,
+                    extract_from_boxed=eval_config.extract_from_boxed,
+                    extract_regex=eval_config.extract_regex,
                 )
                 data_points.append(to_add)
 
@@ -136,8 +147,8 @@ def math_grader(cfg):
                     to_add = data_point.copy()
                     to_add['predicted_answer'] = extract_answer(
                         data_point['generation'],
-                        extract_from_boxed=cfg.eval_config.extract_from_boxed,
-                        extract_regex=cfg.eval_config.extract_regex,
+                        extract_from_boxed=eval_config.extract_from_boxed,
+                        extract_regex=eval_config.extract_regex,
                     )
                     data_points.append(to_add)
 
@@ -244,17 +255,6 @@ def if_grader(cfg):
         # removing metric files to avoid reusing them
         (parent_dir / 'eval_results_loose.jsonl').unlink()
         (parent_dir / 'eval_results_strict.jsonl').unlink()
-
-
-@nested_dataclass
-class LlmGraderConfig:
-    batch_size: int = 100  # lower if running into rate limits
-    tokens_to_generate: int = 4096  # will auto-lower to max possible for NGC models
-    use_batch_api: bool = True  # only supported for OpenAI models!
-    base_url: Optional[str] = None
-    judge_model: str = "gpt-4-1106-preview"
-    # defaults to True to avoid regenerating judgements unless necessary
-    skip_filled: bool = True
 
 
 def arena_grader(cfg):

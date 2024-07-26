@@ -108,7 +108,7 @@ class MathEval(BaseEval):
             if self.has_sympy:
                 self.correct_sympy += any([elem['is_correct'] for elem in predictions])
             if self.has_judge:
-                self.correct_judge += any([elem['judgement'].strip() == "Yes" for elem in predictions])
+                self.correct_judge += any(["Yes" in elem['judgement'] for elem in predictions])
             if all([elem['predicted_answer'] is None for elem in predictions]):
                 self.no_answer += 1
         elif aggregation_mode == "majority":
@@ -128,7 +128,7 @@ class MathEval(BaseEval):
                     self.correct_sympy += majority_result[1]
             if self.has_judge:
                 valid_answers_and_results = [
-                    (elem['predicted_answer'], elem['judgement'].strip() == "Yes")
+                    (elem['predicted_answer'], "Yes" in elem['judgement'])
                     for elem in predictions
                     if elem['predicted_answer'] is not None
                 ]
@@ -142,7 +142,7 @@ class MathEval(BaseEval):
             if self.has_sympy:
                 self.correct_sympy += predictions[0]['is_correct']
             if self.has_judge:
-                self.correct_judge += predictions[0]['judgement'].strip() == "Yes"
+                self.correct_judge += "Yes" in predictions[0]['judgement']
             self.no_answer += predictions[0]['predicted_answer'] is None
         else:
             raise ValueError(f"Unsupported mode {aggregation_mode}")
