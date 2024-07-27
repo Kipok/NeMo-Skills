@@ -81,11 +81,14 @@ class MathEval(BaseEval):
         self.reset()
 
     def fill_up_missing(self):
-        # TODO: add missing judgement checks, but how to aggregate?
+        # TODO: not clear how to fill up missing, since we don't know whether llm or sympy was used
         return {'predicted_answer': None, 'is_correct': False}
 
     def is_incomplete(self, elem):
-        return 'is_correct' not in elem or 'predicted_answer' not in elem
+        incomplete = 'predicted_answer' not in elem
+        if not incomplete:
+            incomplete = 'is_correct' not in elem and 'judgement' not in elem
+        return incomplete
 
     def update(self, predictions, aggregation_mode):
         """Updating the evaluation results with the current element.
