@@ -1517,4 +1517,5 @@ examples_map = {
     "math_precalculus": examples_precalculus,
     "math_prealgebra": examples_prealgebra,
     "math_distractor": distractor,
+    "math_critical_thinking": critical_thinking,
 }
