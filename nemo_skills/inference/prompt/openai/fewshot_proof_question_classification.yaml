@@ -1,5 +1,5 @@
 few_shot_examples:
-  template: "Question:\n{question}\n\nClassification:\n{classification}\n\n{context}"
+  template: "Question:\n{question}\n\nClassification:\n{classification}"
 
 system: |-
     You're an expert in mathematics and logic, specializing in identifying proof questions.
@@ -27,9 +27,7 @@ user: |-
     Now, classify the following question:
     Question:
     {question}
-
-    {context}
-
+    
 prompt_template: |-
     <system_start>{system}<system_end>
     <user_start>{user}<user_end>
