@@ -178,7 +178,6 @@ def load_tokenizer(tokenizer_dir: str, model_name: str):
     else:
         tokenizer = AutoTokenizer.from_pretrained(
             tokenizer_dir,
-            tokenizer_type=model_name,
             legacy=False,
             padding_side='left',
             truncation_side='left',
