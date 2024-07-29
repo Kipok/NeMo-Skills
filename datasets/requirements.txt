@@ -1,12 +1,4 @@
-anthropic
 bs4
-cohere
 evalplus @ git+https://github.com/evalplus/evalplus@c91370f
-mistralai
-openai
 pyyaml
 requests
-shortuuid
-tree-sitter-java==0.21.0
-tree-sitter-javascript==0.21.4
-tree_sitter==0.21.3

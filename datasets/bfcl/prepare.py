@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import json
-import os
-import subprocess
 import time
 import urllib.request
 from os import path
