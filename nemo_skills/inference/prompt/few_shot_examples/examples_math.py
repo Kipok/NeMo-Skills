@@ -1466,6 +1466,42 @@ generate_masked = [
     },
 ]
 
+critical_thinking = [
+    {
+        "question": "Base prime representation of a natural number is defined using the exponents of its prime factorization as follows. Each place in a base prime represents a prime number, and it is occupied by the corresponding exponent of that prime, starting on the right side with the smallest prime number and proceeding to the left with the next largest prime number. For instance, since $84 = 7^1 \\times 5^0 \\times 3^1 \\times 2^2$, then $84$ would be written as $1012$ in base prime. What is $225$ written in base prime?",
+        "perturbed_question": "Base prime representation of a natural number is defined using the exponents of its prime factorization as follows. Each place in a base prime represents a prime number, and it is occupied by the corresponding exponent of that prime, starting on the right side with the smallest prime number and proceeding to the left with the next largest prime number. For instance, since $84 = 7^1 \\times 5^0 \\times 3^1 \\times 2^2$, then $84$ would be written as $1012$ in base prime. What is this number written in base prime?",
+        "generation": "The question does not specify the numebr that should be written in base prime. \\boxed{Insufficient}."
+    },
+    {
+        "question": "If $\\sqrt{5+n}=7$, then what is the value of $n$?",
+        "perturbed_question": "If $\\sqrt{5+x}=7$, then what is the value of $n$?",
+        "generation": "The question does not contain any references of $n$. \\boxed{Insufficient}."
+
+    },
+    {
+        "question": "The area of a triangle is 600 square feet. Find the altitude, in feet, of the triangle if the length of the corresponding base is 30 feet.",
+        "perturbed_question": "The area of a triangle is larger than the area of the square by 1600 square feet. Find the altitude, in feet, of the triangle if the length of the corresponding base is 30 feet.",
+        "generation": "The question does not contain enough information to solve it. \\boxed{Insufficient}."
+    },
+]
+
+distractor = [
+    {
+        "question": "Base prime representation of a natural number is defined using the exponents of its prime factorization as follows. Each place in a base prime represents a prime number, and it is occupied by the corresponding exponent of that prime, starting on the right side with the smallest prime number and proceeding to the left with the next largest prime number. For instance, since $84 = 7^1 \\times 5^0 \\times 3^1 \\times 2^2$, then $84$ would be written as $1012$ in base prime. What is $225$ written in base prime?",
+        "perturbed_question": "Base prime representation of a natural number is defined using the exponents of its prime factorization as follows. Each place in a base prime represents a prime number, and it is occupied by the corresponding exponent of that prime, starting on the right side with the smallest prime number and proceeding to the left with the next largest prime number. For instance, since $84 = 7^1 \\times 5^0 \\times 3^1 \\times 2^2$, then $84$ would be written as $1012$ in base prime. One interesting fact about prime numbers is the existence of twin primes. Twin primes are pairs of prime numbers that differ by exactly 2. For instance, (3, 5), (17, 19), and (11, 13) are twin primes. Unfortunately, mathematicians still have not proven the Twin Prime Conjecture, which asserts that there are infinitely many twin primes. The largest known twin primes, as of 2024, are $2996863034895 \times 2^{1290000} \pm 1$. What is $225$ written in base prime?"
+    },
+    {
+        "question": "If $\\sqrt{5+n}=7$, then what is the value of $n$?",
+        "perturbed_question": "In arithmetic and algebra, square roots are used to solve equations, calculate areas and volumes, and find unknown values. If $\\sqrt{5+n}=7$ and $f(x) = \frac{x}{\sqrt{2} + x(1-\sqrt{2})}$ is a functional square root of $g(x) = \frac{x}{2+x^7}$, then what is the value of $n$?" # intentional error in the distractor
+    },
+    {
+        "question": "The area of a triangle is 600 square feet. Find the altitude, in feet, of the triangle if the length of the corresponding base is 30 feet.",
+        "perturbed_question": "The area of a triangle is 600 square feet. This triangle is there to depict a roof of a house. Find the altitude, in feet, of the triangle if the length of the corresponding base is 30 feet. The scale of the drawing is off and we might want a larger base for the final project."
+    },
+]
+
+
+
 
 examples_map = {
     "math_standard_few_shot": standard_four_shot,
@@ -1480,4 +1516,5 @@ examples_map = {
     "math_geometry": examples_geometry,
     "math_precalculus": examples_precalculus,
     "math_prealgebra": examples_prealgebra,
+    "math_distractor": distractor,
 }
