@@ -78,7 +78,7 @@ if __name__ == "__main__":
                     writer.write(json.dumps(instance) + "\n")
 
             # Github can issue a 104 Error
-            time.sleep(0.1)
+            time.sleep(0.2)
 
         print("\nPreparing Execution tests:")
         for test_category, test_file in EXEC_TEST_FILE_MAPPING.items():

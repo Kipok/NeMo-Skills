@@ -44,7 +44,7 @@ def process_api_in_file(file_path):
         api_key_dict = {(KEY_PREFIX + api_key.replace("_", "-")): os.environ[api_key] for api_key in API_KEYS_REQUIRED}
         # print(api_key_dict)
     except KeyError:
-        raise SystemExit(f"Missing APIs, check environment variable - {API_KEYS_REQUIRED}")
+        print(f"\033[91mWarning: Missing APIs, check environment variable - {API_KEYS_REQUIRED}\033[0m")
 
     modified_data = []
     with open(file_path, "r") as f:
