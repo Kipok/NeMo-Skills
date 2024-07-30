@@ -263,7 +263,8 @@ def if_grader(cfg):
 @nested_dataclass
 class BFCLGraderConfig:
     # Default eval category
-    eval_category: str = "ast"  # sympy or llm
+    # For final evaluation pass ++eval_config.eval_category=all
+    eval_category: str = "ast"  
 
 def bfcl_grader(cfg):
     """Grader for Berkeley Function Calling Leaderboard."""
