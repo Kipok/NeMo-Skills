@@ -80,7 +80,7 @@ def augment_prompt_by_language(prompt, test_category):
 
 # Adapted from here - https://github.com/ShishirPatil/gorilla/blob/main/berkeley-function-call-leaderboard/model_handler/utils.py
 def language_specific_pre_processing(function, test_category):
-    if type(function) is dict:
+    if isinstance(function, dict):
         function = [function]
     if len(function) == 0:
         return function
