@@ -68,7 +68,7 @@ def process_api_in_file(file_path):
 
 
 # Adapted from here - https://github.com/ShishirPatil/gorilla/blob/main/berkeley-function-call-leaderboard/model_handler/utils.py
-def augment_prompt_by_languge(prompt, test_category):
+def augment_prompt_by_language(prompt, test_category):
     if test_category == "java":
         prompt = prompt + "\nNote that the provided function is in Java 8 SDK syntax."
     elif test_category == "javascript":
