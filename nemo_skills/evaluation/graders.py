@@ -318,7 +318,6 @@ def bfcl_grader(cfg):
         parent_dir = Path(jsonl_file).absolute().parent
         cmd = f'rm {_RESULT_DIR}/* && cp -r {_SCORE_DIR}/* {parent_dir}'
         subprocess.run(cmd, shell=True, check=True)
-        # && cp {_SCORE_DIR}/data.csv '
 
 
 def arena_grader(cfg):
