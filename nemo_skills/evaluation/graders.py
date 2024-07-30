@@ -265,9 +265,10 @@ class BFCLGraderConfig:
     # Default eval category
     eval_category: str = "ast"  # sympy or llm
 
+
 def bfcl_grader(cfg):
     """Grader for Berkeley Function Calling Leaderboard."""
-    
+
     eval_config = BFCLGraderConfig(**cfg.eval_config)
     eval_category = eval_config.eval_category
 
