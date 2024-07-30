@@ -260,9 +260,16 @@ def if_grader(cfg):
         (parent_dir / 'eval_results_strict.jsonl').unlink()
 
 
+@nested_dataclass
+class BFCLGraderConfig:
+    # Default eval category
+    eval_category: str = "ast"  # sympy or llm
+
 def bfcl_grader(cfg):
     """Grader for Berkeley Function Calling Leaderboard."""
-    eval_category = "all"
+    
+    eval_config = BFCLGraderConfig(**cfg.eval_config)
+    eval_category = eval_config.eval_category
 
     for jsonl_file in unroll_files(cfg.prediction_jsonl_files):
         # Create the result and score folder
@@ -272,10 +279,11 @@ def bfcl_grader(cfg):
         _RESULT_DIR = path.join(_REPO_ROOT_DIR, "result/meta-llama_Meta-Llama-3-8B-Instruct")
         _SCORE_DIR = path.join(_REPO_ROOT_DIR, "score")
 
-        cmd = f'mkdir -p {_RESULT_DIR} && mkdir -p {_SCORE_DIR}'
-        subprocess.run(cmd, shell=True, check=True)
-
-        output_dir = path.join(path.join(_REPO_ROOT_DIR, _RESULT_DIR))
+        try:
+            os.makedirs(_RESULT_DIR)
+            os.makedirs(_SCORE_DIR)
+        except FileExistsError:
+            pass
 
         # Prepare the API file content
         if eval_category != "ast":
@@ -304,7 +312,7 @@ def bfcl_grader(cfg):
                 test_category_dict[test_category].append(sample)
 
             for test_category, test_samples in test_category_dict.items():
-                output_file = path.join(output_dir, f"gorilla_openfunctions_v1_test_{test_category}.json")
+                output_file = path.join(_RESULT_DIR, f"gorilla_openfunctions_v1_test_{test_category}.json")
                 with open(output_file, "w") as writer:
                     for test_sample in test_samples:
                         writer.write(json.dumps(test_sample) + "\n")
