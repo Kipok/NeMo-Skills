@@ -13,8 +13,13 @@
 # limitations under the License.
 
 
+import nemo.collections.nlp.data.language_modeling.megatron.gpt_sft_chat_dataset as gpt_sft_chat_dataset
 import torch.multiprocessing as mp
-from nemo.collections.nlp.data.language_modeling.megatron.gpt_sft_chat_dataset import get_prompt_template_example
+from nemo.collections.nlp.data.language_modeling.megatron.gpt_sft_chat_dataset import (
+    TYPE_INSTRUCTION,
+    _add_speaker_and_signal,
+    get_prompt_template_example,
+)
 from nemo.core.config import hydra_runner
 from nemo.utils import logging
 from nemo.utils.exp_manager import exp_manager
@@ -107,6 +112,32 @@ def _modify_config(gpt_cfg, cfg, add_cfg_to_tree=False):
     return gpt_cfg
 
 
+def _get_header_conversation_type_mask_role(source, special_tokens):
+    """Overriding this function to remove system tokens if the message is empty. TODO: upstream this"""
+    END_SIGNAL = special_tokens['end_of_turn']
+    END_NAME_SIGNAL = special_tokens['end_of_name']
+
+    data_type = None
+    if 'type' in source:
+        data_type = source['type']
+        if data_type is not None:
+            assert data_type in TYPE_INSTRUCTION, f"source type {data_type} not supported"
+    # add end signal and concatenate together
+    conversation = source['system']
+    if data_type is not None:
+        if TYPE_INSTRUCTION[data_type] != '':
+            conversation = conversation + '\n' + TYPE_INSTRUCTION[data_type]
+    mask_role = source.get('mask', 'User')
+    header = f"{special_tokens['system_turn_start']}{gpt_sft_chat_dataset.SYSTEM_TOKEN}{END_NAME_SIGNAL}{conversation}{END_SIGNAL}"
+
+    # hardcoding the logic for llama template, since it's unclear if we should do this for other models
+    if header == '<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n<|eot_id|>':
+        header = '<|begin_of_text|>'
+
+    conversation = _add_speaker_and_signal(header, source['conversations'], mask_role, data_type, special_tokens)
+    return header, conversation, data_type, mask_role
+
+
 @hydra_runner(config_path=".", config_name="sft_config")
 def main(cfg) -> None:
     logging.info("\n\n************** Experiment configuration ***********")
@@ -135,6 +166,13 @@ def main(cfg) -> None:
     with open_dict(cfg):
         # overwrite the model config with the config from the checkpoint
         cfg.model.encoder_seq_length = ptl_model.cfg.encoder_seq_length
+
+    # monkey-patching the system token to allow training with llama format
+    # TODO: remove when this is properly supported in nemo
+    if cfg.model.data.chat:
+        # not using default to avoid accidental errors by mistyping or misplacing this value in the config
+        gpt_sft_chat_dataset.SYSTEM_TOKEN = cfg.model.data["system_token"]
+        gpt_sft_chat_dataset._get_header_conversation_type_mask_role = _get_header_conversation_type_mask_role
 
     # pull values from checkpoint
     trainer_restore_path = trainer.ckpt_path

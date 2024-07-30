@@ -232,7 +232,7 @@ class WriteFinalSftManifest(BaseProcessor):
     def __init__(
         self,
         prompt_type: str,
-        chat_format: bool = False,
+        chat_format: str | None = None,  # nemotron/llama/None
         generation_suffix: str = "",
         metadata: Optional[Dict] = None,
         **kwargs,
@@ -266,17 +266,31 @@ class WriteFinalSftManifest(BaseProcessor):
                     continue
                 seen_predictions[question].add(elem['generation'])
 
-                if self.chat_format:
+                if self.chat_format.lower() == "nemotron":
                     elem['conversations'] = [
-                        {'value': elem['question'], 'from': 'User', 'canonical_form': ''},
+                        {'value': prompt_config.user.format(**elem), 'from': 'User', 'canonical_form': ''},
                         {'value': elem.pop("generation"), 'from': 'Assistant', 'canonical_form': ''},
                     ]
                     elem['system'] = prompt_config.system
                     elem['mask'] = 'User'
-                    elem['type'] = None
+                elif self.chat_format.lower() == "llama":
+                    elem['conversations'] = [
+                        {
+                            'value': prompt_config.user.format(**elem),
+                            'from': '<|start_header_id|>user<|end_header_id|>',
+                            'canonical_form': '',
+                        },
+                        {
+                            'value': elem.pop("generation"),
+                            'from': '<|start_header_id|>assistant<|end_header_id|>',
+                            'canonical_form': '',
+                        },
+                    ]
+                    elem['system'] = prompt_config.system
+                    elem['mask'] = '<|start_header_id|>user<|end_header_id|>'
                 else:
-                    elem["input"] = prompt.build_string(input_dict={"question": elem['question']})
                     elem["output"] = elem.pop("generation") + self.generation_suffix
+                    elem["input"] = prompt.build_string(input_dict=elem)
                 elem.update(self.metadata)
                 fout.write(json.dumps(elem) + "\n")
                 samples_count += 1
