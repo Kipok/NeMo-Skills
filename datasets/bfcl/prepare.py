@@ -18,7 +18,7 @@ import urllib.request
 from os import path
 from pathlib import Path
 
-from utils import augment_prompt_by_languge, language_specific_pre_processing, process_api_in_file
+from utils import augment_prompt_by_language, language_specific_pre_processing, process_api_in_file
 
 URL_PREFIX = "https://raw.githubusercontent.com/ShishirPatil/gorilla/main/berkeley-function-call-leaderboard/data/"
 
