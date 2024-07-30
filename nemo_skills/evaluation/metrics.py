@@ -505,14 +505,14 @@ class BFCLEval(BaseEval):
             self.overall_acc = data[0][overall_acc_idx]
             self.ast_acc = data[0][ast_acc_idx]
             self.exec_acc = data[0][exec_acc_idx]
-            self.relevanc_acc = data[0][relevance_acc_idx]
+            self.relevance_acc = data[0][relevance_acc_idx]
 
     def get_metrics(self):
         return {
             "overall_acc": self.overall_acc,
             "ast_acc": self.ast_acc,
             "exec_acc": self.exec_acc,
-            "relevanc_acc": self.relevanc_acc,
+            "relevance_acc": self.relevance_acc,
         }
 
     def reset(self):
