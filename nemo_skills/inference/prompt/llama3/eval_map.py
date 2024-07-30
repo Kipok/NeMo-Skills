@@ -37,5 +37,6 @@ EVAL_MAP = {
         'human-eval': 'llama3/codegen',
         'mbpp': 'llama3/codegen',
         'mmlu': 'llama3/mmlu',
+        'bfcl': 'llama3/bfcl',
     },
 }
