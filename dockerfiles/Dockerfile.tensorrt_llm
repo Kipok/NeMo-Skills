@@ -37,3 +37,6 @@ RUN mkdir /opt/benchmarks
 RUN git clone https://github.com/google-research/google-research.git /opt/benchmarks/google-research --depth=1 && \
     pip install langdetect absl-py immutabledict nltk && \
     python -c "import nltk; nltk.download('punkt')"
+
+RUN git clone https://github.com/ShishirPatil/gorilla.git /opt/benchmarks/gorilla --depth=1 && \
+    pip install tree_sitter==0.21.3 tree-sitter-java==0.21.0 tree-sitter-javascript==0.21.4 shortuuid mistralai anthropic openai cohere
