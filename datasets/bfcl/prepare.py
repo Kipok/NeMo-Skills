@@ -71,7 +71,7 @@ if __name__ == "__main__":
                 for idx, line in enumerate(reader):
                     instance = json.loads(line.strip())
                     instance["function"] = language_specific_pre_processing(instance["function"], test_category)
-                    instance["question"] = augment_prompt_by_languge(instance["question"], test_category)
+                    instance["question"] = augment_prompt_by_language(instance["question"], test_category)
                     instance["test_category"] = test_category
                     if test_category != "relevance":
                         instance["expected_answer"] = answers[idx]
