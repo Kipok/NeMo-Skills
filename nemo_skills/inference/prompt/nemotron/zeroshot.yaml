@@ -5,7 +5,7 @@ user: |-
 
     Your final answer should be inside \boxed{{}}.
 
-    {question}{context}
+    {question}
 
 prompt_template: |-
   <extra_id_0>System

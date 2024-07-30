@@ -109,9 +109,6 @@ the [quick start](#quick-start) section.
    python nemo_skills/inference/generate_solutions.py \
      output_file=./test-results/gsm8k/output-greedy.jsonl \
      +prompt=openmathinstruct/sft \
-     ++prompt.few_shot_examples.examples_type=null \
-     ++prompt.few_shot_examples.num_few_shots=0 \
-     ++prompt.context_type=empty \
      ++dataset=gsm8k \
      ++split_name=test \
      ++server.server_type=nemo \

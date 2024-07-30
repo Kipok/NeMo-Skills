@@ -16,20 +16,18 @@ Make sure to run the commands inside TensorRT-LLM docker container, e.g. you can
 python nemo_skills/conversion/hf_to_trtllm.py \
     --model_dir <path to the HF folder> \
     --output_dir <tmp file for trtllm checkpoint> \
-    --dtype <float16, bfloat16, float32> \
+    --dtype bfloat16 \
     --tp_size <number of GPUs>
 
 trtllm-build \
     --checkpoint_dir <tmp file for trtllm checkpoint> \
     --output_dir <final path for the trtllm checkpoint> \
-    --gpt_attention_plugin <dtype from step above> \
-    --gemm_plugin <dtype from step above> \
-    --context_fmha <"enable" on A100+ GPUs and "disable" otherwise> \
-    --paged_kv_cache <"enable" on A100+ GPUs and "disable" otherwise> \
+    --gpt_attention_plugin bfloat16
+    --use_paged_context_fmha enable
     --max_input_len 3584 \
     --max_seq_len 4096 \
     --max_num_tokens 4096 \
-    --max_batch_size <desired batch size>
+    --max_batch_size 128
 
 cp <path to the HF folder>/tokenizer* <final path for the trtllm checkpoint>
 ```
