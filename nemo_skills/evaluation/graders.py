@@ -264,7 +264,7 @@ def if_grader(cfg):
 class BFCLGraderConfig:
     # Default eval category
     # For final evaluation pass ++eval_config.eval_category=all
-    eval_category: str = "ast"  
+    eval_category: str = "ast"
 
 
 def bfcl_grader(cfg):
