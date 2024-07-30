@@ -44,7 +44,7 @@ EVALUATOR_MAP = {
     "arena-hard": ArenaEval,
     "mmlu": MathEval,  # TODO: update this
     "bfcl": BFCLEval,
-}```
+}
 
 for benchmark in MATH_BENCHMARKS:
     EVALUATOR_MAP[benchmark] = MathEval
