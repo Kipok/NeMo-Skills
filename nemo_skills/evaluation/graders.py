@@ -266,9 +266,10 @@ class BFCLGraderConfig:
     # For final evaluation pass ++eval_config.eval_category=all
     eval_category: str = "ast"  
 
+
 def bfcl_grader(cfg):
     """Grader for Berkeley Function Calling Leaderboard."""
-    
+
     eval_config = BFCLGraderConfig(**cfg.eval_config)
     eval_category = eval_config.eval_category
 
