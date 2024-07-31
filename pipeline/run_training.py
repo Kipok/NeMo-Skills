@@ -31,6 +31,18 @@ SLURM_CMD = """
 export WANDB_API_KEY={WANDB_API_KEY} \
 && export HF_TOKEN={HF_TOKEN} \
 && export HYDRA_FULL_ERROR=1 \
+&& export NCCL_TOPO_FILE=null \
+&& export UCX_IB_PCI_RELAXED_ORDERING=null \
+&& export NCCL_IB_PCI_RELAXED_ORDERING=null \
+&& export NCCL_IB_TIMEOUT=null \
+&& export NCCL_DEBUG=null \
+&& export NCCL_PROTO=null \
+&& export TRANSFORMERS_OFFLINE=0 \
+&& export TORCH_NCCL_AVOID_RECORD_STREAMS=1 \
+&& export NCCL_NVLS_ENABLE=0 \
+&& export NVTE_DP_AMAX_REDUCE_INTERVAL=0 \
+&& export NVTE_ASYNC_AMAX_REDUCTION=1 \
+&& export NVTE_FUSED_ATTN=0 \
 && echo "Starting training" \
 && export PYTHONPATH=$PYTHONPATH:/code \
 && python /code/nemo_skills/finetuning/start_{training_algo}.py \
