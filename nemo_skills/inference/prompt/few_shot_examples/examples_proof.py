@@ -1,5 +1,5 @@
 proof_questions = [
-        {
+    {
         "question": "Prove the identity $a^\\frac{1}{2}-\\frac{a-a^{-2}}{a^\\frac{1}{2}-a^{-\\frac{1}{2}}} +\\frac{1-a^{-2}}{a^\\frac{1}{2}+a^{-\\frac{1}{2}}}+\\frac{2}{a^\\frac{3}{2}}=0$ ",
         "classification": """
         Classification: proof_question
@@ -32,7 +32,4 @@ proof_questions = [
 ]
 
 
-
-examples_map = {
-    "antonov_proof_questions": proof_questions
-}
+examples_map = {"antonov_proof_questions": proof_questions}

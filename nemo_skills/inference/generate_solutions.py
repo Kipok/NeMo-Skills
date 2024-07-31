@@ -152,7 +152,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                     LOG.info('Submitted batch evaluation request. Please wait for the results to be ready.')
                     LOG.info('The current status and final results can be accessed through summarize_results.py')
                     LOG.info('Request metadata: %s', str(request_metadata))
-                    
+
                     # Clear data_points as we've submitted the batch
                     data_points = []
                 else:

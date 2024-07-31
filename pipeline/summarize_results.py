@@ -18,8 +18,8 @@ import argparse
 import glob
 import json
 import logging
-import sys
 import os
+import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -34,17 +34,18 @@ from nemo_skills.utils import setup_logging
 
 LOG = logging.getLogger(__name__)
 
+
 def process_batch_results(prediction_jsonl_files):
     for batch_request_file in prediction_jsonl_files:
         jsonl_file = batch_request_file.with_name(batch_request_file.name.replace('.jsonl-batch-request-id', '.jsonl'))
-        
+
         if batch_request_file.exists():
             try:
                 with open(batch_request_file, 'rt', encoding='utf-8') as fin:
                     request_id = json.load(fin)['request_id']
-                
+
                 from nemo_skills.inference.server.model import get_model
-                
+
                 llm = get_model(server_type='openai', model='gpt-4-1106-preview')
                 metadata, outputs = llm.get_batch_results(request_id)
 
@@ -75,6 +76,7 @@ def process_batch_results(prediction_jsonl_files):
                 print("Then run this script again.")
             except Exception as e:
                 LOG.error(f"An error occurred while processing {jsonl_file}: {str(e)}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
