@@ -42,6 +42,7 @@ class InferenceConfig:
     random_seed: int = 0
     tokens_to_generate: int = 2048
     repetition_penalty: float = 1.0
+    use_batch_api: bool = False  # Whether to use batch API for generation
 
 
 @nested_dataclass
@@ -134,28 +135,45 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
             data_points.append(data_point)
 
             if len(data_points) == cfg.batch_size:
-                # batch-computing the outputs
-                outputs = llm.generate(
-                    prompts=[prompt.build_string(data_point) for data_point in data_points],
-                    stop_phrases=list(cfg.prompt.stop_phrases),
-                    **asdict(cfg.inference),
-                )
+                if cfg.inference.use_batch_api:
+                    # Using batch API for generation
+                    request_metadata = llm.batch_generate(
+                        prompts=[prompt.build_string(data_point) for data_point in data_points],
+                        tokens_to_generate=cfg.inference.tokens_to_generate,
+                    )
+                    # saving the request id to be able to retrieve results when they are ready
+                    with open(cfg.output_file + '-batch-request-id', 'wt', encoding='utf-8') as batch_fout:
+                        batch_fout.write(json.dumps({'request_id': request_metadata.id}))
+                    LOG.info('Submitted batch evaluation request. Please wait for the results to be ready.')
+                    LOG.info('The current status and final results can be accessed through summarize_results.py')
+                    LOG.info('Request metadata: %s', str(request_metadata))
+                    
+                    # Clear data_points as we've submitted the batch
+                    data_points = []
+                    continue
+                else:
+                    # batch-computing the outputs
+                    outputs = llm.generate(
+                        prompts=[prompt.build_string(data_point) for data_point in data_points],
+                        stop_phrases=list(cfg.prompt.stop_phrases),
+                        **asdict(cfg.inference),
+                    )
 
-                for output, original_data_point in zip(outputs, data_points):
-                    # to make it easier to follow up with evaluation and limit accidental errors, we are adding
-                    # all of the ground-truth data to the output file alongside the generated solutions
-                    output.update(original_data_point)
-                    if 'error_message' not in output:
-                        output['error_message'] = extract_error_message(output['generation'])
+                    for output, original_data_point in zip(outputs, data_points):
+                        # to make it easier to follow up with evaluation and limit accidental errors, we are adding
+                        # all of the ground-truth data to the output file alongside the generated solutions
+                        output.update(original_data_point)
+                        if 'error_message' not in output:
+                            output['error_message'] = extract_error_message(output['generation'])
 
-                    if cfg.generation_key != "generation":
-                        output[cfg.generation_key] = output.pop("generation")
+                        if cfg.generation_key != "generation":
+                            output[cfg.generation_key] = output.pop("generation")
 
-                    fout.write(json.dumps(output) + "\n")
-                data_points = []
+                        fout.write(json.dumps(output) + "\n")
+                    data_points = []
 
         # collecting the final batch
-        if len(data_points) > 0:
+        if len(data_points) > 0 and not cfg.inference.use_batch_api:
             outputs = llm.generate(
                 prompts=[prompt.build_string(data_point) for data_point in data_points],
                 stop_phrases=list(cfg.prompt.stop_phrases),

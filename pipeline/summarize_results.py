@@ -19,6 +19,7 @@ import glob
 import json
 import logging
 import sys
+import os
 from collections import defaultdict
 from pathlib import Path
 
@@ -29,7 +30,46 @@ sys.path.append(str(Path(__file__).absolute().parents[0]))
 from compute_metrics import EVALUATOR_MAP, compute_metrics
 
 from nemo_skills.evaluation.metrics import MathEval
-from nemo_skills.utils import setup_logging
+from nemo_skills.utils import setup_logging, unroll_files
+
+LOG = logging.getLogger(__name__)
+
+def process_batch_results(prediction_jsonl_files):
+    for jsonl_file in unroll_files(prediction_jsonl_files):
+        batch_request_file = Path(jsonl_file + '-batch-request-id')
+        if batch_request_file.exists():
+            try:
+                with open(batch_request_file, 'rt', encoding='utf-8') as fin:
+                    request_id = json.load(fin)['request_id']
+                
+                from nemo_skills.inference.server.model import get_model
+                
+                # We use this model just as a placeholder since for get_batch_results we don't need the model, just for class definition
+                llm = get_model(server_type='openai', model='gpt-4-1106-preview')
+                metadata, outputs = llm.get_batch_results(request_id)
+
+                if outputs is None:
+                    LOG.warning(f"Judgements are not ready yet for {jsonl_file}! Current status: {metadata}")
+                    continue
+
+                with open(jsonl_file, 'rt', encoding='utf-8') as fin:
+                    predictions = [json.loads(line) for line in fin]
+
+                with open(jsonl_file, 'wt', encoding='utf-8') as fout:
+                    for prediction, output in zip(predictions, outputs):
+                        prediction['judgement'] = output['generation']
+                        fout.write(json.dumps(prediction) + '\n')
+
+                batch_request_file.unlink()
+                LOG.info(f"Processed batch results for {jsonl_file}")
+            except PermissionError:
+                user = os.getenv('USER', 'your_username')
+                LOG.error(f"Permission denied when trying to access {jsonl_file} or {batch_request_file}")
+                print(f"Permission denied. Try running the following command to change file ownership:")
+                print(f"sudo chown {user} {jsonl_file} {batch_request_file}")
+                print("Then run this script again.")
+            except Exception as e:
+                LOG.error(f"An error occurred while processing {jsonl_file}: {str(e)}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -47,6 +87,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not args.debug else logging.DEBUG)
+
+    # Process batch results first
+    prediction_files = list(Path(args.results_folder).glob('**/output-*.jsonl'))
+    process_batch_results(prediction_files)
 
     # running compute_metrics.py to get greedy, majority and pass @k results for all benchmarks available
     benchmarks = glob.glob(f'{args.results_folder}/*')
