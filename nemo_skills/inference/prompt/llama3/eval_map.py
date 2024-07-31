@@ -36,5 +36,8 @@ EVAL_MAP = {
         'human-eval': 'llama3/codegen',
         'mbpp': 'llama3/codegen',
         'mmlu': 'llama3/mmlu',
+        # Math benchmarks
+        'gms8k': 'llama3/math_sft',
+        'math': 'llama3/math_sft',
     },
 }
