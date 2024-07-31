@@ -266,7 +266,10 @@ class WriteFinalSftManifest(BaseProcessor):
                     continue
                 seen_predictions[question].add(elem['generation'])
 
-                if self.chat_format.lower() == "nemotron":
+                if self.chat_format is None:
+                    elem["output"] = elem.pop("generation") + self.generation_suffix
+                    elem["input"] = prompt.build_string(input_dict=elem)
+                elif self.chat_format.lower() == "nemotron":
                     elem['conversations'] = [
                         {'value': prompt_config.user.format(**elem), 'from': 'User', 'canonical_form': ''},
                         {'value': elem.pop("generation"), 'from': 'Assistant', 'canonical_form': ''},
@@ -289,8 +292,7 @@ class WriteFinalSftManifest(BaseProcessor):
                     elem['system'] = prompt_config.system
                     elem['mask'] = '<|start_header_id|>user<|end_header_id|>'
                 else:
-                    elem["output"] = elem.pop("generation") + self.generation_suffix
-                    elem["input"] = prompt.build_string(input_dict=elem)
+                    raise ValueError(f"Chat format {self.chat_format} is not supported")
                 elem.update(self.metadata)
                 fout.write(json.dumps(elem) + "\n")
                 samples_count += 1
