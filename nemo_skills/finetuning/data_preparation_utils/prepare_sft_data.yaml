@@ -18,7 +18,7 @@ prompt_type: openmathinstruct/sft
 chat_format: false  # whether to use NeMo's chat format
 generation_suffix: ""  # suffix to add to the end of expected response (e.g. <|eot_id|>)
 
-add_eos: true
+add_eos: false
 eos_token: <|eot_id|>
 
 filters:
