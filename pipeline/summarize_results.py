@@ -30,13 +30,14 @@ sys.path.append(str(Path(__file__).absolute().parents[0]))
 from compute_metrics import EVALUATOR_MAP, compute_metrics
 
 from nemo_skills.evaluation.metrics import MathEval
-from nemo_skills.utils import setup_logging, unroll_files
+from nemo_skills.utils import setup_logging
 
 LOG = logging.getLogger(__name__)
 
 def process_batch_results(prediction_jsonl_files):
-    for jsonl_file in unroll_files(prediction_jsonl_files):
-        batch_request_file = Path(jsonl_file + '-batch-request-id')
+    for batch_request_file in prediction_jsonl_files:
+        jsonl_file = batch_request_file.with_name(batch_request_file.name.replace('.jsonl-batch-request-id', '.jsonl'))
+        
         if batch_request_file.exists():
             try:
                 with open(batch_request_file, 'rt', encoding='utf-8') as fin:
@@ -44,7 +45,6 @@ def process_batch_results(prediction_jsonl_files):
                 
                 from nemo_skills.inference.server.model import get_model
                 
-                # We use this model just as a placeholder since for get_batch_results we don't need the model, just for class definition
                 llm = get_model(server_type='openai', model='gpt-4-1106-preview')
                 metadata, outputs = llm.get_batch_results(request_id)
 
@@ -52,13 +52,18 @@ def process_batch_results(prediction_jsonl_files):
                     LOG.warning(f"Judgements are not ready yet for {jsonl_file}! Current status: {metadata}")
                     continue
 
+                # Read existing data from the jsonl file
                 with open(jsonl_file, 'rt', encoding='utf-8') as fin:
-                    predictions = [json.loads(line) for line in fin]
+                    data = [json.loads(line) for line in fin]
 
+                # Update data with judgements
+                for data_point, output in zip(data, outputs):
+                    data_point['judgement'] = output['generation']
+
+                # Write updated data back to the jsonl file
                 with open(jsonl_file, 'wt', encoding='utf-8') as fout:
-                    for prediction, output in zip(predictions, outputs):
-                        prediction['judgement'] = output['generation']
-                        fout.write(json.dumps(prediction) + '\n')
+                    for data_point in data:
+                        fout.write(json.dumps(data_point) + '\n')
 
                 batch_request_file.unlink()
                 LOG.info(f"Processed batch results for {jsonl_file}")
@@ -89,7 +94,7 @@ if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not args.debug else logging.DEBUG)
 
     # Process batch results first
-    prediction_files = list(Path(args.results_folder).glob('**/output-*.jsonl'))
+    prediction_files = list(Path(args.results_folder).glob('**/*.jsonl-batch-request-id'))
     process_batch_results(prediction_files)
 
     # running compute_metrics.py to get greedy, majority and pass @k results for all benchmarks available

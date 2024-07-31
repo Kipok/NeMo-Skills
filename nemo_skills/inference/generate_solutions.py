@@ -134,13 +134,18 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
             data_points.append(data_point)
 
-            if len(data_points) == cfg.batch_size:
+            if len(data_points) == cfg.batch_size or idx == len(data) - 1:
                 if cfg.inference.use_batch_api:
                     # Using batch API for generation
-                    request_metadata = llm.batch_generate(
+                    # Accessing the model directly since CodeExecutionWrapper does not support batch_generate
+                    request_metadata = llm.model.batch_generate(
                         prompts=[prompt.build_string(data_point) for data_point in data_points],
                         tokens_to_generate=cfg.inference.tokens_to_generate,
                     )
+                    with open(cfg.output_file, 'at', encoding='utf-8') as fout:
+                        for data_point in data_points:
+                            fout.write(json.dumps(data_point) + '\n')
+
                     # saving the request id to be able to retrieve results when they are ready
                     with open(cfg.output_file + '-batch-request-id', 'wt', encoding='utf-8') as batch_fout:
                         batch_fout.write(json.dumps({'request_id': request_metadata.id}))
@@ -150,7 +155,6 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                     
                     # Clear data_points as we've submitted the batch
                     data_points = []
-                    continue
                 else:
                     # batch-computing the outputs
                     outputs = llm.generate(
