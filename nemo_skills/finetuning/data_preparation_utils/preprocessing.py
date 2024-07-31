@@ -127,11 +127,11 @@ class ReadData(BaseProcessor):
         if self.prediction_jsonl_files:
             args = [(file, self._read_raw_data) for file in unroll_files(self.prediction_jsonl_files)]
             results = process_map(self._parallel_read_file, args, max_workers=4, chunksize=1)
-            samples.extend(list(chain(*results)))
+            samples.extend(list(chain(*results))[self.skip_first:])
         if self.preprocessed_dataset_files:
-            args = [(file, self._read_preprocessed_data) for file in self.preprocessed_dataset_files]
+            args = [(file, self._read_preprocessed_data) for file in unroll_files(self.preprocessed_dataset_files)]
             results = process_map(self._parallel_read_file, args, max_workers=None, chunksize=1)
-            samples.extend(list(chain(*results)))
+            samples.extend(list(chain(*results))[self.skip_first:])
         LOG.info("Total samples before deduplication: %d", len(samples))
         samples_count = 0
         with open(self.output_manifest_file, "wt", encoding="utf-8") as fout:
@@ -225,6 +225,25 @@ class ShuffleAndDownsampleData(BaseProcessor):
 
         with open(self.output_manifest_file, "wt", encoding="utf-8") as fout:
             for instance in output_instances:
+                fout.write(json.dumps(instance) + "\n")
+
+
+
+class AddEosToken(BaseProcessor):
+    def __init__(self, solution_key: str = "generation", eos_token="<|eot_id|>", **kwargs):
+        super().__init__(**kwargs)
+        self.solution_key = solution_key
+        self.eos_token = eos_token
+
+    def process(self):
+        with (
+            open(self.input_manifest_file, "rt", encoding="utf-8") as fin,
+            open(self.output_manifest_file, "wt", encoding="utf-8") as fout,
+        ):
+            for line in fin:
+                instance = json.loads(line)
+                # Add EOS token to the solution
+                instance[self.solution_key] += self.eos_token
                 fout.write(json.dumps(instance) + "\n")
 
 
