@@ -31,12 +31,6 @@ SLURM_CMD = """
 export WANDB_API_KEY={WANDB_API_KEY} \
 && export HF_TOKEN={HF_TOKEN} \
 && export HYDRA_FULL_ERROR=1 \
-&& export NCCL_TOPO_FILE=null \
-&& export UCX_IB_PCI_RELAXED_ORDERING=null \
-&& export NCCL_IB_PCI_RELAXED_ORDERING=null \
-&& export NCCL_IB_TIMEOUT=null \
-&& export NCCL_DEBUG=null \
-&& export NCCL_PROTO=null \
 && export TRANSFORMERS_OFFLINE=0 \
 && export TORCH_NCCL_AVOID_RECORD_STREAMS=1 \
 && export NCCL_NVLS_ENABLE=0 \
@@ -137,7 +131,9 @@ if __name__ == "__main__":
         # subtracting 15 minutes to account for the time it takes to save the model
         # the format expected by nemo is days:hours:minutes:seconds
         time_diff = datetime.strptime(timeout, "%H:%M:%S") - datetime.strptime("00:15:00", "%H:%M:%S")
-        timeout = f'00:{time_diff.seconds // 3600:02d}:{(time_diff.seconds % 3600) // 60:02d}:{time_diff.seconds % 60:02d}'
+        timeout = (
+            f'00:{time_diff.seconds // 3600:02d}:{(time_diff.seconds % 3600) // 60:02d}:{time_diff.seconds % 60:02d}'
+        )
 
     format_dict = {
         "project": args.project,
