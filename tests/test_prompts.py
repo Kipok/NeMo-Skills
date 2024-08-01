@@ -109,9 +109,7 @@ def test_llama3_instruct_prompt():
     config.few_shot_examples.num_few_shots = 2
     prompt = Prompt(config=config)
 
-    expected_prompt = """<|begin_of_text|><|start_header_id|>system<|end_header_id|>
-
-<|eot_id|><|start_header_id|>user<|end_header_id|>
+    expected_prompt = """<|start_header_id|>user<|end_header_id|>
 
 Here are some examples of questions and solutions followed by a new question that you need to solve.
 Make sure to put the answer (and only answer) inside \\boxed{}.
