@@ -19,7 +19,6 @@ from collections import defaultdict
 from itertools import chain
 from typing import Dict, Optional
 
-import tqdm
 from sdp.processors.base_processor import BaseProcessor
 from tqdm.contrib.concurrent import process_map
 
@@ -62,7 +61,7 @@ class ReadData(BaseProcessor):
     def _read_preprocessed_data(self, file_handle) -> int:
         samples = []
         questions = set()
-        for idx, line in tqdm.tqdm(file_handle):
+        for idx, line in enumerate(file_handle):
             if idx < self.skip_first:
                 continue
             sample = json.loads(line)
