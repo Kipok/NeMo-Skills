@@ -148,7 +148,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
                     # saving the request id to be able to retrieve results when they are ready
                     with open(cfg.output_file + '-batch-request-id', 'wt', encoding='utf-8') as batch_fout:
-                        batch_fout.write(json.dumps({'request_id': request_metadata.id}))
+                        batch_fout.write(json.dumps({'request_id': request_metadata.id, "generation_key": cfg.generation_key}))
                     LOG.info('Submitted batch evaluation request. Please wait for the results to be ready.')
                     LOG.info('The current status and final results can be accessed through summarize_results.py')
                     LOG.info('Request metadata: %s', str(request_metadata))

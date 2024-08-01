@@ -43,14 +43,15 @@ def process_batch_results(prediction_jsonl_files):
             try:
                 with open(batch_request_file, 'rt', encoding='utf-8') as fin:
                     request_id = json.load(fin)['request_id']
-
+                    generation_key = json.load(fin)['generation_key']
+                
                 from nemo_skills.inference.server.model import get_model
 
                 llm = get_model(server_type='openai', model='gpt-4-1106-preview')
                 metadata, outputs = llm.get_batch_results(request_id)
 
                 if outputs is None:
-                    LOG.warning(f"Judgements are not ready yet for {jsonl_file}! Current status: {metadata}")
+                    LOG.warning("Batch generations are not ready yet for %s! Current status: %s", jsonl_file, metadata)
                     continue
 
                 # Read existing data from the jsonl file
@@ -59,7 +60,7 @@ def process_batch_results(prediction_jsonl_files):
 
                 # Update data with judgements
                 for data_point, output in zip(data, outputs):
-                    data_point['judgement'] = output['generation']
+                    data_point[generation_key] = output['generation']
 
                 # Write updated data back to the jsonl file
                 with open(jsonl_file, 'wt', encoding='utf-8') as fout:
@@ -71,9 +72,9 @@ def process_batch_results(prediction_jsonl_files):
             except PermissionError:
                 user = os.getenv('USER', 'your_username')
                 LOG.error(f"Permission denied when trying to access {jsonl_file} or {batch_request_file}")
-                print(f"Permission denied. Try running the following command to change file ownership:")
-                print(f"sudo chown {user} {jsonl_file} {batch_request_file}")
-                print("Then run this script again.")
+                LOG.error(f"Permission denied. Try running the following command to change file ownership:")
+                LOG.error(f"sudo chown {user} {jsonl_file} {batch_request_file}")
+                LOG.error("Then run this script again.")
             except Exception as e:
                 LOG.error(f"An error occurred while processing {jsonl_file}: {str(e)}")
 
