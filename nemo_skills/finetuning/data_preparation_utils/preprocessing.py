@@ -230,24 +230,6 @@ class ShuffleAndDownsampleData(BaseProcessor):
                 fout.write(json.dumps(instance) + "\n")
 
 
-class AddEosToken(BaseProcessor):
-    def __init__(self, solution_key: str = "generation", eos_token="<|eot_id|>", **kwargs):
-        super().__init__(**kwargs)
-        self.solution_key = solution_key
-        self.eos_token = eos_token
-
-    def process(self):
-        with (
-            open(self.input_manifest_file, "rt", encoding="utf-8") as fin,
-            open(self.output_manifest_file, "wt", encoding="utf-8") as fout,
-        ):
-            for line in fin:
-                instance = json.loads(line)
-                # Add EOS token to the solution
-                instance[self.solution_key] += self.eos_token
-                fout.write(json.dumps(instance) + "\n")
-
-
 class WriteFinalSftManifest(BaseProcessor):
     def __init__(
         self,
