@@ -137,7 +137,7 @@ That's easy: 10!
 Question:
 2 + 2 = ?<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
-""" 
+"""
     assert prompt.build_string({'question': '2 + 2 = ?'}) == expected_prompt
 
 
