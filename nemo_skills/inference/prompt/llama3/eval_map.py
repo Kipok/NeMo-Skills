@@ -32,12 +32,11 @@ EVAL_MAP = {
         'arena-hard': 'llama3/sft',
     },
     'instruct-nemo': {  # llama3-instruct finetuned with nemo_skills
-        'default': 'llama3/sft',
+        'default': 'llama3/math_sft',  # Defaulting to math benchmarks
         'human-eval': 'llama3/codegen',
         'mbpp': 'llama3/codegen',
         'mmlu': 'llama3/mmlu',
-        # Math benchmarks
-        'gms8k': 'llama3/math_sft',
-        'math': 'llama3/math_sft',
+        'ifeval': 'llama3/sft',
+        'arena-hard': 'llama3/sft',
     },
 }
