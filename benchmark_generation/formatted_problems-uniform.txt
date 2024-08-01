@@ -1,0 +1,621 @@
+
+===================================Problem 1====================================
+
+QUESTION:
+$\frac{\left(152\frac{3}{4}-148\frac{3}{8}\right)\cdot 0.3}{0.2}$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 2====================================
+
+QUESTION:
+$\frac{4.5:\left[47.375-\left(26\frac{1}{3}-18\cdot 0.75\right) \cdot
+2.4:0.88\right]}{17.81:1.37-23\frac{2}{3}:1\frac{5}{6}}$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 3====================================
+
+QUESTION:
+Simplify the following expressions: the notes on pp. 90 to 92.}
+$\frac{\left[1-\left(\frac{a}{b}\right)^{-2}\right]a^2} {\left(\sqrt a-\sqrt
+b\right)^2+2\sqrt {ab}}$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 4====================================
+
+QUESTION:
+Simplify the following expressions:
+$a^2(1-a^2)^{-\frac{1}{2}}-\frac{1}{1+\left[a(1-a^2)^{-\frac{1}{2}}\right]^2}
+\cdot \frac{(1-a^2)^\frac{1}{2}+a^2(1-a^2)^{-\frac{1}{2}}}{1-a^2}$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 5====================================
+
+QUESTION:
+Simplify the following expressions: $\frac{\frac{a+x}{\sqrt [3]{a^2}-\sqrt
+[3]{x^2}} +\frac{\sqrt [3]{ax^2}-\sqrt [3]{a^2x}}{\sqrt [3]{a^2}-2\sqrt [3]{ax}
++\sqrt [3]{x^2}}}{\sqrt [6]{a}-\sqrt [6]{x}}-\sqrt [6]{x}$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 6====================================
+
+QUESTION:
+Solve the following equations:
+$\frac{a-x^2}{(a-x)^2}-\frac{1}{a}=\frac{a-1}{a^3-ax(2a-x)}$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 7====================================
+
+QUESTION:
+Solve the following equations: $\sqrt {3x-2}=2\sqrt {x+2}-2$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 8====================================
+
+QUESTION:
+Solve the following equations: $\frac{x\sqrt [3]{x}-1}{\sqrt
+[3]{x^2}-1}-\frac{\sqrt [3]{x^2}-1}{\sqrt [3]{x}+1}=4$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 9====================================
+
+QUESTION:
+Solve the following systems of equations: $\left\{\begin{array}{lll} x+y-2\sqrt
+{xy}=4\medskip \\ x+y=10 \end{array}\right.$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 10===================================
+
+QUESTION:
+Solve the following equations: $\log_4 (x+12)\cdot \log_x 2=1$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 11===================================
+
+QUESTION:
+Solve the following systems of equations: $\left\{\begin{array}{lll} \log_v
+u+\log_u v=2\medskip \\ u^2+v=12 \end{array}\right.$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 12===================================
+
+QUESTION:
+Prove that the numbers $$\frac{\sqrt 2+1}{\sqrt 2-1};\ \frac{1}{2-\sqrt 2};\
+\frac{1}{2};\ldots $$ constitute an infinitely decreasing geometric progression
+and find the limit of the sum of its terms.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+To analyze the given question, we can break it down based on the characteristics
+of proof questions:
+
+1. The question starts with "Prove that", which is a clear indication that it is
+asking for a demonstration of the truth of a statement.
+2. It requires the student to show that a specific sequence of numbers
+constitutes an infinitely decreasing geometric progression, which involves
+logical reasoning and mathematical justification.
+3. The question also implies the need to use definitions related to geometric
+progressions and possibly properties of limits.
+4. The question cannot be answered with a simple numerical calculation or a
+yes/no response; it requires a formal proof.
+
+Based on this analysis, the classification of the question is:
+
+Classification: proof_question
+
+================================================================================
+
+===================================Problem 13===================================
+
+QUESTION:
+At what value of $n$ do the coefficients of the second, third and fourth terms
+of the expansion of the binomial $(1+x)^n$ form an arithmetic progression?
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+To classify the given question, let's analyze it step by step:
+
+1. The question asks for a specific value of \( n \) where certain coefficients
+form an arithmetic progression.
+2. It does not use phrases like "prove that", "show that", or "demonstrate
+that".
+3. The question is focused on finding a numerical value rather than establishing
+the truth of a statement through logical arguments or formal proofs.
+4. It can potentially be solved through calculations involving binomial
+coefficients, but it does not require justification or explanation in the
+context of proving a mathematical statement.
+
+Based on this analysis, the question does not fit the characteristics of a proof
+question.
+
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 14===================================
+
+QUESTION:
+The hypotenuse of a right-angled triangle measures $3\sqrt 5$ meters. Determine
+the legs, if it is known that when one of them is increased by
+$133\frac{1}{3}\%$ and the other, by $16\frac{2}{3}\%$, the sum of their lengths
+is equal to 14 meters.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 15===================================
+
+QUESTION:
+A cyclist has to make a trip of 30 km. He leaves 3 minutes late, but travels 1
+km/h faster and arrives in time. Determine the speed of the cyclist.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 16===================================
+
+QUESTION:
+Two trains start out from stations $A$ and $B$ towards each other, the second
+train leaving half an hour later than does the first. Two hours after the first
+train had started, the distance between the trains came to $19/30$ of the entire
+distance between $A$ and $B$. The trains met midway between $A$ and $B$. How
+much time would it take each train to cover the distance between $A$ and $B$?
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 17===================================
+
+QUESTION:
+The tunnel boring machines, working at the two ends of a tunnel have to complete
+the driving in 60 days. If the first machine does 30\% of the work assigned to
+it, and the second, $26\frac{2}{3}\%$, then both will drive 60 meters of the
+tunnel. If the first machine had done $2/ 3$ of the work assigned to the second
+one, and the second, 0.3 of the work assigned to the first one, then the first
+machine would have needed 6 days more than would have the second. Determine how
+many meters of the tunnel are driven by each machine per day.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 18===================================
+
+QUESTION:
+Compute the area of a trapezoid, whose parallel sides are equal to 16 cm and 44
+cm, and nonparallel ones, to 17 cm and 25 cm.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 19===================================
+
+QUESTION:
+In a circle of radius $R$ three parallel chords are drawn on one side of its
+center, whose lengths are respectively equal to those of the sides of a regular
+hexagon, quadrilateral and triangle inscribed in the circle. Determine the ratio
+of the area of the portion of the circle contained between the second and third
+chords to that contained between the first and second ones.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 20===================================
+
+QUESTION:
+Determine the area of a triangle, given the lengths of its sides $a$ and $b$,
+and the length $t$ of the bisector of the angle between these sides.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 21===================================
+
+QUESTION:
+The total surface area of a regular triangular pyramid is equal to $S$. Find the
+side of its base, if the angle between the lateral face and the base of the
+pyramid is equal to $\alpha $.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 22===================================
+
+QUESTION:
+The dihedral angle at a lateral edge of a regular hexagonal pyramid is equal to
+$\varphi $. Determine the face angle at the vertex of the pyramid.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+To classify the given question, let's analyze it step by step:
+
+1. The question asks for a determination of the face angle at the vertex of a
+regular hexagonal pyramid based on the dihedral angle at a lateral edge.
+2. It does not use phrases like "prove that", "show that", or "demonstrate
+that".
+3. The question seems to require a calculation or application of geometric
+principles rather than a formal proof or logical argument.
+4. It does not ask for justification or explanation in a way that would indicate
+a proof is needed.
+
+Based on this analysis, the question appears to be asking for a specific value
+or calculation rather than requiring a demonstration of truth through logical
+reasoning.
+
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 23===================================
+
+QUESTION:
+The base of a pyramid is a right-angled triangle with an acute angle $\alpha $;
+the radius of the inscribed circle is equal to $r$. Each lateral face is
+inclined to the base at an angle $\alpha $. Determine the volume and the lateral
+and total surface areas of the pyramid.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 24===================================
+
+QUESTION:
+One of the dihedral angles of a trihedral angle is equal to $A$; the plane
+angles adjacent to the given dihedral angle are equal to $\alpha $ and $\beta $.
+Find the third plane angle.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 25===================================
+
+QUESTION:
+An obtuse triangle with acute angles $\alpha $ and $\beta $ and the smaller
+altitude $h$ rotates about the side opposite the angle $\beta $. Find the
+surface of the solid thus generated.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+To classify the given question, we need to analyze its requirements. The
+question asks for the surface area of a solid generated by rotating an obtuse
+triangle about one of its sides. This involves applying geometric principles and
+possibly using integration or formulas related to surface area.
+
+1. The question does not use phrases like "prove that", "show that", or
+"demonstrate that".
+2. It does not ask to justify or explain why a statement is true.
+3. While it may involve definitions and theorems related to geometry, it
+primarily focuses on calculation rather than proof.
+4. The question can be answered with numerical calculations based on geometric
+properties.
+
+Given these points, this question does not fit the characteristics of a proof
+question.
+
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 26===================================
+
+QUESTION:
+Determine the angle at the vertex of the axial section of a cone circumscribed
+about four equal balls arranged so that each of them is in contact with the
+three remaining ones.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 27===================================
+
+QUESTION:
+Simplify the expression $$\sin ^2 \alpha +\sin ^2 \beta +2\sin \alpha \sin \beta
+\cos (\alpha +\beta )$$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 28===================================
+
+QUESTION:
+Solve the following equations: $\sin(x-60^\circ)=\cos(x+30^\circ)$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 29===================================
+
+QUESTION:
+Solve the following equations: $\sin(\pi -x)+\cot\left(\frac{\pi
+}{2}-x\right)=\frac{\sec x-\cos x}{2\sin x}$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 30===================================
+
+QUESTION:
+Solve the following systems of equations: $\left\{\begin{array}{lll}
+\cos\frac{x+y}{2}\cos\frac{x-y}{2}=\frac{1}{2}\medskip \\ \cos x\cos
+y=\frac{1}{4} \end{array}\right.$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================

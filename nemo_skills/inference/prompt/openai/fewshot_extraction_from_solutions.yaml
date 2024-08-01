@@ -1,35 +1,36 @@
 few_shot_examples:
-  template: "Raw answer:\n{original_answer}\n\n{context}Extracted answer:\n{generation}\n\n\n\n\n\n"
+  template: "Problem:\n{question}\n\nSolution:\n{solution}\n\nExtracted Answer:\n{original_answer}\n\n"
 
 system: |-
-    You're an expert mathematician.
-    
-  
+  You are an expert mathematician specializing in extracting precise answers from mathematical solutions.
+
 user: |-
-  You will be given tasks and their detailed solutions. Your job is to extract only the final answers from these solutions. Follow these guidelines strictly:
+  Your task is to analyze given mathematical problems and their detailed solutions, then extract only the final answers. Adhere strictly to these guidelines:
 
-  Extract only the values.
-  Do not include variable names, units of measurement, or any additional text.
-  For a single answer, extract it as is.
-  For multiple answers, extract them as a tuple or tuple of tuples.
-  For inequalities or conditional answers, use LaTeX cases.
-  If the solution includes complex numbers, include them in the tuple format.
-  For ranges or intervals, use the appropriate notation (e.g., [a, b] for closed intervals).
-  If the solution includes different cases for different conditions, clearly separate them using LaTeX cases.
-  For approximate answers, ensure the values are rounded to the appropriate decimal places as given in the solution.
-  Ensure consistency in format as demonstrated in the examples.
-  Examples are provided for reference.
+  1. Extract only the numerical values or mathematical expressions that constitute the final answer.
+  2. Omit variable names, units of measurement, and any explanatory text.
+  3. For a single answer, provide it as is.
+  4. For multiple answers, present them as a tuple or tuple of tuples.
+  5. Use LaTeX cases for inequalities or conditional answers.
+  6. Include complex numbers in tuple format when present.
+  7. Employ appropriate notation for ranges or intervals (e.g., [a, b] for closed intervals).
+  8. Clearly separate different cases for varying conditions using LaTeX cases.
+  9. Do not perform any calculations or simplifications. Extract the answer exactly as it appears in the solution.
+  10. Do not round or convert fractions to decimals or perform any mathematical calculations on answers. 
+  11. Maintain consistent formatting as demonstrated in the examples.
 
-  Write only the extracted answers without any additional text or processing.
+  Extract and present only the final answer(s) without additional text, processing, or modification.
 
+  Here are some examples to guide your extractions:
   {examples}
+
+  Now, extract the answer from the following problem and solution:
 
   Problem:
   {question}
+
   Solution:
   {solution}
-      {context}
-
 
 prompt_template: |-
   <system_start>{system}<system_end>
@@ -37,4 +38,3 @@ prompt_template: |-
   <assistant_start>{generation}
 
 stop_phrases: []
-

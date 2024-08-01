@@ -383,9 +383,92 @@ from_solution_extraction = [
 ]
 
 
+math_soution_extraction = [
+    {
+        "question": """
+        What is the largest number, all of whose digits are 3 or 2, and whose digits add up to $11$?
+        """,
+        "solution": """
+        To make a number as large as possible, we want as many digits as possible, so we want the digits to be as small as possible. To have the most number of digits, we use 4 twos and 1 three to make $4 \\cdot 2 +3 =11$. We want to arrange them in decreasing order because we want the digits to the left to be as large as possible. Therefore, we have the number $32222$.
+        """,
+        "original_answer": """
+        32222
+    """.strip(),
+    },
+    {
+        "question": """
+        What is $a-2b$, where $a=4-2i$ and $b=3+2i$?
+        """,
+        "solution": """
+        Substituting in, we have $4-2i-2(3+2i)$. Expanding the last part, we have $4-2i-6-4i$; adding, we have $-2-6i$.
+        """,
+        "original_answer": """
+        (2, 6)
+    """.strip(),
+    },
+    {
+        "question": """
+            There are 3 math teams in the area, with 5, 7, and 8 students respectively. Each team has two co-captains. If I randomly select a team, and then randomly select two members of that team to give a copy of $\\emph{Introduction to Geometry}$, what is the probability that both of the people who receive books are co-captains?
 
+        """,
+        "solution": """
+        There's a $\\dfrac{1}{3}$ chance that I will select each team. Once I have selected a team, let $n$ be the number of students on that team. There are $\\dbinom{n}{2}$ ways to choose a pair of those students to give books to, but only one of those pairs will be the two co-captains, which means that once I have selected that team, the probability that I give books to the co-captains is $$\\dfrac{1}{\\dfrac{n(n-1)}{2}}=\\dfrac{2}{n(n-1)}.$$Since the teams have $5,$ $7,$ and $8$ students, this means that the total probability is $$\\dfrac{1}{3}\\left(\\dfrac{2}{5(5-1)}+\\dfrac{2}{7(7-1)}+\\dfrac{2}{8(8-1)}\\right)$$which after a bit of arithmetic simplifies to $\\dfrac{11}{180}$.
+        """,
+        "original_answer": """
+        \\dfrac{11}{180}
+        """.strip(),
+    },
+    {
+        "question": """
+        Let $(a,b,c,d)$ be a solution to the system\\begin{align*}a+b&=15,\\\\ab+c+d&=78,\\\\ad+bc&=160,\\\\cd&=96.\\end{align*}Find the greatest possible value of $a^2+b^2+c^2+d^2$.\n
+        """,
+        "solution": """
+        Note that when multiplying quadratics, terms add up similar to the equations of a system, so let\\begin{align*} p(x) &= (x^2 + ax + c)(x^2 + bx + d) \\\\ &= x^4 + (a+b)x^3 + (ab+c+d)x^2 + (ad+bc)x + cd \\\\ &= x^4 + 15x^3 + 78x^2 + 160x + 96 \\end{align*}Factoring $p(x)$ with the Rational Root Theorem results in $(x+4)(x+4)(x+1)(x+6)$. By the Fundamental Theorem of Algebra, we know that $x+4, x+4, x+1, x+6$ are all the linear factors of the polynomial, so the quadratic factors can only be multiplied from these linear factors.\nThere are only two possible distinct groupings (not counting rearrangements) -- $(x^2 + 8x + 16)(x^2 + 7x + 6)$ and $(x^2 + 5x + 4)(x^2 + 10x + 24)$. In the first case, $a^2 + b^2 + c^2 + d^2 = 405$, and in the second case, $a^2 + b^2 + c^2 + d^2 = 717$. The largest of the two options is $717$.
+        """,
+        "original_answer": """
+        717
+        """.strip(),
+    },
+    {
+        "question": """
+        In triangle $ABC$, altitudes $AD$, $BE$, and $CF$ intersect at the orthocenter $H$.  If $\\angle ABC = 49^\\circ$ and $\\angle ACB = 12^\\circ$, then find the measure of $\\angle BHC$, in degrees.
+
+        """,
+        "solution": """
+        Note that triangle $ABC$ is obtuse, so $H$ lies outside triangle $ABC$.\n\n[asy]\nunitsize(1 cm);\n\npair A, B, C, D, E, F, H;\n\nB = (0,0);\nC = (4,0);\nA = extension(B, B + dir(49), C, C + dir(180 - 12));\nD = (A + reflect(B,C)*(A))/2;\nE = (B + reflect(C,A)*(B))/2;\nF = (C + reflect(A,B)*(C))/2;\nH = extension(B,E,C,F);\n\ndraw(B--H--C--cycle);\ndraw(H--D);\ndraw(B--F);\ndraw(C--E);\n\nlabel(\"$A$\", A, SE);\nlabel(\"$B$\", B, SW);\nlabel(\"$C$\", C, SE);\nlabel(\"$D$\", D, S);\nlabel(\"$E$\", E, W);\nlabel(\"$F$\", F, NE);\nlabel(\"$H$\", H, N);\n[/asy]\n\nSince triangle $BEC$ is right, $\\angle CBE = 90^\\circ - \\angle BCE = 90^\\circ - 12^\\circ = 78^\\circ$.  Since triangle $BFC$ is right, $\\angle BCF = 90^\\circ - \\angle CBF = 90^\\circ - 49^\\circ = 41^\\circ$.  Therefore, $\\angle BHC = 180^\\circ - \\angle CBH - \\angle BCH = 180^\\circ - 78^\\circ - 41^\\circ = 61^\\circ$.
+        """,
+        "original_answer": """
+        61
+        """.strip(),
+    },
+    {
+        "question": """
+        The complement of an angle is $5^{\\circ}$ more than four times the angle. What is the number of degrees in the measure of the angle?
+        """,
+        "solution": """
+        Let the measure of the angle be $x$, so $5^\\circ$ more than four times the angle is $4x + 5^\\circ$.  Since these two measures are complementary, we have $x + (4x+5^\\circ) = 90^\\circ$.  Simplifying the left side gives $5x+5^\\circ = 90^\\circ$, so $5x = 85^\\circ$ and $x = 17^\\circ$.
+
+        """,
+        "original_answer": """
+        17
+        """.strip(),
+    },
+    {
+        "question": """
+        For all real numbers $x$ except $x=0$ and $x=1$ the function $f(x)$ is defined by\n\\[f \\left( \\frac{x}{x - 1} \\right) = \\frac{1}{x}.\\]Suppose $0\\leq t\\leq \\frac{\\pi}{2}$. What is the value of $f(\\sec^2t)$?
+        """,
+        "solution": """
+        First, we must solve\n\\[\\frac{x}{x - 1} = \\sec^2 t.\\]Solving for $x,$ we find $x = \\frac{\\sec^2 t}{\\sec^2 t - 1}.$  Then\n\\[f(\\sec^2 t) = \\frac{1}{x} = \\frac{\\sec^2 t - 1}{\\sec^2 t} = 1 - \\cos^2 t = \\sin^2 t.\\]
+        """,
+        "original_answer": """
+        \\sin^2 t
+        """.strip(),
+    },
+    
+    ]
 
 examples_map = {
     "antonov_tuple_extraction": tuple_extraction,
-    "lidsky_solution_extraction": from_solution_extraction
+    "lidsky_solution_extraction": from_solution_extraction,
+    "math_soution_extraction": math_soution_extraction
 }

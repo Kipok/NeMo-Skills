@@ -1,0 +1,631 @@
+
+===================================Problem 1====================================
+
+QUESTION:
+The base of a pyramid is a right-angled triangle, which is a projection of the
+lateral face passing through a leg. The angle opposite this leg in the base of
+the pyramid is equal to $\alpha $, and the one lying in the lateral face is
+equal to $\beta $. The area of this lateral face exceeds that of the base by
+$S$. Determine the difference between the areas of the other two faces and the
+angles formed by the lateral faces with the base.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 2====================================
+
+QUESTION:
+Solve the following equations: $2-\sin x\cos 2x-\sin 2x\cos x
+=\left[\cos\left(\frac{\pi }{4}-\frac{3x}{2}\right) -\sin\left(\frac{\pi
+}{4}-\frac{3x}{2}\right)\right]^2$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 3====================================
+
+QUESTION:
+Simplify the following expressions: $\sqrt {\frac{x}{x-a^2}}:\left(\frac{\sqrt
+{x}-\sqrt {x-a^2}}{\sqrt {x} +\sqrt {x-a^2}}-\frac{\sqrt {x}+\sqrt
+{x-a^2}}{\sqrt {x}-\sqrt {x-a^2}}\right)$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 4====================================
+
+QUESTION:
+A tank is filled with water from two taps. At the beginning the first tap was
+open for one third of the time which would haw been needed to fill the tank, if
+the second tap alone had been open. Then the second lap was open for one third
+of the time required to fill the tank, if the first tap alone were open. This
+done, the tank was $13/18$ full. Compute the time required to fill the tank by
+each tap separately, if both taps together fill it in 3 hours and 36 minutes.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 5====================================
+
+QUESTION:
+Compute $x$, if $$\frac{(2.7-0.8)\cdot 2\frac{1}{3}}{(5.2-1.4):\frac{3}{7}}
++x+8\frac{9}{11}
+-\frac{(1.6+154.66:70.3):1.9}{\left(2\frac{2}{5}-1.3\right):4.3} =2.625$$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 6====================================
+
+QUESTION:
+Solve the following equations: $2\sqrt 2\sin(45^\circ+x)=\frac{1+\cos 2x}{1+\sin
+x}$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 7====================================
+
+QUESTION:
+In a cone, with the radius of the base circle $R$ and an angle a between the
+altitude and generator, a sphere is inscribed which touches the base and the
+curved surface of the cone. Determine the volume of the portion of the cone
+situated above the sphere.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+To classify the given question, let's analyze it step by step:
+
+1. The question describes a geometric scenario involving a cone and an inscribed
+sphere.
+2. It asks to "determine the volume of the portion of the cone situated above
+the sphere," which implies a calculation rather than a proof.
+3. There are no phrases like "prove that", "show that", or "demonstrate that"
+present in the question.
+4. The question can likely be answered through numerical calculations or
+geometric formulas without requiring a formal proof or logical argument.
+
+Based on this analysis, the question does not fit the characteristics of a proof
+question.
+
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 8====================================
+
+QUESTION:
+The faces of a frustum of a regular triangular pyramid touch a sphere. Determine
+the ratio of the surface of the sphere to the total surface area of the pyramid,
+if the lateral faces of the pyramid are inclined to the base at an angle $\alpha
+$.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+To classify the given question, let's analyze its characteristics:
+
+1. The question does not use phrases like "prove that", "show that", or
+"demonstrate that". Instead, it asks to determine a ratio.
+2. It does not ask for justification or explanation of why a statement is true;
+rather, it seeks a specific numerical result.
+3. While it may involve some mathematical reasoning related to geometry, it does
+not require formal proof or the use of definitions and theorems in a way that
+would constitute a proof question.
+4. The question can potentially be answered with calculations rather than
+logical arguments or formal proofs.
+
+Based on this analysis, the question does not fit the criteria for a proof
+question.
+
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 9====================================
+
+QUESTION:
+The base of a pyramid is a polygon circumscribed about a circle of radius $r$;
+the perimeter of the polygon is equal to $2p$, the lateral faces of the pyramid
+are inclined to the base at an angle $\varphi $. Find the volume of the pyramid.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 10===================================
+
+QUESTION:
+The base of a pyramid is an isosceles triangle $ABC$ in which $AB = AC$. The
+altitude of the pyramid $SO$ passes through the midpoint of the altitude $AD$ of
+the base. Through the side $BC$ a plane is drawn perpendicular to the lateral
+edge $AS$ and at an angle $\alpha $ to the base. Determine the volume of the
+pyramid cut off the given one and having vertex $S$ in common with it, if the
+volume of the other cut-off portion is equal to $V$.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 11===================================
+
+QUESTION:
+Find the volume and lateral area of a regular hexagonal pyramid, given the
+lateral edge land diameter d of the circle inscribed in the base of the pyramid.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 12===================================
+
+QUESTION:
+Simplify the following expressions: $\left[\frac{\sqrt [6]{a^2x}+\sqrt
+{x}}{\sqrt [3]{x}+\sqrt [3]{a}} +\sqrt [6]{x}\right]^3+4(x+1)+\left(\sqrt
+[3]{x\sqrt {x}}+1\right)^2$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 13===================================
+
+QUESTION:
+Solve the following systems of equations: $\left\{\begin{array}{lll}
+(x^2-y^2)xy=180\medskip \\ x^2-xy-y^2=-11 \end{array}\right.$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 14===================================
+
+QUESTION:
+Solve the following equations:
+$\log_4(2\log_3[1+\log_2(1+3\log_2x)]\}=\frac{1}{2}$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 15===================================
+
+QUESTION:
+When developed, the curved surface of a cylinder represents a rectangle, whose
+diagonal is equal to $d$ and forms an angle $\alpha $ with the base. Determine
+the volume of the cylinder.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 16===================================
+
+QUESTION:
+Given a quadratic equation $$ax^2+bx+c=0.$$ Set up a new quadratic equation,
+whose roots are: (1) twice as large as the roots of the given equations; (2)
+reciprocal to the roots of the given equation.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 17===================================
+
+QUESTION:
+The lateral edges of a triangular pyramid are of equal length $l$. Out of the
+three face angles formed by these edges al the vertex of the pyramid two are
+equal to $\alpha $, and the third, to $\beta $. Find the volume of the pyramid.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 18===================================
+
+QUESTION:
+The volume of a cone is $V$. Its altitude is trisected and through the points of
+division two planes are drawn parallel to the base. Find the volume of the
+medium portion.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+To classify the given question, let's analyze it step by step:
+
+1. The question asks for the volume of a specific portion of a cone after its
+altitude is trisected and planes are drawn parallel to the base.
+2. It requires finding a numerical value (the volume) based on geometric
+properties and calculations rather than proving a statement or demonstrating a
+logical argument.
+3. There is no request to "prove that", "show that", or "demonstrate that" in
+the phrasing of the question.
+4. The solution likely involves applying formulas for the volume of a cone and
+possibly some geometric reasoning, but it does not require a formal proof.
+
+Based on this analysis, the question does not fit the characteristics of a proof
+question.
+
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 19===================================
+
+QUESTION:
+Simplify the following expressions: $\left[\frac{\left(\sqrt [3]{ab^2\sqrt
+b}-\sqrt [3]{ab}\sqrt a\right)^2} {ab\sqrt [6]{ab}}+4\right]:\frac{a\sqrt
+b+b\sqrt a}{\sqrt a-\sqrt b}+$
+$+\frac{b^2-4a^2}{4a}\left(\frac{1}{b^2+3ab+2a^2} -\frac{3}{2a^2+ab-b^2}\right)$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 20===================================
+
+QUESTION:
+A railway was being repaired by two teams of workers. Each repaired 10 km of the
+track despite the fact that the second team worked one day less than did the
+first. How many kilometers of the track did each team repair per day if both
+teams together repaired 4.5 km daily?
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 21===================================
+
+QUESTION:
+Reduce to a form convenient for taking logarithms: $\tan\left(\alpha +\frac{\pi
+}{4}\right)+\tan\left(\alpha -\frac{\pi }{4}\right)$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 22===================================
+
+QUESTION:
+Prove the identity
+$a^\frac{1}{2}-\frac{a-a^{-2}}{a^\frac{1}{2}-a^{-\frac{1}{2}}}
++\frac{1-a^{-2}}{a^\frac{1}{2}+a^{-\frac{1}{2}}}+\frac{2}{a^\frac{3}{2}}=0$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: proof_question
+
+================================================================================
+
+===================================Problem 23===================================
+
+QUESTION:
+Solve the following equations: $\frac{\tan(x+45^\circ)+\tan(x-
+45^\circ)}{2}=\tan(x-45^\circ)\tan(x+45^\circ)\tan x$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 24===================================
+
+QUESTION:
+The sixth term of the expansion of the binomial $\left(\frac{1}{x^2\sqrt
+[3]{x^2}}+x^{2\log x}\right)^8$ is 5600. Find $x$.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 25===================================
+
+QUESTION:
+Solve the following equations: $\sqrt {x^2-3x+5}+x^2=3x+7$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 26===================================
+
+QUESTION:
+Solve the following systems of equations: $\left\{\begin{array}{lll}
+x^2+xy+y^2=13\medskip \\ x+y=4 \end{array}\right.$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 27===================================
+
+QUESTION:
+A group of tourists have to collect money for an excursion. If each pays in 75
+kopecks, there will be a deficit of 4.4 roubles; if each pays in 80 kopecks,
+there will he an excess of 4.4 roubles. How many persons take part in the
+excursion?
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 28===================================
+
+QUESTION:
+$26:\left[\frac{3:(0.2-0.1)}{2.5\cdot (0.8+1.2)} +\frac{(34.06-33.81)\cdot
+4}{6.84:(28.57-25.15)}\right] +\frac{2}{3}:\frac{4}{21}$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 29===================================
+
+QUESTION:
+Solve the following equations: $1-\frac{2b}{x-a}=\frac{a^2-b^2}{a^2+x^2-2ax}$
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+Classification: not_proof_question
+
+================================================================================
+
+===================================Problem 30===================================
+
+QUESTION:
+Non-intersecting diagonals of two adjacent lateral faces of a rectangular
+parallelepiped are inclined to its base at angles $\alpha $ and $\beta $. Find
+the angle between these diagonals.
+
+--------------------------------------------------------------------------------
+
+SOLUTION:
+N/A
+
+--------------------------------------------------------------------------------
+
+GENERATION:
+To classify the given question, let's analyze it step by step:
+
+1. The question asks to find the angle between two non-intersecting diagonals of
+adjacent lateral faces of a rectangular parallelepiped.
+2. It does not use phrases like "prove that", "show that", or "demonstrate
+that".
+3. The task is to calculate a specific angle based on the given angles $\alpha$
+and $\beta$, which suggests a numerical or geometric calculation rather than a
+proof.
+4. There is no requirement to justify or explain why a statement is true, nor
+does it involve definitions or theorems in a way that necessitates a formal
+proof.
+
+Based on this analysis, the question does not fit the characteristics of a proof
+question.
+
+Classification: not_proof_question
+
+================================================================================
