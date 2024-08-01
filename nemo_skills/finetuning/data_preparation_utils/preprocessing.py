@@ -62,7 +62,9 @@ class ReadData(BaseProcessor):
     def _read_preprocessed_data(self, file_handle) -> int:
         samples = []
         questions = set()
-        for line in tqdm.tqdm(file_handle):
+        for idx, line in tqdm.tqdm(file_handle):
+            if idx < self.skip_first:
+                continue
             sample = json.loads(line)
             questions.add(sample["question"])
             # for backward compatibility
@@ -127,11 +129,11 @@ class ReadData(BaseProcessor):
         if self.prediction_jsonl_files:
             args = [(file, self._read_raw_data) for file in unroll_files(self.prediction_jsonl_files)]
             results = process_map(self._parallel_read_file, args, max_workers=4, chunksize=1)
-            samples.extend(list(chain(*results))[self.skip_first :])
+            samples.extend(list(chain(*results)))
         if self.preprocessed_dataset_files:
             args = [(file, self._read_preprocessed_data) for file in unroll_files(self.preprocessed_dataset_files)]
             results = process_map(self._parallel_read_file, args, max_workers=None, chunksize=1)
-            samples.extend(list(chain(*results))[self.skip_first :])
+            samples.extend(list(chain(*results)))
         LOG.info("Total samples before deduplication: %d", len(samples))
         samples_count = 0
         with open(self.output_manifest_file, "wt", encoding="utf-8") as fout:

@@ -18,9 +18,6 @@ prompt_type: openmathinstruct/sft
 chat_format: false  # whether to use NeMo's chat format
 generation_suffix: ""  # suffix to add to the end of expected response (e.g. <|eot_id|>)
 
-add_eos: false
-eos_token: <|eot_id|>
-
 filters:
   solution_key: generation  # key to filter solutions by
   group_key: question  # key to group samples by before code_text_filter
@@ -90,11 +87,6 @@ processors:
     sampling_method: ${downsampling_method}
     random_seed: ${random_seed}
     do_shuffle: ${do_shuffle}
-
-  - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.AddEosToken
-    should_run: ${add_eos}
-    solution_key: ${filters.solution_key}
-    eos_token: ${eos_token}
 
   - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.WriteFinalSftManifest
     output_manifest_file: ${output_path}
