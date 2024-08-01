@@ -267,8 +267,9 @@ class WriteFinalSftManifest(BaseProcessor):
                 seen_predictions[question].add(elem['generation'])
 
                 if self.chat_format is None:
-                    elem["output"] = elem.pop("generation") + self.generation_suffix
+                    generation = elem.pop("generation")
                     elem["input"] = prompt.build_string(input_dict=elem)
+                    elem["output"] = generation + self.generation_suffix
                 elif self.chat_format.lower() == "nemotron":
                     elem['conversations'] = [
                         {'value': prompt_config.user.format(**elem), 'from': 'User', 'canonical_form': ''},
