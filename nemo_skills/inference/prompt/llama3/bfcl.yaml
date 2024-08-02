@@ -1,0 +1,26 @@
+system: ""
+  
+user: |-
+  You are an expert in composing functions. 
+  You are given a question and a set of possible functions. 
+  Based on the question, you will need to make one or more function/tool calls to achieve the purpose. 
+  If none of the function can be used, point it out. 
+  If the given question lacks the parameters required by the function, also point it out. 
+  You should only return the function call in tools call sections.
+
+  Question: {question}
+  Here is a list of functions in JSON format that you can invoke:
+  {function}. 
+  
+  Should you decide to return the function call(s), put it in the format of [func1(params_name=params_value, params_name2=params_value2...), func2(params)]
+  NO other text MUST be included. 
+
+
+prompt_template: |-
+  <|start_header_id|>user<|end_header_id|>
+
+  {user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+  {generation}
+
+stop_phrases: ["<|eot_id|>"]

@@ -14,10 +14,13 @@
 
 import json
 import logging
+import os
 import shutil
 import subprocess
 from argparse import Namespace
+from collections import defaultdict
 from dataclasses import asdict, field
+from os import path
 from pathlib import Path
 from typing import Optional
 
@@ -255,6 +258,76 @@ def if_grader(cfg):
         # removing metric files to avoid reusing them
         (parent_dir / 'eval_results_loose.jsonl').unlink()
         (parent_dir / 'eval_results_strict.jsonl').unlink()
+
+
+@nested_dataclass
+class BFCLGraderConfig:
+    # Default eval category
+    # For final evaluation pass ++eval_config.eval_category=all
+    eval_category: str = "ast"
+
+
+def bfcl_grader(cfg):
+    """Grader for Berkeley Function Calling Leaderboard."""
+
+    eval_config = BFCLGraderConfig(**cfg.eval_config)
+    eval_category = eval_config.eval_category
+
+    for jsonl_file in unroll_files(cfg.prediction_jsonl_files):
+        # Create the result and score folder
+        # Right now calling the folder what Llama3-8B-Instruct would create but it is only used for extracting functions out of the output
+        # TODO fix these hardcoded paths
+        _REPO_ROOT_DIR = "/opt/benchmarks/gorilla/berkeley-function-call-leaderboard"
+        _RESULT_DIR = path.join(_REPO_ROOT_DIR, "result/meta-llama_Meta-Llama-3-8B-Instruct")
+        _SCORE_DIR = path.join(_REPO_ROOT_DIR, "score")
+
+        try:
+            os.makedirs(_RESULT_DIR)
+            os.makedirs(_SCORE_DIR)
+        except FileExistsError:
+            pass
+
+        # Prepare the API file content
+        if eval_category != "ast":
+            api_keys_required = ["RAPID-API-KEY", "EXCHANGERATE-API-KEY", "OMDB-API-KEY", "GEOCODE-API-KEY"]
+            api_keys = []
+            try:
+                api_keys = [{api_key: os.environ[api_key.replace("-", "_")]} for api_key in api_keys_required]
+            except KeyError:
+                raise SystemExit(f"Missing APIs, check environment variable - {api_keys_required}")
+
+            API_FILE = path.join(_REPO_ROOT_DIR, "function_credential_config.json")
+            with open(API_FILE, "w") as writer:
+                json.dump(api_keys, writer)
+
+            subprocess.run(
+                f'cd {_REPO_ROOT_DIR} && python apply_function_credential_config.py', shell=True, check=True
+            )
+
+        # Read results and dump them in separate test-wise files in output_dir
+        with open(jsonl_file, "rt", encoding="utf-8") as f:
+            samples = [json.loads(line) for line in f]
+            test_category_dict = defaultdict(list)
+            for sample in samples:
+                sample["result"] = sample["generation"]
+                test_category = sample["test_category"]
+                test_category_dict[test_category].append(sample)
+
+            for test_category, test_samples in test_category_dict.items():
+                output_file = path.join(_RESULT_DIR, f"gorilla_openfunctions_v1_test_{test_category}.json")
+                with open(output_file, "w") as writer:
+                    for test_sample in test_samples:
+                        writer.write(json.dumps(test_sample) + "\n")
+
+        # Run the evaluation
+        # Allow for selective eval
+        cmd = f'cd {path.join(_REPO_ROOT_DIR, "eval_checker")} && python eval_runner.py --model meta-llama/Meta-Llama-3-8B-Instruct --test {eval_category}'
+        subprocess.run(cmd, shell=True, check=True)
+
+        # Remove the output files and copy the score
+        parent_dir = Path(jsonl_file).absolute().parent
+        cmd = f'rm {_RESULT_DIR}/* && cp -r {_SCORE_DIR}/* {parent_dir}'
+        subprocess.run(cmd, shell=True, check=True)
 
 
 def arena_grader(cfg):

@@ -80,6 +80,10 @@ export PYTHONPATH=$PYTHONPATH:/code && \
 export HF_TOKEN={HF_TOKEN} && \
 export NVIDIA_API_KEY={NVIDIA_API_KEY} && \
 export OPENAI_API_KEY={OPENAI_API_KEY} && \
+export RAPID_API_KEY={RAPID_API_KEY} && \
+export EXCHANGERATE_API_KEY={EXCHANGERATE_API_KEY} && \
+export OMDB_API_KEY={OMDB_API_KEY} && \
+export GEOCODE_API_KEY={GEOCODE_API_KEY} && \
 if [ $SLURM_PROCID -eq 0 ]; then \
     {{ {server_start_cmd} 2>&1 | tee /tmp/server_logs.txt & }} && sleep 1 && \
     echo "Waiting for the server to start" && \
@@ -181,6 +185,12 @@ if __name__ == "__main__":
         "HF_TOKEN": os.getenv("HF_TOKEN", ""),
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
         "NVIDIA_API_KEY": os.getenv("NVIDIA_API_KEY", ""),
+        # BFCL APIs
+        "RAPID_API_KEY": os.getenv("RAPID_API_KEY", ""),
+        "EXCHANGERATE_API_KEY": os.getenv("EXCHANGERATE_API_KEY", ""),
+        "OMDB_API_KEY": os.getenv("OMDB_API_KEY", ""),
+        "GEOCODE_API_KEY": os.getenv("GEOCODE_API_KEY", ""),
+        # Server wait string
         "server_wait_string": server_wait_string,
     }
 

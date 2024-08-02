@@ -30,11 +30,13 @@ EVAL_MAP = {
         'mmlu': 'llama3/mmlu',
         'ifeval': 'llama3/sft',
         'arena-hard': 'llama3/sft',
+        'bfcl': 'llama3/bfcl',
     },
     'instruct-nemo': {  # llama3-instruct finetuned with nemo_skills
         'default': 'llama3/sft',
         'human-eval': 'llama3/codegen',
         'mbpp': 'llama3/codegen',
         'mmlu': 'llama3/mmlu',
+        'bfcl': 'llama3/bfcl',
     },
 }
