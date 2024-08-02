@@ -20,6 +20,12 @@ EVAL_MAP = {
         'default': 'nemotron/fewshot',
     },
     'instruct': {  # nemotron-instruct
-        'default': 'nemotron/zeroshot',
+        'default': 'nemotron/instruct',
+        'gsm8k': 'nemotron/math',
+        'math': 'nemotron/math',
+        'human-eval': 'nemotron/codegen',
+        'mbpp': 'nemotron/codegen',
+        'mmlu': 'nemotron/mmlu',
     },
 }
+
