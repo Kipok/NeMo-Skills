@@ -1,9 +1,13 @@
+# Generic prompt for Llama models SFTed by us
+
 system: ""
 
 user: "{question}{context}"
 
 prompt_template: |-
-  <|start_header_id|>user<|end_header_id|>
+  <|begin_of_text|><|start_header_id|>system<|end_header_id|>
+  
+  {system}<|eot_id|><|start_header_id|>user<|end_header_id|>
 
   {user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 

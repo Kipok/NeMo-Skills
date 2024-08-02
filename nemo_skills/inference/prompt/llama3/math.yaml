@@ -1,3 +1,6 @@
+# Prompt used by Llama-instruct models for math benchmarks 
+# https://huggingface.co/datasets/meta-llama/Meta-Llama-3.1-8B-Instruct-evals/viewer/Meta-Llama-3.1-8B-Instruct-evals__math__details?row=0
+
 user: |-
     Solve the following math problem efficiently and clearly:
 
@@ -24,7 +27,7 @@ user: |-
     Problem: {question}
 
 prompt_template: |-
-  <|start_header_id|>user<|end_header_id|>
+  <|begin_of_text|><|start_header_id|>user<|end_header_id|>
 
   {user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 

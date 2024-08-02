@@ -1,3 +1,5 @@
+# Generic prompt for Llama instruct
+
 few_shot_examples:
   template: "Question:\n{question}{context}\n\nMy solution:\n{generation}\n\n\n\n\n\n"
 
@@ -11,7 +13,7 @@ user: |-
     {question}{context}
 
 prompt_template: |-
-  <|start_header_id|>user<|end_header_id|>
+  <|begin_of_text|><|start_header_id|>user<|end_header_id|>
 
   {user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 

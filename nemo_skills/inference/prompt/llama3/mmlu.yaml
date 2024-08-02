@@ -1,3 +1,7 @@
+# Prompt used by Llama-base/instruct models for MMLU benchmark 
+# TODO - Seems to be different from https://huggingface.co/datasets/meta-llama/Meta-Llama-3.1-8B-evals/viewer/Meta-Llama-3.1-8B-evals__mmlu__details?row=3
+# and https://huggingface.co/datasets/meta-llama/Meta-Llama-3.1-8B-Instruct-evals/viewer/Meta-Llama-3.1-8B-Instruct-evals__mmlu__0_shot__cot__details?row=0
+
 system: ""
 
 # TODO: should we not use \boxed format? Should we also not use it for math benchmarks?
@@ -12,7 +16,7 @@ user: |-
     D) {D}
 
 prompt_template: |-
-  <|start_header_id|>user<|end_header_id|>
+  <|begin_of_text|><|start_header_id|>user<|end_header_id|>
 
   {user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
