@@ -3,7 +3,7 @@
 system: ""
 
 user: |-
-  Help the user to solve the given problem. Make sure to put the answer (and only answer) inside \boxed{{}}.
+  Help the user to solve the given problem.
 
   {question}{context}
 
@@ -16,4 +16,3 @@ prompt_template: |-
   {generation}
 
 stop_phrases: ["<extra_id_1>"]
-
