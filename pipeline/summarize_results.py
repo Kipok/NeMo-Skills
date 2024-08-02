@@ -44,7 +44,7 @@ def process_batch_results(prediction_jsonl_files):
                 with open(batch_request_file, 'rt', encoding='utf-8') as fin:
                     request_id = json.load(fin)['request_id']
                     generation_key = json.load(fin)['generation_key']
-                
+
                 from nemo_skills.inference.server.model import get_model
 
                 llm = get_model(server_type='openai', model='gpt-4-1106-preview')
