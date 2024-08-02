@@ -109,7 +109,7 @@ def test_llama3_instruct_prompt():
     config.few_shot_examples.num_few_shots = 2
     prompt = Prompt(config=config)
 
-    expected_prompt = """<|start_header_id|>user<|end_header_id|>
+    expected_prompt = """<|begin_of_text|><|start_header_id|>user<|end_header_id|>
 
 Here are some examples of questions and solutions followed by a new question that you need to solve.
 Make sure to put the answer (and only answer) inside \\boxed{}.
@@ -235,21 +235,20 @@ Assistant:
 
 
 def test_nemotron_zeroshot_prompt():
-    prompt = Prompt(config=get_prompt_config('nemotron/zeroshot'))
+    prompt = Prompt(config=get_prompt_config('nemotron/instruct'))
     expected_prompt = """<extra_id_0>System
 
 <extra_id_1>User
-You are an expert in math. Given the math question below, I want you to reason through the steps and then give a final answer.
+Help the user to solve the given problem. Make sure to put the answer (and only answer) inside \\boxed{}.
 
-Your final answer should be inside \\boxed{}.
-
-2 + 2 = ?<extra_id_1>Assistant
+2 + 2 = ?
+<extra_id_1>Assistant
 """
     assert prompt.build_string({'question': '2 + 2 = ?'}) == expected_prompt
 
 
 def test_nemotron_fewshot_prompt():
-    config = get_prompt_config('nemotron/fewshot')
+    config = get_prompt_config('nemotron/fewshot_instruct')
     config.few_shot_examples.example_dicts = [
         {'question': '1 + 1 = ?', 'generation': "That's easy: 2!"},
         {'question': '5 + 5 = ?', 'generation': "That's easy: 10!"},
@@ -293,7 +292,7 @@ Don't forget that your final answer should be inside \\boxed{}!
 
 
 def test_nemotron_fewshot_prompt_reference():
-    config = get_prompt_config('nemotron/fewshot')
+    config = get_prompt_config('nemotron/fewshot_instruct')
     config.few_shot_examples.example_dicts = [
         {'question': '1 + 1 = ?', 'generation': "That's easy: 2!", 'reference_solution': "Think hard - it's 2"},
         {'question': '5 + 5 = ?', 'generation': "That's easy: 10!", 'reference_solution': "Isn't it 10?"},
@@ -352,7 +351,7 @@ def test_llama3_gsm8k_prompt():
     config = get_prompt_config('llama3/gsm8k')
     prompt = Prompt(config=config)
 
-    expected_prompt = """<|start_header_id|>user<|end_header_id|>
+    expected_prompt = """<|begin_of_text|><|start_header_id|>user<|end_header_id|>
 
 Given the following problem, reason and give a final answer to the problem.
 Problem: There are 15 trees in the grove. Grove workers will plant trees in the grove today. After they are done, there will be 21 trees. How many trees did the grove workers plant today?
@@ -421,7 +420,7 @@ def test_llama3_math_prompt():
     config = get_prompt_config('llama3/math')
     prompt = Prompt(config=config)
 
-    expected_prompt = """<|start_header_id|>user<|end_header_id|>
+    expected_prompt = """<|begin_of_text|><|start_header_id|>user<|end_header_id|>
 
 Solve the following math problem efficiently and clearly:
 

@@ -17,10 +17,11 @@
 
 EVAL_MAP = {
     'base': {
-        'default': 'nemotron/fewshot',
+        'default': 'openmathinstruct/base',
     },
     'instruct': {  # nemotron-instruct
         'default': 'nemotron/instruct',
+        'fewshot': 'nemotron/fewshot',
         'gsm8k': 'nemotron/math',
         'math': 'nemotron/math',
         'human-eval': 'nemotron/codegen',

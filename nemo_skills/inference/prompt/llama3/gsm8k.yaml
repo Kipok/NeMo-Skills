@@ -12,9 +12,9 @@ few_shot_examples:
   examples_type: gsm8k_standard_few_shot
 
 user: |-
-    {examples}Given the following problem, reason and give a final answer to the problem.
-    Problem: {question}
-    Your response should end with "The final answer is [answer]" where [answer] is the response to the problem.
+  {examples}Given the following problem, reason and give a final answer to the problem.
+  Problem: {question}
+  Your response should end with "The final answer is [answer]" where [answer] is the response to the problem.
 
 prompt_template: |-
   <|begin_of_text|><|start_header_id|>user<|end_header_id|>
