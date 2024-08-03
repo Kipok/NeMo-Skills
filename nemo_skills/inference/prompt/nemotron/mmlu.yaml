@@ -1,14 +1,18 @@
+# Prompt for Nemotron-instruct for MMLU 
+
 system: ""
 
 user: |-
-  Answer the following multiple choice question. The last line of your response should be of the following format: 'Answer: \boxed{{$LETTER}}' (without quotes) where LETTER is one of ABCD. Think step by step before answering.
-
+  Answer the following multiple choice question. The last line of your response should be of the following format: 'Answer: [the_answer_letter].' where the [the_answer_letter] is one of A, B, C or D. 
   {question}
 
   A) {A}
   B) {B}
   C) {C}
   D) {D}
+
+  Think step by step before answering.
+
 
 prompt_template: |-
   <extra_id_0>System
