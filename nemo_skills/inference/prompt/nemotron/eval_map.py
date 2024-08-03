@@ -16,10 +16,20 @@
 # can have a default key that will be used if benchmark name is not in dict
 
 EVAL_MAP = {
-    'base': { 
-        'default': 'nemotron/fewshot',
+    'base': {
+        'default': 'openmathinstruct/base',
     },
     'instruct': {  # nemotron-instruct
-        'default': 'nemotron/zeroshot',
+        'default': 'nemotron/math',  # Default to math prompt
+        # Math benchmarks
+        'gsm8k': 'nemotron/math',
+        'math': 'nemotron/math',
+        # Coding
+        'human-eval': 'nemotron/codegen',
+        'mbpp': 'nemotron/codegen',
+        # Others
+        'mmlu': 'nemotron/mmlu',
+        'ifeval': 'nemotron/sft',
+        'arena-hard': 'nemotron/sft',
     },
 }
