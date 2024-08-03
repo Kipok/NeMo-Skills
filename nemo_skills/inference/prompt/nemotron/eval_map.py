@@ -20,11 +20,16 @@ EVAL_MAP = {
         'default': 'openmathinstruct/base',
     },
     'instruct': {  # nemotron-instruct
-        'default': 'nemotron/math',
+        'default': 'nemotron/math',  # Default to math prompt
+        # Math benchmarks
         'gsm8k': 'nemotron/math',
         'math': 'nemotron/math',
+        # Coding
         'human-eval': 'nemotron/codegen',
         'mbpp': 'nemotron/codegen',
+        # Others
         'mmlu': 'nemotron/mmlu',
+        'ifeval': 'nemotron/sft',
+        'arena-hard': 'nemotron/sft',
     },
 }
