@@ -21,7 +21,6 @@ EVAL_MAP = {
     },
     'instruct': {  # nemotron-instruct
         'default': 'nemotron/math',
-        'fewshot': 'nemotron/fewshot',
         'gsm8k': 'nemotron/math',
         'math': 'nemotron/math',
         'human-eval': 'nemotron/codegen',
