@@ -239,7 +239,7 @@ def test_nemotron_zeroshot_prompt():
     expected_prompt = """<extra_id_0>System
 
 <extra_id_1>User
-Help the user to solve the given problem. Make sure to put the answer (and only answer) inside \\boxed{}.
+Help the user to solve the given problem.
 
 2 + 2 = ?
 <extra_id_1>Assistant
@@ -260,7 +260,6 @@ def test_nemotron_fewshot_prompt():
 
 <extra_id_1>User
 Here are some examples of questions and solutions followed by a new question that you need to solve.
-Make sure to put the answer (and only answer) inside \\boxed{}.
 
 Example question:
 1 + 1 = ?
@@ -447,17 +446,55 @@ Where [answer] is just the final number or expression that solves the problem.
 Problem: Find the sum of all complex values of $a,$ such that the polynomial $x^4 + (a^2 - 1) x^2 + a^3$ has exactly two distinct complex roots.<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
 """
-    print(
+    assert (
         prompt.build_string(
             {
                 'question': "Find the sum of all complex values of $a,$ such that the polynomial $x^4 + (a^2 - 1) x^2 + a^3$ has exactly two distinct complex roots."
             }
         )
+        == expected_prompt
     )
+
+
+def test_llama3_math_prompt():
+    config = get_prompt_config('llama3/mmlu')
+    prompt = Prompt(config=config)
+
+    expected_prompt = """<|begin_of_text|><|start_header_id|>user<|end_header_id|>
+
+Given the following question and four candidate answers (A, B, C and D), choose the best answer.
+
+Question: A 26-year-old woman is brought to the emergency department because of an 8-hour history of severe back and abdominal pain and mild but persistent vaginal bleeding. Ultrasonography of the abdomen shows a 2-cm ectopic pregnancy in the ampulla. The ampulla has ruptured into the surrounding tissue. Fluid from this rupture will most likely be found in which of the following locations?
+A. Lesser peritoneal cavity
+B. Mesometrium
+C. Pouch of Douglas
+D. Uterine cavity
+
+- For simple problems:
+Directly provide the answer with minimal explanation.
+
+- For complex problems:
+Use this step-by-step format:
+## Step 1: [Concise description]
+[Brief explanation]
+## Step 2: [Concise description]
+[Brief explanation]
+
+Regardless of the approach, always conclude with:
+The best answer is [the_answer_letter].
+where the [the_answer_letter] is one of A, B, C or D.
+
+Let's think step by step.<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+"""
     assert (
         prompt.build_string(
             {
-                'question': "Find the sum of all complex values of $a,$ such that the polynomial $x^4 + (a^2 - 1) x^2 + a^3$ has exactly two distinct complex roots."
+                'question': "A 26-year-old woman is brought to the emergency department because of an 8-hour history of severe back and abdominal pain and mild but persistent vaginal bleeding. Ultrasonography of the abdomen shows a 2-cm ectopic pregnancy in the ampulla. The ampulla has ruptured into the surrounding tissue. Fluid from this rupture will most likely be found in which of the following locations?",
+                'A': "Lesser peritoneal cavity",
+                'B': "Mesometrium",
+                'C': "Pouch of Douglas",
+                'D': "Uterine cavity",
             }
         )
         == expected_prompt

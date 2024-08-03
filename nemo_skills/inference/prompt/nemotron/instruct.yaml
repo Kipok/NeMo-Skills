@@ -1,4 +1,4 @@
-# Generic prompt for Nemotron instruct
+# Generic prompt for zeroshot inference with Nemotron-instruct
 
 system: ""
 
