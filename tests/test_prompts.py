@@ -304,7 +304,6 @@ def test_nemotron_fewshot_prompt_reference():
 
 <extra_id_1>User
 Here are some examples of questions and solutions followed by a new question that you need to solve.
-Make sure to put the answer (and only answer) inside \\boxed{}.
 
 Example question:
 1 + 1 = ?
