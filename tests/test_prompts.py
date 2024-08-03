@@ -283,8 +283,6 @@ That's easy: 10!
 
 Question:
 2 + 2 = ?
-
-Don't forget that your final answer should be inside \\boxed{}!
 <extra_id_1>Assistant
 """
     assert prompt.build_string({'question': '2 + 2 = ?'}) == expected_prompt
@@ -336,8 +334,6 @@ Question:
 
 Reference solution (do not copy it):
 What should I do??
-
-Don't forget that your final answer should be inside \\boxed{}!
 <extra_id_1>Assistant
 """
     assert (
@@ -455,7 +451,7 @@ Problem: Find the sum of all complex values of $a,$ such that the polynomial $x^
     )
 
 
-def test_llama3_math_prompt():
+def test_llama3_mmlu_prompt():
     config = get_prompt_config('llama3/mmlu')
     prompt = Prompt(config=config)
 

@@ -11,8 +11,6 @@ user: |-
   {examples}Question:
   {question}{context}
 
-  Don't forget that your final answer should be inside \boxed{{}}!
-
 prompt_template: |-
   <extra_id_0>System
   {system}
@@ -22,4 +20,3 @@ prompt_template: |-
   {generation}
 
 stop_phrases: ["\n\n\n\n\n\n", "<extra_id_1>"]
-

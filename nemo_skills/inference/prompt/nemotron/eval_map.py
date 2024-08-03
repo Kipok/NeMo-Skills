@@ -20,7 +20,7 @@ EVAL_MAP = {
         'default': 'openmathinstruct/base',
     },
     'instruct': {  # nemotron-instruct
-        'default': 'nemotron/instruct',
+        'default': 'nemotron/math',
         'fewshot': 'nemotron/fewshot',
         'gsm8k': 'nemotron/math',
         'math': 'nemotron/math',
