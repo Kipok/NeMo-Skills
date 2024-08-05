@@ -42,8 +42,9 @@ def process_batch_results(prediction_jsonl_files):
         if batch_request_file.exists():
             try:
                 with open(batch_request_file, 'rt', encoding='utf-8') as fin:
-                    request_id = json.load(fin)['request_id']
-                    generation_key = json.load(fin)['generation_key']
+                    line = json.load(fin)
+                    request_id = line['request_id']
+                    generation_key = line['generation_key']
 
                 from nemo_skills.inference.server.model import get_model
 
@@ -76,7 +77,7 @@ def process_batch_results(prediction_jsonl_files):
                 LOG.error(f"sudo chown {user} {jsonl_file} {batch_request_file}")
                 LOG.error("Then run this script again.")
             except Exception as e:
-                LOG.error(f"An error occurred while processing {jsonl_file}: {str(e)}")
+                LOG.error(f"An error occurred while processing {batch_request_file}: {str(e)}")
 
 
 if __name__ == "__main__":
