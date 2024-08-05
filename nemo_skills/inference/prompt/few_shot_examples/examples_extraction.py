@@ -1,5 +1,5 @@
 tuple_extraction = [
-        {
+    {
         "original_answer": "599.3",
         "generation": """
         599.3
@@ -132,13 +132,13 @@ tuple_extraction = [
 
 from_solution_extraction = [
     {
-    "solution": """
+        "solution": """
     The equation can be written in the following form: $$(\sin x+\cos x)^2+(\sin
     x+\cos x)+(\cos^2 x-\sin^2 x)=0,$$ that is $$(\sin x+\cos x)(1+2\cos x)=0.$$
     Equating each of the expressions in the brackets to zero, we find the roots.
     {\it Answer:} $x_1=-\frac{\pi }{4}+k\pi,\ x_2=\pm \frac{2\pi }{3}+2k\pi $.
     """,
-    "generation": """
+        "generation": """
     (\frac{\pi }{4}+k\pi, \frac{2\pi }{3}+2k\pi)
 """.strip(),
     },
@@ -266,7 +266,7 @@ from_solution_extraction = [
         prove_question
 """.strip(),
     },
-     {
+    {
         "solution": """
         If $x$ is the original sum of money each person deposited and $y$ is the
         interest paid by the savings bank, then $$x+x\frac{y}{100}\cdot \frac{m}{12}=p,
@@ -462,11 +462,10 @@ math_soution_extraction = [
         \\sin^2 t
         """.strip(),
     },
-    
-    ]
+]
 
 examples_map = {
     "antonov_tuple_extraction": tuple_extraction,
     "lidsky_solution_extraction": from_solution_extraction,
-    "math_soution_extraction": math_soution_extraction
+    "math_soution_extraction": math_soution_extraction,
 }
