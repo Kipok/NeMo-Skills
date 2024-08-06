@@ -8,8 +8,6 @@ output_path: ???
 
 metadata: null  # can provide additional metadata to store (e.g. dataset or generation_type)
 skip_first: 0  # useful for skipping validation set from train_full generation (it's always first)
-add_correct: true  # can set to False if only want to export incorrect solutions
-add_incorrect: false  # if True, saves only incorrect solutions instead of correct
 
 downsampling_method: null  # fair, random or null
 random_seed: 42
@@ -24,7 +22,7 @@ input_key: input  # key to group samples by before code_text_filter
 output_key: output  # key to filter solutions by
 
 filters:  
-  drop_incorrect_code_blocks: true
+  drop_incorrect_code_blocks: false
 
 processors:
   - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.ReadData
@@ -33,12 +31,10 @@ processors:
     input_key: ${input_key}
     output_key: ${output_key}
     skip_first: ${skip_first}
-    add_correct: ${add_correct}
-    add_incorrect: ${add_incorrect}
 
   - _target_: nemo_skills.finetuning.data_preparation_utils.filters.DropIncorrectCodeBlocks
     should_run: ${filters.drop_incorrect_code_blocks}
-    output_key: ${filters.output_key}
+    output_key: ${output_key}
     test_cases:
       - {input: {output: "Solution ```python\ndef hello()``` Second code ```python\n"}, output: null}
       - {input: {output: "Solution ```python\ndef hello()```"}, output: {output: "Solution ```python\ndef hello()```"}}
