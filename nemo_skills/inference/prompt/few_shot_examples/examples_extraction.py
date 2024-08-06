@@ -129,9 +129,11 @@ tuple_extraction = [
     },
 ]
 
-
 from_solution_extraction = [
     {
+        "question": """
+        Solve the equation $1+\\sin x+\\cos x+\\sin 2x+\\cos 2x=0.$
+        """.strip(),
         "solution": """
     The equation can be written in the following form: $$(\sin x+\cos x)^2+(\sin
     x+\cos x)+(\cos^2 x-\sin^2 x)=0,$$ that is $$(\sin x+\cos x)(1+2\cos x)=0.$$
@@ -143,6 +145,9 @@ from_solution_extraction = [
 """.strip(),
     },
     {
+        "question": """
+        Given an arithmetic progression $a_1,\\ldots,a_n,a_{n+1},\\ldots $ prove that the equalities $$a_1^2-C_n^1 a_2^2+\\ldots +(-1)^n C_n^n a_{n+1}^2=0$$ hold for $n\\ge 3$.
+        """.strip(),
         "solution": """
         We carry out the proof by induction. For $n=3$ it readily follows that
         $$a_1^2-3(a_1+d)^2+3(a_1+2d)^2-(a_1+3d)^2=0.$$ Suppose we have already
@@ -162,6 +167,9 @@ from_solution_extraction = [
 """.strip(),
     },
     {
+        "question": """
+        Solve the equation $\\frac{1-\\tan x}{1+\\tan x}=1+\\sin 2x.$       
+        """.strip(),
         "solution": """
         The equation makes no sense for $x=\frac{\pi }{2}+k\pi $ and for $x=-\frac{\pi
         }{4}+k\pi $. For all the other values of $x$ it is equivalent to the equation
@@ -175,6 +183,9 @@ from_solution_extraction = [
 """.strip(),
     },
     {
+        "question": """
+        In how many ways can a pack of 36 cards be split in two so that each portion contains two aces?
+        """.strip(),
         "solution": """
         Any splitting of the pack indicated in the statement of the problem is
         equivalent to selecting 16 cards out of the 32 cards that are not aces and two
@@ -187,40 +198,10 @@ from_solution_extraction = [
         C_{32}^{16}C_4^2
 """.strip(),
     },
-    {
-        "solution": """
-        Let $ABC$ be an acute triangle, and $AD$, $BE$ and $CF$ be its altitudes which
-        intersect at a point $O$ (Fig. 67). Each of the quadrilaterals $BDOF$, $CEOD$
-        and $AFOE$ is inscribed in a circle. According to the theorem on the product of
-        a secant of a circle by its outer portion, we have \begin{align*} & AD\cdot
-        AO=AB\cdot AF=AC\cdot AE,\\ & BE\cdot BO=BC\cdot BD=BA\cdot BF,\\ & CF\cdot
-        CO=CA\cdot CE=CB\cdot CD. \end{align*} Adding together these equalities we
-        obtain $$2(AD\cdot AO+BE\cdot BO+CF\cdot CO) =AB\cdot AF+BC\cdot BD+CA\cdot
-        CE+AC\cdot AE$$ $$+BA\cdot BF+CB\cdot CD =AB(AF+BF)+BC(BD+CD)+CA(CE+AE)$$
-        $$=(AB)^2+(BC)^2+(CA)^2,$$ which is what we set out to prove. In the case of an
-        obtuse triangle the product corresponding to the obtuse angle should be taken
-        with the minus sign.
-        """,
-        "generation": """
-        prove_question
-""".strip(),
-    },
-    {
-        "solution": """
-        Apparently, $a+b= 1$ and $ab=-1$. Using this, we can write \begin{align*}
-        a_n=a_n(a+b) & =\frac{a^{n+1}-ab^n+a^nb-b^{n+1}}{\sqrt 5}\\ &
-        =\frac{a^{n+1}-b^{n+1}}{\sqrt 5}-\frac{a^{n-1}-b^{n-1}}{\sqrt 5}, \end{align*}
-        that is $a_n=a_{n+1}-a_{n-1}$ which implies $a_{n+1}=a_n+a_{n-1}$. It follows
-        that if for some $n$ the numbers $a_{n-1}$ and $a_n$ are positive integers, then
-        $a_{n+1}$ is also a positive integer. Consequently, by induction, $a_{n+2}$,
-        $a_{n+3}$ etc. are also positive integers. But we have $a_1=1$ and $a_2=1$, and
-        hence all $a_n$ are positive integers for $n > 2$.
-        """,
-        "generation": """
-        prove_question
-""".strip(),
-    },
-    {
+    { 
+        "question": """ 
+        Solve the equation $2+\\cos x=2\\tan \\frac{x}{2}.$"
+        """.strip(),
         "solution": """
         Write the equation in the following form: $$\cos^2 \frac{x}{2}-\sin^2
         \frac{x}{2} =2\left(\frac{\sin\frac{x}{2}}{\cos\frac{x}{2}}-1\right).$$ After
@@ -236,6 +217,9 @@ from_solution_extraction = [
 """.strip(),
     },
     {
+        "question": """
+        Solve the equation $\\sin\\left(\\frac{\\pi }{10}+\\frac{3x}{2}\\right)=2\\sin\\left(\\frac{3\\pi }{10} -\\frac{x}{2}\\right).$
+        """.strip(),
         "solution": """
         Put $\frac{3\pi }{10}-\frac{x}{2}=y$, then $\frac{\pi }{10}+\frac{3x}{2}=\pi
         -3\left(\frac{3\pi }{10}-\frac{x}{2}\right) =\pi -3y$, and the equation takes
@@ -253,20 +237,9 @@ from_solution_extraction = [
 """.strip(),
     },
     {
-        "solution": """
-        Let $M$ be an interior point of a convex polygon, and $AB$ its side whose
-        distance from $M$ is the least.   We shall prove that the foot $P$ of the
-        perpendicular drawn from $M$ to $AB$ lies on $AB$ but not on its extension (Fig.
-        92). Indeed, if $P$ lies on the extension of $AB$, then $MP$ intersects a side
-        $l$ of the polygon at a point $Q$, and, since the polygon is convex, $MQ < MP$.
-        But the distance $DM$ from $M$ to $l$ is less than $MQ$, and. consequently, less
-        than $MP$ which contradicts the choice of the side $AB$.
-        """,
-        "generation": """
-        prove_question
-""".strip(),
-    },
-    {
+        "question": """
+        Two persons deposited equal sums of money in a savings bank. One of them withdrew his money after $m$ months and received $p$ roubles, and the other withdrew the money after $n$ months and received $q$ roubles. How much money did either person deposit and what interest does the savings bank pay?
+        """.strip(),
         "solution": """
         If $x$ is the original sum of money each person deposited and $y$ is the
         interest paid by the savings bank, then $$x+x\frac{y}{100}\cdot \frac{m}{12}=p,
@@ -281,6 +254,9 @@ from_solution_extraction = [
 """.strip(),
     },
     {
+        "question": """
+        A right triangle with legs $a_1$ and $b_1$ is cut off from a quadrilateral with sides $a$ and $b$. How must the quadrilateral of maximum area with sides parallel to those of the initial quadrilateral be cut off from the remaining part of the quadrilateral?
+        """.strip(),
         "solution": """
         Let $x$ be the distance between the bank the travelers started from and the
         Let a right triangle with vertex $C$ and legs $a_1$ and $b_1$ be cut off from a
@@ -339,6 +315,9 @@ from_solution_extraction = [
 """.strip(),
     },
     {
+        "question": """
+        Solve the system of equations $$\\left\\{\\begin{array}{lll} \\tan x+\\tan y=1,\\medskip \\\\ \\cos x\\cos y=\\frac{1}{\\sqrt 2}. \\end{array}\\right.$$
+        """.strip(),
         "solution": """
         The first equation can be written in the form $$\frac{\sin (x+y)}{\cos x\cos
         y}=1,$$ whence, by virtue of the second equation, we obtain $$\sin (x+y)=\cos
@@ -359,27 +338,7 @@ from_solution_extraction = [
         "generation": """
         (\frac{\pi }{4}+(k+l)\pi, (k-l)\pi), ((k+l)\pi, \frac{\pi }{4}+(k-l)\pi)
 """.strip(),
-    },
-    {
-        "solution": """
-        Since to a greater angle in the first quadrant there corresponds a greater value
-        of the tangent, we can write $$\tan \alpha _1<\tan \alpha _i<\tan \alpha _n
-        \eqno(1)$$ for $i=1,2,\ldots ,n$. Besides, $\cos \alpha _i>0$ $(i=1,2,\ldots
-        ,n)$. Therefore, inequalities (1) can be rewritten in the form $$\tan \alpha _1
-        \cos \alpha _i<\sin \alpha _i<\tan \alpha _n\cos \alpha _i. \eqno(2)$$ Let us
-        make $i$ in inequality (2) assume the values $1,2,\ldots ,n$ and add together
-        all the inequalities thus obtained. This results in \begin{align*} \tan \alpha
-        _1(\cos \alpha _1+\ldots +\cos \alpha _n) & <\sin \alpha _1+\ldots +\sin \alpha
-        _n\\ & <\tan \alpha _n(\cos \alpha _1+\ldots +\cos \alpha _n). \tag{3}
-        \end{align*} Dividing all the members of inequalities (3) by $\cos \alpha
-        _1+\ldots +\cos \alpha _n$ (which is permissible since $\cos \alpha _1+\ldots
-        +\cos \alpha _n>0$) we obtain $$\tan \alpha _1<\frac{\sin \alpha _1+\ldots +\sin
-        \alpha _n} {\cos \alpha _1+\ldots +\cos \alpha _n}<\tan \alpha _n.$$
-        """,
-        "generation": """
-        \tan \alpha _1 < \frac{\sin \alpha _1 + \ldots + \sin \alpha _n}{\cos \alpha _1 + \ldots + \cos \alpha _n} < \tan \alpha _n 
-""".strip(),
-    },
+    }
 ]
 
 

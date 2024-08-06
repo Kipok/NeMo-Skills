@@ -131,7 +131,6 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
         for idx, data_point in tqdm(enumerate(data), initial=starting_idx, total=len(data) + starting_idx):
             if idx >= cfg.max_samples:
                 break
-
             data_points.append(data_point)
 
             if len(data_points) == cfg.batch_size or idx == len(data) - 1:
