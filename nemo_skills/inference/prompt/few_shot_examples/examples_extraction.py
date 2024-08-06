@@ -198,7 +198,7 @@ from_solution_extraction = [
         C_{32}^{16}C_4^2
 """.strip(),
     },
-    { 
+    {
         "question": """ 
         Solve the equation $2+\\cos x=2\\tan \\frac{x}{2}.$"
         """.strip(),
@@ -338,7 +338,7 @@ from_solution_extraction = [
         "generation": """
         (\frac{\pi }{4}+(k+l)\pi, (k-l)\pi), ((k+l)\pi, \frac{\pi }{4}+(k-l)\pi)
 """.strip(),
-    }
+    },
 ]
 
 
