@@ -18,10 +18,10 @@ prompt_type: openmathinstruct/sft
 chat_format: false  # whether to use NeMo's chat format
 generation_suffix: ""  # suffix to add to the end of expected response (e.g. <|eot_id|>)
 
-filters:
-  solution_key: generation  # key to filter solutions by
-  group_key: question  # key to group samples by before code_text_filter
+input_key: question
+output_key: generation
 
+filters:
   drop_multi_boxed: true
   drop_useless_code: false
   drop_broken_code: true
@@ -35,6 +35,8 @@ processors:
   - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.ReadData
     preprocessed_dataset_files: ${preprocessed_dataset_files}
     prediction_jsonl_files: ${prediction_jsonl_files}
+    input_key: ${input_key}
+    output_key: ${output_key}
     skip_first: ${skip_first}
     add_correct: ${add_correct}
     add_incorrect: ${add_incorrect}
@@ -92,6 +94,8 @@ processors:
   - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.WriteFinalSftManifest
     output_manifest_file: ${output_path}
     prompt_type: ${prompt_type}
+    input_key: ${input_key}
+    output_key: ${output_key}
     chat_format: ${chat_format}
     generation_suffix: ${generation_suffix}
     metadata: ${metadata}
