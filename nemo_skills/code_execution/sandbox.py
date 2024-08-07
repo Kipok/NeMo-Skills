@@ -107,14 +107,6 @@ class Sandbox(abc.ABC):
             Can also be specified through NEMO_SKILLS_SSH_KEY_PATH env var.
     """
 
-    NOT_EXECUTED = "<not_executed>"
-    EXECUTION_ERROR = "Execution error:"
-    SYNTAX_ERROR = "Syntax error:"
-    RESULT_NOT_DEFINED_ERROR = "Result is not defined"
-    TIMEOUT_ERROR = "timeout"
-    UNDEFINED_ERROR = "Undefined error:"
-    ERROR_PREFIXES = (EXECUTION_ERROR, SYNTAX_ERROR, RESULT_NOT_DEFINED_ERROR, TIMEOUT_ERROR, UNDEFINED_ERROR)
-
     def __init__(
         self,
         host: Optional[str] = os.getenv("NEMO_SKILLS_SANDBOX_HOST", "127.0.0.1"),
@@ -201,25 +193,19 @@ try:
     for code in code_snippets:
         with io.capture_output() as captured:
             exec_result = shell.run_cell(code)
-    # serializing to str to make sure things like Rational can be converted to json
-    output = f"{{captured.stdout}}{{captured.stderr}}".strip().replace("Out[1]: ", "")
-    if len(output) > {max_output_characters}:
-        output = output[:{max_output_characters}] + "<output cut>"
-    error_message = ""
-    if exec_result.error_in_exec is not None:
-        # full traceback will be part of output
-        error_message = f"{Sandbox.EXECUTION_ERROR} {{str(exec_result.error_in_exec)}}"
-    elif exec_result.error_before_exec is not None:
-        # full traceback will be part of output
-        error_message = f"{Sandbox.SYNTAX_ERROR} {{str(exec_result.error_before_exec)}}"
-    elif output == "":
-        error_message = "{Sandbox.RESULT_NOT_DEFINED_ERROR}"
-    to_return = {{"result": output, "error_message": error_message}}
+    stdout = f"{{captured.stdout}}".strip().replace("Out[1]: ", "")
+    stderr = f"{{captured.stderr}}".strip().replace("Out[1]: ", "")
+    if len(stdout) > {max_output_characters}:
+        stdout = stdout[:{max_output_characters}] + "<output cut>"
+    if len(stderr) > {max_output_characters}:
+        stderr = stderr[:{max_output_characters}] + "<output cut>"
+    to_return = {{"process_status": "completed", "stdout": captured.stdout, "stderr": captured.stderr}}
 except Exception:
     # removing useless prefix from traceback
     to_return = {{
-        "result": None,
-        "error_message": "{Sandbox.UNDEFINED_ERROR}" + "\\n".join(traceback.format_exc().split("\\n")[3:]),
+        "process_status": "error",
+        "stdout": "",
+        "stderr": "\\n".join(traceback.format_exc().split("\\n")[3:]),
     }}
 print(json.dumps(to_return))
 """
@@ -227,11 +213,10 @@ print(json.dumps(to_return))
         try:
             output = self._send_request(request, timeout)
         except requests.exceptions.Timeout:
-            output = {'result': None, 'error_message': Sandbox.TIMEOUT_ERROR}
-        # resetting state to not re-execute code with errors
-        if output['error_message']:
-            self.clear_session(session_id)
-            session_id = None
+            output = {"process_status": "timeout", "stdout": "Timed out", "stderr": "Timed out"}
+        # removing last state to not re-execute code with errors
+        if output['stderr']:
+            self.sessions[session_id] = self.sessions[session_id][:-1]
         return output, session_id
 
     def is_output_correct(self, pred_output, gt_output, include_percentage=True, tolerance=1e-4, timeout=10.0):
