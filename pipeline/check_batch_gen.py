@@ -1,10 +1,11 @@
+import argparse
 import json
 import logging
 import os
-import argparse
 from pathlib import Path
 
 LOG = logging.getLogger(__name__)
+
 
 def process_batch_results(prediction_jsonl_files):
     for batch_request_file in prediction_jsonl_files:
@@ -49,7 +50,7 @@ def process_batch_results(prediction_jsonl_files):
                 LOG.error("Then run this script again.")
             except Exception as e:
                 LOG.error(f"An error occurred while processing {batch_request_file}: {str(e)}")
-    
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process batch results from a specified folder.")
