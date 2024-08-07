@@ -40,12 +40,14 @@ processors:
       - {input: {output: "Solution ```python\ndef hello()```"}, output: {output: "Solution ```python\ndef hello()```"}}
       - {input: {output: "She had python\ndef hello()```"}, output: null}
 
-  # - _target_: sdp.processors.RenameFields
+  - _target_: sdp.processors.RenameFields
+    rename_fields:
+      input: question  # we need to match llama3/codegen_sft format which uses 'question' as input key
 
   - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.WriteFinalSftManifest
     output_manifest_file: ${output_path}
     prompt_type: ${prompt_type}
-    input_key: ${input_key}
+    input_key: question
     output_key: ${output_key}
     chat_format: ${chat_format}
     generation_suffix: ${generation_suffix}

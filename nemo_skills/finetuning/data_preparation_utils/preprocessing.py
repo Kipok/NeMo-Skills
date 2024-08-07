@@ -276,7 +276,7 @@ class WriteFinalSftManifest(BaseProcessor):
                 seen_predictions[question].add(elem[self.output_key])
 
                 if self.chat_format is None:
-                    generation = elem.pop("generation")
+                    generation = elem.pop(self.output_key)
                     elem["input"] = prompt.build_string(input_dict=elem)
                     elem["output"] = generation + self.generation_suffix
                 elif self.chat_format.lower() == "nemotron":
