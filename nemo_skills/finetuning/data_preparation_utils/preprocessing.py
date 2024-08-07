@@ -294,7 +294,7 @@ class WriteFinalSftManifest(BaseProcessor):
                             'canonical_form': '',
                         },
                         {
-                            'value': elem.pop("generation"),
+                            'value': elem.pop(self.output_key),
                             'from': '<|start_header_id|>assistant<|end_header_id|>',
                             'canonical_form': '',
                         },
