@@ -167,6 +167,40 @@ Thus, the vector $\\mathbf{b}$ is:
     },
 ]
 
+
+ref_four_shot = [
+    {
+        "question": "A parabola with equation $y=x^2+bx+c$ passes through the points $(-1,-11)$ and $(3,17)$. What is $c$?",
+        "reference_solution": "We substitute these two points into the given equation to solve for $c$. Plugging in $(-1,-11)$, we get $-11=(-1)^2-1b+c\\Rightarrow -b+c=-12$. Plugging in $(3,17)$, we get $17=3^2+3b+c \\Rightarrow 3b+c=8$. In summary, we have the two equations \\begin{align*}\n-b+c&=-12\\\\\n3b+c&=8\n\\end{align*} Multiplying the first equation by 3, we have $-3b+3c=-36$. Adding the second equation to this last one, we have $(-3b+3c)+(3b+c)=-36+8 \\Rightarrow c=\\boxed{-7}$.",
+        "level": "Level 5",
+        "type": "Algebra",
+        "generation": "We substitute these two points into the given equation to solve for $c$. Plugging in $(-1,-11)$, we get $-11=(-1)^2-1b+c\\Rightarrow -b+c=-12$. Plugging in $(3,17)$, we get $17=3^2+3b+c \\Rightarrow 3b+c=8$. In summary, we have the two equations \\begin{align*}\n-b+c&=-12\\\\\n3b+c&=8\n\\end{align*} Multiplying the first equation by 3, we have $-3b+3c=-36$. Adding the second equation to this last one, we have $(-3b+3c)+(3b+c)=-36+8 \\Rightarrow c=\\boxed{-7}$.",
+    },
+    {
+        "question": "Let $f(x)$ be an odd function.  Is $f(f(x))$ even, odd, or neither?\n\nEnter \"odd\", \"even\", or \"neither\".",
+        "level": "Level 1",
+        "type": "Intermediate Algebra",
+        "reference_solution": 'We have that\n\\[f(f(-x)) = f(-f(x)) = -f(f(x)),\\]so $f(f(x))$ is an $\\boxed{\\text{odd}}$ function.',
+        "generation": "We have that\n\\[f(f(-x)) = f(-f(x)) = -f(f(x)),\\]so $f(f(x))$ is an $\\boxed{\\text{odd}}$ function.",
+    },
+    {
+        "question": "A rectangular box $P$ is inscribed in a sphere of radius $r$. The surface area of $P$ is 384, and the sum of the lengths of its 12 edges is 112. What is $r$?",
+        "level": "Level 5",
+        "type": "Geometry",
+        "reference_solution": "Let the dimensions of $P$ be $x$, $y$, and $z$. The sum of the lengths of the edges of $P$ is $4(x+y+z)$, and the surface area of $P$ is $2xy+2yz+2xz$, so \\[\nx+y+z=28 \\quad\\text{and}\\quad 2xy+2yz+2xz=384.\n\\] Each internal diagonal of $P$ is a diameter of the sphere, so \\begin{align*}\n(2r)^2&=(x^2+y^2+z^2)\\\\\n&=(x+y+z)^2-(2xy+2xz+2yz) \\\\\n&= 28^2-384\\\\& = 400.\n\\end{align*} So $2r = 20$ and  $r=\\boxed{10}$.\n\nNote: There are infinitely many positive solutions of the system $x+y+z=28$, $2xy+2yz+2xz=384$, so there are infinitely many non-congruent boxes meeting the given conditions, but each can be inscribed in a sphere of radius 10.",
+        "generation": "Let the dimensions of $P$ be $x$, $y$, and $z$. The sum of the lengths of the edges of $P$ is $4(x+y+z)$, and the surface area of $P$ is $2xy+2yz+2xz$, so \\[\nx+y+z=28 \\quad\\text{and}\\quad 2xy+2yz+2xz=384.\n\\] Each internal diagonal of $P$ is a diameter of the sphere, so \\begin{align*}\n(2r)^2&=(x^2+y^2+z^2)\\\\\n&=(x+y+z)^2-(2xy+2xz+2yz) \\\\\n&= 28^2-384\\\\& = 400.\n\\end{align*} So $2r = 20$ and  $r=\\boxed{10}$.\n\nNote: There are infinitely many positive solutions of the system $x+y+z=28$, $2xy+2yz+2xz=384$, so there are infinitely many non-congruent boxes meeting the given conditions, but each can be inscribed in a sphere of radius 10.",
+    },
+    {
+        "question": "Let $\\mathbf{a} = \\begin{pmatrix} 2 \\\\ 1 \\\\ 5 \\end{pmatrix}.$  Find the vector $\\mathbf{b}$ such that $\\mathbf{a} \\cdot \\mathbf{b} = 11$ and\n\\[\\mathbf{a} \\times \\mathbf{b} = \\begin{pmatrix} -13 \\\\ -9 \\\\ 7 \\end{pmatrix}.\\]",
+        "level": "Level 3",
+        "type": "Precalculus",
+        "reference_solution": "Let $\\mathbf{b} = \\begin{pmatrix} x \\\\ y \\\\ z \\end{pmatrix}.$  Then the equation $\\mathbf{a} \\cdot \\mathbf{b} = 11$ gives us $2x + y + 5z = 11.$  Also,\n\\[\\mathbf{a} \\times \\mathbf{b} = \\begin{pmatrix} 2 \\\\ 1 \\\\ 5 \\end{pmatrix} \\times \\begin{pmatrix} x \\\\ y \\\\ z \\end{pmatrix} = \\begin{pmatrix} -5y + z \\\\ 5x - 2z \\\\ -x + 2y \\end{pmatrix}.\\]Comparing entries, we obtain\n\\begin{align*}\n-5y + z &= -13, \\\\\n5x - 2z &= -9, \\\\\n-x + 2y &= 7.\n\\end{align*}Solving this system, along with the equation $2x + y + z = 5z = 11,$ we find $x = -1,$ $y = 3,$ and $z = 2.$  Hence, $\\mathbf{b} = \\boxed{\\begin{pmatrix} -1 \\\\ 3 \\\\ 2 \\end{pmatrix}}.$",
+        "generation": "Let $\\mathbf{b} = \\begin{pmatrix} x \\\\ y \\\\ z \\end{pmatrix}.$  Then the equation $\\mathbf{a} \\cdot \\mathbf{b} = 11$ gives us $2x + y + 5z = 11.$  Also,\n\\[\\mathbf{a} \\times \\mathbf{b} = \\begin{pmatrix} 2 \\\\ 1 \\\\ 5 \\end{pmatrix} \\times \\begin{pmatrix} x \\\\ y \\\\ z \\end{pmatrix} = \\begin{pmatrix} -5y + z \\\\ 5x - 2z \\\\ -x + 2y \\end{pmatrix}.\\]Comparing entries, we obtain\n\\begin{align*}\n-5y + z &= -13, \\\\\n5x - 2z &= -9, \\\\\n-x + 2y &= 7.\n\\end{align*}Solving this system, along with the equation $2x + y + z = 5z = 11,$ we find $x = -1,$ $y = 3,$ and $z = 2.$  Hence, $\\mathbf{b} = \\boxed{\\begin{pmatrix} -1 \\\\ 3 \\\\ 2 \\end{pmatrix}}.$",
+    }
+]
+
+
+
 text_with_code = [
     {
         "question": "A parabola with equation $y=x^2+bx+c$ passes through the points $(-1,-11)$ and $(3,17)$. What is $c$?",
@@ -1470,6 +1504,7 @@ generate_masked = [
 examples_map = {
     "math_standard_few_shot": standard_four_shot,
     "math_text_with_code": text_with_code,
+    "math_ref_four_shot": ref_four_shot,
     "math_generate_masked": generate_masked,
     "math_text_detailed": text_detailed,
     # 7 subjects
