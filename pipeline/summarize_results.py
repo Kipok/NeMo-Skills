@@ -26,10 +26,13 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 sys.path.append(str(Path(__file__).absolute().parents[0]))
 
+from check_batch_gen import process_batch_results
 from compute_metrics import EVALUATOR_MAP, compute_metrics
 
 from nemo_skills.evaluation.metrics import MathEval
 from nemo_skills.utils import setup_logging
+
+LOG = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -44,9 +47,15 @@ if __name__ == "__main__":
         help="Specify benchmarks to run. If not specified, all benchmarks in the results_folder will be used.",
     )
     parser.add_argument("--debug", action="store_true", help="Print debug information")
+    parser.add_argument("--batch_api", action="store_true", help="Process batch results before running metrics")
     args = parser.parse_args()
 
     setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not args.debug else logging.DEBUG)
+
+    if args.batch_api:
+        # Process batch results first
+        prediction_files = list(Path(args.results_folder).glob('**/*.jsonl-batch-request-id'))
+        process_batch_results(prediction_files)
 
     # running compute_metrics.py to get greedy, majority and pass @k results for all benchmarks available
     benchmarks = glob.glob(f'{args.results_folder}/*')
