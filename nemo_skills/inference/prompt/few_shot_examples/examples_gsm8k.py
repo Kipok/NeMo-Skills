@@ -77,8 +77,7 @@ fourth_year_money = 2 * third_year_money
 # Solve for first year money given that the combined saving is 450
 result = solve(first_year_money + second_year_money + third_year_money + fourth_year_money - 450, first_year_money)[0]
 result
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 30
 {end_code_output}
 Thus Missy put \\boxed{30} dollars in the bank the first year.
@@ -105,8 +104,7 @@ mark_deposit = 88
 five_times_mark_deposit = 5 * mark_deposit
 bryan_deposit = five_times_mark_deposit - 40
 bryan_deposit
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 400
 {end_code_output}
 So Bryan deposited \\boxed{400} dollars in the bank.
@@ -125,8 +123,7 @@ discount_portion = discount_percent / 100
 discount_amount = price_before_discount * discount_portion
 price_after_discount = price_before_discount - discount_amount
 price_after_discount
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 96.0
 {end_code_output}
 So the new price of the lamp is \\boxed{96} dollars.
@@ -153,8 +150,7 @@ employees_cost_per_week = number_of_employees * employee_work_hours_per_week * e
 # add the three to get total cost
 cost_per_week = rent_per_week + utility_per_week + employees_cost_per_week
 cost_per_week
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 3440.0
 {end_code_output}
 Thus James's weekly expenses add up to \\boxed{3440} dollars.
@@ -241,8 +237,7 @@ total_paid = 23
 paid_for_distance = total_paid - base_price
 distance_traveled = paid_for_distance / per_mile_price
 distance_traveled
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 5.0
 {end_code_output}
 Thus the hospital is \\boxed{5} miles from Elise's house.
@@ -267,8 +262,7 @@ arrival_time_LA = datetime.strptime("09:00", "%H:%M")
 # Calculate departure time
 departure_time = arrival_time_LA - walk_duration - train_duration
 departure_time.strftime("%H:%M")
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 07:30
 {end_code_output}
 So Pete needs to leave by \\boxed{07:30} to reach LA in time.
@@ -285,8 +279,7 @@ mark_deposit = 88
 five_times_mark_deposit = 5 * mark_deposit
 bryan_deposit = five_times_mark_deposit - 40
 bryan_deposit
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 400
 {end_code_output}
 So Bryan deposited \\boxed{400} dollars in the bank.
@@ -305,8 +298,7 @@ discount_portion = discount_percent / 100
 discount_amount = price_before_discount * discount_portion
 price_after_discount = price_before_discount - discount_amount
 price_after_discount
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 96.0
 {end_code_output}
 So the new price of the lamp is \\boxed{96} dollars.
@@ -333,8 +325,7 @@ employees_cost_per_week = number_of_employees * employee_work_hours_per_week * e
 # add the three to get total cost
 cost_per_week = rent_per_week + utility_per_week + employees_cost_per_week
 cost_per_week
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 3440.0
 {end_code_output}
 Thus James's weekly expenses add up to \\boxed{3440} dollars.
@@ -367,8 +358,7 @@ eq = sp.Eq(2 * spent_on_wheelbarrow, 60)
 
 # solving for x we get the answer
 sp.solve(eq, x)[0]
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 2
 {end_code_output}
 Thus the farmer sold \\boxed{2} ducks.
@@ -394,8 +384,7 @@ eq = sp.Eq(x - students_ate, 28)
 
 # solving for x to get the original amount of chocolates
 sp.solve(eq, x)[0]
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 80.0
 {end_code_output}
 Thus there were \\boxed{80} chocolates in the box.
@@ -422,8 +411,7 @@ eq = Eq(coconut_beans, 750)
 
 # thus the total jelly beans in the jar is
 solve(eq, x)[0]
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 4000
 {end_code_output}
 Thus there are \\boxed{4000} jelly beans in the jar.
@@ -452,8 +440,7 @@ eq = sp.Eq(x - spent_on_food - spent_on_phone - 20, 40)
 
 # solving for x to get the amount she had initially
 sp.solve(eq, x)[0]
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 200.0
 {end_code_output}
 Thus, Abigail initially had \\boxed{200} dollars.
@@ -479,8 +466,7 @@ eq = sp.Eq(grant_age + 5, (hospital_age + 5) * sp.Rational(2, 3))
 
 # we know that grant is 25 years old and need to find hospital's age
 sp.solve(eq.subs(grant_age, 25), hospital_age)[0]
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 40
 {end_code_output}
 Thus, the hospital is \\boxed{40} years old.
@@ -503,8 +489,7 @@ total_paid = 23
 paid_for_distance = total_paid - base_price
 distance_traveled = paid_for_distance / per_mile_price
 distance_traveled
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 5.0
 {end_code_output}
 Thus the hospital is \\boxed{5} miles from Elise's house.
@@ -523,8 +508,7 @@ discount_portion = discount_percent / 100
 discount_amount = price_before_discount * discount_portion
 price_after_discount = price_before_discount - discount_amount
 price_after_discount
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 96.0
 {end_code_output}
 So the new price of the lamp is \\boxed{96} dollars.
@@ -553,8 +537,7 @@ eq = sp.Eq(2 * spent_on_wheelbarrow, 60)
 
 # solving for x we get the answer
 sp.solve(eq, x)[0]
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 2
 {end_code_output}
 Thus the farmer sold \\boxed{2} ducks.
@@ -582,8 +565,7 @@ employees_cost_per_week = number_of_employees * employee_work_hours_per_week * e
 # add the three to get total cost
 cost_per_week = rent_per_week + utility_per_week + employees_cost_per_week
 cost_per_week
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 3440.0
 {end_code_output}
 Thus James's weekly expenses add up to \\boxed{3440} dollars.
@@ -609,8 +591,7 @@ eq = sp.Eq(x - students_ate, 28)
 
 # solving for x to get the original amount of chocolates
 sp.solve(eq, x)[0]
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 80.0
 {end_code_output}
 Thus there were \\boxed{80} chocolates in the box.

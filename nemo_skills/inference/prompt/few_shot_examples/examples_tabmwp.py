@@ -35,8 +35,7 @@ Let's solve this problem using Python code and the values from the table.
 number_of_coins_for_different_person = [76, 94, 86, 84, 80, 83, 82, 87]
 result = sum(number_of_coins_for_different_person) / len(number_of_coins_for_different_person)
 result
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 84.0
 {end_code_output}
 So the mean of the sizes of their coin collections is \\boxed{84} coins.
@@ -65,8 +64,7 @@ if quantity_demanded_price_155 > quantity_supplied_price_155:
 else:
     result = 'surplus'
 result
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 shortage
 {end_code_output}
 So there is a \\boxed{shortage} at a price of 155 dollars.
@@ -93,8 +91,7 @@ middle1 = (len(cans) - 1) // 2
 middle2 = len(cans) // 2
 result = (cans[middle1] + cans[middle2]) / 2
 result
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 7.0
 {end_code_output}
 The median number of cans collected is \\boxed{7}.
@@ -124,8 +121,7 @@ if total_money > juggling_balls + guitar_price:
 else:
     result = 'no'
 result
-{end_code}
-{start_code_output}
+{end_code}{start_code_output}
 yes
 {end_code_output}
 \\boxed{Yes}, Lorenzo does have enough money to buy a toy guitar and juggling balls.

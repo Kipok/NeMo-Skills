@@ -13,10 +13,32 @@
 # limitations under the License.
 
 import re
-from typing import Tuple
+from typing import Dict, Tuple
 
-CODE_SEPARATORS = ('<llm-code>', '</llm-code>')  # used to execute code within these tags
-CODE_OUTPUT_SEPARATORS = ('<llm-code-output>', '</llm-code-output>')  # used to extract the code output
+CODE_SEPARATORS = (
+    '<|python_tag|>',
+    '<|eom_id|>',
+)  # used to execute code within these tags
+CODE_OUTPUT_SEPARATORS = (
+    '<|start_header_id|>ipython<|end_header_id|>',
+    # we assume that assistant always has more to say after executing the code!
+    '<|eot_id|><|start_header_id|>assistant<|end_header_id|>',
+)  # used to extract the code output
+
+
+def format_code_output(execution_dict: Dict[str, str]):
+    """Formatting code output to be displayed as an llm expects it.
+
+    Adapted from https://github.com/meta-llama/llama-agentic-system/blob/ce0c90271bdfd4205cd4f086cad9005b48797333/llama_agentic_system/tools/builtin.py#L310
+
+    """
+    pieces = [execution_dict["process_status"]]
+    for out_type in ["stdout", "stderr"]:
+        res_out = execution_dict[out_type]
+        if res_out != "":
+            pieces.extend([f"[{out_type}]", res_out, f"[/{out_type}]"])
+
+    return "\n".join(pieces)
 
 
 def _extract_between_separators(generation, separators: Tuple[str, str], extract_all=False):
@@ -36,16 +58,3 @@ def extract_code_to_execute(generation, extract_all=False):
 
 def extract_code_output(generation, extract_all=False):
     return _extract_between_separators(generation, CODE_OUTPUT_SEPARATORS, extract_all)
-
-
-def extract_error_message(generation):
-    """Parsing output for any error messages and returning if found."""
-    from nemo_skills.code_execution.sandbox import Sandbox
-
-    if CODE_OUTPUT_SEPARATORS[0] not in generation:
-        return Sandbox.NOT_EXECUTED
-    code_output = generation.split(CODE_OUTPUT_SEPARATORS[0])[-1].split(CODE_OUTPUT_SEPARATORS[1])[0].strip()
-    for prefix in Sandbox.ERROR_PREFIXES:
-        if code_output.startswith(prefix):
-            return code_output
-    return ""
