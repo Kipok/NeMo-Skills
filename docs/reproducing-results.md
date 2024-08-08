@@ -34,7 +34,7 @@ documentation to learn how to make inference more efficient.
 2. Convert the model to TensorRT-LLM format for fastest evaluation.
 
    ```
-   docker run --rm --gpus all --ipc=host -v <path to nemo-skills repo>:/code -v <path to OpenMath-Mistral-7B-v0.1-hf>:/model igitman/nemo-skills-trtllm:0.3.1 \
+   docker run --rm --gpus all --ipc=host -v <path to nemo-skills repo>:/code -v <path to OpenMath-Mistral-7B-v0.1-hf>:/model igitman/nemo-skills-trtllm:0.3.2 \
    bash -c ' \
    export PYTHONPATH=/code && cd /code && \
    python nemo_skills/conversion/hf_to_trtllm.py \

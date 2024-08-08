@@ -10,7 +10,7 @@ Since we mostly work with Llama-based models (Llama2, CodeLlama, Mistral), we pu
 conversion script in this repo for convenience. But please refer to the original repo for any other model's conversion.
 
 Convert the model in 3 steps. Note that you need to explicitly specify input/output length, batch size and number of GPUs.
-Make sure to run the commands inside TensorRT-LLM docker container, e.g. you can use `igitman/nemo-skills-trtllm:0.3.1`
+Make sure to run the commands inside TensorRT-LLM docker container, e.g. you can use `igitman/nemo-skills-trtllm:0.3.2`
 
 ```
 python nemo_skills/conversion/hf_to_trtllm.py \

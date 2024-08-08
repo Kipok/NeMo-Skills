@@ -98,7 +98,7 @@ the [quick start](#quick-start) section.
    If you want to use TensorRT-LLM server instead, you can run the following command
 
    ```
-   docker run --rm --gpus all --ipc=host -v `pwd`:/code -v <path to the trtllm model>:/model igitman/nemo-skills-trtllm:0.3.1 \
+   docker run --rm --gpus all --ipc=host -v `pwd`:/code -v <path to the trtllm model>:/model igitman/nemo-skills-trtllm:0.3.2 \
    bash -c 'export PYTHONPATH=/code && \
    mpirun -n <number of GPUs> --allow-run-as-root python /code/nemo_skills/inference/server/serve_trt.py --model_path=/model'
    ```
