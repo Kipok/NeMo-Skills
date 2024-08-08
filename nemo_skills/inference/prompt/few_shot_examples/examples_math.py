@@ -168,6 +168,7 @@ Thus, the vector $\\mathbf{b}$ is:
 ]
 
 
+# Four-shot prompt with examples from text_detailed
 ref_four_shot = [
     {
         "question": "A parabola with equation $y=x^2+bx+c$ passes through the points $(-1,-11)$ and $(3,17)$. What is $c$?",
