@@ -18,16 +18,9 @@ import logging
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import field
-from typing import List
 
-from nemo_skills.code_execution import (
-    CODE_OUTPUT_SEPARATORS,
-    CODE_SEPARATORS,
-    extract_code_to_execute,
-    format_code_output,
-)
+from nemo_skills.code_execution import CODE_SEPARATORS, extract_code_to_execute, format_code_output
 from nemo_skills.code_execution.sandbox import Sandbox
-from nemo_skills.inference.prompt.utils import Prompt
 from nemo_skills.inference.server.model import BaseModel, NemoModel, OpenAIModel, get_model, models, postprocess_output
 from nemo_skills.utils import nested_dataclass, python_doc_to_cmd_help
 
@@ -130,8 +123,8 @@ class CodeExecutionWrapper:
                     if output.strip().endswith(CODE_SEPARATORS[-1]):
                         execution_dict, new_outputs[idx]['session_id'] = futures[idx].result()
                         if execution_dict['stderr']:
-                            # TODO: error recovery should happen here
-                            pass
+                            # TODO: error recovery should happen here that might change output
+                            new_outputs[idx]['prompt'] += output
                         else:
                             new_outputs[idx]['prompt'] += output
 

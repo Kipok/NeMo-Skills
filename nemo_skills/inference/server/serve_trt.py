@@ -38,11 +38,19 @@ from transformers import AutoTokenizer, T5Tokenizer
 
 
 # keeping it here to make this file self-contained. This is duplicated from model.py
-def remove_stop_tokens(text: str, stop_phrases: List[str]) -> str:
+def remove_stop_tokens(text: str, stop_phrases: list[str]) -> str:
     """Removes everything after the last stop token."""
-    if not stop_phrases:
+    last_stop_index = -1
+
+    for phrase in stop_phrases:
+        index = text.rfind(phrase)
+        if index > last_stop_index:
+            last_stop_index = index
+
+    if last_stop_index != -1:
+        return text[:last_stop_index]
+    else:
         return text
-    return re.split("|".join([sp.replace('|', '\\|') for sp in stop_phrases]), text, maxsplit=1)[0]
 
 
 class CustomSentencePieceTokenizer(T5Tokenizer):
@@ -486,7 +494,7 @@ class TensorRTLLM:
                 self.runner,
                 batch_input_ids[0],
                 max_new_tokens=max_output_token,
-                end_id=self.end_id,
+                end_id=-1,
                 pad_id=self.pad_id,
                 temperature=temperature,
                 top_k=top_k,

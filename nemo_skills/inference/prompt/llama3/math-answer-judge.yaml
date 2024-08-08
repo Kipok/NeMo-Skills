@@ -111,6 +111,8 @@ prompt_template: |-
 
   {generation}
 
+stop_phrases: ["<|eot_id|>"]
+
 
 
 

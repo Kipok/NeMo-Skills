@@ -29,9 +29,17 @@ LOG = logging.getLogger(__name__)
 
 def remove_stop_phrases(text: str, stop_phrases: list[str]) -> str:
     """Removes everything after the last stop token."""
-    if not stop_phrases:
+    last_stop_index = -1
+
+    for phrase in stop_phrases:
+        index = text.rfind(phrase)
+        if index > last_stop_index:
+            last_stop_index = index
+
+    if last_stop_index != -1:
+        return text[:last_stop_index]
+    else:
         return text
-    return re.split("|".join([sp.replace('|', '\\|') for sp in stop_phrases]), text, maxsplit=1)[0]
 
 
 def preprocess_request(request: dict):
