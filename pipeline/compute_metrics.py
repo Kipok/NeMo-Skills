@@ -29,7 +29,6 @@ LOG = logging.getLogger(__file__)
 
 
 if __name__ == '__main__':
-    setup_logging(disable_hydra_logs=False)
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--prediction_jsonl_files",
@@ -58,12 +57,15 @@ if __name__ == '__main__':
         required=True,
         help="To select which evaluator to use",
     )
+    parser.add_argument("--debug", action="store_true", help="Print debug information")
     parser.add_argument(
         "--aggregation_mode",
         choices=["best", "majority", "first"],
         default="first",
     )
     args = parser.parse_args()
+
+    setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not args.debug else logging.DEBUG)
 
     evaluator = EVALUATOR_MAP[args.benchmark]()
 

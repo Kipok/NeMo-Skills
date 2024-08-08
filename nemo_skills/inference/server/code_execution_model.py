@@ -21,7 +21,14 @@ from dataclasses import field
 
 from nemo_skills.code_execution import CODE_SEPARATORS, extract_code_to_execute, format_code_output
 from nemo_skills.code_execution.sandbox import Sandbox
-from nemo_skills.inference.server.model import BaseModel, NemoModel, OpenAIModel, get_model, models, postprocess_output
+from nemo_skills.inference.server.model import (
+    BaseModel,
+    NemoModel,
+    OpenAIModel,
+    get_model,
+    models,
+    trim_after_stop_phrases,
+)
 from nemo_skills.utils import nested_dataclass, python_doc_to_cmd_help
 
 LOG = logging.getLogger(__name__)
@@ -137,17 +144,18 @@ class CodeExecutionWrapper:
                         elif not (self.config.stop_on_code_error and execution_dict['stderr']):
                             new_ids.append(idx)
                     else:
+                        # that's the only case where we might need to remove stop words, so doing it here
+                        # we cannot do it at the end, since this needs to be done only on the last generation
+                        output = trim_after_stop_phrases(output, stop_phrases)
                         new_outputs[idx]['prompt'] += output
                 remaining_ids = new_ids
 
-        # removing original prompt and stop tokens from the end of the generated text
+        # removing original prompt
         outputs = []
         for output, orig_prompt in zip(new_outputs, prompts):
             if output['session_id'] is not None:
                 self.sandbox.clear_session(output['session_id'])
             outputs.append({'generation': output['prompt'][len(orig_prompt) :]})
-        if remove_stop_phrases:
-            postprocess_output(outputs, stop_phrases)
         return outputs
 
     def _recover_from_error(self, request, new_output, executor):

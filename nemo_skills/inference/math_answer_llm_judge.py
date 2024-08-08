@@ -71,8 +71,6 @@ class GenerateSolutionsConfig:
     # Useful if need to run multiple slurm jobs on the same data file
     offset: int = 0
 
-    generation_key: str = "generation"
-
     def __post_init__(self):
         """Building data_file from dataset/split_name if not provided directly."""
         if self.data_file is not None:
@@ -86,6 +84,17 @@ class GenerateSolutionsConfig:
 
 cs = hydra.core.config_store.ConfigStore.instance()
 cs.store(name="base_generation_config", node=GenerateSolutionsConfig)
+
+
+def prefill_judgement(data_point: dict) -> str | None:
+    """Will automatically fill judgement if there is an exact match or the answer is None."""
+    if data_point['predicted_answer'] is None:
+        return "No answer was provided.\nJudgement: No"
+
+    if str(data_point['predicted_answer']).strip() == str(data_point['expected_answer']).strip():
+        return "The two answers are identical.\nJudgement: Yes"
+
+    return None
 
 
 @hydra.main(version_base=None, config_name='generation_config', config_path='.')
@@ -126,11 +135,20 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
     # setting buffering=1 to force to dump the output after every line, so that we can see intermediate generations
     with open(cfg.output_file, "at" if cfg.skip_filled else "wt", encoding="utf-8", buffering=1) as fout:
         data_points = []
+        judgements = []
+        prefilled_indices = []
         for idx, data_point in tqdm(enumerate(data), initial=starting_idx, total=len(data) + starting_idx):
             if idx >= cfg.max_samples:
                 break
 
-            data_points.append(data_point)
+            data_point.pop('judgement', None)
+            judgement = prefill_judgement(data_point)
+            if judgement is None:
+                data_points.append(data_point)
+            else:
+                judgements.append({'judgement': judgement})
+                judgements[-1].update(data_point)
+                prefilled_indices.append(idx)
 
             if len(data_points) == cfg.batch_size:
                 # batch-computing the outputs
@@ -140,34 +158,45 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                     **asdict(cfg.inference),
                 )
 
-                for output, original_data_point in zip(outputs, data_points):
-                    # to make it easier to follow up with evaluation and limit accidental errors, we are adding
-                    # all of the ground-truth data to the output file alongside the generated solutions
-                    if cfg.generation_key != "generation":
-                        output[cfg.generation_key] = output.pop("generation")
-                        original_data_point.pop(cfg.generation_key, None)
+                prefilled_idx = 0
+                generated_idx = 0
+                for cur_idx in range(idx - len(outputs) - len(judgements) + 1, idx + 1):
+                    if cur_idx in prefilled_indices:
+                        fout.write(json.dumps(judgements[prefilled_idx]) + "\n")
+                        prefilled_idx += 1
                     else:
-                        original_data_point.pop('generation', None)
-                    output.update(original_data_point)
-
-                    fout.write(json.dumps(output) + "\n")
+                        output, original_data_point = outputs[generated_idx], data_points[generated_idx]
+                        output['judgement'] = output.pop("generation")
+                        output.update(original_data_point)
+                        fout.write(json.dumps(output) + "\n")
+                        generated_idx += 1
                 data_points = []
+                judgements = []
+                prefilled_indices = []
 
         # collecting the final batch
-        if len(data_points) > 0:
-            outputs = llm.generate(
-                prompts=[prompt.build_string(data_point) for data_point in data_points],
-                stop_phrases=list(cfg.prompt.stop_phrases),
-                **asdict(cfg.inference),
-            )
-            for output, original_data_point in zip(outputs, data_points):
-                if cfg.generation_key != "generation":
-                    output[cfg.generation_key] = output.pop("generation")
-                    original_data_point.pop(cfg.generation_key, None)
+        if len(data_points) + len(judgements) > 0:
+            if len(data_points) > 0:
+                outputs = llm.generate(
+                    prompts=[prompt.build_string(data_point) for data_point in data_points],
+                    stop_phrases=list(cfg.prompt.stop_phrases),
+                    **asdict(cfg.inference),
+                )
+
+            prefilled_idx = 0
+            generated_idx = 0
+            # idx = len(data) or max_samples. In both cases no need to add 1
+            for cur_idx in range(idx - len(outputs) - len(judgements), idx):
+                if cur_idx in prefilled_indices:
+                    fout.write(json.dumps(judgements[prefilled_idx]) + "\n")
+                    prefilled_idx += 1
                 else:
-                    original_data_point.pop('generation', None)
-                output.update(original_data_point)
-                fout.write(json.dumps(output) + "\n")
+                    output, original_data_point = outputs[generated_idx], data_points[generated_idx]
+                    output['judgement'] = output.pop("generation")
+                    original_data_point.pop('judgement', None)
+                    output.update(original_data_point)
+                    fout.write(json.dumps(output) + "\n")
+                    generated_idx += 1
 
 
 error_recovery_params = '\n' + get_fields_docstring(

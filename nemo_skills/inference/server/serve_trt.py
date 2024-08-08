@@ -38,19 +38,11 @@ from transformers import AutoTokenizer, T5Tokenizer
 
 
 # keeping it here to make this file self-contained. This is duplicated from model.py
-def remove_stop_tokens(text: str, stop_phrases: list[str]) -> str:
+def trim_after_stop_phrases(text: str, stop_phrases: List[str]) -> str:
     """Removes everything after the last stop token."""
-    last_stop_index = -1
-
-    for phrase in stop_phrases:
-        index = text.rfind(phrase)
-        if index > last_stop_index:
-            last_stop_index = index
-
-    if last_stop_index != -1:
-        return text[:last_stop_index]
-    else:
+    if not stop_phrases:
         return text
+    return re.split("|".join([sp.replace('|', '\\|') for sp in stop_phrases]), text, maxsplit=1)[0]
 
 
 class CustomSentencePieceTokenizer(T5Tokenizer):
@@ -452,7 +444,7 @@ def _stream(
             matching_stop_word = stop_word
             break
     if matching_stop_word is not None:
-        out_string = remove_stop_tokens(out_string, stop_words_list)
+        out_string = trim_after_stop_phrases(out_string, stop_words_list)
         # adding it back, since we only need to remove what's *after* the stop phrase
         out_string += matching_stop_word
     return out_string

@@ -50,6 +50,13 @@ class BaseEval(abc.ABC):
         pass
 
 
+def is_correct_judgement(judgement):
+    if 'Judgement:' not in judgement:
+        return False  # improper judgement format, so have to judge as false
+    verdict = judgement.split('Judgement:')[-1].strip()
+    return verdict.lower() == 'yes'
+
+
 class MathEval(BaseEval):
     def setup(self, prediction_jsonl_files):
         # checking if judgements are ready and fusing them with predictions
@@ -101,7 +108,7 @@ class MathEval(BaseEval):
         # this shouldn't do any heavy calculation, but just read the metric from existing json entry
         # all the heavy lifting should be done in the evaluation script
         self.total += 1
-        # TODO: rename is_correc since it's only for sympy now?
+        # TODO: rename is_correct since it's only for sympy now?
         if 'is_correct' in predictions[0]:
             self.has_sympy = True
         if 'judgement' in predictions[0]:
@@ -114,7 +121,7 @@ class MathEval(BaseEval):
             if self.has_sympy:
                 current_correct_sympy = any([elem['is_correct'] for elem in predictions])
             if self.has_judge:
-                current_correct_judge = any(["Yes" in elem['judgement'] for elem in predictions])
+                current_correct_judge = any([is_correct_judgement(elem['judgement']) for elem in predictions])
             if all([elem['predicted_answer'] is None for elem in predictions]):
                 self.no_answer += 1
         elif aggregation_mode == "majority":
@@ -134,7 +141,7 @@ class MathEval(BaseEval):
                     current_correct_sympy = majority_result[1]
             if self.has_judge:
                 valid_answers_and_results = [
-                    (elem['predicted_answer'], "Yes" in elem['judgement'])
+                    (elem['predicted_answer'], is_correct_judgement(elem['judgement']))
                     for elem in predictions
                     if elem['predicted_answer'] is not None
                 ]
@@ -148,7 +155,7 @@ class MathEval(BaseEval):
             if self.has_sympy:
                 current_correct_sympy += predictions[0]['is_correct']
             if self.has_judge:
-                current_correct_judge += "Yes" in predictions[0]['judgement']
+                current_correct_judge += is_correct_judgement(predictions[0]['judgement'])
             self.no_answer += predictions[0]['predicted_answer'] is None
         else:
             raise ValueError(f"Unsupported mode {aggregation_mode}")
@@ -162,11 +169,14 @@ class MathEval(BaseEval):
             self.any_correct += current_correct_sympy or current_correct_judge
             if current_correct_sympy != current_correct_judge:
                 LOG.debug(
-                    "Discrepancy between sympy (%s) and LLM checkers (%s).\nPredicted answer: %s\nExpected answer: %s",
+                    "Discrepancy between sympy (%s) and LLM checkers (%s).\n"
+                    "Predicted answer: %s\nExpected answer: %s\nQuestion: %s\nJudgement: %s",
                     bool(current_correct_sympy),
                     bool(current_correct_judge),
                     predictions[0]['predicted_answer'],
                     predictions[0]['expected_answer'],
+                    predictions[0]['question'],
+                    predictions[0]['judgement'],
                 )
 
     def get_metrics(self):

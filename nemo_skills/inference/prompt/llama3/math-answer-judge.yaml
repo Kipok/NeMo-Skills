@@ -10,7 +10,8 @@ user: |-
 
     You can use Python (with sympy library) to help evaluate the expressions if needed.
 
-    Please first explain your rationale in a couple of sentences, then respond with only Yes or No as your judgement on whether they are the same.
+    Please first explain your rationale in a couple of sentences.
+    Then respond with only Yes or No as your judgement on whether the two answers are the same.
 
 
     Question: Factor $7x^3 - 21x^2 + 14x$.
@@ -122,14 +123,15 @@ user: |-
     Expected answer: {expected_answer}
 
 
-prompt_template: |-
+# it's important to omit {generation} part here, since this prompt
+# is often used when generation is already a part of the input file
+# and we don't want to put it inside the prompt accidentally
+prompt_template: |+  # keeping all new lines including at the end!
   <|begin_of_text|><|start_header_id|>system<|end_header_id|>
 
   {system}
   <|eot_id|><|start_header_id|>user<|end_header_id|>
 
   {user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-  {generation}
 
 stop_phrases: ["<|eot_id|>"]
