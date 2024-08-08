@@ -37,6 +37,7 @@ trainer:
   max_time: null
   max_epochs: ${.sft.max_epochs}
   max_steps: ${.sft.max_steps}
+  log_every_n_steps: 10
 
 exp_manager:
   explicit_log_dir: null
@@ -75,16 +76,16 @@ model:
   sequence_parallel: False
 
   ## Activation Checkpoint
-  activations_checkpoint_granularity: full # 'selective' or 'full'
-  activations_checkpoint_method: uniform # 'uniform', 'block', not used with 'selective'
+  activations_checkpoint_granularity: null  # 'selective' or 'full'
+  activations_checkpoint_method: null  # 'uniform', 'block', not used with 'selective'
   # 'uniform' divides the total number of transformer layers and checkpoints the input activation
   # of each chunk at the specified granularity
   # 'block' checkpoints the specified number of layers per pipeline stage at the specified granularity
-  activations_checkpoint_num_layers: 1 # not used with 'selective'
+  activations_checkpoint_num_layers: null  # not used with 'selective'
   activations_checkpoint_layers_per_pipeline: null
   # This feature is valid only when used with pipeline-model-parallelism. More details in megatron_gpt_config.yaml.
   answer_only_loss: True # not used right now
-  gradient_as_bucket_view: False
+  gradient_as_bucket_view: True
   seq_len_interpolation_factor: null # if not None, seq_len_interpolation_factor will match the base model's value
   use_flash_attention: null # if not None, will match the base model's value
 
@@ -116,7 +117,7 @@ model:
       end_of_name: "\x0A"  # \0x0A is '\n'
 
     sample: False # create the index mapping files for the sample data, so max_steps * global_batch_size can be larger than the dataset size
-    num_workers: 1
+    num_workers: 2
     dataloader_type: single  # only supports single
     train_ds:
       # Example of how to specify paths to multiple datasets
@@ -130,7 +131,7 @@ model:
       global_batch_size: 256
       micro_batch_size: 1
       shuffle: True
-      memmap_workers: null
+      memmap_workers: 2
       max_seq_length: 4096
       min_seq_length: 1
       drop_last: True
@@ -171,8 +172,10 @@ model:
     betas:
     - 0.9
     - 0.98
-    # sched:
-    #   name: CosineAnnealing
-    #   warmup_steps: 0
-    #   constant_steps: 0
-    #   min_lr: 1e-6
+    sched:
+      name: CosineAnnealing
+      warmup_steps: 0
+      constant_steps: 0
+      min_lr: ${model.optim.lr} # No interpolation happening if the min_lr is not set to be different from lr
+
+

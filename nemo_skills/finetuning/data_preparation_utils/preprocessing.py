@@ -19,7 +19,6 @@ from collections import defaultdict
 from itertools import chain
 from typing import Dict, Optional
 
-import tqdm
 from sdp.processors.base_processor import BaseProcessor
 from tqdm.contrib.concurrent import process_map
 
@@ -35,6 +34,8 @@ class ReadData(BaseProcessor):
         self,
         prediction_jsonl_files: Optional[str] = None,
         preprocessed_dataset_files: Optional[str] = None,
+        input_key="question",
+        output_key="generation",
         skip_first: int = 0,
         add_correct: bool = True,
         add_incorrect: bool = False,
@@ -43,6 +44,8 @@ class ReadData(BaseProcessor):
         super().__init__(**kwargs)
         self.prediction_jsonl_files = prediction_jsonl_files
         self.preprocessed_dataset_files = preprocessed_dataset_files
+        self.input_key = input_key
+        self.output_key = output_key
         self.skip_first = skip_first
         self.add_correct = add_correct
         self.add_incorrect = add_incorrect
@@ -62,12 +65,14 @@ class ReadData(BaseProcessor):
     def _read_preprocessed_data(self, file_handle) -> int:
         samples = []
         questions = set()
-        for line in tqdm.tqdm(file_handle):
+        for idx, line in enumerate(file_handle):
+            if idx < self.skip_first:
+                continue
             sample = json.loads(line)
-            questions.add(sample["question"])
+            questions.add(sample[self.input_key])
             # for backward compatibility
-            if "generation" not in sample and "generated_solution" in sample:
-                sample["generation"] = sample.pop("generated_solution")
+            if self.output_key not in sample and "generated_solution" in sample:
+                sample[self.output_key] = sample.pop("generated_solution")
             samples.append(sample)
 
         return samples
@@ -104,8 +109,8 @@ class ReadData(BaseProcessor):
                 continue
 
             # for backward compatibility
-            if "generation" not in line_dict and "generated_solution" in line_dict:
-                line_dict["generation"] = line_dict.pop("generated_solution")
+            if self.output_key not in line_dict and "generated_solution" in line_dict:
+                line_dict[self.output_key] = line_dict.pop("generated_solution")
 
             line_dict['filename'] = file_handle.name
             samples.append(line_dict)
@@ -115,11 +120,11 @@ class ReadData(BaseProcessor):
     def _unique_iterator(self, samples):
         seen_predictions = defaultdict(set)
         for sample in samples:
-            question = sample["question"]
-            if sample['generation'] in seen_predictions[question]:
+            question = sample[self.input_key]
+            if sample[self.output_key] in seen_predictions[question]:
                 continue
 
-            seen_predictions[question].add(sample['generation'])
+            seen_predictions[question].add(sample[self.output_key])
             yield sample
 
     def process(self):
@@ -129,7 +134,7 @@ class ReadData(BaseProcessor):
             results = process_map(self._parallel_read_file, args, max_workers=4, chunksize=1)
             samples.extend(list(chain(*results)))
         if self.preprocessed_dataset_files:
-            args = [(file, self._read_preprocessed_data) for file in self.preprocessed_dataset_files]
+            args = [(file, self._read_preprocessed_data) for file in unroll_files(self.preprocessed_dataset_files)]
             results = process_map(self._parallel_read_file, args, max_workers=None, chunksize=1)
             samples.extend(list(chain(*results)))
         LOG.info("Total samples before deduplication: %d", len(samples))
@@ -142,7 +147,7 @@ class ReadData(BaseProcessor):
 
 
 class GroupSamples(BaseProcessor):
-    def __init__(self, group_key='question', **kwargs):
+    def __init__(self, group_key='input', **kwargs):
         super().__init__(**kwargs)
         self.group_key = group_key
 
@@ -232,6 +237,8 @@ class WriteFinalSftManifest(BaseProcessor):
     def __init__(
         self,
         prompt_type: str,
+        input_key: str = "input",
+        output_key: str = "output",
         chat_format: bool = False,
         generation_suffix: str = "",
         metadata: Optional[Dict] = None,
@@ -239,6 +246,8 @@ class WriteFinalSftManifest(BaseProcessor):
     ):
         super().__init__(**kwargs)
         self.prompt_type = prompt_type
+        self.input_key = input_key
+        self.output_key = output_key
         self.chat_format = chat_format
         self.metadata = metadata
         self.generation_suffix = generation_suffix
@@ -260,23 +269,23 @@ class WriteFinalSftManifest(BaseProcessor):
             for line in fin:
                 elem = json.loads(line)
 
-                question = elem["question"]
+                question = elem[self.input_key]
                 # deduplication
-                if elem['generation'] in seen_predictions[question]:
+                if elem[self.output_key] in seen_predictions[question]:
                     continue
-                seen_predictions[question].add(elem['generation'])
+                seen_predictions[question].add(elem[self.output_key])
 
                 if self.chat_format:
                     elem['conversations'] = [
-                        {'value': elem['question'], 'from': 'User', 'canonical_form': ''},
-                        {'value': elem.pop("generation"), 'from': 'Assistant', 'canonical_form': ''},
+                        {'value': elem[self.input_key], 'from': 'User', 'canonical_form': ''},
+                        {'value': elem.pop(self.output_key), 'from': 'Assistant', 'canonical_form': ''},
                     ]
                     elem['system'] = prompt_config.system
                     elem['mask'] = 'User'
                     elem['type'] = None
                 else:
-                    elem["input"] = prompt.build_string(input_dict={"question": elem['question']})
-                    elem["output"] = elem.pop("generation") + self.generation_suffix
+                    elem["input"] = prompt.build_string(input_dict={"question": question})
+                    elem["output"] = elem.pop(self.output_key) + self.generation_suffix
                 elem.update(self.metadata)
                 fout.write(json.dumps(elem) + "\n")
                 samples_count += 1

@@ -124,7 +124,10 @@ if __name__ == "__main__":
         timeout = CLUSTER_CONFIG["timeouts"][args.partition or CLUSTER_CONFIG["partition"]]
         # subtracting 15 minutes to account for the time it takes to save the model
         # the format expected by nemo is days:hours:minutes:seconds
-        timeout = f'00:{datetime.strptime(timeout, "%H:%M:%S") - datetime.strptime("00:15:00", "%H:%M:%S")}'
+        time_diff = datetime.strptime(timeout, "%H:%M:%S") - datetime.strptime("00:15:00", "%H:%M:%S")
+        timeout = (
+            f'00:{time_diff.seconds // 3600:02d}:{(time_diff.seconds % 3600) // 60:02d}:{time_diff.seconds % 60:02d}'
+        )
 
     format_dict = {
         "project": args.project,
