@@ -59,6 +59,24 @@ class CodeExecutionConfig:
     error_recovery: ErrorRecoveryConfig = field(default_factory=ErrorRecoveryConfig)
 
 
+def try_fix_output(output: str):
+    """Sometimes llama models use eot instead of eom.
+
+    Trying to detect that and fix, so that we can still execute code.
+
+    # TODO: this assumes particular CODE_SEPARATORS..
+    """
+
+    if not output.endswith("<|eot_id|>"):
+        return output
+
+    if output.count(CODE_SEPARATORS[0]) == output.count(CODE_SEPARATORS[-1]) + 1:
+        # likely a code block, so we should replace eot with eom
+        output = output[: -len("<|eot_id|>")] + "<|eom_id|>"
+
+    return output
+
+
 class CodeExecutionWrapper:
     def __init__(self, model: BaseModel, sandbox: Sandbox, config: CodeExecutionConfig):
         self.model = model
@@ -114,6 +132,7 @@ class CodeExecutionWrapper:
                 num_executions += 1
                 request["prompts"] = [new_outputs[idx]['prompt'] for idx in remaining_ids]
                 outputs = [self._handle_stop_words(output['generation']) for output in self.model.generate(**request)]
+                outputs = [try_fix_output(output) for output in outputs]
                 new_ids = []
                 # checking if any of the outputs need code execution and submitting requests in parallel
                 futures = [None] * len(prompts)
