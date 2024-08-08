@@ -27,18 +27,16 @@ CODE_OUTPUT_SEPARATORS = (
 
 
 def format_code_output(execution_dict: Dict[str, str]):
-    """Formatting code output to be displayed as an llm expects it.
+    """Formatting code output to be displayed as an llm expects it."""
+    output = execution_dict["process_status"]
+    if execution_dict['stdout']:
+        output += f"\n[stdout]\n{execution_dict['stdout']}\n[/stdout]"
+    if execution_dict['stderr']:
+        output += f"\n[stderr]\n{execution_dict['stderr']}\n[/stderr]"
 
-    Adapted from https://github.com/meta-llama/llama-agentic-system/blob/ce0c90271bdfd4205cd4f086cad9005b48797333/llama_agentic_system/tools/builtin.py#L310
-
-    """
-    pieces = [execution_dict["process_status"]]
-    for out_type in ["stdout", "stderr"]:
-        res_out = execution_dict[out_type]
-        if res_out != "":
-            pieces.extend([f"[{out_type}]", res_out, f"[/{out_type}]"])
-
-    return "\n".join(pieces)
+    # wrapping with code output separators
+    output = f"{CODE_OUTPUT_SEPARATORS[0]}\n\n{output}{CODE_OUTPUT_SEPARATORS[1]}\n\n"
+    return output
 
 
 def _extract_between_separators(generation, separators: Tuple[str, str], extract_all=False):

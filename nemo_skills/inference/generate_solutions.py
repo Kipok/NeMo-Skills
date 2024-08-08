@@ -21,7 +21,6 @@ from pathlib import Path
 import hydra
 from tqdm import tqdm
 
-from nemo_skills.code_execution import extract_error_message
 from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
 from nemo_skills.inference.prompt.utils import Prompt, PromptConfig, datasets, prompt_types
 from nemo_skills.inference.server.code_execution_model import (
@@ -145,9 +144,6 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
                     # all of the ground-truth data to the output file alongside the generated solutions
                     output.update(original_data_point)
-                    if 'error_message' not in output:
-                        output['error_message'] = extract_error_message(output['generation'])
-
                     if cfg.generation_key != "generation":
                         output[cfg.generation_key] = output.pop("generation")
 
@@ -163,8 +159,6 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
             )
             for output, original_data_point in zip(outputs, data_points):
                 output.update(original_data_point)
-                if 'error_message' not in output:
-                    output['error_message'] = extract_error_message(output['generation'])
                 if cfg.generation_key != "generation":
                     output[cfg.generation_key] = output.pop("generation")
                 fout.write(json.dumps(output) + "\n")

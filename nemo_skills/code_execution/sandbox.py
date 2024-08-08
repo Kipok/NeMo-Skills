@@ -193,13 +193,13 @@ try:
     for code in code_snippets:
         with io.capture_output() as captured:
             exec_result = shell.run_cell(code)
-    stdout = f"{{captured.stdout}}".strip().replace("Out[1]: ", "")
-    stderr = f"{{captured.stderr}}".strip().replace("Out[1]: ", "")
+    stdout = captured.stdout.replace("Out[1]: ", "").strip()
+    stderr = captured.stderr.replace("Out[1]: ", "").strip()
     if len(stdout) > {max_output_characters}:
         stdout = stdout[:{max_output_characters}] + "<output cut>"
     if len(stderr) > {max_output_characters}:
         stderr = stderr[:{max_output_characters}] + "<output cut>"
-    to_return = {{"process_status": "completed", "stdout": captured.stdout, "stderr": captured.stderr}}
+    to_return = {{"process_status": "completed", "stdout": stdout, "stderr": stderr}}
 except Exception:
     # removing useless prefix from traceback
     to_return = {{

@@ -17,5 +17,5 @@ from nemo_skills.code_execution.utils import (
     CODE_SEPARATORS,
     extract_code_output,
     extract_code_to_execute,
-    extract_error_message,
+    format_code_output,
 )

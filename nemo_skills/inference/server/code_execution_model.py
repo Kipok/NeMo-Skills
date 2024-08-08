@@ -20,7 +20,12 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import field
 from typing import List
 
-from nemo_skills.code_execution import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS, extract_code_to_execute
+from nemo_skills.code_execution import (
+    CODE_OUTPUT_SEPARATORS,
+    CODE_SEPARATORS,
+    extract_code_to_execute,
+    format_code_output,
+)
 from nemo_skills.code_execution.sandbox import Sandbox
 from nemo_skills.inference.prompt.utils import Prompt
 from nemo_skills.inference.server.model import BaseModel, NemoModel, OpenAIModel, get_model, models, postprocess_output
@@ -50,7 +55,7 @@ class CodeExecutionConfig:
     max_code_output_characters: int = 1000
     code_execution_timeout: float = 10.0
     max_code_executions: int = 3
-    stop_on_code_error: bool = True
+    stop_on_code_error: bool = False
     error_recovery: ErrorRecoveryConfig = field(default_factory=ErrorRecoveryConfig)
 
 
@@ -95,8 +100,7 @@ class CodeExecutionWrapper:
         new_outputs = [
             {
                 'prompt': new_prompts[idx],
-                'result': None,
-                'error_message': Sandbox.NOT_EXECUTED,
+                'execution_dict': None,
                 'session_id': None,
             }
             for idx in range(len(new_prompts))
@@ -124,32 +128,20 @@ class CodeExecutionWrapper:
                         )
                 for idx, output in zip(remaining_ids, outputs):
                     if output.strip().endswith(CODE_SEPARATORS[-1]):
-                        result, new_outputs[idx]['session_id'] = futures[idx].result()
-                        if result['error_message']:
-                            new_outputs[idx]['error_message'] = result['error_message']
-                            if self.config.stop_on_code_error:
-                                new_outputs[idx]['prompt'] += output
-                                continue
-                            text_only_part = output.split(CODE_SEPARATORS[0])[0]
-                            new_outputs[idx]['prompt'] += text_only_part
-                            code_output = self._recover_from_error(request, new_outputs[idx], executor)
-                            # if re-generation did not help
-                            if code_output is None:
-                                code_output = result["result"]
-                                new_outputs[idx]['prompt'] += output[len(text_only_part) :]
+                        execution_dict, new_outputs[idx]['session_id'] = futures[idx].result()
+                        if execution_dict['stderr']:
+                            # TODO: error recovery should happen here
+                            pass
                         else:
                             new_outputs[idx]['prompt'] += output
-                            new_outputs[idx]['error_message'] = ''
-                            code_output = result["result"]
 
                         # adding code output to the prompt
-                        code_output = f'\n{CODE_OUTPUT_SEPARATORS[0]}\n{code_output}\n{CODE_OUTPUT_SEPARATORS[1]}\n'
-                        new_outputs[idx]['prompt'] += code_output
+                        new_outputs[idx]['prompt'] += format_code_output(execution_dict)
                         # setting a limit on max code executions to speed things up
                         # (sometimes keeps repeating the same sequence forever)
                         if num_executions >= self.config.max_code_executions:
-                            new_outputs[idx]['error_message'] = "Max code executions reached"
-                        else:
+                            new_outputs[idx]['prompt'] += "<max number of code executions reached>"
+                        elif not (self.config.stop_on_code_error and execution_dict['stderr']):
                             new_ids.append(idx)
                     else:
                         new_outputs[idx]['prompt'] += output
@@ -160,14 +152,13 @@ class CodeExecutionWrapper:
         for output, orig_prompt in zip(new_outputs, prompts):
             if output['session_id'] is not None:
                 self.sandbox.clear_session(output['session_id'])
-            outputs.append(
-                {'generation': output['prompt'][len(orig_prompt) :], 'error_message': output['error_message']}
-            )
+            outputs.append({'generation': output['prompt'][len(orig_prompt) :]})
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
         return outputs
 
     def _recover_from_error(self, request, new_output, executor):
+        assert False, "this logic is currently broken, needs to be fixed"
         recovery_request = {key: value for key, value in request.items() if key != 'prompts'}
         recovery_request['prompts'] = [new_output['prompt']]
 
@@ -177,7 +168,7 @@ class CodeExecutionWrapper:
 
         outputs = []
         futures = [None] * self.config.error_recovery.recovery_attempts
-        results = [None] * self.config.error_recovery.recovery_attempts
+        execution_dicts = [None] * self.config.error_recovery.recovery_attempts
         for rs in range(self.config.error_recovery.recovery_attempts):
             recovery_request['random_seed'] = rs
             output = self._handle_stop_words(self.model.generate(**recovery_request)[0]['generation'])
@@ -192,31 +183,30 @@ class CodeExecutionWrapper:
                 )
 
                 if not self.config.error_recovery.majority_voting:
-                    result, _ = futures[rs].result()
+                    execution_dict, _ = futures[rs].result()
                     # quit on first correct output if not majority voting
-                    if not result['error_message']:
-                        results[rs] = result['result']
+                    if not execution_dict['stderr']:
+                        execution_dicts[rs] = execution_dict
                         break
 
         for idx, output in enumerate(outputs):
             if not output.strip().endswith(CODE_SEPARATORS[-1]) or not self.config.error_recovery.majority_voting:
                 continue
-            result, _ = futures[idx].result()
-            if result['error_message']:
+            execution_dict, _ = futures[idx].result()
+            if execution_dict['stderr']:
                 continue
-            results[idx] = result['result']
+            execution_dicts[idx] = execution_dict
 
         # majority voting on valid code output results
         # if majority voting is disabled, we just take the first valid output
-        counts = Counter(res for res in results if res)
+        counts = Counter(res for res in execution_dicts if res)
         # all errors
         if not counts:
             return
 
         most_common = counts.most_common(1)[0][0]
-        valid_idx = results.index(most_common)
+        valid_idx = execution_dicts.index(most_common)
         new_output['prompt'] += outputs[valid_idx]
-        new_output['error_message'] = ''
 
         return most_common
 
@@ -243,9 +233,6 @@ def get_code_execution_model(server_type, code_execution=None, sandbox=None, **k
     """A helper function to make it easier to set server through cmd."""
     model = get_model(server_type=server_type, **kwargs)
     if isinstance(model, NemoModel):  # nemo handles code execution directly
-        LOG.warning(
-            "Nemo model currently has a bug in handling stop words and thus shouldn't be used for code execution"
-        )
         if code_execution is not None:
             raise ValueError("Extra code execution parameters are not supported for Nemo model.")
         return model
