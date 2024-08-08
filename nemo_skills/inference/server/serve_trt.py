@@ -417,6 +417,7 @@ def _stream(
             output_log_probs,
             output_cum_log_probs,
             batch_input_ids,
+            batch_input_ids_list,
             streaming,
             request_ids,
             return_all_generated_tokens,
