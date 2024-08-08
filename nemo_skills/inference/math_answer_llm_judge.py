@@ -160,7 +160,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
                 prefilled_idx = 0
                 generated_idx = 0
-                for cur_idx in range(idx - len(outputs) - len(judgements) + 1, idx + 1):
+                for cur_idx in range(idx - len(data_points) - len(judgements) + 1, idx + 1):
                     if cur_idx in prefilled_indices:
                         fout.write(json.dumps(judgements[prefilled_idx]) + "\n")
                         prefilled_idx += 1
@@ -185,8 +185,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
             prefilled_idx = 0
             generated_idx = 0
-            # idx = len(data) or max_samples. In both cases no need to add 1
-            for cur_idx in range(idx - len(outputs) - len(judgements), idx):
+            for cur_idx in range(cfg.max_samples - len(data_points) - len(judgements), cfg.max_samples):
                 if cur_idx in prefilled_indices:
                     fout.write(json.dumps(judgements[prefilled_idx]) + "\n")
                     prefilled_idx += 1
