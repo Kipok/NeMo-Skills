@@ -118,6 +118,53 @@ user: |-
     It's possible to simplify this expression to an integer -115 as indicated by the expected answer. The predicted answer is not simplified to an integer, so we should consider them different.
     Judgement: No<|eot_id|><|start_header_id|>user<|end_header_id|>
 
+    Question: Find all $p$ which satisfy both the inequalities $0\ge 54p-144$ and $0>12-20p$. Express your answer in interval notation, reducing any fractions in your answer.
+    Predicted answer: \left(\frac{{3}}{{5}},\frac{{8}}{{3}}\right]
+    Expected answer: (\frac{{3}}{{5}},\frac{{8}}{{3}}]<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+    \left( is the same as ( and \right] is the same as ]. The values are the same, so the two answers are equivalent.
+
+    Judgement: Yes<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+    Question: What is $.0\overline{{3}} \div .\overline{{03}}$? Express your answer as a mixed number.
+    Predicted answer: 11\frac{{0}}{{1}}
+    Expected answer: 1+1/10<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+    The predicted answer is written as a mixed number, while the expected answer is written as an improper fraction. Since the question explicitly asks for a mixed number, we should consider them different.
+    Judgement: No<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+    Question: A watered circular field (shaded) is inscribed in a square plot of land. The square plot has sides of length 500 meters. What is the area of the land that is not watered? Express your answer to the nearest thousand square meters.
+
+    [asy]
+    draw((0,0)--(10,0)--(10,10)--(0,10)--cycle,linewidth(1));
+    fill(Circle((5,5),5),gray(0.7));
+    draw(Circle((5,5),5),linewidth(1));
+    [/asy]
+    Predicted answer: 53650
+    Expected answer: 54000<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+    LLM reasoning: The question asks for the area of the land that is not watered, expressed to the nearest thousand square meters. The predicted answer is 53650, which is not expressed to the nearest thousand. Therefore, the two answers are not equivalent.
+    Judgement: No<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+    Question: Find the matrix that corresponds to rotating about the origin by an angle of $45^\circ$ clockwise.
+    Predicted answer: \begin{{pmatrix}} \frac{{\sqrt{{2}}}}{{2}} & \frac{{\sqrt{{2}}}}{{2}} \\ -\frac{{\sqrt{{2}}}}{{2}} & \frac{{\sqrt{{2}}}}{{2}} \end{{pmatrix}}
+    Expected answer: \begin{{pmatrix}}1/\sqrt{{2}}&1/\sqrt{{2}}\\-1/\sqrt{{2}}&1/\sqrt{{2}}\end{{pmatrix}}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+    Let's use numpy to check whether the two expressions are equivalent.
+
+    <|python_tag|>import numpy as np
+    from math import sqrt
+    predicted_answer = np.array([[sqrt(2)/2, sqrt(2)/2], [-sqrt(2)/2, sqrt(2)/2]])
+    expected_answer = np.array([[1/sqrt(2), 1/sqrt(2)], [-1/sqrt(2), 1/sqrt(2)]])
+    print(np.allclose(predicted_answer, expected_answer))<|eom_id|><|start_header_id|>ipython<|end_header_id|>
+
+    completed
+    [stdout]
+    True
+    [/stdout]<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+    Judgement: Yes<|eot_id|><|start_header_id|>user<|end_header_id|>
+
     Question: {question}
     Predicted answer: {predicted_answer}
     Expected answer: {expected_answer}

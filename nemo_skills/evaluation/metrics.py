@@ -170,12 +170,12 @@ class MathEval(BaseEval):
             if current_correct_sympy != current_correct_judge:
                 LOG.debug(
                     "Discrepancy between sympy (%s) and LLM checkers (%s).\n"
-                    "Predicted answer: %s\nExpected answer: %s\nQuestion: %s\nJudgement: %s",
+                    "Question: %s\nPredicted answer: %s\nExpected answer: %s\nLLM reasoning: %s\n",
                     bool(current_correct_sympy),
                     bool(current_correct_judge),
+                    predictions[0]['question'],
                     predictions[0]['predicted_answer'],
                     predictions[0]['expected_answer'],
-                    predictions[0]['question'],
                     predictions[0]['judgement'],
                 )
 
