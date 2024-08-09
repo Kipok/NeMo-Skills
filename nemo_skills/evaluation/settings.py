@@ -16,7 +16,7 @@
 # in addition to what's in this file, there is also some prompt engineering that needs
 # to happen in eval_map.py inside prompt folder for specific models
 
-from nemo_skills.evaluation.graders import arena_grader, code_grader, if_grader, math_grader, contaminator_grader
+from nemo_skills.evaluation.graders import arena_grader, code_grader, contaminator_grader, if_grader, math_grader
 from nemo_skills.evaluation.metrics import ArenaEval, CodeEval, IFEval, MathEval
 
 MATH_BENCHMARKS = [

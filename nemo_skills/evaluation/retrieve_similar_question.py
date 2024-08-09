@@ -12,27 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import collections
+import glob
 import json
 import logging
+import pdb
 import sys
 from collections import Counter
 from itertools import zip_longest
 from typing import Any
 
 import hydra
+import numpy as np
+import torch
 from omegaconf import MISSING
+from sentence_transformers import SentenceTransformer, util
 from tqdm import tqdm
 
 from nemo_skills.evaluation.metrics import MathEval, read_predictions
 from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging
-import torch
-from sentence_transformers import SentenceTransformer, util
-import collections
-import glob
-import numpy as np
-import pdb
-LOG = logging.getLogger(__file__)
 
+LOG = logging.getLogger(__file__)
 
 
 def unroll_files(prediction_jsonl_files):
@@ -41,6 +41,7 @@ def unroll_files(prediction_jsonl_files):
         matched_files = sorted(glob.glob(file_pattern, recursive=True))
         files.extend(matched_files)
     return files
+
 
 def top_k_similarity(train_embs, test_embs, top_k):
     # Compute cosine-similarities
@@ -65,8 +66,6 @@ def read_dataset(r_path):
         return [json.loads(line) for line in file]
 
 
-
-
 @nested_dataclass
 class LLMDecontaminatorConfig:
     """Top-level parameters for the script"""
@@ -79,27 +78,25 @@ class LLMDecontaminatorConfig:
 
     # "test_folder/output-rs*.jsonl"
     test_jsonl_files: Any = MISSING
-    
+
     ### the model used to compute embedding, default is sentence transformer
     model: str = 'multi-qa-MiniLM-L6-cos-v1'
-    
+
     ### the number of devices to coompute embedding
     device: Any = MISSING
-    
+
     ### for each question in the test data set, we retreive the top_k similar questions from the train_jsonl_files
     top_k: int = 3
 
     batch_size: int = 32
-    
+
     def __post_init__(self):
         """Building data_file from dataset/split_name if not provided directly."""
         if isinstance(self.train_jsonl_files, str):
             self.train_jsonl_files = self.train_jsonl_files.split(" ")
-        
+
         # if isinstance(self.test_jsonl_files, str):
         #     self.test_jsonl_files = self.test_jsonl_files.split(" ")
-    
-    
 
 
 cs = hydra.core.config_store.ConfigStore.instance()
@@ -115,23 +112,21 @@ def compute_embedding(cfg: LLMDecontaminatorConfig):
 
     model = SentenceTransformer(cfg.model)
     test_cases = read_dataset_question(cfg.test_jsonl_files)
-    test_embs = bert_encode(model,  test_cases, batch_size=cfg.batch_size, device=cfg.device)
+    test_embs = bert_encode(model, test_cases, batch_size=cfg.batch_size, device=cfg.device)
     db_embedding = collections.defaultdict(list)
     db_questions = collections.defaultdict(list)
     for file_path in file_handles:
         train_cases = read_dataset_question(file_path)
         train_embs = bert_encode(model, train_cases, batch_size=cfg.batch_size, device=cfg.device)
         top_k_indices = top_k_similarity(train_embs, test_embs, cfg.top_k)
-        
-        
-        
+
         for i, test_case in enumerate(test_cases):
             #### for each file in the training, we will find the top_k similar examples
             top_k_embedding_per_file = [train_embs[index] for index in top_k_indices[i]]
             top_k_questions_per_file = [train_cases[index] for index in top_k_indices[i]]
-            db_embedding[i].extend(top_k_embedding_per_file)  
-            db_questions[i].extend(top_k_questions_per_file) 
-    
+            db_embedding[i].extend(top_k_embedding_per_file)
+            db_questions[i].extend(top_k_questions_per_file)
+
     test_file = read_dataset(cfg.test_jsonl_files)
     for i, test_case in enumerate(test_cases):
         test_embs_i = test_embs[i].reshape(1, len(test_embs[i]))
@@ -148,8 +143,7 @@ def compute_embedding(cfg: LLMDecontaminatorConfig):
             pair = {'source': file_handles[train_file_index], 'question': db_questions[i][index]}
             similar_exmaple.append(pair)
         test_file[i]['top_k_similar_example'] = similar_exmaple
-    
-    
+
     #### we will write back to the orginal files
     with open(cfg.test_jsonl_files, 'w', encoding='utf-8') as file:
         for entry in test_file:

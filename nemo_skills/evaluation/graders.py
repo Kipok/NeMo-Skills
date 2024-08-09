@@ -14,14 +14,13 @@
 
 import json
 import logging
+import pdb
 import shutil
 import subprocess
 from argparse import Namespace
 from dataclasses import asdict, field
 from pathlib import Path
 from typing import Optional
-import pdb
-
 
 from nemo_skills.utils import nested_dataclass, unroll_files
 
@@ -62,7 +61,6 @@ class MathGraderConfig:
     extract_regex: str = r"The final answer is (.+)$"
 
 
-
 @nested_dataclass
 class DecontaminatorConfig:
     # Sandbox configuration {sandbox_params}
@@ -72,11 +70,6 @@ class DecontaminatorConfig:
     extract_from_boxed: bool = True
     # only used if extract_from_boxed is False
     extract_regex: str = r"The final answer is (.+)$"
-
-
-
-
-
 
 
 def math_grader(cfg):
@@ -393,11 +386,8 @@ def arena_grader(cfg):
             Path(output_file).unlink()
 
 
-
-
 def contaminator_grader(cfg):
     eval_config = DecontaminatorConfig(**cfg.eval_config)
-    
 
     from tqdm import tqdm
 
@@ -416,19 +406,18 @@ def contaminator_grader(cfg):
         model=grading_config.judge_model,
     )
     prompt = Prompt(config=get_prompt_config('openai/math-detect-zero-shot'))
-    
+
     # assuming everything fits in memory for simplicity
     for jsonl_file in unroll_files(cfg.prediction_jsonl_files):
         with open(jsonl_file, 'rt', encoding='utf-8') as fin:
             data = [json.loads(line) for line in fin]
-
 
         # TODO: should we try to judge both ways here as well? How to aggregate?
         if grading_config.skip_filled and all('judgement' in data_point for data_point in data):
             continue
 
         data_points = []
-        
+
         if grading_config.use_batch_api:
             for data_point in data:
                 # adding required fields for judgement prompt
@@ -463,7 +452,7 @@ def contaminator_grader(cfg):
                 for data_point in tqdm(data, initial=starting_idx, total=len(data) + starting_idx):
                     # adding required fields for judgement prompt
                     to_add = data_point.copy()
-                    
+
                     data_points.append(to_add)
 
                     if len(data_points) == grading_config.batch_size:
@@ -492,4 +481,3 @@ def contaminator_grader(cfg):
 
             # removing judgement file
             Path(output_file).unlink()
-
