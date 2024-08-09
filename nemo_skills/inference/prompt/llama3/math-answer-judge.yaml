@@ -8,7 +8,7 @@ user: |-
     Do not solve the question! Rather, determine if the predicted answer and the expected answer represent the same thing
     within the context of the question, regardless of the accuracy of the answers.
 
-    You can use Python (with sympy library) to help evaluate the expressions if needed.
+    You can use Python (with numpy, sympy and other scientific libraries) to help evaluate the expressions if needed.
 
     Please first explain your rationale in a couple of sentences.
     Then respond with only Yes or No as your judgement on whether the two answers are the same.
