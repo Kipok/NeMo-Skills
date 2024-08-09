@@ -10,38 +10,14 @@ user: |-
 
     You can use Python (with numpy, sympy and other scientific libraries) to help evaluate the expressions if needed.
 
+    Pay attention to what the question is asking and whether the predicted answer is presented in the right form. For example
+    - If the question asks for a simplified form, check that predicted answer is simplified to the same extent as the expected answer.
+    - If the question asks for an exact number, check that the predicted answer is exactly matching the expected answer.
+    - If the question asks for a specific format (e.g., mixed number, interval notation), check that the predicted answer is in the correct format.
+
     Please first explain your rationale in a couple of sentences.
     Then respond with only Yes or No as your judgement on whether the two answers are the same.
-
-
-    Question: Factor $7x^3 - 21x^2 + 14x$.
-    Predicted answer: $7x(x - 2)(x - 1)$
-    Expected answer: $7x(x-1)(x-2)$<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-    Both predicted and expected answers consists of the same 3 terms, only the order is different. Thus they are equivalent.
-    Judgement: Yes<|eot_id|><|start_header_id|>user<|end_header_id|>
-
-    Question: A rectangle has a length of 6 meters and a width of 2 meters.
-    If the length is reduced by 3 meters and the width is halved, what is the new area of the rectangle in square meters?
-    Predicted answer: 3/2
-    Expected answer: 1.5<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-    Let's use Python to check whether the two expressions are equivalent.
-
-    <|python_tag|>import math
-    print(math.isclose(3/2, 1.5))<|eom_id|><|start_header_id|>ipython<|end_header_id|>
-
-    True<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-    Judgement: Yes<|eot_id|><|start_header_id|>user<|end_header_id|>
-
-    Question: A rectangle has a length of 6 meters and a width of 2 meters. If the length is reduced by 3 meters and the width is halved, what is the new area of the rectangle in square meters?
-    Predicted answer: 3245/5
-    Expected answer: 649<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-    The question implies that the answer should be simplified if possible.
-    Since the predicted answer contains a fraction that can be simplified further, we shouldn't consider these expressions equivalent.
-    Judgement: No<|eot_id|><|start_header_id|>user<|end_header_id|>
+    
 
     Question: Simplify the expression $\sqrt{{7!}}$, where $n!$ stands for $n\cdot(n-1)\cdot(n-2)\cdots \cdot 2\cdot 1$.
     Predicted answer: 71
@@ -57,93 +33,11 @@ user: |-
     This is close to 71, but not exactly the same. Since the question asks for the simplified form, we should consider them different.
     Judgement: No<|eot_id|><|start_header_id|>user<|end_header_id|>
 
-    Question: Find the sum of $2_9 and 6_9$, Express your answer in base $9.$
-    Predicted answer:  8_9
-    Expected answer: 8<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-    The expected answer omits the base notation, but the values are the same. Thus, they are equivalent.
-    Judgement: Yes<|eot_id|><|start_header_id|>user<|end_header_id|>
-
-    Question:  A company sells peanut butter in cylindrical jars. Marketing research suggests that using wider jars will increase sales. If the diameter of the jars is increased by $25\%$ without altering the volume, by what percent must the height be decreased?
-    Predicted answer:  36\%
-    Expected answer: 36.<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-    The expected answer omits the percentage symbol, but the values are the same. Thus, they are equivalent.
-    Judgement: Yes<|eot_id|><|start_header_id|>user<|end_header_id|>
-
-    Question: What is the result of expanding and simplifying the square of the binomial (y + 1)^2
-    Predicted answer:  $x^2+2x+1$
-    Expected answer: $y^2+2y+1$<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-    The predicted answer is written with $x$ as the variable, while the expected answer uses $y$ as the variable. Therefore, they are not the same in the context of the question.
-    Judgement: No<|eot_id|><|start_header_id|>user<|end_header_id|>
-
-    Question: A quadratic function f(x) has its vertex at the point (−1,0) and passes through the point (0,1). Determine the quadratic function f(x).
-    Predicted answer: $x^2+2x+1$
-    Expected answer: $(x+1)^2$<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-    Let's use sympy to check whether the two expressions are equivalent.
-
-    <|python_tag|>from sympy import symbols, simplify
-    x = symbols('x')
-    predicted_answer = x**2 + 2*x + 1
-    expected_answer = (x + 1)**2
-    print(simplify(predicted_answer - expected_answer))<|eom_id|><|start_header_id|>ipython<|end_header_id|>
-
-    0<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-    Judgement: Yes<|eot_id|><|start_header_id|>user<|end_header_id|>
-
-    Question: A company tracks its annual revenue using a specific formula over a 10-year period. The revenue R(n) for year n is modeled by the polynomial R(n)=20000000−6006*n+10n^2, where n represents the number of years since the year 2010. Calculate the revenue for the year 2014.
-    Predicted answer: 19941994
-    Expected answer: 19941989<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-    The two numbers are very close, but they are not the same. Since the question asks for an exact number, we should consider them different.
-    Judgement: No<|eot_id|><|start_header_id|>user<|end_header_id|>
-
-    Question: Reduce to a form convenient for taking logarithms: $1-\frac{{1}}{{4}}\sin ^2 2\alpha -\sin ^2 \beta -\cos ^4 \alpha $
-    Predicted answer: \sin^2(\alpha) - \sin^2(\beta)
-    Expected answer: \sin(\alpha +\beta )\sin(\alpha -\beta)<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-    The question asks to reduce the expression to a form convenient for taking logarithms.
-    The expected answer is factorized into a product of two terms, which is more convenient for taking logarithms than a non-factorized expression.
-    Since predicted answer is non-factorized, we should consider the two expressions different.
-
-    Judgement: No<|eot_id|><|start_header_id|>user<|end_header_id|>
-
     Question: Simplify the following expressions: $\left(\frac{{15}}{{\sqrt 6+1}}+\frac{{4}}{{\sqrt 6-2}}-\frac{{12}}{{3-\sqrt 6}}\right) \left(\sqrt 6+11\right)$
     Predicted answer:  -171 - 26\sqrt 6 + \frac{{4\sqrt 6 + 44}}{{\sqrt 6-2}}
     Expected answer:  -115<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
     It's possible to simplify this expression to an integer -115 as indicated by the expected answer. The predicted answer is not simplified to an integer, so we should consider them different.
-    Judgement: No<|eot_id|><|start_header_id|>user<|end_header_id|>
-
-    Question: Find all $p$ which satisfy both the inequalities $0\ge 54p-144$ and $0>12-20p$. Express your answer in interval notation, reducing any fractions in your answer.
-    Predicted answer: \left(\frac{{3}}{{5}},\frac{{8}}{{3}}\right]
-    Expected answer: (\frac{{3}}{{5}},\frac{{8}}{{3}}]<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-    \left( is the same as ( and \right] is the same as ]. The values are the same, so the two answers are equivalent.
-
-    Judgement: Yes<|eot_id|><|start_header_id|>user<|end_header_id|>
-
-    Question: What is $.0\overline{{3}} \div .\overline{{03}}$? Express your answer as a mixed number.
-    Predicted answer: 11\frac{{0}}{{1}}
-    Expected answer: 1+1/10<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-    The predicted answer is written as a mixed number, while the expected answer is written as an improper fraction. Since the question explicitly asks for a mixed number, we should consider them different.
-    Judgement: No<|eot_id|><|start_header_id|>user<|end_header_id|>
-
-    Question: A watered circular field (shaded) is inscribed in a square plot of land. The square plot has sides of length 500 meters. What is the area of the land that is not watered? Express your answer to the nearest thousand square meters.
-
-    [asy]
-    draw((0,0)--(10,0)--(10,10)--(0,10)--cycle,linewidth(1));
-    fill(Circle((5,5),5),gray(0.7));
-    draw(Circle((5,5),5),linewidth(1));
-    [/asy]
-    Predicted answer: 53650
-    Expected answer: 54000<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-    LLM reasoning: The question asks for the area of the land that is not watered, expressed to the nearest thousand square meters. The predicted answer is 53650, which is not expressed to the nearest thousand. Therefore, the two answers are not equivalent.
     Judgement: No<|eot_id|><|start_header_id|>user<|end_header_id|>
 
     Question: Find the matrix that corresponds to rotating about the origin by an angle of $45^\circ$ clockwise.
