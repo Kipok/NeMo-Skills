@@ -133,8 +133,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                 break
             data_points.append(data_point)
 
-            if len(data_points) == cfg.batch_size or idx == len(data) - 1:
-                if cfg.inference.use_batch_api:
+            if cfg.inference.use_batch_api and len(data_points) == len(data):
                     # Using batch API for generation
                     # Accessing the model directly since CodeExecutionWrapper does not support batch_generate
                     request_metadata = llm.model.batch_generate(
@@ -156,12 +155,13 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
                     # Clear data_points as we've submitted the batch
                     data_points = []
-                else:
+
+            elif not cfg.inference.use_batch_api and (len(data_points) == cfg.batch_size or idx  == len(data) - 1):
                     # batch-computing the outputs
                     outputs = llm.generate(
                         prompts=[prompt.build_string(data_point) for data_point in data_points],
                         stop_phrases=list(cfg.prompt.stop_phrases),
-                        **asdict(cfg.inference),
+                        **(asdict(cfg.inference).pop('use_batch_api', None)),
                     )
 
                     for output, original_data_point in zip(outputs, data_points):
@@ -176,21 +176,6 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
                         fout.write(json.dumps(output) + "\n")
                     data_points = []
-
-        # collecting the final batch
-        if len(data_points) > 0 and not cfg.inference.use_batch_api:
-            outputs = llm.generate(
-                prompts=[prompt.build_string(data_point) for data_point in data_points],
-                stop_phrases=list(cfg.prompt.stop_phrases),
-                **asdict(cfg.inference),
-            )
-            for output, original_data_point in zip(outputs, data_points):
-                output.update(original_data_point)
-                if 'error_message' not in output:
-                    output['error_message'] = extract_error_message(output['generation'])
-                if cfg.generation_key != "generation":
-                    output[cfg.generation_key] = output.pop("generation")
-                fout.write(json.dumps(output) + "\n")
 
 
 error_recovery_params = '\n' + get_fields_docstring(
