@@ -12,12 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-from pathlib import Path
-from typing import Dict, List
-
-# adding nemo_skills to python path to avoid requiring installation
-sys.path.append(str(Path(__file__).absolute().parents[1]))
+from typing import Dict
 
 from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
 

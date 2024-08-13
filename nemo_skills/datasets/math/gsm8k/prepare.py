@@ -17,11 +17,9 @@ import json
 import os
 import random
 import re
-import sys
 import urllib.request
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).parents[1]))
 from utils import prepare_for_sft
 
 URL = "https://raw.githubusercontent.com/openai/grade-school-math/master/grade_school_math/data/{}.jsonl"

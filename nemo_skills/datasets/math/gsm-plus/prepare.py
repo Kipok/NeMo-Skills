@@ -15,11 +15,8 @@
 import argparse
 import json
 import os
-import sys
 import urllib.request
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).parents[1]))
 
 from utils import add_rounding_instruction
 

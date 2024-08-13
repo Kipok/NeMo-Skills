@@ -16,15 +16,11 @@ import argparse
 import json
 import os
 import random
-import re
-import sys
 import tarfile
 import tempfile
 import urllib.request
 from collections import defaultdict
 from pathlib import Path
-
-sys.path.append(str(Path(__file__).parents[1]))
 
 from fix_ref_solns import _fix_solution, _post_fix, _post_fix_multi_answer
 from utils import prepare_for_sft
