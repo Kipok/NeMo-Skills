@@ -102,6 +102,19 @@ class BaseModel(abc.ABC):
     ) -> list[dict]:
         pass
 
+    def batch_generate(
+        self,
+        prompts: list[str],
+        tokens_to_generate: int = 512,
+        temperature: float = 0.0,
+        top_p: float = 0.95,
+        top_k: int = 0,
+        repetition_penalty: float = 1.0,
+        random_seed: int = 0,
+        stop_phrases: list[str] | None = None,
+    ) -> list[dict]:
+        raise NotImplementedError("batch_gen is supported only for OpenAI models.")
+
 
 class TensorRTLLMModel(BaseModel):
     """Note that the current implementation supports inflight-batching so

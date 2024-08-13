@@ -29,6 +29,8 @@ from nemo_skills.inference.server.code_execution_model import (
     get_code_execution_model,
     server_params,
 )
+from nemo_skills.inference.server.model import get_model 
+
 from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dataclass, setup_logging
 
 LOG = logging.getLogger(__file__)
@@ -43,6 +45,7 @@ class InferenceConfig:
     tokens_to_generate: int = 2048
     repetition_penalty: float = 1.0
     use_batch_api: bool = False  # Whether to use batch API for generation
+    use_code: bool = False
 
 
 @nested_dataclass
@@ -95,8 +98,11 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
     cfg = GenerateSolutionsConfig(_init_nested=True, **cfg)
 
     LOG.info("Config used: %s", cfg)
-    sandbox = get_sandbox(**cfg.sandbox) if cfg.sandbox is not None else None
-    llm = get_code_execution_model(**cfg.server, sandbox=sandbox)
+    if cfg.inference.use_code:
+        sandbox = get_sandbox(**cfg.sandbox) if cfg.sandbox is not None else None
+        llm = get_code_execution_model(**cfg.server, sandbox=sandbox)
+    else: 
+        llm = get_model(**cfg.server)
 
     # making sure output folder exists
     Path(cfg.output_file).absolute().parent.mkdir(parents=True, exist_ok=True)
@@ -136,7 +142,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
             if cfg.inference.use_batch_api and len(data_points) == len(data):
                     # Using batch API for generation
                     # Accessing the model directly since CodeExecutionWrapper does not support batch_generate
-                    request_metadata = llm.model.batch_generate(
+                    request_metadata = llm.batch_generate(
                         prompts=[prompt.build_string(data_point) for data_point in data_points],
                         tokens_to_generate=cfg.inference.tokens_to_generate,
                     )
@@ -157,11 +163,13 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                     data_points = []
 
             elif not cfg.inference.use_batch_api and (len(data_points) == cfg.batch_size or idx  == len(data) - 1):
-                    # batch-computing the outputs
+                    inference_args = asdict(cfg.inference)
+                    inference_args.pop('use_batch_api', None)
+                    inference_args.pop('use_code', None)
                     outputs = llm.generate(
                         prompts=[prompt.build_string(data_point) for data_point in data_points],
                         stop_phrases=list(cfg.prompt.stop_phrases),
-                        **(asdict(cfg.inference).pop('use_batch_api', None)),
+                        **inference_args,  # Unpack the filtered inference arguments
                     )
 
                     for output, original_data_point in zip(outputs, data_points):
