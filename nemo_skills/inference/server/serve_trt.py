@@ -431,7 +431,8 @@ def _stream(
         # note that we need to ignore the last one (first "generation" prediction)
         # so we move input ids by 1, because we never predict the first token,
         # but instead predict the one after the last
-        tokenprobs = logprobs[torch.arange(logprobs.size(0) - 1), batch_input_ids[0][1:]]
+        prompt_ids = batch_input_ids[0][1:]
+        tokenprobs = logprobs[torch.arange(prompt_ids.shape[0]), prompt_ids]
 
         # as a sanity check I printed above on the model generated completion
         # and we see probs close to 1 (after the prompt tokens, for which it's all over the place)
@@ -446,7 +447,16 @@ def _stream(
 
         # does it make sense to use a diff of the prompt token probs and the top1 probs?
 
-        return tokenprobs
+        # before returning, we want to remove all logits for the original prompt part as we don't care about them
+        # as a hacky way to do that, let's just split on the id of the last <|end_header_id|> token
+        split_position = np.where(prompt_ids.cpu().numpy() == 128007)[0][-1] + 1
+        assert (
+            tokenizer.decode(prompt_ids[split_position - 4 : split_position])
+            == '<|eot_id|><|start_header_id|>assistant<|end_header_id|>'
+        )
+
+        # to be able to convert to json and pass over http
+        return [str(elem) for elem in list(tokenprobs[split_position:].cpu().numpy())]
 
         matching_stop_word = None
         # checking every half of the required tokens to have overlapping checks

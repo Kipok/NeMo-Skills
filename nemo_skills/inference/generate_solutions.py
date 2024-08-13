@@ -24,11 +24,7 @@ from tqdm import tqdm
 from nemo_skills.code_execution import extract_error_message
 from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
 from nemo_skills.inference.prompt.utils import Prompt, PromptConfig, datasets, prompt_types
-from nemo_skills.inference.server.code_execution_model import (
-    ErrorRecoveryConfig,
-    get_code_execution_model,
-    server_params,
-)
+from nemo_skills.inference.server.code_execution_model import ErrorRecoveryConfig, get_model, server_params
 from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dataclass, setup_logging
 
 LOG = logging.getLogger(__file__)
@@ -94,8 +90,8 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
     cfg = GenerateSolutionsConfig(_init_nested=True, **cfg)
 
     LOG.info("Config used: %s", cfg)
-    sandbox = get_sandbox(**cfg.sandbox) if cfg.sandbox is not None else None
-    llm = get_code_execution_model(**cfg.server, sandbox=sandbox)
+    # sandbox = get_sandbox(**cfg.sandbox) if cfg.sandbox is not None else None
+    llm = get_model(**cfg.server)
 
     # making sure output folder exists
     Path(cfg.output_file).absolute().parent.mkdir(parents=True, exist_ok=True)
@@ -144,6 +140,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                 for output, original_data_point in zip(outputs, data_points):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
                     # all of the ground-truth data to the output file alongside the generated solutions
+                    original_data_point.pop('generation', None)  # to avoid overriding
                     output.update(original_data_point)
                     if 'error_message' not in output:
                         output['error_message'] = extract_error_message(output['generation'])

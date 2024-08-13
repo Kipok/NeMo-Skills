@@ -163,8 +163,8 @@ class TensorRTLLMModel(BaseModel):
                 if result is not None:
                     finished_count += 1
                     outputs[pos] = {'generation': result}
-        if remove_stop_phrases:
-            postprocess_output(outputs, stop_phrases)
+        # if remove_stop_phrases:
+        #     postprocess_output(outputs, stop_phrases)
         return outputs
 
 
