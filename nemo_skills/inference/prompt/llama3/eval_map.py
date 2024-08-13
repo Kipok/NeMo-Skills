@@ -22,16 +22,21 @@ EVAL_MAP = {
     },
     'instruct': {  # llama3-instruct
         'default': 'llama3/instruct',
+        'gsm8k': 'llama3/gsm8k',
+        'math': 'llama3/math',
+        # TODO: put proper coding prompts here as well
         'human-eval': 'llama3/codegen',
         'mbpp': 'llama3/codegen',
         'mmlu': 'llama3/mmlu',
         'ifeval': 'llama3/sft',
         'arena-hard': 'llama3/sft',
     },
-    'instruct-nemo': {  # llama3-instruct finetuned with nemo_skills
-        'default': 'llama3/sft',
-        'human-eval': 'llama3/codegen',
-        'mbpp': 'llama3/codegen',
+    'instruct-nemo': {  # llama3-base finetuned with nemo_skills
+        'default': 'llama3/math_sft',  # Defaulting to math benchmarks
+        'human-eval': 'llama3/codegen_sft',
+        'mbpp': 'llama3/codegen_sft',
         'mmlu': 'llama3/mmlu',
+        'ifeval': 'llama3/sft',
+        'arena-hard': 'llama3/sft',
     },
 }
