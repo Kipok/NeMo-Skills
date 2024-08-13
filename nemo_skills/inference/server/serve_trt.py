@@ -418,6 +418,35 @@ def _stream(
             request_ids,
             return_all_generated_tokens,
         )
+        # output['context_logits'] contains the logits for the prompt
+        # shape is seq-length x vocab-size, e.g. [209, 128256]
+        # we probably don't want to pass around the full tensor,
+        # but instead use some function of it, e.g. top-1 or entropy or whatever else
+
+        # finishing right away, since we only need a single call for prompt logits
+        runner.session.cancel_request(request_ids[0])
+        logprobs = torch.softmax(output['context_logits'][0], dim=-1)
+        # we want to find the probs of the actual prompt tokens, so instead of using topk=1,
+        # we pick the corresponding logprobs indices
+        # note that we need to ignore the last one (first "generation" prediction)
+        # so we move input ids by 1, because we never predict the first token,
+        # but instead predict the one after the last
+        tokenprobs = logprobs[torch.arange(logprobs.size(0) - 1), batch_input_ids[0][1:]]
+
+        # as a sanity check I printed above on the model generated completion
+        # and we see probs close to 1 (after the prompt tokens, for which it's all over the place)
+
+        # if instead you want a top1 probs ignoring what's in the prompt but checking
+        # what the model *wants* to generate, you can use the following:
+        # tokenprobs = torch.topk(logprobs, k=1, dim=-1).values[:, 0][:-1]
+
+        # if you want to see what the model wants to predict in text, call the following
+        # tokenidx = torch.topk(logprobs, k=1, dim=-1).indices[:, 0][:-1]
+        # get_output_single(tokenidx, 0, tokenidx.shape[0], tokenizer, end_id)
+
+        # does it make sense to use a diff of the prompt token probs and the top1 probs?
+
+        return tokenprobs
 
         matching_stop_word = None
         # checking every half of the required tokens to have overlapping checks
@@ -486,7 +515,7 @@ class TensorRTLLM:
                 self.runner,
                 batch_input_ids[0],
                 max_new_tokens=max_output_token,
-                end_id=self.end_id,
+                end_id=-1,  # we should disable end id, otherwise tokenization cuts everything after first <|eot_id|>
                 pad_id=self.pad_id,
                 temperature=temperature,
                 top_k=top_k,
