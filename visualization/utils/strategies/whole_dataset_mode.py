@@ -42,7 +42,7 @@ from utils.strategies.base_strategy import ModeStrategies
 
 from nemo_skills.evaluation.evaluate_results import EvaluateResultsConfig, evaluate_results
 from nemo_skills.inference.generate_solutions import GenerateSolutionsConfig, InferenceConfig, generate_solutions
-from nemo_skills.inference.prompt.utils import FewShotExamplesConfig, PromptConfig
+from nemo_skills.prompt.utils import FewShotExamplesConfig, PromptConfig
 
 
 class WholeDatasetModeStrategy(ModeStrategies):

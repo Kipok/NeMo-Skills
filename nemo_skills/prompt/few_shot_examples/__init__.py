@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from nemo_skills.code_execution import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS
-from nemo_skills.inference.prompt.few_shot_examples.examples_gsm8k import examples_map as examples_gsm8k
-from nemo_skills.inference.prompt.few_shot_examples.examples_math import examples_map as examples_math
-from nemo_skills.inference.prompt.few_shot_examples.examples_tabmwp import examples_map as examples_tabmwp
+from nemo_skills.prompt.few_shot_examples.examples_gsm8k import examples_map as examples_gsm8k
+from nemo_skills.prompt.few_shot_examples.examples_math import examples_map as examples_math
+from nemo_skills.prompt.few_shot_examples.examples_tabmwp import examples_map as examples_tabmwp
 
 examples_map = examples_gsm8k.copy()
 examples_map.update(examples_math)

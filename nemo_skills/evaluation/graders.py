@@ -80,8 +80,8 @@ def math_grader(cfg):
     from tqdm import tqdm
 
     from nemo_skills.code_execution.math_grader import extract_answer
-    from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
     from nemo_skills.inference.server.model import get_model
+    from nemo_skills.prompt.utils import Prompt, get_prompt_config
 
     grading_config = LlmGraderConfig(**eval_config.grading_config)
 
@@ -260,8 +260,8 @@ def if_grader(cfg):
 def arena_grader(cfg):
     from tqdm import tqdm
 
-    from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
     from nemo_skills.inference.server.model import get_model
+    from nemo_skills.prompt.utils import Prompt, get_prompt_config
 
     eval_config = LlmGraderConfig(**cfg.eval_config)
     assert eval_config.batch_size % 2 == 0  # required due to how everything is implement, can fix later

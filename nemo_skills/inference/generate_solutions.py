@@ -23,12 +23,12 @@ from tqdm import tqdm
 
 from nemo_skills.code_execution import extract_error_message
 from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
-from nemo_skills.inference.prompt.utils import Prompt, PromptConfig, datasets, prompt_types
 from nemo_skills.inference.server.code_execution_model import (
     ErrorRecoveryConfig,
     get_code_execution_model,
     server_params,
 )
+from nemo_skills.prompt.utils import Prompt, PromptConfig, datasets, prompt_types
 from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dataclass, setup_logging
 
 LOG = logging.getLogger(__file__)

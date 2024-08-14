@@ -22,7 +22,7 @@ from pathlib import Path
 from utils import prepare_for_sft
 
 # utils is adding main package to path already
-from nemo_skills.inference.prompt.utils import prompt_types
+from nemo_skills.prompt.utils import prompt_types
 
 URL = "https://huggingface.co/datasets/nvidia/OpenMath-MATH-masked/resolve/main/data.jsonl?download=true"
 

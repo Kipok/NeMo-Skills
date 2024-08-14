@@ -97,7 +97,7 @@ def extract_answer_string_2(answer_str):
     return stripped_answer
 
 
-def save_data(split_name, random_seed, validation_size, prompt_type):
+def save_data(split_name, random_seed, validation_size):
     output_folder = Path(__file__).absolute().parent
     output_folder.mkdir(exist_ok=True)
     actual_split_name = "test" if split_name == "test" else "train"
@@ -189,14 +189,13 @@ def process_data():
     )
     parser.add_argument("--random_seed", type=int, default=42)
     parser.add_argument("--validation_size", type=int, default=1000)
-    parser.add_argument("--prompt_template", default="llama3-instruct")
     args = parser.parse_args()
 
     if args.split_name == "all":
         for split_name in ["test", "validation", "train", "train_full"]:
-            save_data(split_name, args.random_seed, args.validation_size, args.prompt_type)
+            save_data(split_name, args.random_seed, args.validation_size)
     else:
-        save_data(args.split_name, args.random_seed, args.validation_size, args.prompt_type)
+        save_data(args.split_name, args.random_seed, args.validation_size)
 
 
 if __name__ == "__main__":

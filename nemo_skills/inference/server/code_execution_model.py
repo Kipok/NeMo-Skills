@@ -22,8 +22,8 @@ from typing import List
 
 from nemo_skills.code_execution import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS, extract_code_to_execute
 from nemo_skills.code_execution.sandbox import Sandbox
-from nemo_skills.inference.prompt.utils import Prompt
 from nemo_skills.inference.server.model import BaseModel, NemoModel, OpenAIModel, get_model, models, postprocess_output
+from nemo_skills.prompt.utils import Prompt
 from nemo_skills.utils import nested_dataclass, python_doc_to_cmd_help
 
 LOG = logging.getLogger(__name__)

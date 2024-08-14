@@ -25,8 +25,8 @@ from omegaconf import MISSING, DictConfig, OmegaConf
 from settings.constants import RETRIEVAL, RETRIEVAL_FIELDS, UNDEFINED
 from settings.visualization_config import VisualizationConfig
 
-from nemo_skills.inference.prompt.few_shot_examples import examples_map
-from nemo_skills.inference.prompt.utils import context_templates, get_prompt_config, prompt_types
+from nemo_skills.prompt.few_shot_examples import examples_map
+from nemo_skills.prompt.utils import context_templates, get_prompt_config, prompt_types
 from nemo_skills.utils import setup_logging
 
 setup_logging()

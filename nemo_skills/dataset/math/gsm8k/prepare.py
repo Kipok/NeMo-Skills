@@ -41,7 +41,7 @@ fixes = {
 }
 
 
-def save_data(split_name, random_seed, validation_size, prompt_type):
+def save_data(split_name, random_seed, validation_size):
     actual_split_name = "test" if split_name == "test" else "train"
     data_folder = Path(__file__).absolute().parent
     original_file = str(data_folder / f"original_{actual_split_name}.jsonl")
@@ -103,11 +103,10 @@ if __name__ == "__main__":
     )
     parser.add_argument("--random_seed", type=int, default=42)
     parser.add_argument("--validation_size", type=int, default=1000)
-    parser.add_argument("--prompt_type", default="openmathinstruct/sft")
     args = parser.parse_args()
 
     if args.split_name == "all":
         for split_name in ["test", "validation", "train", "train_full"]:
-            save_data(split_name, args.random_seed, args.validation_size, args.prompt_type)
+            save_data(split_name, args.random_seed, args.validation_size)
     else:
-        save_data(args.split_name, args.random_seed, args.validation_size, args.prompt_type)
+        save_data(args.split_name, args.random_seed, args.validation_size)

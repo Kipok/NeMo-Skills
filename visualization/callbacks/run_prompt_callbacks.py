@@ -53,7 +53,7 @@ from utils.common import (
 )
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
 
-from nemo_skills.inference.prompt.utils import (
+from nemo_skills.prompt.utils import (
     FewShotExamplesConfig,
     Prompt,
     PromptConfig,
