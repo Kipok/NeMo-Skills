@@ -158,12 +158,12 @@ def sample_sequence_batch(
 
                 split_position = np.where(prompt_ids.cpu().numpy() == 128007)[0][-1] + 1
                 assert (
-                    tokenizer.tokenizer.decode(prompt_ids[split_position - 4 : split_position])
-                    == '<|eot_id|><|start_header_id|>assistant<|end_header_id|>'
+                    tokenizer.tokenizer.decode(prompt_ids[split_position - 3 : split_position])
+                    == '<|start_header_id|>assistant<|end_header_id|>'
                 ), (
                     prompt_ids,
                     tokenizer.tokenizer.decode(prompt_ids),
-                    tokenizer.tokenizer.decode(prompt_ids[split_position - 4 : split_position]),
+                    tokenizer.tokenizer.decode(prompt_ids[split_position - 3 : split_position]),
                 )
                 outputs.append([str(elem) for elem in list(tokenprobs[split_position:].cpu().numpy())])
 
