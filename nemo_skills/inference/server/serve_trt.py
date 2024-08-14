@@ -502,9 +502,10 @@ class TensorRTLLM:
         self.runner = ModelRunnerCpp.from_dir(
             engine_dir=model_path,
             rank=tensorrt_llm.mpi_rank(),
+            kv_cache_free_gpu_memory_fraction=0.5,
         )
         # might need to adjust in the future
-        self.executor = ThreadPoolExecutor(max_workers=1024)
+        self.executor = ThreadPoolExecutor(max_workers=20)
         self.requests = {}  # id to future
 
     def get_output(
