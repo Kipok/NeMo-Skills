@@ -14,13 +14,12 @@
 
 from typing import Dict
 
-from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
+from nemo_skills.prompt.utils import Prompt, get_prompt_config
 
 
-def prepare_for_sft(data, prompt_type, dataset, chat_format=False):
+def prepare_for_sft(data, prompt_config, prompt_template, dataset, chat_format=False):
     # reading prompt format from the yaml file
     prompt_config = get_prompt_config(prompt_type)
-    prompt_config.context_type = "empty"
     prompt_config.few_shot_examples.num_few_shots = 0
     prompt = Prompt(config=prompt_config)
 
@@ -31,12 +30,11 @@ def prepare_for_sft(data, prompt_type, dataset, chat_format=False):
         # and our solution format is different, but we need to populate that field for the code to work
         if chat_format:
             elem['conversations'] = [
-                {'value': original_elem['question'], 'from': 'User', 'canonical_form': ''},
+                {'value': original_elem['problem'], 'from': 'User', 'canonical_form': ''},
                 {'value': original_elem["reference_solution"], 'from': 'Assistant', 'canonical_form': ''},
             ]
             elem['system'] = prompt_config.system
             elem['mask'] = 'User'
-            elem['type'] = None
         else:
             elem["input"] = prompt.build_string(input_dict=original_elem)
             elem["output"] = original_elem['reference_solution']
@@ -53,11 +51,11 @@ def add_rounding_instruction(data: Dict) -> Dict:
         if '.' in str(data['expected_answer']):
             number_of_values = len(str(data['expected_answer']).split('.')[1])
         if number_of_values == 0:
-            data['question'] += ' Express the answer as an integer.'
+            data['problem'] += ' Express the answer as an integer.'
         elif number_of_values == 1:
-            data['question'] += ' Round the answer to one decimal place.'
+            data['problem'] += ' Round the answer to one decimal place.'
         else:
-            data['question'] += f' Round the answer to {number_of_values} decimal places.'
+            data['problem'] += f' Round the answer to {number_of_values} decimal places.'
     except ValueError:
         pass
     return data

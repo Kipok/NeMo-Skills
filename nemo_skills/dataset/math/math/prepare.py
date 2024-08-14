@@ -23,12 +23,9 @@ from collections import defaultdict
 from pathlib import Path
 
 from fix_ref_solns import _fix_solution, _post_fix, _post_fix_multi_answer
-from utils import prepare_for_sft
 
 from nemo_skills.code_execution.math_grader import normalize_answer_string
-
-# utils is adding main package to path already
-from nemo_skills.inference.prompt.utils import prompt_types
+from nemo_skills.dataset.utils import prepare_for_sft
 
 DOWNLOAD_LINK = "https://people.eecs.berkeley.edu/~hendrycks/MATH.tar"
 
@@ -165,12 +162,12 @@ def save_data(split_name, random_seed, validation_size, prompt_type):
             if split_name == "validation":
                 data = instances[:validation_size]
                 # dumping SFT-ready validation file as well right away
-                with open(output_folder / "validation-sft.jsonl", "wt", encoding="utf-8") as fout:
-                    for entry in prepare_for_sft(data, prompt_type, "math", chat_format=False):
-                        fout.write(json.dumps(entry) + "\n")
-                with open(output_folder / "validation-sft-chat.jsonl", "wt", encoding="utf-8") as fout:
-                    for entry in prepare_for_sft(data, prompt_type, "math", chat_format=True):
-                        fout.write(json.dumps(entry) + "\n")
+                # with open(output_folder / "validation-sft.jsonl", "wt", encoding="utf-8") as fout:
+                #     for entry in prepare_for_sft(data, prompt_type, "math", chat_format=False):
+                #         fout.write(json.dumps(entry) + "\n")
+                # with open(output_folder / "validation-sft-chat.jsonl", "wt", encoding="utf-8") as fout:
+                #     for entry in prepare_for_sft(data, prompt_type, "math", chat_format=True):
+                #         fout.write(json.dumps(entry) + "\n")
             elif split_name == "train":
                 data = instances[validation_size:]
             else:
@@ -192,7 +189,7 @@ def process_data():
     )
     parser.add_argument("--random_seed", type=int, default=42)
     parser.add_argument("--validation_size", type=int, default=1000)
-    parser.add_argument("--prompt_type", default="openmathinstruct/sft", choices=prompt_types)
+    parser.add_argument("--prompt_template", default="llama3-instruct")
     args = parser.parse_args()
 
     if args.split_name == "all":
