@@ -456,7 +456,10 @@ def _stream(
         )
 
         # to be able to convert to json and pass over http
-        return [str(elem) for elem in list(tokenprobs[split_position:].cpu().numpy())]
+        output = [str(elem) for elem in list(tokenprobs[split_position:].cpu().numpy())]
+        del logprobs
+        del tokenprobs
+        return output
 
         matching_stop_word = None
         # checking every half of the required tokens to have overlapping checks
