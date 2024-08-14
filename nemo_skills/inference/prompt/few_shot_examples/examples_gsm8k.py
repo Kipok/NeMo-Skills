@@ -718,6 +718,25 @@ critical_thinking = [
     },
 ]
 
+critical_thinking_cot = [
+    {
+        "question": "Stefan goes to a restaurant to eat dinner with his family. They order an appetizer that costs $10 and 4 entrees that are $20 each. If they tip 20% of the total for the waiter, what is the total amount of money that they spend at the restaurant?",
+        "perturbed_question": "Stefan goes to a restaurant to eat dinner with his family. They order an expensive appetizer and 4 entrees that are $20 each. If they tip 20% of the total for the waiter, what is the total amount of money that they spend at the restaurant?",
+        "generation": "The total cost of the entrees is 4 * $20 = $80.\nIf the appetizer costs x, then the total cost of the dinner is $80 + x.\nThe tip is ($80 + x) * 0.20.\nThe total cost with tip is ($80 + x) * 1.20\n. There is no information provided about the cost of the appetizer, so the answer is \\boxed{insufficient}."
+    },
+    {
+        "question": "The gauge on a water tank shows that the tank is 1/3 full of water. To fill the tank, 16 gallons of water are added. How many gallons of water does the tank hold when full?",
+        "perturbed_question": "The gauge on a water tank shows that the tank is not full. To fill the tank, 16 gallons of water are added. How many gallons of water does the tank hold when full?",
+        "generation": "The question states that the tank is not full, and it requires 16 gallons to fill it. The question doesn't specify the current amount of water in the tank. Let's assume the tank currently holds X gallons of water. Then tank can hold (16 + X) gallons of water. To determine the full capacity of the tank, more details are needed, such as the current level of water in the tank or the proportion of the tank that 16 gallons represents. Due to missing details, the answer is \\boxed{insufficient}."
+    },
+    {
+        "question": "Ben has 8 apples more than Phillip does. Tom has three eighths as many apples at Ben has. If Phillip has 40 apples, how many apples does Tom have?",
+        "perturbed_question": "Ben has 8 apples more than Phillip does. Tom has three eighths as many apples at Ben has. How many apples does Tom have?",
+        "generation": "Let's break down the problem. Given that Ben has 8 apples more than Phillip, we can represent the number of apples Phillip has as x. Therefore, Ben has (x + 8) apples. Tom has three eighths as many apples as Ben. Since Ben has x + 8 apples, Tom has 3/8(x + 8) apples. To get the the exact number of apples Tom has, the question must specify the number of apples Phillip has. Therefore, the answer is \\boxed{insufficient}."
+
+    },
+]
+
 distractor = [
     {
         "question": "Stefan goes to a restaurant to eat dinner with his family. They order an appetizer that costs $10 and 4 entrees that are $20 each. If they tip 20% of the total for the waiter, what is the total amount of money that they spend at the restaurant?",
@@ -744,5 +763,6 @@ examples_map = {
     "gsm8k_code_with_sympy": code_with_sympy,
     "gsm8k_data_augmentation": data_augmentation,
     "gsm8k_critical_thinking": critical_thinking,
+    "gsm8k_critical_thinking_cot": critical_thinking_cot,
     "gsm8k_distractor": distractor
 }
