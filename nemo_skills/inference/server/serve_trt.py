@@ -499,8 +499,6 @@ class TensorRTLLM:
         self.runner = ModelRunnerCpp.from_dir(
             engine_dir=model_path,
             rank=tensorrt_llm.mpi_rank(),
-            enable_chunked_context=True,
-            kv_cache_enable_block_reuse=True,
         )
         # might need to adjust in the future
         self.executor = ThreadPoolExecutor(max_workers=1024)

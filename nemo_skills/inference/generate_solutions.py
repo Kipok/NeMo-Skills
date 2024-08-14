@@ -134,7 +134,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                 outputs = llm.generate(
                     prompts=[prompt.build_string(data_point) for data_point in data_points],
                     stop_phrases=list(cfg.prompt.stop_phrases),
-                    **asdict(cfg.inference),
+                    tokens_to_generate=1,
                 )
 
                 for output, original_data_point in zip(outputs, data_points):
