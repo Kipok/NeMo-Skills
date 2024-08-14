@@ -124,10 +124,8 @@ def save_data(split_name, random_seed, validation_size, prompt_type):
 
                 content = json.loads(reader_f.extractfile(tar_member).read())
                 content["id"] = f"{eval_set}/{problem_type}/{fileid}.json"
-                content["question"] = content["problem"]
                 # Load the solution with our identified fixes
                 content["reference_solution"] = _fix_solution(content["id"], content["solution"])
-                del content["problem"]
                 del content["solution"]
 
                 entries = find_boxed_entries(content["reference_solution"])
@@ -137,11 +135,11 @@ def save_data(split_name, random_seed, validation_size, prompt_type):
                     parsed_answer = _post_fix_multi_answer(content["id"], entries)
 
                 if not (
-                    ("Find the equation" in content["question"])
-                    or ("Enter the equation" in content["question"])
-                    or ("What is the equation") in content["question"]
-                    or ("described by the equation") in content["question"]
-                    or ("Find an equation") in content["question"]
+                    ("Find the equation" in content["problem"])
+                    or ("Enter the equation" in content["problem"])
+                    or ("What is the equation") in content["problem"]
+                    or ("described by the equation") in content["problem"]
+                    or ("Find an equation") in content["problem"]
                 ) and ("=" in parsed_answer):
                     if parsed_answer.count("=") == 1:
                         # For greater count, it means we're just predicting values of multiple variables

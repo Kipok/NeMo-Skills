@@ -3,12 +3,12 @@
 # these tokens are always used to construct a prompt like this
 #
 #   single-turn:
-#     <bos_token><system_begin>{system}<system_end><user_begin>{user}<user_end><assistant_begin>{generation}
+#     <text_begin><system_begin>{system}<system_end><user_begin>{user}<user_end><assistant_begin>{generation}
 #   multi-turn:
-#     <bos_token><system_begin>{system}<system_end><user_begin>{user1}<user_end><assistant_begin>{assistant1}<assistant_end>...
+#     <text_begin><system_begin>{system}<system_end><user_begin>{user1}<user_end><assistant_begin>{assistant1}<assistant_end>...
 #     <user_begin>{userN}<user_end><assistant_begin>{generation}
 
-bos_token: ""
+text_begin: ""
 
 system_begin: ""
 system_end: ""

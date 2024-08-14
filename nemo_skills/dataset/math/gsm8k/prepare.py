@@ -40,15 +40,6 @@ fixes = {
     """Pete has to take a 10-minute walk down to the train station and then board a 1hr 20-minute train to LA. When should he leave if he cannot get to LA later than 0900 hours? (24-hr time)""": "07:30",
 }
 
-# Data Format
-#
-# Required:
-#   - question (problem statement)
-#
-# Optional:
-#   - expected_answer (expected answer)
-#   - reference_solution (text-based solution)
-
 
 def save_data(split_name, random_seed, validation_size, prompt_type):
     actual_split_name = "test" if split_name == "test" else "train"
@@ -69,7 +60,7 @@ def save_data(split_name, random_seed, validation_size, prompt_type):
             original_entry = json.loads(line)
             new_entry = {}
             # mapping to the required naming format
-            new_entry["question"] = original_entry["question"]
+            new_entry["problem"] = original_entry["question"]
             solution, expected_answer = original_entry["answer"].split("####")
             new_entry["expected_answer"] = float(expected_answer.replace(",", ""))
             # converting to int if able to for cleaner text-only representation
