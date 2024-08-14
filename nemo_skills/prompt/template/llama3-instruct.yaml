@@ -1,4 +1,4 @@
-# Prompt specification for Llama3-base model
+# Prompt specification for the original Llama3-instruct model
 
 # these tokens are always used to construct a prompt like this
 #
@@ -10,16 +10,13 @@
 
 bos_token: "<|begin_of_text|>"
 
-system_begin: ""
-system_end: ""
+system_begin: "<|start_header_id|>system<|end_header_id|>\n\n"
+system_end: "<|eot_id|>"
 
-user_begin: ""
-user_end: ""
+user_begin: "<|start_header_id|>user<|end_header_id|>\n\n"
+user_end: "<|eot_id|>"
 
-assistant_begin: ""
-assistant_end: ""
+assistant_begin: "<|start_header_id|>assistant<|end_header_id|>\n\n"
+assistant_end: "<|eot_id|>"
 
-skip_system_if_empty: True  # if True, will skip system tokens completely if system message is empty
-
-# by default we separate few shot examples with 6 newlines, so using it to stop
-stop_phrases: ["\n\n\n\n\n\n"]
+stop_phrases: ["<|eot_id|>"]

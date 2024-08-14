@@ -19,7 +19,5 @@ user_end: ""
 assistant_begin: ""
 assistant_end: ""
 
-skip_system_if_empty: True  # if True, will skip system tokens completely if system message is empty
-
 # by default we separate few shot examples with 6 newlines, so using it to stop
 stop_phrases: ["\n\n\n\n\n\n"]

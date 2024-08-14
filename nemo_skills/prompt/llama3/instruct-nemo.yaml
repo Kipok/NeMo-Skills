@@ -1,0 +1,24 @@
+# Prompt specification for the Llama3-instruct model finetuned with NeMo
+# the only difference from the original Llama3-instruct model is that we don't skip system tokens if they are empty
+# TODO: should we unify this?
+
+# these tokens are always used to construct a prompt like this
+#
+#   single-turn:
+#     <bos_token><system_begin>{system}<system_end><user_begin>{user}<user_end><assistant_begin>{generation}
+#   multi-turn:
+#     <bos_token><system_begin>{system}<system_end><user_begin>{user1}<user_end><assistant_begin>{assistant1}<assistant_end>...
+#     <user_begin>{userN}<user_end><assistant_begin>{generation}
+
+bos_token: "<|begin_of_text|>"
+
+system_begin: "<|start_header_id|>system<|end_header_id|>\n\n"
+system_end: "<|eot_id|>"
+
+user_begin: "<|start_header_id|>user<|end_header_id|>\n\n"
+user_end: "<|eot_id|>"
+
+assistant_begin: "<|start_header_id|>assistant<|end_header_id|>\n\n"
+assistant_end: "<|eot_id|>"
+
+stop_phrases: ["<|eot_id|>"]
