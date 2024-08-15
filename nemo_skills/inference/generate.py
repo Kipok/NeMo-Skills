@@ -28,7 +28,7 @@ from nemo_skills.inference.server.code_execution_model import (
     get_code_execution_model,
     server_params,
 )
-from nemo_skills.prompt.utils import Prompt, PromptConfig, datasets, prompt_types
+from nemo_skills.prompt.utils import Prompt, get_prompt
 from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dataclass, setup_logging
 
 LOG = logging.getLogger(__file__)
@@ -53,13 +53,12 @@ class GenerateSolutionsConfig:
     server: dict
     # Sandbox configuration {sandbox_params}
     sandbox: dict
-    # Prompt configuration.
-    # Available pre-configured prompts: {prompt_types}.
-    prompt: PromptConfig = field(default_factory=PromptConfig)
+    # Prompt configuration - path to yaml files
+    prompt_config: str
+    prompt_template: str
     inference: InferenceConfig = field(default_factory=InferenceConfig)  # LLM call parameters
 
     # Can specify one of the existing datasets.
-    # Choices: {datasets}.
     dataset: str | None = None
     split_name: str | None = None  # Can be train, validation, test or train_full (train + validation)
     data_file: str | None = None  # Can directly specify a data file, if using a custom dataset
@@ -119,7 +118,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
     # additionally, skipping whatever is pre-filled, assuming offset didn't change
     data = data[starting_idx:]
-    prompt = Prompt(config=cfg.prompt)
+    prompt = get_prompt(cfg.prompt_config, cfg.prompt_template)
 
     if cfg.max_samples < 0:
         cfg.max_samples = len(data)
@@ -137,7 +136,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                 # batch-computing the outputs
                 outputs = llm.generate(
                     prompts=[prompt.build_string(data_point) for data_point in data_points],
-                    stop_phrases=list(cfg.prompt.stop_phrases),
+                    stop_phrases=list(cfg.prompt.template.stop_phrases),
                     **asdict(cfg.inference),
                 )
 
@@ -179,8 +178,6 @@ error_recovery_params = '\n' + get_fields_docstring(
 
 HELP_MESSAGE = get_help_message(
     GenerateSolutionsConfig,
-    datasets=datasets,
-    prompt_types=prompt_types,
     server_params=server_params(),
     sandbox_params=sandbox_params(),
     error_recovery_params=error_recovery_params,

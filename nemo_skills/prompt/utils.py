@@ -50,7 +50,9 @@ class BM25Retriever:
 
 @nested_dataclass
 class FewShotExamplesConfig:
+    prefix: str = ""
     template: str = ""
+    suffix: str = ""
     num_few_shots: int = 0
 
     examples_type: Optional[str] = None
@@ -97,15 +99,33 @@ class FewShotExamplesConfig:
 
 
 @nested_dataclass
+class PromptTemplate:
+    text_begin: str
+    system_begin: str
+    system_end: str
+    user_begin: str
+    user_end: str
+    assistant_begin: str
+    assistant_end: str
+
+    # TODO: should stop phrases not be here?
+    stop_phrases: List[str]
+
+
+@nested_dataclass
 class PromptConfig:
-    few_shot_examples: FewShotExamplesConfig = field(default_factory=FewShotExamplesConfig)
-    prompt_template: str = MISSING
-    user: str = MISSING
+    template: PromptTemplate  # TODO: is there a better name for this? Too many templates + this contains pieces
+    user: str
     system: str = ""
-    stop_phrases: List[str] = field(default_factory=list)
+    few_shot_examples: FewShotExamplesConfig = field(default_factory=FewShotExamplesConfig)
 
 
 class Prompt:
+    # TODO: multiturn
+    TEMPLATE = (
+        "{text_begin}{system_begin}{system}{system_end}{user_begin}{user}{user_end}{assistant_begin}{generation}"
+    )
+
     def __init__(self, config):
         # rebuilding prompt config to make sure post init is called again in
         # case some parameters were manually changed after the config was created
@@ -113,7 +133,7 @@ class Prompt:
 
     def build_filled_example(self, example_dict: Dict[str, Any]) -> str:
         """Builds a filled example string based on the example dictionary."""
-        return self.config.few_shot_examples.template.format(**example_dict)
+        return self.config.few_shot_examples.template.format(**example_dict, **asdict(self.config.template))
 
     def build_examples_dict(self, input_dict):
         if self.config.few_shot_examples.num_few_shots == 0:
@@ -166,36 +186,51 @@ class Prompt:
         """Returns the complete prompt string representation."""
         generation = input_dict.get("generation", "")
 
-        prompt = self.config.prompt_template.format(
+        prompt = Prompt.TEMPLATE.format(
             system=self.config.system,
             user=self.build_user_message(input_dict),
             generation=generation,
+            **asdict(self.config.template),
         )
         return prompt
 
 
-def get_prompt_config(prompt_type: str) -> PromptConfig:
+def load_config(config: str, config_folder: str | None = None) -> dict:
     """
-    Reads the prompt config from the yaml file.
+    Reads the prompt config/template from the yaml file.
 
     Args:
-        prompt_type: The name of the prompt config file. Can be the path to a yaml file or one of the available configs.
+        config (str): The location of the prompt config file.
+            Can be the full path to a yaml file (if ends with .yaml) or one of the available configs.
+            If configs starts with nemo_skills we will look relative to the repo root.
+            If not, we will look relative to the config_folder parameter
+        config_folder (str): The folder to look for the config file.
 
     Returns:
-        The prompt config object.
+        The loaded dictionary.
     """
-    # reading prompt format from the yaml file, if not running through hydra
-    internal_config_path = Path(__file__).parent / f"{prompt_type}.yaml"
-    if internal_config_path.exists():
-        config_path = internal_config_path
+    if config_folder is None:
+        config_folder = str(Path(__file__).parent.absolute())
 
-    elif ".yaml" in prompt_type:
-        # Assume prompt type is a str to a filepath
-        config_path = Path(prompt_type).absolute()
-
+    if config.endswith(".yaml"):
+        config_path = Path(config).absolute()
+    elif config.startswith("nemo_skills"):
+        config_path = Path(__file__).parents[2].absolute() / f"{config}.yaml"
     else:
-        raise ValueError(f"Prompt config not found for {prompt_type}")
+        config_path = Path(config_folder) / f"{config}.yaml"
 
     with open(config_path, "rt", encoding="utf-8") as fin:
-        prompt_config = PromptConfig(_init_nested=True, **yaml.safe_load(fin))
-        return prompt_config
+        return yaml.safe_load(fin)
+
+
+def get_prompt(
+    prompt_config: str,
+    prompt_template: str,
+    config_folder: str | None = None,
+    template_folder: str | None = None,
+) -> Prompt:
+    if template_folder is None:
+        template_folder = Path(__file__).parent.absolute() / 'template'
+    config = load_config(prompt_config, config_folder)
+    template = load_config(prompt_template, template_folder)
+    return Prompt(PromptConfig(**config, template=PromptTemplate(**template)))

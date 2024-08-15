@@ -20,8 +20,6 @@ import re
 import urllib.request
 from pathlib import Path
 
-from nemo_skills.dataset.utils import prepare_for_sft
-
 URL = "https://raw.githubusercontent.com/openai/grade-school-math/master/grade_school_math/data/{}.jsonl"
 
 

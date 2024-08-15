@@ -25,7 +25,6 @@ from pathlib import Path
 from fix_ref_solns import _fix_solution, _post_fix, _post_fix_multi_answer
 
 from nemo_skills.code_execution.math_grader import normalize_answer_string
-from nemo_skills.dataset.utils import prepare_for_sft
 
 DOWNLOAD_LINK = "https://people.eecs.berkeley.edu/~hendrycks/MATH.tar"
 
