@@ -21,15 +21,6 @@ from pathlib import Path
 LABEL = "label"
 URL = "https://raw.githubusercontent.com/google-research-datasets/GSM-IC/main/GSM-IC_mstep.json"
 
-# Data Format
-#
-# Required:
-#   - question (problem statement)
-#
-# Optional:
-#   - expected_answer (expected answer)
-#   - reference_solution (text-based solution)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -71,7 +62,7 @@ if __name__ == "__main__":
                 [original_entry[key] == value for key, value in args.items() if LABEL in key and value is not None]
             ):
                 ic_entry = dict(
-                    question=original_entry["new_question"],
+                    problem=original_entry["new_question"],
                     expected_answer=original_entry["answer"],
                     **{key: value for key, value in original_entry.items() if key not in ["answer", "new_question"]},
                 )

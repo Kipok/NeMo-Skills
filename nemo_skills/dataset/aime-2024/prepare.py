@@ -151,7 +151,7 @@ if __name__ == "__main__":
         solution, expected_answer = get_question_or_solution(url, choice='solution')
         new_entry = {}
 
-        new_entry["question"] = question
+        new_entry["problem"] = question
         new_entry["expected_answer"] = expected_answer
         new_entry["reference_solution"] = solution
 

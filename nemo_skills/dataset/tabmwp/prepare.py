@@ -20,15 +20,6 @@ from pathlib import Path
 
 URL_prefix = "https://raw.githubusercontent.com/lupantech/PromptPG/main/data/tabmwp/problems_"
 
-# Data Format
-#
-# Required:
-#   - question (problem statement)
-#
-# Optional:
-#   - expected_answer (expected answer)
-#   - reference_solution (text-based solution)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -78,7 +69,7 @@ if __name__ == "__main__":
                 )
 
                 new_entry = dict(
-                    question=question,
+                    problem=question,
                     expected_answer=original_entry["answer"],
                     reference_solution=original_entry["solution"],
                     table_title=original_entry["table_title"],
@@ -87,7 +78,7 @@ if __name__ == "__main__":
                 )
 
                 if original_entry["ques_type"] == "multi_choice":
-                    new_entry["question"] += "\nAnswer options:\n{}".format(", ".join(original_entry["choices"]))
+                    new_entry["problem"] += "\nAnswer options:\n{}".format(", ".join(original_entry["choices"]))
 
                 # converting to int if able to for cleaner text representation
                 if original_entry["ans_type"] == "integer_number":

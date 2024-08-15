@@ -18,20 +18,9 @@ import os
 import urllib.request
 from pathlib import Path
 
-from utils import add_rounding_instruction
+from nemo_skills.dataset.utils import add_rounding_instruction
 
 URL = "https://huggingface.co/datasets/qintongli/GSM-Plus/resolve/main/data/test-00000-of-00001.jsonl?download=true"
-
-# Data Format
-#
-# Required:
-#   - question (problem statement)
-#
-# Optional:
-#   - expected_answer (expected answer)
-#   - reference_solution (text-based solution)
-#
-# GSM8K validation split was used in the experiments
 
 
 if __name__ == "__main__":
@@ -77,7 +66,7 @@ if __name__ == "__main__":
                 )
                 expected_answer = original_entry.get("answer", None) or original_entry.get("expected_answer", None)
                 entry = dict(
-                    question=original_entry["question"],
+                    problem=original_entry["question"],
                     reference_solution=reference_solution,
                     expected_answer=expected_answer,
                     **{
@@ -88,7 +77,7 @@ if __name__ == "__main__":
                             "answer",
                             "expected_answer",
                             "solution",
-                            "question",
+                            "problem",
                             "reference_solution",
                         ]
                     },

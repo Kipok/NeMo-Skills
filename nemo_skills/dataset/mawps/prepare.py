@@ -21,15 +21,6 @@ from pathlib import Path
 # the official download link is currently down.
 URL = "https://raw.githubusercontent.com/microsoft/ToRA/main/src/data/mawps/{subset}.jsonl"
 
-# Data Format
-#
-# Required:
-#   - question (problem statement)
-#
-# Optional:
-#   - expected_answer (expected answer)
-#   - reference_solution (text-based solution)
-
 
 subsets = ["addsub", "singleeq", "singleop", "multiarith"]
 
@@ -49,7 +40,7 @@ if __name__ == "__main__":
             for line in fin:
                 original_entry = json.loads(line)
                 new_entry = dict(
-                    question=original_entry["input"],
+                    problem=original_entry["input"],
                     expected_answer=original_entry["target"],
                     type=subset,
                 )

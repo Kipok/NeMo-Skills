@@ -19,15 +19,6 @@ from pathlib import Path
 
 URL = "https://raw.githubusercontent.com/protagolabs/odyssey-math/main/final-odyssey-math-with-levels.jsonl"
 
-# Data Format
-#
-# Required:
-#   - question (problem statement)
-#
-# Optional:
-#   - expected_answer (expected answer)
-#   - reference_solution (text-based solution)
-
 
 def identify_label(answer_endings, answer):
     for ending in answer_endings:
@@ -68,7 +59,7 @@ if __name__ == "__main__":
             key = list(original_entry.keys())[0]
             original_entry = original_entry[key]
             # mapping to the required naming format
-            new_entry["question"] = original_entry["question"]
+            new_entry["problem"] = original_entry["question"]
             answer = original_entry["answer"]
             for ending in answer_endings:
                 if answer.endswith(ending):

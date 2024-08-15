@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PROMPT_CONFIG = 'nemo_skills/dataset/math/prompt.yaml'
+PROMPT_CONFIG = 'generic/math'

@@ -27,7 +27,6 @@ DATASETS = [
     ('gsm-plus', ['test', 'test_rounded'], []),
     ('gsm-ic-2step', ['test'], []),
     ('gsm-ic-mstep', ['test'], []),
-    ('functional', ['test'], []),
     ('math', ['train', 'train_full', 'validation', 'test'], ['validation-sft', 'validation-sft-chat']),
     ('human-eval', ['test'], []),
     ('mbpp', ['test'], []),

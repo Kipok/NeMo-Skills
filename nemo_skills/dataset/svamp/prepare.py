@@ -19,15 +19,6 @@ from pathlib import Path
 
 URL = "https://raw.githubusercontent.com/arkilpatel/SVAMP/main/SVAMP.json"
 
-# Data Format
-#
-# Required:
-#   - question (problem statement)
-#
-# Optional:
-#   - expected_answer (expected answer)
-#   - reference_solution (text-based solution)
-
 
 if __name__ == "__main__":
     data_folder = Path(__file__).absolute().parent
@@ -47,7 +38,7 @@ if __name__ == "__main__":
             if original_entry["Body"][-1].isalpha():
                 original_entry["Body"] += "."
             # mapping to the required naming format
-            new_entry["question"] = original_entry["Body"] + " " + original_entry["Question"]
+            new_entry["problem"] = original_entry["Body"] + " " + original_entry["Question"]
             new_entry["expected_answer"] = original_entry["Answer"]
             # converting to int if able to for cleaner text-only representation
             if int(new_entry["expected_answer"]) == new_entry["expected_answer"]:

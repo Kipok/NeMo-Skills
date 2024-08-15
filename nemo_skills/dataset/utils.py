@@ -14,7 +14,7 @@
 
 from typing import Dict
 
-from nemo_skills.prompt.utils import Prompt, get_prompt_config
+from nemo_skills.prompt.utils import Prompt
 
 
 def prepare_for_sft(data, prompt_config, prompt_template, dataset, chat_format=False):

@@ -20,15 +20,6 @@ from pathlib import Path
 
 URL = "https://raw.githubusercontent.com/chaochun/nlu-asdiv-dataset/master/dataset/ASDiv.xml"
 
-# Data Format
-#
-# Required:
-#   - question (problem statement)
-#
-# Optional:
-#   - expected_answer (expected answer)
-#   - reference_solution (text-based solution)
-
 
 if __name__ == "__main__":
     data_folder = Path(__file__).absolute().parent
@@ -45,7 +36,7 @@ if __name__ == "__main__":
     with open(output_file, "wt", encoding="utf-8") as fout:
         for key, problem in enumerate(root.iter("Problem")):
             new_entry = dict(
-                question=problem.find("Body").text.strip() + ' ' + problem.find("Question").text.strip(),
+                problem=problem.find("Body").text.strip() + ' ' + problem.find("Question").text.strip(),
                 expected_answer=problem.find("Answer").text.split('(')[0].strip(),
                 type=problem.find("Solution-Type").text,
             )

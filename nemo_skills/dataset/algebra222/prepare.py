@@ -20,15 +20,6 @@ from pathlib import Path
 
 URL = "https://raw.githubusercontent.com/joyheyueya/declarative-math-word-problem/main/algebra222.csv"
 
-# Data Format
-#
-# Required:
-#   - question (problem statement)
-#
-# Optional:
-#   - expected_answer (expected answer)
-#   - reference_solution (text-based solution)
-
 
 if __name__ == "__main__":
     data_folder = Path(__file__).absolute().parent
@@ -47,7 +38,7 @@ if __name__ == "__main__":
     with open(output_file, "wt", encoding="utf-8") as fout:
         for entry in data:
             sample = dict(
-                question=entry["question"],
+                problem=entry["question"],
                 expected_answer=float(entry["final_answer"]),
             )
             if int(sample["expected_answer"]) == sample["expected_answer"]:

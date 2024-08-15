@@ -15,6 +15,3 @@ user: |-
   Help the user to solve the given math problem. Make sure to put the answer (and only answer) inside \boxed{{}}.
 
   {examples}{problem}
-
-
-# TODO: RENAME EVERYTHING TO PROBLEM IN PREPARE SCRIPTS

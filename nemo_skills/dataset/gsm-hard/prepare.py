@@ -18,18 +18,9 @@ import os
 import urllib.request
 from pathlib import Path
 
-from utils import add_rounding_instruction
+from nemo_skills.dataset.utils import add_rounding_instruction
 
 URL = "https://huggingface.co/datasets/reasoning-machines/gsm-hard/raw/main/gsmhardv2.jsonl"
-
-# Data Format
-#
-# Required:
-#   - question (problem statement)
-#
-# Optional:
-#   - expected_answer (expected answer)
-#   - reference_solution (text-based solution)
 
 
 if __name__ == "__main__":
@@ -55,7 +46,7 @@ if __name__ == "__main__":
         for line in fin:
             original_entry = json.loads(line)
             new_entry = dict(
-                question=original_entry["input"],
+                problem=original_entry["input"],
                 expected_answer=original_entry["target"],
             )
             # converting to int if able to for cleaner text representation
