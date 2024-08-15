@@ -1,16 +1,17 @@
-# Prompt for Nemotron-instruct for MMLU (adapted from Llama-instruct prompt for MMLU)
+# Prompt used by Llama-base/instruct models for MMLU benchmark
+# https://huggingface.co/datasets/meta-llama/Meta-Llama-3.1-8B-Instruct-evals/viewer/Meta-Llama-3.1-8B-Instruct-evals__mmlu__0_shot__cot__details?row=0
 
 system: ""
 
 user: |-
   Given the following question and four candidate answers (A, B, C and D), choose the best answer.
-  
+
   Question: {question}
   A. {A}
   B. {B}
   C. {C}
   D. {D}
-  
+
   - For simple problems:
   Directly provide the answer with minimal explanation.
 
@@ -26,13 +27,3 @@ user: |-
   where the [the_answer_letter] is one of A, B, C or D.
 
   Let's think step by step.
-
-prompt_template: |-
-  <extra_id_0>System
-  {system}
-  <extra_id_1>User
-  {user}
-  <extra_id_1>Assistant
-  {generation}
-
-stop_phrases: ["<extra_id_1>"]

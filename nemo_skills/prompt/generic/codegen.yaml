@@ -1,8 +1,8 @@
-# Prompt for code generation with Llama models SFTed by us
+# default prompt for all code generation benchmarks (e.g. human-eval, mmlu)
 
 system: ""
 
-user: |- 
+user: |-
   Here is the given problem for which you need to generate/complete code:
   {question}
 
@@ -12,14 +12,3 @@ user: |-
   ```python
   # Your code here
   ```
-
-prompt_template: |-
-  <|begin_of_text|><|start_header_id|>system<|end_header_id|>
-  
-  {system}<|eot_id|><|start_header_id|>user<|end_header_id|>
-
-  {user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
-  {generation}
-  
-stop_phrases: ["<|eot_id|>"]

@@ -1,6 +1,7 @@
-# default prompt for all math benchmarks
+# default prompt for all math benchmarks (e.g. gsm8k, math)
+
 few_shot_examples:
-  prefix: "Look at the following examples of problems and solutions, then solve the user's problem."
+  prefix: "Look at the following examples of problems and solutions, then solve the user's problem.\n\n"
   template: "Problem:\n{problem}\n\nSolution:\n{solution}\n\n\n\n\n\n"
   suffix: "Problem:\n"
   # this is built as <prefix>{template.format(example1)}{template.format(example2)}...{template.format(exampleN)}<suffix>
