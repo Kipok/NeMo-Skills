@@ -14,5 +14,5 @@ few_shot_examples:
 
 user: |-
   {examples}Given the following problem, reason and give a final answer to the problem.
-  Problem: {question}
+  Problem: {problem}
   Your response should end with "The final answer is [answer]" where [answer] is the response to the problem.

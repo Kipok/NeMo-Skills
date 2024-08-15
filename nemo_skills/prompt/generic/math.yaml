@@ -10,7 +10,7 @@ few_shot_examples:
 
 system: ""
 
-user: -|
+user: |-
   Help the user to solve the given math problem. Make sure to put the answer (and only answer) inside \boxed{{}}.
 
   {examples}{problem}

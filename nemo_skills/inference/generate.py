@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import importlib
 import json
 import logging
 import sys
@@ -28,7 +29,7 @@ from nemo_skills.inference.server.code_execution_model import (
     get_code_execution_model,
     server_params,
 )
-from nemo_skills.prompt.utils import Prompt, get_prompt
+from nemo_skills.prompt.utils import get_prompt
 from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dataclass, setup_logging
 
 LOG = logging.getLogger(__file__)
@@ -54,8 +55,8 @@ class GenerateSolutionsConfig:
     # Sandbox configuration {sandbox_params}
     sandbox: dict
     # Prompt configuration - path to yaml files
-    prompt_config: str
     prompt_template: str
+    prompt_config: str | None = None  # we will fetch it from dataset folder if not provided
     inference: InferenceConfig = field(default_factory=InferenceConfig)  # LLM call parameters
 
     # Can specify one of the existing datasets.
@@ -73,6 +74,10 @@ class GenerateSolutionsConfig:
 
     generation_key: str = "generation"
 
+    # can add this flag to just print the first prompt instead of running generation
+    # useful to double check that your data can be loaded and prompt has what you expect
+    dry_run: bool = False
+
     def __post_init__(self):
         """Building data_file from dataset/split_name if not provided directly."""
         if self.data_file is not None:
@@ -81,7 +86,10 @@ class GenerateSolutionsConfig:
         else:
             if self.dataset is None or self.split_name is None:
                 raise ValueError("Either `data_file` or `dataset` and `split_name` should be provided")
-            self.data_file = Path(__file__).parents[2] / "datasets" / self.dataset / f"{self.split_name}.jsonl"
+            self.data_file = Path(__file__).parents[1] / "dataset" / self.dataset / f"{self.split_name}.jsonl"
+
+        if self.dataset is None and self.prompt_config is None:
+            raise ValueError("If `dataset` is not provided, `prompt_config` is required")
 
 
 cs = hydra.core.config_store.ConfigStore.instance()
@@ -118,10 +126,19 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
     # additionally, skipping whatever is pre-filled, assuming offset didn't change
     data = data[starting_idx:]
+    if cfg.prompt_config is None:
+        # fetching from the default for corresponding dataset
+        dataset_module = importlib.import_module(f"nemo_skills.dataset.{cfg.dataset}")
+        cfg.prompt_config = dataset_module.PROMPT_CONFIG
+
     prompt = get_prompt(cfg.prompt_config, cfg.prompt_template)
 
     if cfg.max_samples < 0:
         cfg.max_samples = len(data)
+
+    if cfg.dry_run:
+        LOG.info("Data dictionary: %s\nPrompt: %s", data[0], prompt.build_string(data[0]))
+        return
 
     # setting buffering=1 to force to dump the output after every line, so that we can see intermediate generations
     with open(cfg.output_file, "at" if cfg.skip_filled else "wt", encoding="utf-8", buffering=1) as fout:
@@ -132,11 +149,11 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
             data_points.append(data_point)
 
-            if len(data_points) == cfg.batch_size:
+            if len(data_points) == cfg.batch_size or idx == cfg.max_samples - 1:
                 # batch-computing the outputs
                 outputs = llm.generate(
                     prompts=[prompt.build_string(data_point) for data_point in data_points],
-                    stop_phrases=list(cfg.prompt.template.stop_phrases),
+                    stop_phrases=list(prompt.config.template.stop_phrases),
                     **asdict(cfg.inference),
                 )
 
@@ -152,21 +169,6 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
                     fout.write(json.dumps(output) + "\n")
                 data_points = []
-
-        # collecting the final batch
-        if len(data_points) > 0:
-            outputs = llm.generate(
-                prompts=[prompt.build_string(data_point) for data_point in data_points],
-                stop_phrases=list(cfg.prompt.stop_phrases),
-                **asdict(cfg.inference),
-            )
-            for output, original_data_point in zip(outputs, data_points):
-                output.update(original_data_point)
-                if 'error_message' not in output:
-                    output['error_message'] = extract_error_message(output['generation'])
-                if cfg.generation_key != "generation":
-                    output[cfg.generation_key] = output.pop("generation")
-                fout.write(json.dumps(output) + "\n")
 
 
 error_recovery_params = '\n' + get_fields_docstring(

@@ -70,9 +70,6 @@ class ReadData(BaseProcessor):
                 continue
             sample = json.loads(line)
             questions.add(sample[self.input_key])
-            # for backward compatibility
-            if self.output_key not in sample and "generated_solution" in sample:
-                sample[self.output_key] = sample.pop("generated_solution")
             samples.append(sample)
 
         return samples
@@ -107,10 +104,6 @@ class ReadData(BaseProcessor):
 
             if not self.add_incorrect and not line_dict["is_correct"]:
                 continue
-
-            # for backward compatibility
-            if self.output_key not in line_dict and "generated_solution" in line_dict:
-                line_dict[self.output_key] = line_dict.pop("generated_solution")
 
             line_dict['filename'] = file_handle.name
             samples.append(line_dict)
