@@ -22,4 +22,4 @@ containers:
 
 # change this to "sudo docker" if non-root user access is not set up
 # to set up non-root access, follow https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user
-docker_cmd: "docker"
+docker_cmd: "sudo docker"
