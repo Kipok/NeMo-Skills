@@ -1,0 +1,20 @@
+cluster: slurm
+account: llmservice_nemo_reasoning
+partition: polar,polar2,polar3,polar4,grizzly
+job_name_prefix: "llmservice_nemo_reasoning-research"
+extra_sbatch_args:
+  - --exclusive
+  - --mem=0
+extra_sandbox_args:
+  - --overlap
+
+containers:
+  tensorrt_llm: /lustre/fsw/portfolios/llmservice/users/igitman/images/nemo-skills-trtllm-0.3.2.sqsh
+  vllm: /lustre/fsw/portfolios/llmservice/users/igitman/images/nemo-skills-vllm-0.3.1.sqsh
+  nemo: /lustre/fsw/portfolios/llmservice/users/igitman/images/nemo-skills-sft-llama3.1.sqsh
+  sandbox: /lustre/fsw/portfolios/llmservice/users/igitman/images/nemo-skills-sandbox-0.3.0.sqsh
+
+timeouts:
+  polar,polar2,polar3,polar4,grizzly: 04:00:00
+  interactive: 04:00:00
+  interactive_singlenode: 04:00:00

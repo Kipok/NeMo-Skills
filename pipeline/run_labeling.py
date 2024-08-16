@@ -28,6 +28,9 @@ SLURM_CMD = """
 nvidia-smi && \
 cd /code && \
 export PYTHONPATH=$PYTHONPATH:/code && \
+export UCX_IB_TRAFFIC_CLASS=41
+export UCX_NET_DEVICES=mlx5_1:1,mlx5_2:1,mlx5_3:1,mlx5_4:1,mlx5_5:1,mlx5_6:1,mlx5_7:1,mlx5_8:1,mlx5_9:1,mlx5_10:1,mlx5_11:1,mlx5_12:1,mlx5_14:1,mlx5_15:1,mlx5_16:1,mlx5_17:1
+export NCCL_IB_QPS_PER_CONNECTION=4
 export HF_TOKEN={HF_TOKEN} && \
 export NVIDIA_API_KEY={NVIDIA_API_KEY} && \
 export OPENAI_API_KEY={OPENAI_API_KEY} && \

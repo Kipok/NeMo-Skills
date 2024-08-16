@@ -26,6 +26,8 @@ build
 *.egg-info
 *.xml
 *.DS_Store
+/.dev/
+/data/
 
 __pycache__
 .ipynb_checkpoints
