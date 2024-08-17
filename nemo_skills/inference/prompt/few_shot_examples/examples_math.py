@@ -1512,15 +1512,15 @@ Thus, the value of $n$ is $49x^2 - 5$. Since $n$ depends on $x$, $n$ cannot be d
 distractor = [
     {
         "question": "Base prime representation of a natural number is defined using the exponents of its prime factorization as follows. Each place in a base prime represents a prime number, and it is occupied by the corresponding exponent of that prime, starting on the right side with the smallest prime number and proceeding to the left with the next largest prime number. For instance, since $84 = 7^1 \\times 5^0 \\times 3^1 \\times 2^2$, then $84$ would be written as $1012$ in base prime. What is $225$ written in base prime?",
-        "perturbed_question": "Base prime representation of a natural number is defined using the exponents of its prime factorization as follows. Each place in a base prime represents a prime number, and it is occupied by the corresponding exponent of that prime, starting on the right side with the smallest prime number and proceeding to the left with the next largest prime number. For instance, since $84 = 7^1 \\times 5^0 \\times 3^1 \\times 2^2$, then $84$ would be written as $1012$ in base prime. One interesting fact about prime numbers is the existence of twin primes. Twin primes are pairs of prime numbers that differ by exactly 2. For instance, (3, 5), (17, 19), and (11, 13) are twin primes. Unfortunately, mathematicians still have not proven the Twin Prime Conjecture, which asserts that there are infinitely many twin primes. The largest known twin primes, as of 2024, are $2996863034895 \times 2^{1290000} \pm 1$. What is $225$ written in base prime?"
+        "perturbed_question": "Base prime representation of a natural number is defined using the exponents of its prime factorization as follows. Each place in a base prime represents a prime number, and it is occupied by the corresponding exponent of that prime, starting on the right side with the smallest prime number and proceeding to the left with the next largest prime number. For instance, since $84 = 7^1 \\times 5^0 \\times 3^1 \\times 2^2$, then $84$ would be written as $1012$ in base prime. Given the largest twin primes $2966863033895 \times 2^{129000} \pm 1$, what is $225$ written in base prime?"
     },
     {
         "question": "If $\\sqrt{5+n}=7$, then what is the value of $n$?",
-        "perturbed_question": "In arithmetic and algebra, square roots are used to solve equations, calculate areas and volumes, and find unknown values. If $\\sqrt{5+n}=7$ and $f(x) = \frac{x}{\sqrt{2} + x(1-\sqrt{2})}$ is a functional square root of $g(x) = \frac{x}{2+x^7}$, then what is the value of $n$?" # intentional error in the distractor
+        "perturbed_question": "If $\\sqrt{5+x}=78yn$, $n>2$, $\\sqrt{xn}=7n+n^2$, and $\\sqrt{5+n}=7$, then what is the value of $n$?",
     },
     {
         "question": "The area of a triangle is 600 square feet. Find the altitude, in feet, of the triangle if the length of the corresponding base is 30 feet.",
-        "perturbed_question": "The area of a triangle is 600 square feet. This triangle is there to depict a roof of a house. Find the altitude, in feet, of the triangle if the length of the corresponding base is 30 feet. The scale of the drawing is off and we might want a larger base for the final project."
+        "perturbed_question": "The area of a triangle is 600 square feet, the side of the square ($s$) is 30 cm and $\\sqrt{5+s}=7$. Find the altitude, in feet, of the triangle if the length of the corresponding base is 30 feet."
     },
 ]
 
