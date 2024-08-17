@@ -22,7 +22,7 @@ def process_files(file_paths: List[str]) -> Dict[str, Dict]:
     
     return solutions
 
-def calculate_hardness(solutions: Dict[str, Dict], raw_fraction: bool) -> List[Dict]:
+def calculate_hardness(solutions: Dict[str, Dict], raw_fraction: bool, field_name: str) -> List[Dict]:
     result = []
     
     for solution_data in solutions.values():
@@ -30,7 +30,7 @@ def calculate_hardness(solutions: Dict[str, Dict], raw_fraction: bool) -> List[D
             hardness = f"{solution_data['correct_count']}/{solution_data['total_count']}"
         else:
             hardness = solution_data['correct_count'] / solution_data['total_count']
-        solution_data['data']['soln_hard'] = hardness
+        solution_data['data'][field_name] = hardness
         result.append(solution_data['data'])
     
     return result
@@ -46,6 +46,7 @@ def main():
     parser.add_argument('files', nargs='+', help='Path to the output-rs files')
     parser.add_argument('output', nargs='?', default=None, help='Path to the output file (optional)')
     parser.add_argument('--raw_fraction', action='store_true', help='Keep hardness as a fraction instead of converting to float')
+    parser.add_argument('--field_name', default='soln_hard', help='Name of the field to store the hardness value (default: soln_hard)')
     args = parser.parse_args()
 
     if args.output:
@@ -55,7 +56,7 @@ def main():
         output_file = os.path.join(input_dir, 'combined_results.jsonl')
 
     solutions = process_files(args.files)
-    results = calculate_hardness(solutions, args.raw_fraction)
+    results = calculate_hardness(solutions, args.raw_fraction, args.field_name)
     write_output(results, output_file)
     
     print(f"Combined results written to {output_file}")
