@@ -1468,20 +1468,44 @@ generate_masked = [
 
 critical_thinking = [
     {
-        "question": "Base prime representation of a natural number is defined using the exponents of its prime factorization as follows. Each place in a base prime represents a prime number, and it is occupied by the corresponding exponent of that prime, starting on the right side with the smallest prime number and proceeding to the left with the next largest prime number. For instance, since $84 = 7^1 \\times 5^0 \\times 3^1 \\times 2^2$, then $84$ would be written as $1012$ in base prime. What is $225$ written in base prime?",
-        "perturbed_question": "Base prime representation of a natural number is defined using the exponents of its prime factorization as follows. Each place in a base prime represents a prime number, and it is occupied by the corresponding exponent of that prime, starting on the right side with the smallest prime number and proceeding to the left with the next largest prime number. For instance, since $84 = 7^1 \\times 5^0 \\times 3^1 \\times 2^2$, then $84$ would be written as $1012$ in base prime. What is this number written in base prime?",
-        "generation": "The question does not specify the numebr that should be written in base prime. \\boxed{Insufficient}."
+        "question": "A parabola with equation $y=x^2+bx+c$ passes through the points $(-1,-11)$ and $(3,17)$. What is $c$?",
+        "perturbed_question": "A parabola with equation $y=x^2+bx+c$ passes through the point $(-1,-11)$. What is $c$?",
+        "generation": """
+From the question we know that point $(-1, -11)$ lie on the parabola. This means that when we substitute $x$ and $y$ from the point into the equation $y = x^2 + bx + c$, the equation must hold true. We substitute the point into the given equation to solve for $c$.
+
+For the point $(-1, -11)$:
+
+Substitute $x = -1$ and $ y = -11 $ into the equation:
+\\[ -11 = (-1)^2 + b(-1) + c \\Rightarrow -11 = 1 - b + c \\Rightarrow -b + c = -12 \\Rightarrow c = b - 12 \\]
+
+So, the value of $c$ is $b - 12$, and it cannot be determined without knowing the value of $b$. \\boxed{insufficient}.
+""".strip(),
     },
     {
         "question": "If $\\sqrt{5+n}=7$, then what is the value of $n$?",
-        "perturbed_question": "If $\\sqrt{5+x}=7$, then what is the value of $n$?",
-        "generation": "The question does not contain any references of $n$. \\boxed{Insufficient}."
+        "perturbed_question": "If $\\sqrt{5+n}=7x$, then what is the value of $n$?",
+        "generation": """
+To solve the equation $\\sqrt{5+n}=7x$ for $n$, square both sides:
+\\[ \\sqrt{5+n}=7x \\Rightarrow (\\sqrt{5+n})^2=(7x)^2 \\Rightarrow 5+n=49x^2 \\Rightarrow n=49x^2 - 5 \\]
 
-    },
+Thus, the value of $n$ is $49x^2 - 5$. Since $n$ depends on $x$, $n$ cannot be determined without knowing the value of $x$. \\boxed{insufficient}.
+""".strip(),
+    }
     {
         "question": "The area of a triangle is 600 square feet. Find the altitude, in feet, of the triangle if the length of the corresponding base is 30 feet.",
         "perturbed_question": "The area of a triangle is larger than the area of the square by 1600 square feet. Find the altitude, in feet, of the triangle if the length of the corresponding base is 30 feet.",
-        "generation": "The question does not contain enough information to solve it. \\boxed{Insufficient}."
+        "generation": """
+To find the altitude of the triangle, we first need to establish the relationship between the area of the triangle and the area of the square. The area of a triangle is $\frac{1}{2} * base * altitude$.
+From the question we know that the base of the triangle is 30 feet. Let $x$ denote the altitude of the triangle.
+
+Substitute the values into the equation:
+\\[ \frac{1}{2} * base * altitude \\Rightarrow \frac{1}{2} * 30 * x \\Rightarrow 15x \\]
+
+We are told that the area of the triangle is larger than the area of the square by 1600 square feet, let $s$ denote the side of the square. The area of the square is $s^2$.:
+\\[ 15x \\Rightarrow (\\sqrt{5+n})^2=(7x)^2 \\Rightarrow 5+n=49x^2 \\Rightarrow n=49x^2 - 5 \\]
+
+Thus, the value of $n$ is $49x^2 - 5$. Since $n$ depends on $x$, $n$ cannot be determined without knowing the value of $x$. \\boxed{insufficient}.
+""".strip(),
     },
 ]
 
