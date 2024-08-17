@@ -1,5 +1,5 @@
 few_shot_examples:
-  template: "Question:\n{question}{context}\n\nPerturbed question:\n{perturbed_question}\n\n\n\n\n\n"
+  template: "Question:\n{question}\n\nPerturbed question:\n{perturbed_question}\n\n\n\n\n\n"
 
 system: ""
 
@@ -9,7 +9,7 @@ user: |-
     The reprased question should be reasonable, understandable, and can be answered by humans.
     Perturbation strategy: involves introducing distracting conditions that have no impact on the final answer and solution. These introduced conditions should be relevant to the topic of the original question and preferably include numerical values. However, the rewritten problem must maintain an identical solution to that of the original problem. Follow the given examples.
 
-    {examples}Question:\n{question}{context}\n\nPerturbed question:\n
+    {examples}Question:\n{question}\n\nPerturbed question:\n
 
 prompt_template: "<|begin_of_text|>{user}\n\nPerturbed question:\n{generation}"
 

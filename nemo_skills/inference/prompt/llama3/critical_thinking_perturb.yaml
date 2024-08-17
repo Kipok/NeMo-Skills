@@ -1,5 +1,5 @@
 few_shot_examples:
-  template: "Question:\n{question}{context}\n\nPerturbed question:\n{perturbed_question}\n\n\n\n\n\n"
+  template: "Question:\n{question}\n\nPerturbed question:\n{perturbed_question}\n\n\n\n\n\n"
 
 system: ""
 
@@ -10,7 +10,7 @@ user: |-
     Perturbation strategy: remove a condition from the original question that is crucial for solving it while keeping the rest of the content unchanged.
     The rewritten problem should no longer have a valid answer, as it lacks the constraint that was removed. Follow the given examples.
 
-    {examples}Question:\n{question}{context}\n\nPerturbed question:\n
+    {examples}Question:\n{question}\n\nPerturbed question:\n
 
 prompt_template: "<|begin_of_text|>{user}\n\nPerturbed question:\n{generation}"
 
