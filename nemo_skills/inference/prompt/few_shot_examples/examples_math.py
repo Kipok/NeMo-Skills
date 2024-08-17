@@ -1490,7 +1490,7 @@ To solve the equation $\\sqrt{5+n}=7x$ for $n$, square both sides:
 
 Thus, the value of $n$ is $49x^2 - 5$. Since $n$ depends on $x$, $n$ cannot be determined without knowing the value of $x$. \\boxed{insufficient}.
 """.strip(),
-    }
+    },
     {
         "question": "The area of a triangle is 600 square feet. Find the altitude, in feet, of the triangle if the length of the corresponding base is 30 feet.",
         "perturbed_question": "The area of a triangle is larger than the area of the square by 1600 square feet. Find the altitude, in feet, of the triangle if the length of the corresponding base is 30 feet.",
