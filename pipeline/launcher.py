@@ -79,11 +79,7 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_na
         # need this flag for stable Nemotron-4-340B deployment
         server_start_cmd = f"FORCE_NCCL_ALL_REDUCE_STRATEGY=1 python /code/nemo_skills/inference/server/serve_trt.py --model_path /model"
         num_tasks = num_gpus
-    if server_type == "vllm":
-        server_wait_string = "Uvicorn running"
-    else:
-        server_wait_string = "Running on all addresses"
-    return server_start_cmd, num_tasks, server_wait_string
+    return server_start_cmd, num_tasks
 
 
 SLURM_HEADER = """
