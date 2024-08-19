@@ -55,7 +55,7 @@ class GenerateSolutionsConfig:
     # Sandbox configuration {sandbox_params}
     sandbox: dict
     # Prompt configuration - path to yaml files
-    prompt_template: str
+    prompt_template: str | None = None  # not required for OpenAI server
     prompt_config: str | None = None  # we will fetch it from dataset folder if not provided
     inference: InferenceConfig = field(default_factory=InferenceConfig)  # LLM call parameters
 
@@ -90,6 +90,12 @@ class GenerateSolutionsConfig:
 
         if self.dataset is None and self.prompt_config is None:
             raise ValueError("If `dataset` is not provided, `prompt_config` is required")
+
+        if self.server.server_type != "openai" and self.prompt_template is None:
+            raise ValueError("Prompt template is required for non-OpenAI servers")
+
+        if self.server.server_type == "openai" and self.prompt_template is not None:
+            raise ValueError("Prompt template is not supported for OpenAI server")
 
 
 cs = hydra.core.config_store.ConfigStore.instance()
@@ -132,12 +138,16 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
         cfg.prompt_config = dataset_module.PROMPT_CONFIG
 
     prompt = get_prompt(cfg.prompt_config, cfg.prompt_template)
+    LOG.info("Prompt used: %s", prompt)
 
     if cfg.max_samples < 0:
         cfg.max_samples = len(data)
 
+    if cfg.prompt_template:
+        LOG.info("Example prompt:\nData dictionary: %s\nPrompt string: %s", data[0], prompt.build_string(data[0]))
+    else:
+        LOG.info("Example prompt:\nData dictionary: %s\nPrompt messages: %s", data[0], prompt.build_messages(data[0]))
     if cfg.dry_run:
-        LOG.info("Data dictionary: %s\nPrompt: %s", data[0], prompt.build_string(data[0]))
         return
 
     # setting buffering=1 to force to dump the output after every line, so that we can see intermediate generations
@@ -150,12 +160,18 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
             data_points.append(data_point)
 
             if len(data_points) == cfg.batch_size or idx == cfg.max_samples - 1:
-                # batch-computing the outputs
-                outputs = llm.generate(
-                    prompts=[prompt.build_string(data_point) for data_point in data_points],
-                    stop_phrases=list(prompt.config.template.stop_phrases),
-                    **asdict(cfg.inference),
-                )
+                if cfg.prompt_template:  # using strings as input if template is provided
+                    outputs = llm.generate(
+                        prompts=[prompt.build_string(data_point) for data_point in data_points],
+                        stop_phrases=list(prompt.config.template.stop_phrases),
+                        **asdict(cfg.inference),
+                    )
+                else:
+                    outputs = llm.generate(
+                        prompts=[prompt.build_messages(data_point) for data_point in data_points],
+                        stop_phrases=list(prompt.config.template.stop_phrases),
+                        **asdict(cfg.inference),
+                    )
 
                 for output, original_data_point in zip(outputs, data_points):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding

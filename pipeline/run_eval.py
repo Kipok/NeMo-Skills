@@ -157,7 +157,7 @@ if __name__ == "__main__":
         job_name = f"eval-{args.model_path.name}"
         # also mounting the model in this case
         mounts = f"{NEMO_SKILLS_CODE}:/code,{args.output_dir}:/results,{args.model_path}:/model"
-        args.server_address = "127.0.0.1:5000"
+        args.server_address = "localhost:5000"
 
     format_dict = {
         "server_start_cmd": server_start_cmd,

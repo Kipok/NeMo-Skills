@@ -114,9 +114,10 @@ class PromptTemplate:
 
 @nested_dataclass
 class PromptConfig:
-    template: PromptTemplate  # TODO: is there a better name for this? Too many templates + this contains pieces
+    # TODO: is there a better name for this? Too many templates + this contains pieces
     user: str
     system: str = ""
+    template: PromptTemplate = None
     few_shot_examples: FewShotExamplesConfig = field(default_factory=FewShotExamplesConfig)
 
 
@@ -194,6 +195,21 @@ class Prompt:
         )
         return prompt
 
+    def build_messages(self, input_dict: Dict[str, str]) -> List[dict]:
+        """Returns the messages as required by OpenAI API."""
+        generation = input_dict.get("generation", "")
+
+        messages = [
+            {"role": "system", "content": self.config.system},
+            {"role": "user", "content": self.build_user_message(input_dict)},
+        ]
+        if generation:
+            messages.append({"role": "assistant", "content": generation})
+        return messages
+
+    def __str__(self):
+        return str(self.config)
+
 
 def load_config(config: str, config_folder: str | None = None) -> dict:
     """
@@ -225,12 +241,14 @@ def load_config(config: str, config_folder: str | None = None) -> dict:
 
 def get_prompt(
     prompt_config: str,
-    prompt_template: str,
+    prompt_template: str | None = None,
     config_folder: str | None = None,
     template_folder: str | None = None,
 ) -> Prompt:
     if template_folder is None:
         template_folder = Path(__file__).parent.absolute() / 'template'
     config = load_config(prompt_config, config_folder)
-    template = load_config(prompt_template, template_folder)
-    return Prompt(PromptConfig(**config, template=PromptTemplate(**template)))
+    if prompt_template is not None:
+        template = load_config(prompt_template, template_folder)
+        return Prompt(PromptConfig(**config, template=PromptTemplate(**template)))
+    return Prompt(PromptConfig(**config))
