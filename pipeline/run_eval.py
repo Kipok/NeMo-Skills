@@ -51,13 +51,13 @@ def get_greedy_cmd(
     if eval_map:
         extra_arguments = f"+prompt={eval_map.get(benchmark, eval_map['default'])} {extra_arguments}"
     return f"""echo "Evaluating benchmark {benchmark}" && \
-python nemo_skills/inference/generate_solutions.py \
-    server.server_type={{server_type}} \
-    +dataset={benchmark} \
-    output_file=/results/{benchmark}/{output_name} \
+python nemo_skills/inference/generate.py \
+    ++server.server_type={{server_type}} \
+    ++dataset={benchmark} \
+    ++output_file=/results/{benchmark}/{output_name} \
     {extra_arguments} && \
 python nemo_skills/evaluation/evaluate_results.py \
-    prediction_jsonl_files=/results/{benchmark}/{output_name} {extra_eval_args} && \
+    ++prediction_jsonl_files=/results/{benchmark}/{output_name} {extra_eval_args} && \
 """
 
 
