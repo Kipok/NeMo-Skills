@@ -78,7 +78,8 @@ CMD = (
     "    echo 'Waiting for the server to start' && "
     "    while [ $(curl -X PUT {server_address} >/dev/null 2>&1; echo $?) -ne 0 ]; do sleep 3; done && "
     "    {eval_cmds} "
-    "    pkill -f nemo_skills/inference/server; "
+    #    command to kill the server if it was started by this script
+    "    {server_end_cmd}; "
     "else "
     #    this is a blocking call to keep non-zero ranks from exiting and killing the job
     "    {server_start_cmd}; "
@@ -90,9 +91,7 @@ if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser(usage=WRAPPER_HELP + '\n\n' + SCRIPT_HELP + '\n\nscript arguments:\n\n' + HELP_MESSAGE)
     wrapper_args = parser.add_argument_group('wrapper arguments')
-    wrapper_args.add_argument(
-        "--model_path", required=False, help="Path to the model - required if server_address is not specified."
-    )
+    wrapper_args.add_argument("--model", required=False, help="Path to the model or model name in API.")
     wrapper_args.add_argument(
         "--server_address",
         required=False,
@@ -147,20 +146,29 @@ if __name__ == "__main__":
     # model is hosted elsewhere
     if args.server_address is not None:
         server_start_cmd = "sleep infinity"
+        server_end_cmd = "echo 'done'"
         job_name = "eval-remote"
         mounts = f"{NEMO_SKILLS_CODE}:/code,{args.output_dir}:/results"
+        num_tasks = 1
+        if args.server_type == "openai":
+            extra_arguments += f" ++server.base_url={args.server_address} ++server.model={args.model}"
+        # TODO: run without container if remote server?
+        container = CLUSTER_CONFIG["containers"]['nemo']
     else:
-        args.model_path = Path(args.model_path).absolute()
+        model_path = Path(args.model).absolute()
         server_start_cmd, num_tasks = get_server_command(
-            args.server_type, args.num_gpus, args.num_nodes, args.model_path.name
+            args.server_type, args.num_gpus, args.num_nodes, model_path.name
         )
-        job_name = f"eval-{args.model_path.name}"
+        server_end_cmd = "pkill -f nemo_skills/inference/server"
+        job_name = f"eval-{model_path.name}"
         # also mounting the model in this case
-        mounts = f"{NEMO_SKILLS_CODE}:/code,{args.output_dir}:/results,{args.model_path}:/model"
+        mounts = f"{NEMO_SKILLS_CODE}:/code,{args.output_dir}:/results,{model_path}:/model"
         args.server_address = "localhost:5000"
+        container = CLUSTER_CONFIG["containers"][args.server_type]
 
     format_dict = {
         "server_start_cmd": server_start_cmd,
+        "server_end_cmd": server_end_cmd,
         "server_type": args.server_type,
         "server_address": args.server_address,
         "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
@@ -197,8 +205,7 @@ if __name__ == "__main__":
             tasks_per_node=num_tasks,
             gpus_per_node=args.num_gpus,
             job_name=job_name,
-            # TODO: run without container if remote server?
-            container=CLUSTER_CONFIG["containers"][args.server_type],
+            container=container,
             mounts=mounts,
             partition=args.partition,
             with_sandbox=True,

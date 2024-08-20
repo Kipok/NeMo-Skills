@@ -62,7 +62,7 @@ class CodeExecutionWrapper:
 
     def generate(
         self,
-        prompts: list[str],
+        prompts: list[str | dict],
         tokens_to_generate: int = 512,
         temperature: float = 0.0,
         top_p: float = 0.95,
@@ -72,6 +72,8 @@ class CodeExecutionWrapper:
         stop_phrases: list[str] | None = None,
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
+        # TODO: support properly prompt as dict of messages
+
         if stop_phrases is None:
             stop_phrases = []
         # making a copy of prompts to not corrupt original data

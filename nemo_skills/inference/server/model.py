@@ -287,7 +287,6 @@ class OpenAIModel(BaseModel):
                 )
 
         outputs = [{'generation': future.result()} for future in futures]
-
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
 
@@ -321,7 +320,7 @@ class OpenAIModel(BaseModel):
                             "url": "/v1/chat/completions",
                             "body": {
                                 "model": self.model,
-                                "messages": self._parse_prompt(prompt),
+                                "messages": prompt,
                                 "max_tokens": tokens_to_generate,
                                 "temperature": temperature,
                                 "top_p": top_p,
@@ -380,7 +379,7 @@ class OpenAIModel(BaseModel):
     ) -> str:
         import openai
 
-        messages = self._parse_prompt(prompt)
+        messages = prompt
         try:
             response = self.client.chat.completions.create(
                 model=self.model,

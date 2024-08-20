@@ -27,6 +27,7 @@ from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
 from nemo_skills.inference.server.code_execution_model import (
     ErrorRecoveryConfig,
     get_code_execution_model,
+    get_model,
     server_params,
 )
 from nemo_skills.prompt.utils import get_prompt
@@ -78,6 +79,9 @@ class GenerateSolutionsConfig:
     # useful to double check that your data can be loaded and prompt has what you expect
     dry_run: bool = False
 
+    # set to True if code execution needs to be supported
+    code_execution: bool = False
+
     def __post_init__(self):
         """Building data_file from dataset/split_name if not provided directly."""
         if self.data_file is not None:
@@ -107,8 +111,11 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
     cfg = GenerateSolutionsConfig(_init_nested=True, **cfg)
 
     LOG.info("Config used: %s", cfg)
-    sandbox = get_sandbox(**cfg.sandbox) if cfg.sandbox is not None else None
-    llm = get_code_execution_model(**cfg.server, sandbox=sandbox)
+    if cfg.code_execution:
+        sandbox = get_sandbox(**cfg.sandbox) if cfg.sandbox is not None else None
+        llm = get_code_execution_model(**cfg.server, sandbox=sandbox)
+    else:
+        llm = get_model(**cfg.server)
 
     # making sure output folder exists
     Path(cfg.output_file).absolute().parent.mkdir(parents=True, exist_ok=True)
@@ -169,7 +176,6 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
                 else:
                     outputs = llm.generate(
                         prompts=[prompt.build_messages(data_point) for data_point in data_points],
-                        stop_phrases=list(prompt.config.template.stop_phrases),
                         **asdict(cfg.inference),
                     )
 
