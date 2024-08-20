@@ -42,9 +42,9 @@ from utils.common import get_config, get_examples, get_settings, get_utils_from_
 
 from nemo_skills.code_execution.math_grader import extract_answer
 from nemo_skills.code_execution.sandbox import get_sandbox
-from nemo_skills.inference.generate_solutions import InferenceConfig
-from nemo_skills.inference.prompt.utils import FewShotExamplesConfig, Prompt, PromptConfig
+from nemo_skills.inference.generate import InferenceConfig
 from nemo_skills.inference.server.code_execution_model import get_code_execution_model
+from nemo_skills.prompt.utils import FewShotExamplesConfig, Prompt, PromptConfig
 
 
 class ModeStrategies:

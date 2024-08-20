@@ -1,0 +1,17 @@
+# default prompt for all math benchmarks (e.g. gsm8k, math)
+
+few_shot_examples:
+  prefix: "Look at the following examples of problems and solutions, then solve the user's problem.\n\n"
+  template: "Problem:\n{problem}\n\nSolution:\n{solution}\n\n\n\n\n\n"
+  suffix: "Problem:\n"
+  # this is built as <prefix>{template.format(example1)}{template.format(example2)}...{template.format(exampleN)}<suffix>
+  # and available as {examples} key in the final prompt
+  # if num_few_shots = 0, then {examples} will be empty
+  num_few_shots: 0  # by default there are no examples, but can be changed from code/cmd
+
+system: ""
+
+user: |-
+  Help the user to solve the given math problem. Make sure to put the answer (and only answer) inside \boxed{{}}.
+
+  {examples}{problem}

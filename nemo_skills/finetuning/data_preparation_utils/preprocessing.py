@@ -22,7 +22,7 @@ from typing import Dict, Optional
 from sdp.processors.base_processor import BaseProcessor
 from tqdm.contrib.concurrent import process_map
 
-from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
+from nemo_skills.prompt.utils import Prompt, get_prompt_config
 from nemo_skills.utils import unroll_files
 
 LOG = logging.getLogger(__file__)
@@ -70,9 +70,6 @@ class ReadData(BaseProcessor):
                 continue
             sample = json.loads(line)
             questions.add(sample[self.input_key])
-            # for backward compatibility
-            if self.output_key not in sample and "generated_solution" in sample:
-                sample[self.output_key] = sample.pop("generated_solution")
             samples.append(sample)
 
         return samples
@@ -107,10 +104,6 @@ class ReadData(BaseProcessor):
 
             if not self.add_incorrect and not line_dict["is_correct"]:
                 continue
-
-            # for backward compatibility
-            if self.output_key not in line_dict and "generated_solution" in line_dict:
-                line_dict[self.output_key] = line_dict.pop("generated_solution")
 
             line_dict['filename'] = file_handle.name
             samples.append(line_dict)

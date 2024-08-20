@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# a collection of settings required to correctly running evaluations for different benchmarks
+# a collection of settings required to correctly run evaluations for different benchmarks
 # in addition to what's in this file, there is also some prompt engineering that needs
 # to happen in eval_map.py inside prompt folder for specific models
 
@@ -38,7 +38,7 @@ MATH_BENCHMARKS = [
 CODE_BENCHMARKS = ['human-eval', 'mbpp']
 
 
-# ------------------------------- metrics settings -----------------------------
+# ------------------------------ metrics settings ------------------------------
 EVALUATOR_MAP = {
     "ifeval": IFEval,
     "arena-hard": ArenaEval,

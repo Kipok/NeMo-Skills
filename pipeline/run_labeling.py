@@ -35,7 +35,7 @@ if [ $SLURM_PROCID -eq 0 ]; then \
     {{ {server_start_cmd} 2>&1 | tee /tmp/server_logs.txt & }} && sleep 1 && \
     echo "Waiting for the server to start" && \
     tail -n0 -f /tmp/server_logs.txt | sed '/{server_wait_string}/ q' && \
-    python nemo_skills/inference/generate_solutions.py \
+    python nemo_skills/inference/generate.py \
         server.server_type={server_type} \
         skip_filled=True \
         inference.random_seed={random_seed} \

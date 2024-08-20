@@ -22,8 +22,8 @@ from typing import List
 
 from nemo_skills.code_execution import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS, extract_code_to_execute
 from nemo_skills.code_execution.sandbox import Sandbox
-from nemo_skills.inference.prompt.utils import Prompt
 from nemo_skills.inference.server.model import BaseModel, NemoModel, OpenAIModel, get_model, models, postprocess_output
+from nemo_skills.prompt.utils import Prompt
 from nemo_skills.utils import nested_dataclass, python_doc_to_cmd_help
 
 LOG = logging.getLogger(__name__)
@@ -62,7 +62,7 @@ class CodeExecutionWrapper:
 
     def generate(
         self,
-        prompts: list[str],
+        prompts: list[str | dict],
         tokens_to_generate: int = 512,
         temperature: float = 0.0,
         top_p: float = 0.95,
@@ -72,6 +72,8 @@ class CodeExecutionWrapper:
         stop_phrases: list[str] | None = None,
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
+        # TODO: support properly prompt as dict of messages
+
         if stop_phrases is None:
             stop_phrases = []
         # making a copy of prompts to not corrupt original data

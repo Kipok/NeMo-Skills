@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
+from nemo_skills.prompt.utils import Prompt, get_prompt_config
 
 
 def test_question_generation_rephrasing_prompt():

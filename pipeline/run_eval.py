@@ -23,84 +23,87 @@ sys.path.append(str(Path(__file__).absolute().parents[1]))
 from launcher import CLUSTER_CONFIG, NEMO_SKILLS_CODE, WRAPPER_HELP, get_server_command, launch_job
 
 try:
-    from nemo_skills.inference.generate_solutions import HELP_MESSAGE
+    from nemo_skills.inference.generate import HELP_MESSAGE
 except (ImportError, TypeError):
     HELP_MESSAGE = """
-To see all supported agruments, nemo_skills package needs to be installed.
-Please note that it is not recommended to install Python packages on a slurm cluster login node.
+TODO
 """
 from nemo_skills.evaluation.settings import EXTRA_EVAL_ARGS, EXTRA_GENERATION_ARGS
 from nemo_skills.utils import setup_logging
 
 SCRIPT_HELP = """
-This script can be used to run evaluation of a model on a set of benchmarks.
-It can run both greedy decoding and sampling and can parallelize generations
-across multiple nodes. It uses nemo_skills/inference/generate_solutions.py
-to generate solutions and nemo_skills/evaluation/evaluate_results.py to
-evaluate them. It will set reasonable defaults for most of the generation parameters,
-but you can override any of them by directly providing corresponding arguments
-in the Hydra format.
+TODO
 """
 
 
-def get_greedy_cmd(
-    benchmark, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments="", eval_map=None
-):
+def get_greedy_cmd(benchmark, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments=""):
     extra_eval_args = f"{EXTRA_EVAL_ARGS.get(benchmark, '')} {extra_eval_args}"
     extra_arguments = f"{EXTRA_GENERATION_ARGS.get(benchmark, '')} {extra_arguments}"
-    if eval_map:
-        extra_arguments = f"+prompt={eval_map.get(benchmark, eval_map['default'])} {extra_arguments}"
     return f"""echo "Evaluating benchmark {benchmark}" && \
-python nemo_skills/inference/generate_solutions.py \
-    server.server_type={{server_type}} \
-    +dataset={benchmark} \
-    output_file=/results/{benchmark}/{output_name} \
+python nemo_skills/inference/generate.py \
+    ++server.server_type={{server_type}} \
+    ++dataset={benchmark} \
+    ++output_file=/results/{benchmark}/{output_name} \
     {extra_arguments} && \
 python nemo_skills/evaluation/evaluate_results.py \
-    prediction_jsonl_files=/results/{benchmark}/{output_name} {extra_eval_args} && \
+    ++prediction_jsonl_files=/results/{benchmark}/{output_name} {extra_eval_args} && \
 """
 
 
-def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments="", eval_map=None):
+def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments=""):
     extra_arguments = f" inference.random_seed={random_seed} inference.temperature=0.7 {extra_arguments}"
     return get_greedy_cmd(
         benchmark,
         output_name=f"output-rs{random_seed}.jsonl",
         extra_eval_args=extra_eval_args,
         extra_arguments=extra_arguments,
-        eval_map=eval_map,
     )
 
 
-SLURM_CMD = """
-nvidia-smi && \
-cd /code && \
-export PYTHONPATH=$PYTHONPATH:/code && \
-export HF_TOKEN={HF_TOKEN} && \
-export NVIDIA_API_KEY={NVIDIA_API_KEY} && \
-export OPENAI_API_KEY={OPENAI_API_KEY} && \
-if [ $SLURM_PROCID -eq 0 ]; then \
-    {{ {server_start_cmd} 2>&1 | tee /tmp/server_logs.txt & }} && sleep 1 && \
-    echo "Waiting for the server to start" && \
-    tail -n0 -f /tmp/server_logs.txt | sed '/{server_wait_string}/ q' && \
-    {eval_cmds} \
-    pkill -f nemo_skills/inference/server; \
-else \
-    {server_start_cmd}; \
-fi \
-"""
-
-
-MOUNTS = "{NEMO_SKILLS_CODE}:/code,{model_path}:/model,{output_dir}:/results"
-JOB_NAME = "eval-{model_name}"
+# TODO: can we use something generic instead of SLURM_PROCID?
+CMD = (
+    # boilerplate code to setup the environment
+    "nvidia-smi && "
+    "cd /code && "
+    "export PYTHONPATH=$PYTHONPATH:/code && "
+    "export HF_TOKEN={HF_TOKEN} && "
+    "export NVIDIA_API_KEY={NVIDIA_API_KEY} && "
+    "export OPENAI_API_KEY={OPENAI_API_KEY} && "
+    # launching the server and waiting for it to start
+    # server_start_cmd = "sleep infinity" if host/port are not specified (so server is running elsewhere)
+    # but of course in that case this script itself is meant to be run locally and not on a GPU cluster
+    "if [ $SLURM_PROCID -eq 0 ]; then "
+    #    running in background to be able to communicate with the server
+    "    {server_start_cmd} & "
+    "    echo 'Waiting for the server to start' && "
+    "    while [ $(curl -X PUT {server_address} >/dev/null 2>&1; echo $?) -ne 0 ]; do sleep 3; done && "
+    "    {eval_cmds} "
+    #    command to kill the server if it was started by this script
+    "    {server_end_cmd}; "
+    "else "
+    #    this is a blocking call to keep non-zero ranks from exiting and killing the job
+    "    {server_start_cmd}; "
+    "fi "
+)
 
 
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser(usage=WRAPPER_HELP + '\n\n' + SCRIPT_HELP + '\n\nscript arguments:\n\n' + HELP_MESSAGE)
     wrapper_args = parser.add_argument_group('wrapper arguments')
-    wrapper_args.add_argument("--model_path", required=True)
-    wrapper_args.add_argument("--server_type", choices=('nemo', 'tensorrt_llm', 'vllm'), default='tensorrt_llm')
+    wrapper_args.add_argument("--model", required=False, help="Path to the model or model name in API.")
+    wrapper_args.add_argument(
+        "--server_address",
+        required=False,
+        help="Use ip:port for self-hosted models or the API url if using model providers.",
+    )
+    # TODO: let's make it not needed - we just need to unify our api calls
+    wrapper_args.add_argument(
+        "--server_type",
+        choices=('nemo', 'tensorrt_llm', 'vllm', 'openai'),
+        default='tensorrt_llm',
+        help="Type of the server to start. This parameter is ignored if server_address is specified.",
+    )
     wrapper_args.add_argument("--output_dir", required=True)
     wrapper_args.add_argument("--num_gpus", type=int, required=True)
     wrapper_args.add_argument("--starting_seed", type=int, default=0)
@@ -109,17 +112,6 @@ if __name__ == "__main__":
         nargs="+",
         help="Need to be in a format <benchmark>:<num samples for majority voting>. "
         "Use <benchmark>:0 to only run greedy decoding.",
-    )
-    wrapper_args.add_argument(
-        "--prompt_folder",
-        default=None,
-        help="Folder with prompts for different benchmarks (inside nemo_skills/inference/prompt). "
-        "Need to contain eval_map.py (see llama3 for example).",
-    )
-    wrapper_args.add_argument(
-        "--model_version",
-        default=None,
-        help="Is used to pick prompts for benchmarks from eval_map.py in prompt_folder.",
     )
     wrapper_args.add_argument(
         "--num_nodes",
@@ -149,38 +141,40 @@ if __name__ == "__main__":
 
     extra_arguments = f'{" ".join(unknown)}'
 
-    args.model_path = Path(args.model_path).absolute()
     args.output_dir = Path(args.output_dir).absolute()
 
-    server_start_cmd, num_tasks, server_wait_string = get_server_command(
-        args.server_type, args.num_gpus, args.num_nodes, args.model_path.name
-    )
-    eval_map = None
-    if any([args.prompt_folder, args.model_version]):
-        if not all([args.prompt_folder, args.model_version]):
-            raise ValueError("Both prompt_folder and model_version need to be specified if one of them is specified.")
-        sys.path.append(
-            str(Path(__file__).absolute().parents[1] / 'nemo_skills' / 'inference' / 'prompt' / args.prompt_folder)
+    # model is hosted elsewhere
+    if args.server_address is not None:
+        server_start_cmd = "sleep infinity"
+        server_end_cmd = "echo 'done'"
+        job_name = "eval-remote"
+        mounts = f"{NEMO_SKILLS_CODE}:/code,{args.output_dir}:/results"
+        num_tasks = 1
+        if args.server_type == "openai":
+            extra_arguments += f" ++server.base_url={args.server_address} ++server.model={args.model}"
+        # TODO: run without container if remote server?
+        container = CLUSTER_CONFIG["containers"]['nemo']
+    else:
+        model_path = Path(args.model).absolute()
+        server_start_cmd, num_tasks = get_server_command(
+            args.server_type, args.num_gpus, args.num_nodes, model_path.name
         )
-        from eval_map import EVAL_MAP
-
-        if args.model_version not in EVAL_MAP:
-            raise ValueError(f"Model version {args.model_version} is not in the eval map.")
-        eval_map = EVAL_MAP[args.model_version]
+        server_end_cmd = "pkill -f nemo_skills/inference/server"
+        job_name = f"eval-{model_path.name}"
+        # also mounting the model in this case
+        mounts = f"{NEMO_SKILLS_CODE}:/code,{args.output_dir}:/results,{model_path}:/model"
+        args.server_address = "localhost:5000"
+        container = CLUSTER_CONFIG["containers"][args.server_type]
 
     format_dict = {
-        "model_path": args.model_path,
-        "model_name": args.model_path.name,
-        "output_dir": args.output_dir,
-        "num_gpus": args.num_gpus,
         "server_start_cmd": server_start_cmd,
+        "server_end_cmd": server_end_cmd,
         "server_type": args.server_type,
+        "server_address": args.server_address,
         "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
-        # needed for some of the models, so making an option to pass it in
         "HF_TOKEN": os.getenv("HF_TOKEN", ""),
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
         "NVIDIA_API_KEY": os.getenv("NVIDIA_API_KEY", ""),
-        "server_wait_string": server_wait_string,
     }
 
     Path(args.output_dir).mkdir(exist_ok=True, parents=True)
@@ -189,15 +183,11 @@ if __name__ == "__main__":
     BENCHMARKS = {k: int(v) for k, v in [b.split(":") for b in args.benchmarks]}
 
     eval_cmds = [
-        get_greedy_cmd(
-            benchmark, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments, eval_map=eval_map
-        )
+        get_greedy_cmd(benchmark, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments)
         for benchmark in BENCHMARKS.keys()
     ]
     eval_cmds += [
-        get_sampling_cmd(
-            benchmark, rs, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments, eval_map=eval_map
-        )
+        get_sampling_cmd(benchmark, rs, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments)
         for benchmark, rs_num in BENCHMARKS.items()
         for rs in range(args.starting_seed, args.starting_seed + rs_num)
     ]
@@ -210,13 +200,13 @@ if __name__ == "__main__":
     for idx, eval_cmd in enumerate(eval_cmds):
         extra_sbatch_args = ["--parsable", f"--output={args.output_dir}/slurm_logs_eval{idx}.log"]
         launch_job(
-            cmd=SLURM_CMD.format(**format_dict, eval_cmds=eval_cmd.format(**format_dict)),
+            cmd=CMD.format(**format_dict, eval_cmds=eval_cmd.format(**format_dict)),
             num_nodes=args.num_nodes,
             tasks_per_node=num_tasks,
-            gpus_per_node=format_dict["num_gpus"],
-            job_name=JOB_NAME.format(**format_dict),
-            container=CLUSTER_CONFIG["containers"][args.server_type],
-            mounts=MOUNTS.format(**format_dict),
+            gpus_per_node=args.num_gpus,
+            job_name=job_name,
+            container=container,
+            mounts=mounts,
             partition=args.partition,
             with_sandbox=True,
             extra_sbatch_args=extra_sbatch_args,

@@ -40,7 +40,7 @@ code interpreter to execute parts of the output.
     ```python
     from nemo_skills.inference.server.code_execution_model import get_code_execution_model
     from nemo_skills.code_execution.sandbox import get_sandbox
-    from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
+    from nemo_skills.prompt.utils import Prompt, get_prompt_config
 
     sandbox = get_sandbox(
         sandbox_type="local",
@@ -107,7 +107,7 @@ the following simpler workflow.
 
     ```python
     from nemo_skills.inference.server.model import get_model
-    from nemo_skills.inference.prompt.utils import Prompt, get_prompt_config
+    from nemo_skills.prompt.utils import Prompt, get_prompt_config
 
     llm = get_model(
         server_type=<server type from previous step>,

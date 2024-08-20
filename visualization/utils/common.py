@@ -43,9 +43,9 @@ from settings.constants import (
     UNDEFINED,
 )
 
-from nemo_skills.inference.generate_solutions import GenerateSolutionsConfig, InferenceConfig
-from nemo_skills.inference.prompt.few_shot_examples import examples_map
-from nemo_skills.inference.prompt.utils import FewShotExamplesConfig, PromptConfig
+from nemo_skills.inference.generate import GenerateSolutionsConfig, InferenceConfig
+from nemo_skills.prompt.few_shot_examples import examples_map
+from nemo_skills.prompt.utils import FewShotExamplesConfig, PromptConfig
 from nemo_skills.utils import unroll_files
 
 custom_stats = {}

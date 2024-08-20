@@ -18,7 +18,7 @@ import pytest
 
 from nemo_skills.code_execution import extract_code_output, extract_code_to_execute
 from nemo_skills.code_execution.sandbox import Sandbox, get_sandbox
-from nemo_skills.inference.prompt.few_shot_examples import examples_map
+from nemo_skills.prompt.few_shot_examples import examples_map
 
 
 def _get_sandbox(sandbox_type):
