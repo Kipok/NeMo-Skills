@@ -150,7 +150,7 @@ class RemoveLenOutlierSolutions(BaseFilter):
         solution = data_entry[self.solution_key]
         solution_len = len(self.tokenizer.encode(solution, add_special_tokens=False))
 
-        if solution_len >= self.min_length and solution_len <= self.max_length:
+        if self.min_length <= solution_len <= self.max_length:
             return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
         else:
             return [DataEntry(data=None, metrics=dict(num_removed=1))]
