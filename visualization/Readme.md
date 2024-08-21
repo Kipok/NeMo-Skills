@@ -1,4 +1,4 @@
-# Data Explorer tool
+# NeMo Inspector tool
 
 ## Demo
 This is a tool for data analysis, consisting of two pages: "Inference" and "Analyze".

@@ -40,7 +40,7 @@ def dash_app():
         from visualization.data_explorer import app
         from visualization.layouts import get_main_page_layout
 
-        app.title = "Data Explorer"
+        app.title = "NeMo Inspector"
         app.layout = get_main_page_layout()
         config = {
             'data_explorer': {

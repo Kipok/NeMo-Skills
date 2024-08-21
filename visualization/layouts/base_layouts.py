@@ -40,7 +40,7 @@ def get_main_page_layout() -> html.Div:
             dcc.Location(id="url", refresh=False),
             dbc.NavbarSimple(
                 children=nav_items,
-                brand="Data Explorer",
+                brand="NeMo Inspector",
                 sticky="top",
                 color="blue",
                 dark=True,
