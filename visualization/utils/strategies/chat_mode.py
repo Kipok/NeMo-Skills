@@ -28,7 +28,7 @@ class ChatModeStrategy(ModeStrategies):
         super().__init__()
 
     def get_utils_input_layout(self) -> List[dbc.AccordionItem]:
-        config = current_app.config['data_explorer']
+        config = current_app.config['nemo_inspector']
         return super().get_utils_input_layout(
             lambda key, value: key in config['inference'].keys(),
             True,

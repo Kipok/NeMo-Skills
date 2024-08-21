@@ -19,7 +19,7 @@ pip install -r visualization/requirements.txt
 ```
 You can adjust parameters in the [visualization_config.yaml](/visualization/settings/visualization_config.yaml) file or via the command line. Use the following command to launch the program (all parameters are optional):
 ```shell
-python visualization/data_explorer.py \
+python visualization/nemo_inspector.py \
 ++server.host=<host>
 ```
 For the "Inference" page, launch the server with the model (see [inference.md](/docs/inference.md)), specify `host` and, if necessary, `ssh_key` and `ssh_server`.
@@ -29,7 +29,7 @@ This page enables the analysis of model answers based on different parameters. I
 
 - **Chat** mode facilitates a conversation with the model and requires minimal parameter setup.
 - **Run one sample** mode allows you to send a single question to the model. It can be a question from the dataset (with parameters `data_file` or `dataset` and `split_name`) or a custom question. The answer is validated by comparing it with the `expected_answer` field.
-- **Run whole dataset** mode lets you launch the generation with chosen parameters on the entire dataset. Results are saved in `visualization/results/output-greedy.jsonl` and `visualization/results/metrics-greedy.jsonl`. If the "use random seed range" flag is enabled, each answer will be sampled with multiple random seeds in the range from `start_random_seed` to `end_random_seed`. After generation is done, you can review the results on the "Analyze" page. The parameters used for the generation are also recorded in the `visualization/results/parameters.jsonl` file and displayed on the "Analyze" page.
+- **Run whole dataset** mode lets you launch the generation with chosen parameters on the entire dataset. Results are saved in `visualization/results/{generation_name}` folder. If the "use random seed range" flag is enabled, each answer will be sampled with multiple random seeds in the range from `start_random_seed` to `end_random_seed`. After generation is done, you can review the results on the "Analyze" page. The parameters used for the generation are also recorded in the `visualization/results/parameters.jsonl` file and displayed on the "Analyze" page.
 
 ## Analyze page
 To use the Analyze page, specify paths to the generations you want to use (if not obtained through the "Inference" page). You can pass parameters via the command line with `++visualization_params.model_prediction.generation1='/some_path/generation1/output-greedy.jsonl'` or add them in an additional config file.

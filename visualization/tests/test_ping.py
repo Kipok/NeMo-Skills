@@ -37,13 +37,13 @@ def mock_set_config():
 @pytest.fixture
 def dash_app():
     with patch('hydra.main', lambda *args, **kwargs: lambda func: mock_set_config):
-        from visualization.data_explorer import app
         from visualization.layouts import get_main_page_layout
+        from visualization.nemo_inspector import app
 
         app.title = "NeMo Inspector"
         app.layout = get_main_page_layout()
         config = {
-            'data_explorer': {
+            'nemo_inspector': {
                 'prompt': {
                     'prompt_type': '',
                     'context_template': '',
