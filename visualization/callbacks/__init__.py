@@ -26,7 +26,7 @@ from settings.constants import RETRIEVAL, RETRIEVAL_FIELDS, UNDEFINED
 from settings.visualization_config import VisualizationConfig
 
 from nemo_skills.inference.prompt.few_shot_examples import examples_map
-from nemo_skills.inference.prompt.utils import context_templates, get_prompt_config, prompt_types
+from nemo_skills.inference.prompt.utils import get_prompt_config, prompt_types
 from nemo_skills.utils import setup_logging
 
 setup_logging()
@@ -90,14 +90,9 @@ def set_config(cfg: VisualizationConfig) -> None:
 
     config['nemo_inspector']['prompt']['prompt_type'] = prompt_type
 
-    config['nemo_inspector']['prompt']['context_template'] = context_templates[
-        config['nemo_inspector']["prompt"]["context_type"]
-    ]
-
     config['nemo_inspector']['types'] = {
         "prompt_type": [UNDEFINED] + prompt_types_without_extension,
         "examples_type": [UNDEFINED, RETRIEVAL] + examples_types,
-        "context_type": [UNDEFINED] + list(context_templates.keys()),
         "retrieval_field": [""],
     }
 

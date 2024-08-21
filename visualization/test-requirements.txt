@@ -1,2 +1,3 @@
 dash[testing]
-webdriver_manager
+pytest-rerunfailures==14.0
+webdriver-manager==4.0.2
