@@ -129,16 +129,23 @@ class DropIncorrectCodeBlocks(BaseFilter):
 
 
 class RemoveLenOutlierSolutions(BaseFilter):
-    def __init__(self, solution_key: str = "generation", 
-                 min_length: int = 0, max_length: int = None, hf_model_name: str = None, **kwargs):
+    def __init__(
+        self,
+        solution_key: str = "generation",
+        min_length: int = 0,
+        max_length: int = None,
+        hf_model_name: str = None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.solution_key = solution_key
         self.max_length = max_length
         self.min_length = min_length
 
         from transformers import AutoTokenizer
+
         self.tokenizer = AutoTokenizer.from_pretrained(hf_model_name)
-    
+
     def process_dataset_entry(self, data_entry):
         solution = data_entry[self.solution_key]
         solution_len = len(self.tokenizer.encode(solution, add_special_tokens=False))
