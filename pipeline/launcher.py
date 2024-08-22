@@ -25,6 +25,7 @@ import uuid
 from pathlib import Path
 from time import sleep
 
+import nemo_run as run
 import yaml
 
 LOG = logging.getLogger(__file__)
@@ -103,6 +104,7 @@ SLURM_HEADER = CLUSTER_CONFIG.get("slurm_header", SLURM_HEADER) + '\n'
 
 
 def launch_local_job(
+    cluster_config,
     cmd,
     num_nodes,
     tasks_per_node,
@@ -135,7 +137,7 @@ def launch_local_job(
         f"{cmd}"
     )
 
-    docker_cmd = CLUSTER_CONFIG["docker_cmd"]
+    docker_cmd = cluster_config["docker_cmd"]
     if with_sandbox:
         sandbox_name = f"local-sandbox-{uuid.uuid4()}"
         sandbox_cmd = (
@@ -181,6 +183,43 @@ def launch_local_job(
 
 
 def launch_slurm_job(
+    cluster_config,
+    cmd,
+    num_nodes,
+    tasks_per_node,
+    gpus_per_node,
+    job_name,
+    container,
+    mounts,
+    partition=None,
+    with_sandbox=False,
+    extra_sbatch_args=None,
+):
+    if 'timeouts' not in cluster_config:
+        timeout = "10000:00:00:00"
+    else:
+        timeout = cluster_config["timeouts"][partition]
+
+    executor = run.SlurmExecutor(
+        account=cluster_config["account"],
+        partition=partition or cluster_config["partition"],
+        nodes=num_nodes,
+        ntasks_per_node=tasks_per_node,
+        tunnel=run.SSHTunnel(**cluster_config["ssh_tunnel"]),
+        container_image=container,
+        container_mounts=mounts,
+        time=timeout,
+        packager=run.GitArchivePackager(),
+        gpus_per_node=gpus_per_node,
+        job_name_prefix=cluster_config["job_name_prefix"],
+        srun_args=["--no-container-mount-home", "--mpi=pmix"],
+    )
+    with run.Experiment("my-test-exp", executor=executor) as exp:
+        exp.add(run.Script(inline=cmd), name=job_name)
+        exp.dryrun()
+
+
+def launch_slurm_job_bp(
     cmd,
     num_nodes,
     tasks_per_node,
@@ -272,11 +311,50 @@ wait $MAIN_PID
     return result.stdout.decode().strip()
 
 
-launch_map = {
-    'slurm': launch_slurm_job,
-    'local': launch_local_job,
-}
-launch_job = launch_map[CLUSTER_CONFIG['cluster']]
+def launch_job(
+    cluster_config,
+    cmd,
+    num_nodes,
+    tasks_per_node,
+    gpus_per_node,
+    job_name,
+    container,
+    mounts,
+    partition=None,
+    with_sandbox=False,
+    extra_sbatch_args=None,
+):
+    # TODO: add a map to function
+    if cluster_config['executor'] == 'local':
+        launch_local_job(
+            cluster_config,
+            cmd,
+            num_nodes,
+            tasks_per_node,
+            gpus_per_node,
+            job_name,
+            container,
+            mounts,
+            partition,
+            with_sandbox,
+            extra_sbatch_args,
+        )
+    elif cluster_config['executor'] == 'slurm':
+        launch_slurm_job(
+            cluster_config,
+            cmd,
+            num_nodes,
+            tasks_per_node,
+            gpus_per_node,
+            job_name,
+            container,
+            mounts,
+            partition,
+            with_sandbox,
+            extra_sbatch_args,
+        )
+    else:
+        raise ValueError(f"Unknown executor {cluster_config['executor']}")
 
 
 if __name__ == "__main__":

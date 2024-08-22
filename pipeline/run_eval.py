@@ -17,10 +17,12 @@ import sys
 from argparse import ArgumentParser
 from pathlib import Path
 
+import yaml
+
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 
-from launcher import CLUSTER_CONFIG, NEMO_SKILLS_CODE, WRAPPER_HELP, get_server_command, launch_job
+from launcher import NEMO_SKILLS_CODE, WRAPPER_HELP, get_server_command, launch_job
 
 try:
     from nemo_skills.inference.generate import HELP_MESSAGE
@@ -91,6 +93,7 @@ if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser(usage=WRAPPER_HELP + '\n\n' + SCRIPT_HELP + '\n\nscript arguments:\n\n' + HELP_MESSAGE)
     wrapper_args = parser.add_argument_group('wrapper arguments')
+    wrapper_args.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     wrapper_args.add_argument("--model", required=False, help="Path to the model or model name in API.")
     wrapper_args.add_argument(
         "--server_address",
@@ -141,6 +144,9 @@ if __name__ == "__main__":
 
     extra_arguments = f'{" ".join(unknown)}'
 
+    with open(Path(__file__).parents[1] / 'cluster_configs' / f'{args.cluster}.yaml', "rt", encoding="utf-8") as fin:
+        cluster_config = yaml.safe_load(fin)
+
     args.output_dir = Path(args.output_dir).absolute()
 
     # model is hosted elsewhere
@@ -153,7 +159,7 @@ if __name__ == "__main__":
         if args.server_type == "openai":
             extra_arguments += f" ++server.base_url={args.server_address} ++server.model={args.model}"
         # TODO: run without container if remote server?
-        container = CLUSTER_CONFIG["containers"]['nemo']
+        container = cluster_config["containers"]['nemo']
     else:
         model_path = Path(args.model).absolute()
         server_start_cmd, num_tasks = get_server_command(
@@ -164,7 +170,7 @@ if __name__ == "__main__":
         # also mounting the model in this case
         mounts = f"{NEMO_SKILLS_CODE}:/code,{args.output_dir}:/results,{model_path}:/model"
         args.server_address = "localhost:5000"
-        container = CLUSTER_CONFIG["containers"][args.server_type]
+        container = cluster_config["containers"][args.server_type]
 
     format_dict = {
         "server_start_cmd": server_start_cmd,
@@ -200,6 +206,7 @@ if __name__ == "__main__":
     for idx, eval_cmd in enumerate(eval_cmds):
         extra_sbatch_args = ["--parsable", f"--output={args.output_dir}/slurm_logs_eval{idx}.log"]
         launch_job(
+            cluster_config=cluster_config,
             cmd=CMD.format(**format_dict, eval_cmds=eval_cmd.format(**format_dict)),
             num_nodes=args.num_nodes,
             tasks_per_node=num_tasks,

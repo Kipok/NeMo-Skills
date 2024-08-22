@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cluster: local
+executor: local
 
 containers:
   tensorrt_llm: igitman/nemo-skills-trtllm:0.4.0
