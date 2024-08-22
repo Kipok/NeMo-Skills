@@ -1,4 +1,4 @@
-name: Visualization Tool Tests
+name: NeMo Inspector Tool Tests
 
 on:
   pull_request:
@@ -28,9 +28,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install .
-        pip install -r visualization/requirements.txt
-        pip install -r visualization/test-requirements.txt
-        pip install pytest pytest-cov
+        pip install -r requirements/inspector.txt
+        pip install -r requirements/inspector-tests.txt
+        pip install -r requirements/common-tests.txt
 
     - name: Set up Chrome
       uses: browser-actions/setup-chrome@latest
@@ -38,11 +38,11 @@ jobs:
     - name: Set up ChromeDriver
       uses: nanasess/setup-chromedriver@master
 
-    - name: Run visualization tests
+    - name: Run NeMo inspector tests
       run: |
         export DISPLAY=:99
         sudo Xvfb :99 -ac &
-        python -m pytest visualization/tests/ --reruns 3 --reruns-delay 1 --junitxml=results.xml --cov-report=term-missing:skip-covered --cov=visualization --durations=30 -vv
+        python -m pytest nemo_inspector/tests/ --reruns 3 --reruns-delay 1 --junitxml=results.xml --cov-report=term-missing:skip-covered --cov=visualization --durations=30 -vv
 
     - name: Upload test coverage
       uses: actions/upload-artifact@v2
