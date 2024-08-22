@@ -1,0 +1,10 @@
+defaults:
+  # add custom config to set up model_prediction
+  - model_predictions
+  - generation_config
+  - base_inspector_config
+  - _self_
+
+hydra:
+  searchpath:
+    - file://nemo_skills/inference
