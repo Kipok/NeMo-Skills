@@ -20,9 +20,9 @@ def parse_requirements(filename):
         return f.read().splitlines()
 
 
-# Read the requirements from the requirements.txt file
-requirements = parse_requirements('requirements.txt')
-# sdp is not needed in docker containers, so not adding it to requirements.txt
+# Read the requirements from the requirements/main.txt file
+requirements = parse_requirements('requirements/main.txt')
+# sdp is not needed in docker containers, so not adding it to requirements/main.txt
 requirements.append("sdp @ git+https://github.com/NVIDIA/NeMo-speech-data-processor")
 
 setup(
