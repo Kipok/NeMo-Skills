@@ -154,7 +154,7 @@ if __name__ == "__main__":
         server_start_cmd = "sleep infinity"
         server_end_cmd = "echo 'done'"
         job_name = "eval-remote"
-        mounts = f"{NEMO_SKILLS_CODE}:/code,{args.output_dir}:/results"
+        mounts = [f"{NEMO_SKILLS_CODE}:/code", f"{args.output_dir}:/results"]
         num_tasks = 1
         if args.server_type == "openai":
             extra_arguments += f" ++server.base_url={args.server_address} ++server.model={args.model}"
@@ -168,7 +168,7 @@ if __name__ == "__main__":
         server_end_cmd = "pkill -f nemo_skills/inference/server"
         job_name = f"eval-{model_path.name}"
         # also mounting the model in this case
-        mounts = f"{NEMO_SKILLS_CODE}:/code,{args.output_dir}:/results,{model_path}:/model"
+        mounts = [f"{NEMO_SKILLS_CODE}:/code", f"{args.output_dir}:/results", f"{model_path}:/model"]
         args.server_address = "localhost:5000"
         container = cluster_config["containers"][args.server_type]
 

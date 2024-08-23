@@ -125,7 +125,7 @@ def launch_local_job(
     if extra_sbatch_args is not None:
         LOG.warning("Local execution does not support extra sbatch args. Got %s", str(extra_sbatch_args))
 
-    mounts = " -v ".join(mounts.split(","))
+    mounts = " -v ".join(mounts)
     if mounts:
         mounts = f"-v {mounts}"
 
@@ -195,6 +195,7 @@ def launch_slurm_job(
     with_sandbox=False,
     extra_sbatch_args=None,
 ):
+    partition = partition or cluster_config["partition"]
     if 'timeouts' not in cluster_config:
         timeout = "10000:00:00:00"
     else:
@@ -202,7 +203,7 @@ def launch_slurm_job(
 
     executor = run.SlurmExecutor(
         account=cluster_config["account"],
-        partition=partition or cluster_config["partition"],
+        partition=partition,
         nodes=num_nodes,
         ntasks_per_node=tasks_per_node,
         tunnel=run.SSHTunnel(**cluster_config["ssh_tunnel"]),
