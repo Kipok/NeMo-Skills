@@ -193,6 +193,7 @@ class NemoModel(BaseModel):
             "repetition_penalty": repetition_penalty,
             "end_strings": ["<|endoftext|>"] + stop_phrases,
         }
+
         preprocess_request(request)
         generations = self.requests_lib.put(
             url="http://{}:{}/generate".format(self.server_host, self.server_port),
@@ -200,6 +201,14 @@ class NemoModel(BaseModel):
             headers={"Content-Type": "application/json"},
         ).json()
         # we need to remove the original prompt as nemo always returns it
+
+        print(generations)
+        print("Hello")
+        # from IPython import embed
+        # embed()
+
+        # return generations
+
         outputs = [None] * len(generations['sentences'])
         for idx, generation in enumerate(generations['sentences']):
             # when the prompt starts from special tokens like bos, nemo will remove them,
@@ -211,6 +220,7 @@ class NemoModel(BaseModel):
 
         # if remove_stop_phrases:
         #     postprocess_output(outputs, stop_phrases)
+        print(outputs)
         return outputs
 
 

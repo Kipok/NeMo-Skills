@@ -121,6 +121,9 @@ def sample_sequence_batch(
             )
         output = inference_strategy.forward_step(batch, tensor_shape)
 
+        # from IPython import embed
+        # embed()
+
         if parallel_state.is_pipeline_last_stage():
 
             output = output[0]['logits']
@@ -135,6 +138,7 @@ def sample_sequence_batch(
             outputs = []
             for bs_idx in range(probs.shape[0]):
                 # the tokens are padded to max length in a batch, so taking the right slice. Note 1: in the beginning
+                print(context_lengths)
                 prompt_ids = context_tokens[bs_idx, 1 : context_lengths[bs_idx]]
                 tokenprobs = probs[bs_idx, torch.arange(prompt_ids.shape[0]), prompt_ids]
 
@@ -166,6 +170,9 @@ def sample_sequence_batch(
                     tokenizer.tokenizer.decode(prompt_ids[split_position - 3 : split_position]),
                 )
                 outputs.append([str(elem) for elem in list(tokenprobs[split_position:].cpu().numpy())])
+
+                from IPython import embed
+                embed()
 
             # to be able to convert to json and pass over http
             output = [str(elem) for elem in list(tokenprobs[split_position:].cpu().numpy())]
