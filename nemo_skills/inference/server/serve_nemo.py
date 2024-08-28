@@ -172,7 +172,6 @@ def sample_sequence_batch(
                 
                 # Also store topk probs
                 topk_probs = torch.topk(probs[bs_idx, split_position: context_lengths[bs_idx] - 1], k=10, dim=-1).values.cpu().numpy()
-                # print(tokenizer.tokenizer.convert_ids_to_tokens(prompt_ids[split_position:]))
                 outputs.append(
                     {
                         'probs': [str(elem) for elem in list(tokenprobs[split_position:].cpu().numpy())],
