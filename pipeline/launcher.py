@@ -224,11 +224,11 @@ def launch_slurm_job(
         container_image=container,
         container_mounts=mounts,
         time=timeout,
-        packager=run.GitArchivePackager(),
+        packager=run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl'),
         gpus_per_node=gpus_per_node,
         job_name_prefix=cluster_config["job_name_prefix"],
         srun_args=["--no-container-mount-home", "--mpi=pmix"],
-        template_path=str(Path(__file__).parents[0] / "templates" / "slurm-parallel.sh.j2"),
+        # template_path=str(Path(__file__).parents[0] / "templates" / "slurm-parallel.sh.j2"),
     )
 
     # cmd = ["sbatch", "--parsable"]
