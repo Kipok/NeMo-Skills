@@ -202,12 +202,6 @@ class NemoModel(BaseModel):
         ).json()
         # we need to remove the original prompt as nemo always returns it
 
-        print(generations)
-        print("Hello")
-        # from IPython import embed
-        # embed()
-
-        # return generations
 
         outputs = [None] * len(generations['sentences'])
         for idx, generation in enumerate(generations['sentences']):

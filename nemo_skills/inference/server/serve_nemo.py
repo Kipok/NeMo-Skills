@@ -45,6 +45,7 @@ from pytorch_lightning.trainer.trainer import Trainer
 from nemo_skills.inference.inference_strategy import CodeExecutionStrategy
 
 
+
 def sample_sequence_batch(
     model,
     inference_strategy,
@@ -138,7 +139,6 @@ def sample_sequence_batch(
             outputs = []
             for bs_idx in range(probs.shape[0]):
                 # the tokens are padded to max length in a batch, so taking the right slice. Note 1: in the beginning
-                print(context_lengths)
                 prompt_ids = context_tokens[bs_idx, 1 : context_lengths[bs_idx]]
                 tokenprobs = probs[bs_idx, torch.arange(prompt_ids.shape[0]), prompt_ids]
 
@@ -150,7 +150,7 @@ def sample_sequence_batch(
                 # tokenprobs = torch.topk(probs, k=1, dim=-1).values[:, 0][:-1]
 
                 # if you want to see what the model wants to predict in text, call the following
-                # tokenidx = torch.topk(probs[bs_idx, :context_lengths[bs_idx] - 1], k=1, dim=-1).indices[:, 0]
+    
                 # tokenizer.tokenizer.decode(tokenidx)
 
                 # does it make sense to use a diff of the prompt token probs and the top1 probs?
@@ -160,130 +160,29 @@ def sample_sequence_batch(
 
                 import numpy as np
 
-                split_position = np.where(prompt_ids.cpu().numpy() == 128007)[0][-1] + 1
-                assert (
-                    tokenizer.tokenizer.decode(prompt_ids[split_position - 3 : split_position])
-                    == '<|start_header_id|>assistant<|end_header_id|>'
-                ), (
-                    prompt_ids,
-                    tokenizer.tokenizer.decode(prompt_ids),
-                    tokenizer.tokenizer.decode(prompt_ids[split_position - 3 : split_position]),
-                )
-                outputs.append([str(elem) for elem in list(tokenprobs[split_position:].cpu().numpy())])
+                # Find the :\n (512) token
+                match_locs = np.where(prompt_ids.cpu().numpy() == 512)[0] + 1
+                split_position = None
 
-                from IPython import embed
-                embed()
+                # Break whenever we find the last solution prefix used in the llama/base template
+                for cand_idx in match_locs[::-1]:
+                    if  "\n\nMy solution:\n" in tokenizer.tokenizer.decode(prompt_ids[cand_idx - 4 : cand_idx]):
+                        split_position = cand_idx
+                        break
+                
+                # Also store topk probs
+                topk_probs = torch.topk(probs[bs_idx, split_position: context_lengths[bs_idx] - 1], k=10, dim=-1).values.cpu().numpy()
+                # print(tokenizer.tokenizer.convert_ids_to_tokens(prompt_ids[split_position:]))
+                outputs.append(
+                    {
+                        'probs': [str(elem) for elem in list(tokenprobs[split_position:].cpu().numpy())],
+                        'tokens': tokenizer.tokenizer.convert_ids_to_tokens(prompt_ids[split_position:]),
+                        'topk_probs': [[str(elem) for elem in inner_list] for inner_list in topk_probs],
+                    }
+                )
 
             # to be able to convert to json and pass over http
-            output = [str(elem) for elem in list(tokenprobs[split_position:].cpu().numpy())]
             yield outputs, None, None, None
-
-            # **************************************************************************************
-
-            # # make sure it will generate at least min_length
-            # min_length = extra.get('min_tokens_to_generate', 0)
-            # if min_length > 0:
-            #     within_min_length = (context_length - context_lengths) < min_length
-            #     logits[within_min_length, eod_id] = -float('Inf')
-
-            # # make sure it won't sample outside the vocab_size range
-            # logits[:, tokenizer.vocab_size :] = -float('Inf')
-
-            # # started indicates whether the current token step passes the context_length, so we make sure not to overwrite the context tokens
-
-            # started = context_lengths <= context_length
-            # if extra.get('greedy', False):
-            #     prev = torch.argmax(logits, dim=-1).view(-1)
-            # else:
-            #     logits = logits.float()
-            #     logits /= temperature
-            #     # handle repetition penality
-            #     logits = repetition_penalty(logits, extra.get('repetition_penalty', 1.2), all_generated_indices)
-            #     logits = top_k_logits(
-            #         logits, top_k=extra.get('top_k', 0), top_p=extra.get('top_p', 0.9), started=started
-            #     )
-            #     probs = F.softmax(logits, dim=-1)
-            #     prev = torch.multinomial(probs, num_samples=1).view(-1)
-
-            # # Clamp the predicted out of vocabulary tokens
-            # prev = torch.clamp(prev, max=tokenizer.vocab_size - 1)
-            # new_tokens = switch(tokens[:, context_length].view(-1), prev, started)
-
-            # # Replace sampled tokens w/ done token if EOD has already been sampled
-            # new_tokens = switch(new_tokens, eod_id, is_done)
-
-            # # post process the inference tokens based on the strategy
-            # inference_strategy.post_process(tokens, new_tokens, context_length)
-
-            # # Insert either new predicted or next prompt token
-            # tokens[:, context_length] = new_tokens
-
-            # if compute_logprob:
-            #     if output_logits is None:
-            #         output = F.log_softmax(output[:, :context_length, :], 2)
-
-            #         indices = torch.unsqueeze(tokens[:, 1 : context_length + 1], 2)
-            #         output_logits = torch.gather(output, 2, indices).squeeze(2)
-            #         all_generated_indices = indices[:, :, 0]
-            #         if all_probs:
-            #             full_logits = output
-            #     else:
-            #         output = F.log_softmax(output, 2)
-            #         indices = torch.unsqueeze(new_tokens, 1).unsqueeze(2)
-            #         new_output_logits = torch.gather(output, 2, indices).squeeze(2)
-
-            #         # TODO(rprenger) we're copying output_logits every time.  Should pre-allocate
-            #         output_logits = torch.cat([output_logits, new_output_logits], 1)
-            #         all_generated_indices = torch.cat([all_generated_indices, indices[:, :, 0]], 1)
-            #         if all_probs:
-            #             full_logits = torch.cat([full_logits, output], 1)
-
-            # src = parallel_state.get_pipeline_model_parallel_last_rank()
-            # group = parallel_state.get_embedding_group()
-            # torch.distributed.broadcast(new_tokens, src, group)
-
-            # #                done_token = (prev == eod_id).byte() & started.byte()
-            # done_token = inference_strategy.end_of_generation_condition(
-            #     tokens[:, : context_length + 1], prev, eod_id, end_strings
-            # )
-            # done_token = done_token.byte() & started.byte()
-
-            # just_finished = (done_token & ~is_done).bool()
-            # lengths[just_finished.view(-1)] = context_length
-            # is_done = is_done | done_token
-
-            # done = torch.all(is_done)
-            # src = parallel_state.get_pipeline_model_parallel_last_rank()
-            # group = parallel_state.get_pipeline_model_parallel_group()
-            # torch.distributed.broadcast(done, src, group)
-            # if compute_logprob:
-            #     if all_probs:
-            #         yield tokens, lengths, output_logits, full_logits
-            #     else:
-            #         yield tokens, lengths, output_logits, None
-            # else:
-            #     yield tokens, lengths, None, None
-
-            # else:
-            #     if parallel_state.is_pipeline_first_stage():
-            #         src = parallel_state.get_pipeline_model_parallel_last_rank()
-            #         group = parallel_state.get_embedding_group()
-            #         new_tokens = torch.empty_like(tokens[:, context_length])
-            #         torch.distributed.broadcast(new_tokens, src, group)
-            #         tokens[:, context_length] = new_tokens
-            #         yield tokens, None, None, None
-            #     else:
-            #         yield None, None, None, None
-
-            #     done = torch.cuda.ByteTensor([0])
-            #     src = parallel_state.get_pipeline_model_parallel_last_rank()
-            #     group = parallel_state.get_pipeline_model_parallel_group()
-            #     torch.distributed.broadcast(done, src, group)
-
-            # context_length += 1
-            # counter += 1
-            # if done:
-            #     break
 
 
 def synced_generate(
@@ -533,69 +432,10 @@ def generate(
         image_list=image_list,
         **strategy_args,
     )
-    # special_tokens = set()
-    # if hasattr(tokenizer, 'pad_token') and tokenizer.pad_token is not None:
-    #     special_tokens.add(tokenizer.pad_token)
-    # if hasattr(tokenizer, 'eos_token') and tokenizer.eos_token is not None:
-    #     special_tokens.add(tokenizer.eos_token)
-    # if hasattr(tokenizer, 'bos_token') and tokenizer.bos_token is not None:
-    #     special_tokens.add(tokenizer.bos_token)
-    # if hasattr(tokenizer, 'cls_token') and tokenizer.cls_token is not None:
-    #     special_tokens.add(tokenizer.cls_token)
-    # if hasattr(tokenizer, 'unk_token') and tokenizer.unk_token is not None:
-    #     special_tokens.add(tokenizer.unk_token)
-    # if hasattr(tokenizer, 'sep_token') and tokenizer.sep_token is not None:
-    #     special_tokens.add(tokenizer.sep_token)
-    # if hasattr(tokenizer, 'mask_token') and tokenizer.mask_token is not None:
-    #     special_tokens.add(tokenizer.mask_token)
-    # if output is not None:
-    #     decode_tokens, output_logits, full_logits = output
-    #     resp_sentences = []
-    #     resp_sentences_seg = []
-
-    #     decode_tokens = decode_tokens.cpu().numpy().tolist()
-    #     for decode_token in decode_tokens:
-    #         sentence = tokenizer.ids_to_text(decode_token)
-    #         resp_sentences.append(sentence)
-    #         if not isinstance(tokenizer, TabularTokenizer):
-    #             words = []
-    #             for token in decode_token:
-    #                 if not isinstance(token, Iterable):
-    #                     token = [token]
-    #                 word = tokenizer.ids_to_tokens(token)
-    #                 if isinstance(word, Iterable):
-    #                     word = word[0]
-    #                 if hasattr(tokenizer.tokenizer, 'byte_decoder'):
-    #                     word = bytearray([tokenizer.tokenizer.byte_decoder[c] for c in word]).decode(
-    #                         'utf-8', errors='replace'
-    #                     )
-    #                 words.append(word)
-    #             resp_sentences_seg.append(words)
-    #         else:
-    #             words = tokenizer.text_to_tokens(sentence)
-    #             resp_sentences_seg.append(words)
-
-    #     # offsets calculation
-    #     all_offsets = []
-    #     for item in resp_sentences_seg:
-    #         offsets = [0]
-    #         for index, token in enumerate(item):
-    #             if index != len(item) - 1:
-    #                 if token in special_tokens:
-    #                     offsets.append(offsets[-1])
-    #                 else:
-    #                     offsets.append(len(token) + offsets[-1])
-    #         all_offsets.append(offsets)
 
     output_dict = {}
     output_dict['sentences'] = output
     output_dict['full_logprob'] = None  # required to be deleted by the server
-    # output['tokens'] = resp_sentences_seg
-    # output['logprob'] = output_logits
-    # output['full_logprob'] = full_logits
-    # output['token_ids'] = decode_tokens
-    # output['offsets'] = all_offsets
-    # output = inference_strategy.post_generation_process(output)
     return output_dict
 
 
@@ -606,52 +446,6 @@ tgu.generate = generate
 # needs to be here to pick up monkey patched functions
 from nemo.collections.nlp.modules.common.text_generation_server import MegatronServer
 
-"""
-This is the script to run GPT text generation.
-
-Usage:
-         python megatron_gpt_eval.py \
-            gpt_model_file=PATH_TO_MODEL \
-            trainer.devices=1 \
-            trainer.num_nodes=1 \
-            tensor_model_parallel_size=-1 \
-            pipeline_model_parallel_size=-1 \
-            server=True
-
-        To send a request to the server, here is one example code:
-        ```python
-        import json
-        import requests
-
-        batch_size = 8
-        port_num = 5555
-        headers = {"Content-Type": "application/json"}
-
-
-        def request_data(data):
-            resp = requests.put('http://localhost:{}/generate'.format(port_num),
-                                data=json.dumps(data),
-                                headers=headers)
-            sentences = resp.json()['sentences']
-            return sentences
-
-
-        data = {
-            "sentences": [""] * batch_size,
-            "tokens_to_generate": 300,
-            "temperature": 1.0,
-            "add_BOS": True,
-            "top_k": 0,
-            "top_p": 0.9,
-            "greedy": False,
-            "all_probs": False,
-            "repetition_penalty": 1.2,
-            "min_tokens_to_generate": 2,
-        }
-
-        sentences = request_data(data)
-        ```
-"""
 
 if not torch.cuda.is_available():
     raise EnvironmentError("GPU is needed for the inference")
