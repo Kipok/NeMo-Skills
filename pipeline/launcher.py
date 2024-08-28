@@ -17,6 +17,7 @@
 
 import argparse
 import atexit
+import copy
 import logging
 import os
 import subprocess
@@ -27,6 +28,7 @@ from time import sleep
 
 import nemo_run as run
 import yaml
+from nemo_run.core.execution.slurm import SlurmBatchRequest
 
 LOG = logging.getLogger(__file__)
 WRAPPER_HELP = """
@@ -182,6 +184,17 @@ def launch_local_job(
     subprocess.run(cmd, shell=True, check=True)
 
 
+def get_sandox_cmd():
+    return "/entrypoint.sh && /start.sh"
+
+
+def get_sandbox_executor(executor, cluster_config):
+    sandbox_executor = copy.copy(executor)
+    sandbox_executor.container_image = cluster_config["containers"]["sandbox"]
+    sandbox_executor.srun_args += [f"--ntasks={sandbox_executor.nodes}"]
+    return sandbox_executor
+
+
 def launch_slurm_job(
     cluster_config,
     cmd,
@@ -214,9 +227,14 @@ def launch_slurm_job(
         gpus_per_node=gpus_per_node,
         job_name_prefix=cluster_config["job_name_prefix"],
         srun_args=["--no-container-mount-home", "--mpi=pmix"],
+        template_path=str(Path(__file__).parents[0] / "templates" / "slurm-parallel.sh.j2"),
     )
     with run.Experiment("my-test-exp", executor=executor) as exp:
-        exp.add(run.Script(inline=cmd), name=job_name)
+        exp.add(
+            [run.Script(inline=get_sandox_cmd()), run.Script(inline=cmd)],
+            executor=[get_sandbox_executor(executor, cluster_config), executor],
+            name=job_name,
+        )
         exp.dryrun()
 
 
