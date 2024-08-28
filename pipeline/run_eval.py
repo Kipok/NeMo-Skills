@@ -42,6 +42,7 @@ def get_greedy_cmd(benchmark, output_name='output-greedy.jsonl', extra_eval_args
     extra_eval_args = f"{EXTRA_EVAL_ARGS.get(benchmark, '')} {extra_eval_args}"
     extra_arguments = f"{EXTRA_GENERATION_ARGS.get(benchmark, '')} {extra_arguments}"
     return f"""echo "Evaluating benchmark {benchmark}" && \
+python nemo_skills/dataset/prepare.py {benchmark} && \
 python nemo_skills/inference/generate.py \
     ++server.server_type={{server_type}} \
     ++dataset={benchmark} \
