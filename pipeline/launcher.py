@@ -191,6 +191,7 @@ def get_sandox_cmd():
 def get_sandbox_executor(executor, cluster_config):
     sandbox_executor = copy.copy(executor)
     sandbox_executor.container_image = cluster_config["containers"]["sandbox"]
+    sandbox_executor.container_mounts = []
     sandbox_executor.srun_args += [f"--ntasks={sandbox_executor.nodes}"]
     return sandbox_executor
 
@@ -229,6 +230,68 @@ def launch_slurm_job(
         srun_args=["--no-container-mount-home", "--mpi=pmix"],
         template_path=str(Path(__file__).parents[0] / "templates" / "slurm-parallel.sh.j2"),
     )
+
+    # cmd = ["sbatch", "--parsable"]
+    # command_groups = [
+    #     ["bash ./scripts/start_server.sh"],
+    #     ["bash ./scripts/echo.sh server_host=$het_group_host_0"],
+    # ]
+    # slurm_config = SlurmExecutor(
+    #     packager=GitArchivePackager(),
+    #     experiment_id="some_experiment_12345",
+    #     account="your_account",
+    #     partition="your_partition",
+    #     time="00:30:00",
+    #     nodes=1,
+    #     ntasks_per_node=8,
+    #     gpus_per_node=8,
+    #     container_image="some-image",
+    #     heterogeneous=False,
+    #     memory_measure=False,
+    #     job_dir="/set/by/lib",
+    #     tunnel=SSHTunnel(
+    #         job_dir="/some/job/dir",
+    #         host="slurm-login-host",
+    #         user="your-user",
+    #     ),
+    # )
+
+    # slurm_config.resource_group = [
+    #     SlurmExecutor.ResourceRequest(
+    #         packager=GitArchivePackager(),
+    #         nodes=1,
+    #         ntasks_per_node=8,
+    #         container_image="image_1",
+    #         gpus_per_node=8,
+    #         gpus_per_task=None,
+    #         container_mounts=[],
+    #         env_vars={"CUSTOM_ENV_1": "some_value_1"},
+    #     ),
+    #     SlurmExecutor.ResourceRequest(
+    #         packager=GitArchivePackager(),
+    #         nodes=1,
+    #         ntasks_per_node=1,
+    #         container_image="image_2",
+    #         gpus_per_node=0,
+    #         gpus_per_task=None,
+    #         container_mounts=[],
+    #         env_vars={
+    #             "CUSTOM_ENV_2": "some_value_2",
+    #             "HOST_1": ExecutorMacros.group_host(0),
+    #         },
+    #     ),
+    # ]
+    # max_retries = 3
+    # extra_env = {"ENV_VAR": "value"}
+    # req = SlurmBatchRequest(
+    #     cmd=["sbatch", "--parsable"],
+    #     jobs=["sample_job-0", "sample_job-1"],
+    #     command_groups=command_groups,
+    #     slurm_config=slurm_config,
+    #     max_retries=max_retries,
+    #     extra_env=extra_env,
+    # )
+
     with run.Experiment("my-test-exp", executor=executor) as exp:
         exp.add(
             [run.Script(inline=get_sandox_cmd()), run.Script(inline=cmd)],
