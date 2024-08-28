@@ -56,7 +56,7 @@ fi \
 # TODO: when parameters are incorrect, the error is displayed in a bizarre way
 
 
-MOUNTS = "{NEMO_SKILLS_CODE}:/code,{NEMO_SKILLS_DATA}:/data,{model_path}:/model,{output_dir}:/results"
+MOUNTS = "{NEMO_SKILLS_CODE}:/code,{model_path}:/model,{output_dir}:/results"
 LOGS = "{output_dir}/slurm_logs-rs{random_seed}.txt"
 JOB_NAME = "labelling-{model_name}-rs{random_seed}"
 
