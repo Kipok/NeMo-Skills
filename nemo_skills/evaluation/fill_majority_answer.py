@@ -122,6 +122,7 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
     for idx, predictions in enumerate(all_predictions):
         for lidx, handle in enumerate(file_handles):
             predictions[lidx]["expected_answer"] = majority_answers[idx]
+            predictions[lidx]["is_correct"] = predictions[lidx]["predicted_answer"] == majority_answers[idx]
             handle.write(json.dumps(predictions[lidx]) + "\n")
 
     for file_handle in file_handles:
