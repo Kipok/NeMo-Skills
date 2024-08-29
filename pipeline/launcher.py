@@ -17,7 +17,6 @@
 
 import argparse
 import atexit
-import copy
 import logging
 import os
 import subprocess
@@ -28,7 +27,6 @@ from time import sleep
 
 import nemo_run as run
 import yaml
-from nemo_run.core.execution.slurm import SlurmBatchRequest
 
 LOG = logging.getLogger(__file__)
 WRAPPER_HELP = """
@@ -47,11 +45,11 @@ def fill_env_vars(format_dict, env_vars):
         format_dict[env_var] = env_var_value
 
 
-def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_name: str):
+def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_path: str):
     num_tasks = num_gpus
     if server_type == 'nemo':
         server_start_cmd = (
-            f"python /code/nemo_skills/inference/server/serve_nemo.py gpt_model_file=/model "
+            f"python /nemo_run/code/nemo_skills/inference/server/serve_nemo.py gpt_model_file={model_path} "
             f"trainer.devices={num_gpus} "
             f"trainer.num_nodes={num_nodes} "
             f"tensor_model_parallel_size={num_gpus} "
@@ -62,16 +60,10 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_na
             num_tasks = 1
 
     elif server_type == 'vllm':
-        if len(model_name.split('/')) == 2 and not os.path.exists(model_name):
-            server_start_cmd = (
-                f"NUM_GPUS={num_gpus} bash /code/nemo_skills/inference/server/serve_vllm.sh "
-                f"{model_name} {model_name} 0 openai 5000"
-            )
-        else:
-            server_start_cmd = (
-                f"NUM_GPUS={num_gpus} bash /code/nemo_skills/inference/server/serve_vllm.sh "
-                f"/model/ {model_name} 0 openai 5000"
-            )
+        server_start_cmd = (
+            f"NUM_GPUS={num_gpus} bash /nemo_run/code/nemo_skills/inference/server/serve_vllm.sh "
+            f"{model_path} {os.path.basename(model_path)} 0 openai 5000"
+        )
 
         if os.environ.get("MAX_SEQ_LEN", None) is not None:
             server_start_cmd = f"export MAX_SEQ_LEN={os.environ['MAX_SEQ_LEN']} && {server_start_cmd}"
@@ -80,7 +72,10 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_na
     else:
         # adding sleep to ensure the logs file exists
         # need this flag for stable Nemotron-4-340B deployment
-        server_start_cmd = f"FORCE_NCCL_ALL_REDUCE_STRATEGY=1 python /code/nemo_skills/inference/server/serve_trt.py --model_path /model"
+        server_start_cmd = (
+            f"FORCE_NCCL_ALL_REDUCE_STRATEGY=1 python /nemo_run/code/nemo_skills/inference/server/serve_trt.py "
+            f"--model_path {model_path}"
+        )
         num_tasks = num_gpus
     return server_start_cmd, num_tasks
 
@@ -189,11 +184,44 @@ def get_sandox_cmd():
 
 
 def get_sandbox_executor(executor, cluster_config):
-    sandbox_executor = copy.copy(executor)
+    sandbox_executor = executor.clone()
     sandbox_executor.container_image = cluster_config["containers"]["sandbox"]
     sandbox_executor.container_mounts = []
     sandbox_executor.srun_args += [f"--ntasks={sandbox_executor.nodes}"]
     return sandbox_executor
+
+
+def get_executor(
+    cluster_config,
+    num_nodes,
+    tasks_per_node,
+    gpus_per_node,
+    container,
+    mounts=None,
+    partition=None,
+):
+    mounts = mounts or []
+    partition = partition or cluster_config["partition"]
+    if 'timeouts' not in cluster_config:
+        timeout = "10000:00:00:00"
+    else:
+        timeout = cluster_config["timeouts"][partition]
+
+    return run.SlurmExecutor(
+        account=cluster_config["account"],
+        partition=partition,
+        nodes=num_nodes,
+        ntasks_per_node=tasks_per_node,
+        tunnel=run.SSHTunnel(**cluster_config["ssh_tunnel"]),
+        container_image=container,
+        container_mounts=mounts + cluster_config.get('mounts', []),
+        time=timeout,
+        packager=run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl'),
+        gpus_per_node=gpus_per_node,
+        job_name_prefix=cluster_config["job_name_prefix"],
+        srun_args=["--no-container-mount-home", "--mpi=pmix"],
+        template_path=str(Path(__file__).parents[0] / "templates" / "slurm-parallel.sh.j2"),
+    )
 
 
 def launch_slurm_job(
@@ -209,88 +237,6 @@ def launch_slurm_job(
     with_sandbox=False,
     extra_sbatch_args=None,
 ):
-    partition = partition or cluster_config["partition"]
-    if 'timeouts' not in cluster_config:
-        timeout = "10000:00:00:00"
-    else:
-        timeout = cluster_config["timeouts"][partition]
-
-    executor = run.SlurmExecutor(
-        account=cluster_config["account"],
-        partition=partition,
-        nodes=num_nodes,
-        ntasks_per_node=tasks_per_node,
-        tunnel=run.SSHTunnel(**cluster_config["ssh_tunnel"]),
-        container_image=container,
-        container_mounts=mounts,
-        time=timeout,
-        packager=run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl'),
-        gpus_per_node=gpus_per_node,
-        job_name_prefix=cluster_config["job_name_prefix"],
-        srun_args=["--no-container-mount-home", "--mpi=pmix"],
-        # template_path=str(Path(__file__).parents[0] / "templates" / "slurm-parallel.sh.j2"),
-    )
-
-    # cmd = ["sbatch", "--parsable"]
-    # command_groups = [
-    #     ["bash ./scripts/start_server.sh"],
-    #     ["bash ./scripts/echo.sh server_host=$het_group_host_0"],
-    # ]
-    # slurm_config = SlurmExecutor(
-    #     packager=GitArchivePackager(),
-    #     experiment_id="some_experiment_12345",
-    #     account="your_account",
-    #     partition="your_partition",
-    #     time="00:30:00",
-    #     nodes=1,
-    #     ntasks_per_node=8,
-    #     gpus_per_node=8,
-    #     container_image="some-image",
-    #     heterogeneous=False,
-    #     memory_measure=False,
-    #     job_dir="/set/by/lib",
-    #     tunnel=SSHTunnel(
-    #         job_dir="/some/job/dir",
-    #         host="slurm-login-host",
-    #         user="your-user",
-    #     ),
-    # )
-
-    # slurm_config.resource_group = [
-    #     SlurmExecutor.ResourceRequest(
-    #         packager=GitArchivePackager(),
-    #         nodes=1,
-    #         ntasks_per_node=8,
-    #         container_image="image_1",
-    #         gpus_per_node=8,
-    #         gpus_per_task=None,
-    #         container_mounts=[],
-    #         env_vars={"CUSTOM_ENV_1": "some_value_1"},
-    #     ),
-    #     SlurmExecutor.ResourceRequest(
-    #         packager=GitArchivePackager(),
-    #         nodes=1,
-    #         ntasks_per_node=1,
-    #         container_image="image_2",
-    #         gpus_per_node=0,
-    #         gpus_per_task=None,
-    #         container_mounts=[],
-    #         env_vars={
-    #             "CUSTOM_ENV_2": "some_value_2",
-    #             "HOST_1": ExecutorMacros.group_host(0),
-    #         },
-    #     ),
-    # ]
-    # max_retries = 3
-    # extra_env = {"ENV_VAR": "value"}
-    # req = SlurmBatchRequest(
-    #     cmd=["sbatch", "--parsable"],
-    #     jobs=["sample_job-0", "sample_job-1"],
-    #     command_groups=command_groups,
-    #     slurm_config=slurm_config,
-    #     max_retries=max_retries,
-    #     extra_env=extra_env,
-    # )
 
     with run.Experiment("my-test-exp", executor=executor) as exp:
         exp.add(
@@ -298,6 +244,7 @@ def launch_slurm_job(
             executor=[get_sandbox_executor(executor, cluster_config), executor],
             name=job_name,
         )
+        print(executor.container_mounts)
         exp.dryrun()
 
 
@@ -401,11 +348,13 @@ def launch_job(
     gpus_per_node,
     job_name,
     container,
-    mounts,
+    mounts=None,
     partition=None,
     with_sandbox=False,
     extra_sbatch_args=None,
 ):
+    if mounts is None:
+        mounts = []
     # TODO: add a map to function
     if cluster_config['executor'] == 'local':
         launch_local_job(

@@ -17,12 +17,21 @@ import sys
 from argparse import ArgumentParser
 from pathlib import Path
 
+import nemo_run as run
 import yaml
 
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 
-from launcher import NEMO_SKILLS_CODE, WRAPPER_HELP, get_server_command, launch_job
+from launcher import (
+    NEMO_SKILLS_CODE,
+    WRAPPER_HELP,
+    get_executor,
+    get_sandbox_executor,
+    get_sandox_cmd,
+    get_server_command,
+    launch_job,
+)
 
 try:
     from nemo_skills.inference.generate import HELP_MESSAGE
@@ -42,14 +51,13 @@ def get_greedy_cmd(benchmark, output_name='output-greedy.jsonl', extra_eval_args
     extra_eval_args = f"{EXTRA_EVAL_ARGS.get(benchmark, '')} {extra_eval_args}"
     extra_arguments = f"{EXTRA_GENERATION_ARGS.get(benchmark, '')} {extra_arguments}"
     return f"""echo "Evaluating benchmark {benchmark}" && \
-python nemo_skills/dataset/prepare.py {benchmark} && \
 python nemo_skills/inference/generate.py \
     ++server.server_type={{server_type}} \
     ++dataset={benchmark} \
-    ++output_file=/results/{benchmark}/{output_name} \
+    ++output_file=/nemo_run/eval-results/{benchmark}/{output_name} \
     {extra_arguments} && \
 python nemo_skills/evaluation/evaluate_results.py \
-    ++prediction_jsonl_files=/results/{benchmark}/{output_name} {extra_eval_args} && \
+    ++prediction_jsonl_files=/nemo_run/eval-results/{benchmark}/{output_name} {extra_eval_args} && \
 """
 
 
@@ -67,8 +75,8 @@ def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments
 CMD = (
     # boilerplate code to setup the environment
     "nvidia-smi && "
-    "cd /code && "
-    "export PYTHONPATH=$PYTHONPATH:/code && "
+    "cd /nemo_run/code && "
+    "export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
     "export HF_TOKEN={HF_TOKEN} && "
     "export NVIDIA_API_KEY={NVIDIA_API_KEY} && "
     "export OPENAI_API_KEY={OPENAI_API_KEY} && "
@@ -95,6 +103,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(usage=WRAPPER_HELP + '\n\n' + SCRIPT_HELP + '\n\nscript arguments:\n\n' + HELP_MESSAGE)
     wrapper_args = parser.add_argument_group('wrapper arguments')
     wrapper_args.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
+    wrapper_args.add_argument("--expname", required=True, help="Experiment name")
     wrapper_args.add_argument("--model", required=False, help="Path to the model or model name in API.")
     wrapper_args.add_argument(
         "--server_address",
@@ -108,7 +117,6 @@ if __name__ == "__main__":
         default='tensorrt_llm',
         help="Type of the server to start. This parameter is ignored if server_address is specified.",
     )
-    wrapper_args.add_argument("--output_dir", required=True)
     wrapper_args.add_argument("--num_gpus", type=int, required=True)
     wrapper_args.add_argument("--starting_seed", type=int, default=0)
     wrapper_args.add_argument(
@@ -148,14 +156,11 @@ if __name__ == "__main__":
     with open(Path(__file__).parents[1] / 'cluster_configs' / f'{args.cluster}.yaml', "rt", encoding="utf-8") as fin:
         cluster_config = yaml.safe_load(fin)
 
-    args.output_dir = Path(args.output_dir).absolute()
-
     # model is hosted elsewhere
     if args.server_address is not None:
         server_start_cmd = "sleep infinity"
         server_end_cmd = "echo 'done'"
         job_name = "eval-remote"
-        mounts = [f"{NEMO_SKILLS_CODE}:/code", f"{args.output_dir}:/results"]
         num_tasks = 1
         if args.server_type == "openai":
             extra_arguments += f" ++server.base_url={args.server_address} ++server.model={args.model}"
@@ -163,13 +168,10 @@ if __name__ == "__main__":
         container = cluster_config["containers"]['nemo']
     else:
         model_path = Path(args.model).absolute()
-        server_start_cmd, num_tasks = get_server_command(
-            args.server_type, args.num_gpus, args.num_nodes, model_path.name
-        )
+        server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus, args.num_nodes, model_path)
         server_end_cmd = "pkill -f nemo_skills/inference/server"
         job_name = f"eval-{model_path.name}"
         # also mounting the model in this case
-        mounts = [f"{NEMO_SKILLS_CODE}:/code", f"{args.output_dir}:/results", f"{model_path}:/model"]
         args.server_address = "localhost:5000"
         container = cluster_config["containers"][args.server_type]
 
@@ -183,8 +185,6 @@ if __name__ == "__main__":
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
         "NVIDIA_API_KEY": os.getenv("NVIDIA_API_KEY", ""),
     }
-
-    Path(args.output_dir).mkdir(exist_ok=True, parents=True)
 
     # if benchmarks are specified, only run those
     BENCHMARKS = {k: int(v) for k, v in [b.split(":") for b in args.benchmarks]}
@@ -204,18 +204,20 @@ if __name__ == "__main__":
     # splitting eval cmds equally across num_jobs nodes
     eval_cmds = [" ".join(eval_cmds[i :: args.num_jobs]) for i in range(args.num_jobs)]
 
-    for idx, eval_cmd in enumerate(eval_cmds):
-        extra_sbatch_args = ["--parsable", f"--output={args.output_dir}/slurm_logs_eval{idx}.log"]
-        launch_job(
-            cluster_config=cluster_config,
-            cmd=CMD.format(**format_dict, eval_cmds=eval_cmd.format(**format_dict)),
-            num_nodes=args.num_nodes,
-            tasks_per_node=num_tasks,
-            gpus_per_node=args.num_gpus,
-            job_name=job_name,
-            container=container,
-            mounts=mounts,
-            partition=args.partition,
-            with_sandbox=True,
-            extra_sbatch_args=extra_sbatch_args,
-        )
+    executor = get_executor(
+        cluster_config=cluster_config,
+        num_nodes=args.num_nodes,
+        tasks_per_node=num_tasks,
+        gpus_per_node=args.num_gpus,
+        container=container,
+        partition=args.partition,
+    )
+    with run.Experiment("my-test-exp") as exp:
+        for idx, eval_cmd in enumerate(eval_cmds):
+            cmd = CMD.format(**format_dict, eval_cmds=eval_cmd.format(**format_dict))
+            exp.add(
+                [run.Script(inline=get_sandox_cmd()), run.Script(inline=cmd)],
+                executor=[get_sandbox_executor(executor, cluster_config), executor],
+                name=job_name,
+            )
+        exp.run(detach=True)
