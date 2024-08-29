@@ -212,7 +212,7 @@ if __name__ == "__main__":
         container=container,
         partition=args.partition,
     )
-    with run.Experiment("my-test-exp") as exp:
+    with run.Experiment(args.expname) as exp:
         for idx, eval_cmd in enumerate(eval_cmds):
             cmd = CMD.format(**format_dict, eval_cmds=eval_cmd.format(**format_dict))
             exp.add(
@@ -220,4 +220,4 @@ if __name__ == "__main__":
                 executor=[get_sandbox_executor(executor, cluster_config), executor],
                 name=job_name,
             )
-        exp.run(detach=True)
+        exp.run(detach=False)

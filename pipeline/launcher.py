@@ -27,6 +27,7 @@ from time import sleep
 
 import nemo_run as run
 import yaml
+from nemo_run.core.execution.slurm import JobPaths
 
 LOG = logging.getLogger(__file__)
 WRAPPER_HELP = """
@@ -191,6 +192,16 @@ def get_sandbox_executor(executor, cluster_config):
     return sandbox_executor
 
 
+class MainJobPaths(JobPaths):
+    @property
+    def stdout(self) -> Path:
+        return Path(self.folder / "sbatch_logs.out")
+
+    @property
+    def srun_stdout(self) -> Path:
+        return Path(self.folder / "job_logs.out")
+
+
 def get_executor(
     cluster_config,
     num_nodes,
@@ -220,6 +231,7 @@ def get_executor(
         gpus_per_node=gpus_per_node,
         job_name_prefix=cluster_config["job_name_prefix"],
         srun_args=["--no-container-mount-home", "--mpi=pmix"],
+        job_paths_cls=MainJobPaths,
         template_path=str(Path(__file__).parents[0] / "templates" / "slurm-parallel.sh.j2"),
     )
 
