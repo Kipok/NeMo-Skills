@@ -5,20 +5,25 @@ from typing import List, Dict
 import os
 
 def process_files(file_paths: List[str]) -> Dict[str, Dict]:
+    # Use both `id` and `output` as a composite key to uniquely identify each solution
     solutions = defaultdict(lambda: {'correct_count': 0, 'total_count': 0, 'data': None})
     
     for file_path in file_paths:
         with open(file_path, 'r') as file:
             for line in file:
                 data = json.loads(line)
+                task_id = data['id']
                 output = data['output']
                 is_correct = data['is_correct']
+
+                # Create a composite key using both task_id and output
+                composite_key = f"{task_id}:{output}"
                 
-                solutions[output]['correct_count'] += int(is_correct)
-                solutions[output]['total_count'] += 1
+                solutions[composite_key]['correct_count'] += int(is_correct)
+                solutions[composite_key]['total_count'] += 1
                 
-                if solutions[output]['data'] is None:
-                    solutions[output]['data'] = {k: v for k, v in data.items() if k not in ['generation', 'is_correct', 'predicted_answer']}
+                if solutions[composite_key]['data'] is None:
+                    solutions[composite_key]['data'] = {k: v for k, v in data.items() if k not in ['generation', 'is_correct', 'predicted_answer']}
     
     return solutions
 
