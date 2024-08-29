@@ -26,11 +26,11 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 sys.path.append(str(Path(__file__).absolute().parents[0]))
 
+from check_batch_gen import process_batch_results
 from compute_metrics import EVALUATOR_MAP, compute_metrics
 
 from nemo_skills.evaluation.metrics import MathEval
 from nemo_skills.utils import setup_logging
-from check_batch_gen import process_batch_results
 
 LOG = logging.getLogger(__name__)
 
