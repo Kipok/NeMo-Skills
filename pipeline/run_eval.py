@@ -220,4 +220,4 @@ if __name__ == "__main__":
                 executor=[get_sandbox_executor(executor, cluster_config), executor],
                 name=job_name,
             )
-        exp.run(detach=False)
+        exp.dryrun()

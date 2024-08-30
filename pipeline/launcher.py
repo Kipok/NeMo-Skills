@@ -232,7 +232,8 @@ def get_executor(
         job_name_prefix=cluster_config["job_name_prefix"],
         srun_args=["--no-container-mount-home", "--mpi=pmix"],
         job_paths_cls=MainJobPaths,
-        template_path=str(Path(__file__).parents[0] / "templates" / "slurm-parallel.sh.j2"),
+        wait_time_for_group_job=0.01,
+        # template_path=str(Path(__file__).parents[0] / "templates" / "slurm-parallel.sh.j2"),
     )
 
 
