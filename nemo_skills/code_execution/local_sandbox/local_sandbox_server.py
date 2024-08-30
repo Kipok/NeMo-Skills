@@ -34,8 +34,21 @@ def execute_code_subprocess(generated_code, queue):
     resource.setrlimit(resource.RLIMIT_STACK, (limit, limit))
 
     sys.stdout = StringIO()
-    exec(generated_code, {})
-    queue.put(sys.stdout.getvalue())
+    sys.stderr = StringIO()
+
+    try:
+        exec(generated_code, {})
+    except Exception as e:
+        return_dict = {
+            "stdout": sys.stdout.getvalue(),
+            "stderr": repr(e),
+        }
+    else:
+        return_dict = {
+            "stdout": sys.stdout.getvalue(),
+            "stderr": sys.stderr.getvalue(),
+        }
+    queue.put(return_dict)
 
 
 @app.route("/execute", methods=["POST"])
@@ -50,5 +63,5 @@ def execute():
     if process.is_alive():  # didn't finish successfully
         process.kill()
         # TODO: ideally need to use Sandbox.TimeoutError, but need to move code over to docker just for that
-        return '{"result": null, "error_message": "timeout"}'
+        return '{"stdout": "", "stderr": "timeout"}'
     return queue.get()
