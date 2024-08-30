@@ -189,6 +189,7 @@ def get_sandbox_executor(executor, cluster_config):
     sandbox_executor.container_image = cluster_config["containers"]["sandbox"]
     sandbox_executor.container_mounts = []
     sandbox_executor.srun_args += [f"--ntasks={sandbox_executor.nodes}"]
+    # sandbox_executor.job_paths_cls = SandboxJobPaths
     return sandbox_executor
 
 
@@ -200,6 +201,12 @@ class MainJobPaths(JobPaths):
     @property
     def srun_stdout(self) -> Path:
         return Path(self.folder / "job_logs.out")
+
+
+class SandboxJobPaths(MainJobPaths):
+    @property
+    def srun_stdout(self) -> Path:
+        return Path(self.folder / "sandbox_logs.out")
 
 
 def get_executor(
