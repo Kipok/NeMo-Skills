@@ -188,7 +188,7 @@ def get_sandbox_executor(executor, cluster_config):
     sandbox_executor = executor.clone()
     sandbox_executor.container_image = cluster_config["containers"]["sandbox"]
     sandbox_executor.container_mounts = []
-    sandbox_executor.srun_args += [f"--ntasks={sandbox_executor.nodes}"]
+    sandbox_executor.srun_args += [f"--ntasks={sandbox_executor.nodes}", "--overlap"]
     # sandbox_executor.job_paths_cls = SandboxJobPaths
     return sandbox_executor
 
@@ -238,6 +238,8 @@ def get_executor(
         gpus_per_node=gpus_per_node,
         job_name_prefix=cluster_config["job_name_prefix"],
         srun_args=["--no-container-mount-home", "--mpi=pmix"],
+        exclusive=True,
+        mem=0,
         job_paths_cls=MainJobPaths,
         wait_time_for_group_job=0.01,
         # template_path=str(Path(__file__).parents[0] / "templates" / "slurm-parallel.sh.j2"),
