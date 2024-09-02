@@ -103,6 +103,57 @@ def get_few_shots_layout(examples: List[Dict]) -> dbc.AccordionItem:
     )
 
 
+def get_update_dataset_modal_layout() -> html.Div:
+    text = (
+        "Write an expression to modify the data\n\n"
+        "For example: {**data, 'generation': data['generation'].strip()}\n\n"
+        "The function has to return a new dict"
+    )
+    header = dbc.ModalHeader(
+        dbc.ModalTitle("Update Dataset"),
+        close_button=True,
+    )
+    body = dbc.ModalBody(
+        html.Div(
+            [
+                html.Pre(text),
+                dbc.Textarea(
+                    id="update_dataset_input",
+                ),
+            ],
+        )
+    )
+    footer = dbc.ModalFooter(
+        dbc.Button(
+            "Apply",
+            id="apply_update_dataset_button",
+            className="ms-auto",
+            n_clicks=0,
+        )
+    )
+    return html.Div(
+        [
+            dbc.Button(
+                "Update dataset",
+                id="update_dataset_button",
+                class_name='button-class',
+            ),
+            dbc.Modal(
+                [
+                    header,
+                    body,
+                    footer,
+                ],
+                size="lg",
+                id="update_dataset_modal",
+                centered=True,
+                is_open=False,
+            ),
+        ],
+        style={'display': 'inline-block'},
+    )
+
+
 def get_save_dataset_layout() -> html.Div:
     return html.Div(
         [
@@ -161,6 +212,7 @@ def get_compare_test_layout() -> html.Div:
                     get_filter_layout(),
                     get_add_stats_layout(),
                     get_change_label_layout(apply_for_all_files=False),
+                    get_update_dataset_modal_layout(),
                     get_save_dataset_layout(),
                     dbc.Button(
                         "+",

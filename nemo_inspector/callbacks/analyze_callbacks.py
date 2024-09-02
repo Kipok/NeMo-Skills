@@ -33,6 +33,7 @@ from layouts import (
     get_stats_input,
     get_table_data,
     get_table_detailed_inner_data,
+    get_update_dataset_layout,
 )
 from settings.constants import (
     CHOOSE_LABEL,
@@ -82,6 +83,52 @@ def choose_base_model(
         get_model_answers_table_layout(
             base_model=base_model,
         ),
+        loading_container + " ",
+    )
+
+
+@app.callback(
+    [
+        Output("update_dataset_modal", "is_open", allow_duplicate=True),
+        Output("js_container", "children", allow_duplicate=True),
+        Output("js_trigger", "children", allow_duplicate=True),
+    ],
+    [Input("update_dataset_button", "n_clicks"), Input("apply_update_dataset_button", "n_clicks")],
+    [State("update_dataset_modal", "is_open"), State("js_trigger", "children")],
+    prevent_initial_call=True,
+)
+def open_update_dataset_modal(n1: int, n2: int, is_open: bool, js_trigger: str) -> bool:
+    if n1 or n2:
+        is_open = not is_open
+        return is_open, "", js_trigger + " "
+    return is_open, "", js_trigger + " "
+
+
+@app.callback(
+    [
+        Output("compare_models_rows", "children", allow_duplicate=True),
+        Output("loading_container", "children", allow_duplicate=True),
+    ],
+    Input("apply_update_dataset_button", "n_clicks"),
+    [
+        State("update_dataset_input", "value"),
+        State({"type": "model_selector", "id": ALL}, "value"),
+        State("base_model_answers_selector", "value"),
+        State("loading_container", "children"),
+    ],
+    prevent_initial_call=True,
+)
+def update_dataset(
+    n_ckicks: int,
+    update_function: str,
+    models: List[str],
+    base_model: str,
+    loading_container: str,
+) -> Tuple[List[html.Tr], bool]:
+    if base_model == CHOOSE_MODEL or not update_function:
+        return no_update, no_update
+    return (
+        get_update_dataset_layout(base_model=base_model, update_function=update_function, models=models),
         loading_container + " ",
     )
 

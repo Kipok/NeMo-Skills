@@ -647,6 +647,59 @@ def get_general_stats_layout(
     return [html.Div([html.Pre(f'{name}: {value}') for name, value in stats.items()])]
 
 
+def get_update_dataset_layout(base_model: str, update_function: str, models: List[str]) -> List[html.Tr]:
+    errors_dict = {}
+    global table_data
+    if update_function:
+        update_eval_function = get_eval_function(update_function.strip())
+        available_models = {
+            model_name: model_info["file_paths"] for model_name, model_info in get_available_models().items()
+        }
+
+        for question_id in range(len(table_data)):
+            new_dicts = list(
+                map(
+                    lambda data: catch_eval_exception(
+                        available_models,
+                        update_eval_function,
+                        data,
+                        0,
+                        errors_dict,
+                    ),
+                    table_data[question_id][base_model],
+                )
+            )
+            for i, new_dict in enumerate(new_dicts):
+                for key, value in new_dict.items():
+                    table_data[question_id][base_model][i][key] = value
+
+                keys = list(table_data[question_id][base_model][i].keys())
+                for key in keys:
+                    if key not in new_dict:
+                        table_data[question_id][base_model][i].pop(key)
+
+    if len(errors_dict):
+        logging.error(ERROR_MESSAGE_TEMPLATE.format("update_dataset", errors_dict))
+
+    return (
+        get_stats_layout()
+        + get_general_stats_layout(base_model)
+        + get_table_answers_detailed_data_layout(
+            models,
+            list(
+                filter(
+                    is_detailed_answers_rows_key,
+                    (
+                        table_data[0][base_model][0].keys()
+                        if len(table_data) and len(table_data[0][base_model])
+                        else []
+                    ),
+                )
+            ),
+        )
+    )
+
+
 def get_sorting_answers_layout(base_model: str, sorting_function: str, models: List[str]) -> List[html.Tr]:
     errors_dict = {}
     global table_data
