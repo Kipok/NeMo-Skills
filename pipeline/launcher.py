@@ -188,7 +188,7 @@ def get_sandbox_executor(executor, cluster_config):
     sandbox_executor = executor.clone()
     sandbox_executor.container_image = cluster_config["containers"]["sandbox"]
     sandbox_executor.container_mounts = []
-    sandbox_executor.srun_args += [f"--ntasks={sandbox_executor.nodes}", "--overlap"]
+    # sandbox_executor.srun_args += [f"--ntasks={sandbox_executor.nodes}", "--overlap"]
     # sandbox_executor.job_paths_cls = SandboxJobPaths
     return sandbox_executor
 
@@ -219,11 +219,18 @@ def get_executor(
     partition=None,
 ):
     mounts = mounts or []
-    partition = partition or cluster_config["partition"]
+    partition = partition or cluster_config.get("partition")
     if 'timeouts' not in cluster_config:
         timeout = "10000:00:00:00"
     else:
         timeout = cluster_config["timeouts"][partition]
+
+    return run.LocalExecutor(
+        container_image=container,
+        container_mounts=mounts + cluster_config.get('mounts', []),
+        ntasks_per_node=tasks_per_node,
+        gpus_per_node=gpus_per_node,
+    )
 
     return run.SlurmExecutor(
         account=cluster_config["account"],

@@ -217,11 +217,11 @@ if __name__ == "__main__":
             cmd = CMD.format(**format_dict, eval_cmds=eval_cmd.format(**format_dict))
             cmd = cmd.replace("$", "\\$")
             exp.add(
-                # run.Script(inline=cmd),
-                # executor=executor,
-                [run.Script(inline=get_sandox_cmd()), run.Script(inline=cmd)],
-                executor=[get_sandbox_executor(executor, cluster_config), executor],
+                run.Script(inline=cmd),
+                executor=executor,
+                # [run.Script(inline=get_sandox_cmd()), run.Script(inline=cmd)],
+                # executor=[get_sandbox_executor(executor, cluster_config), executor],
                 name=job_name,
             )
-        exp.run(detach=True)
-        # exp.dryrun()
+        # exp.run(detach=True)
+        exp.dryrun()
