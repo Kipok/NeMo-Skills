@@ -13,26 +13,13 @@
 # limitations under the License.
 
 import os
-import sys
 from argparse import ArgumentParser
 from pathlib import Path
 
 import nemo_run as run
 import yaml
 
-# adding nemo_skills to python path to avoid requiring installation
-sys.path.append(str(Path(__file__).absolute().parents[1]))
-
-from launcher import (
-    NEMO_SKILLS_CODE,
-    WRAPPER_HELP,
-    add_step,
-    get_executor,
-    get_sandbox_executor,
-    get_sandox_cmd,
-    get_server_command,
-    launch_job,
-)
+from nemo_skills.pipeline.utils import add_task, get_server_command
 
 try:
     from nemo_skills.inference.generate import HELP_MESSAGE
@@ -73,6 +60,8 @@ def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments
 
 
 # TODO: can we use something generic instead of SLURM_PROCID?
+# TODO: eventually migrate server to a separate job completely via another srun / docker call
+#       this way we can reuse existing NIM containers without modifications
 CMD = (
     # boilerplate code to setup the environment
     "nvidia-smi && "
@@ -99,9 +88,23 @@ CMD = (
 )
 
 
+SERVER_CMD = (
+    "nvidia-smi && "
+    "cd /nemo_run/code && "
+    "export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
+    "export HF_TOKEN={HF_TOKEN} && "
+    "export NVIDIA_API_KEY={NVIDIA_API_KEY} && "
+    "export OPENAI_API_KEY={OPENAI_API_KEY} && "
+    "{server_start_cmd} "
+)
+
+
+CLIENT_CMD = "{wait_for_server} && " "{eval_cmds}"
+
+
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
-    parser = ArgumentParser(usage=WRAPPER_HELP + '\n\n' + SCRIPT_HELP + '\n\nscript arguments:\n\n' + HELP_MESSAGE)
+    parser = ArgumentParser(usage=SCRIPT_HELP + '\n\nscript arguments:\n\n' + HELP_MESSAGE)
     wrapper_args = parser.add_argument_group('wrapper arguments')
     wrapper_args.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     wrapper_args.add_argument("--expname", required=True, help="Experiment name")
@@ -154,7 +157,7 @@ if __name__ == "__main__":
 
     extra_arguments = f'{" ".join(unknown)}'
 
-    with open(Path(__file__).parents[1] / 'cluster_configs' / f'{args.cluster}.yaml', "rt", encoding="utf-8") as fin:
+    with open(Path(__file__).parents[2] / 'cluster_configs' / f'{args.cluster}.yaml', "rt", encoding="utf-8") as fin:
         cluster_config = yaml.safe_load(fin)
 
     # model is hosted elsewhere
@@ -169,19 +172,25 @@ if __name__ == "__main__":
         container = cluster_config["containers"]['nemo']
     else:
         model_path = Path(args.model).absolute()
-        server_start_cmd, num_tasks = get_server_command(args.server_type, args.num_gpus, args.num_nodes, model_path)
+        server_start_cmd, num_tasks = get_server_command(
+            args.server_type, args.num_gpus, args.num_nodes, model_path, cluster_config
+        )
         server_end_cmd = "pkill -f nemo_skills/inference/server"
         job_name = f"eval-{model_path.name}"
         # also mounting the model in this case
         args.server_address = "localhost:5000"
         container = cluster_config["containers"][args.server_type]
 
+    wait_for_server = (
+        f"    echo 'Waiting for the server to start' && "
+        f"    while [ $(curl -X PUT {args.server_address} >/dev/null 2>&1; echo $?) -ne 0 ]; do sleep 3; done && "
+    )
+
     format_dict = {
         "server_start_cmd": server_start_cmd,
         "server_end_cmd": server_end_cmd,
-        "server_type": args.server_type,
         "server_address": args.server_address,
-        "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
+        "server_type": args.server_type,
         "HF_TOKEN": os.getenv("HF_TOKEN", ""),
         "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
         "NVIDIA_API_KEY": os.getenv("NVIDIA_API_KEY", ""),
@@ -207,9 +216,12 @@ if __name__ == "__main__":
 
     with run.Experiment(args.expname) as exp:
         for idx, eval_cmd in enumerate(eval_cmds):
-            add_step(
+            add_task(
                 exp,
-                cmd=CMD.format(**format_dict, eval_cmds=eval_cmd.format(**format_dict)),
+                cmds=[
+                    SERVER_CMD.format(**format_dict),
+                    CLIENT_CMD.format(wait_for_server=wait_for_server, eval_cmds=eval_cmd.format(**format_dict)),
+                ],
                 task_name=f'eval-{idx}',
                 cluster_config=cluster_config,
                 num_nodes=args.num_nodes,
@@ -219,5 +231,5 @@ if __name__ == "__main__":
                 partition=args.partition,
                 with_sandbox=True,
             )
-        # exp.run(detach=True)
-        exp.dryrun()
+        exp.run(detach=True)
+        # exp.dryrun()

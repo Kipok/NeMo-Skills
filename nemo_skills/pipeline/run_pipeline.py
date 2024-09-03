@@ -20,8 +20,7 @@ from pathlib import Path
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 
-from launcher import CLUSTER_CONFIG, NEMO_SKILLS_CODE, fill_env_vars
-
+from nemo_skills.pipeline.utils import CLUSTER_CONFIG, NEMO_SKILLS_CODE, fill_env_vars
 from nemo_skills.utils import setup_logging
 
 

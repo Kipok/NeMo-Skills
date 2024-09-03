@@ -28,8 +28,7 @@ except (ImportError, ModuleNotFoundError):
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 
-from launcher import CLUSTER_CONFIG, NEMO_SKILLS_CODE, get_server_command, launch_job
-
+from nemo_skills.pipeline.utils import CLUSTER_CONFIG, NEMO_SKILLS_CODE, get_server_command, launch_job
 from nemo_skills.utils import setup_logging
 
 SLURM_CMD = """
