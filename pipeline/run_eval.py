@@ -26,6 +26,7 @@ sys.path.append(str(Path(__file__).absolute().parents[1]))
 from launcher import (
     NEMO_SKILLS_CODE,
     WRAPPER_HELP,
+    add_step,
     get_executor,
     get_sandbox_executor,
     get_sandox_cmd,
@@ -204,24 +205,19 @@ if __name__ == "__main__":
     # splitting eval cmds equally across num_jobs nodes
     eval_cmds = [" ".join(eval_cmds[i :: args.num_jobs]) for i in range(args.num_jobs)]
 
-    executor = get_executor(
-        cluster_config=cluster_config,
-        num_nodes=args.num_nodes,
-        tasks_per_node=num_tasks,
-        gpus_per_node=args.num_gpus,
-        container=container,
-        partition=args.partition,
-    )
     with run.Experiment(args.expname) as exp:
         for idx, eval_cmd in enumerate(eval_cmds):
-            cmd = CMD.format(**format_dict, eval_cmds=eval_cmd.format(**format_dict))
-            cmd = cmd.replace("$", "\\$")
-            exp.add(
-                run.Script(inline=cmd),
-                executor=executor,
-                # [run.Script(inline=get_sandox_cmd()), run.Script(inline=cmd)],
-                # executor=[get_sandbox_executor(executor, cluster_config), executor],
-                name=job_name,
+            add_step(
+                exp,
+                cmd=CMD.format(**format_dict, eval_cmds=eval_cmd.format(**format_dict)),
+                task_name=f'eval-{idx}',
+                cluster_config=cluster_config,
+                num_nodes=args.num_nodes,
+                tasks_per_node=num_tasks,
+                gpus_per_node=args.num_gpus,
+                container=container,
+                partition=args.partition,
+                with_sandbox=True,
             )
         # exp.run(detach=True)
         exp.dryrun()

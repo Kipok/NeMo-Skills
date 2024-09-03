@@ -188,25 +188,20 @@ def get_sandbox_executor(executor, cluster_config):
     sandbox_executor = executor.clone()
     sandbox_executor.container_image = cluster_config["containers"]["sandbox"]
     sandbox_executor.container_mounts = []
-    # sandbox_executor.srun_args += [f"--ntasks={sandbox_executor.nodes}", "--overlap"]
+    sandbox_executor.srun_args += [f"--ntasks={sandbox_executor.nodes}", "--overlap", '--wait=1']
     # sandbox_executor.job_paths_cls = SandboxJobPaths
     return sandbox_executor
 
 
+# def log_path()
 class MainJobPaths(JobPaths):
     @property
     def stdout(self) -> Path:
-        return Path(self.folder / "sbatch_logs.out")
+        return Path(self.folder / "slurm-logs" / "sbatch.txt")
 
     @property
     def srun_stdout(self) -> Path:
-        return Path(self.folder / "job_logs.out")
-
-
-class SandboxJobPaths(MainJobPaths):
-    @property
-    def srun_stdout(self) -> Path:
-        return Path(self.folder / "sandbox_logs.out")
+        return Path(self.folder / "slurm-logs" / "job_logs.txt")
 
 
 def get_executor(
@@ -225,12 +220,12 @@ def get_executor(
     else:
         timeout = cluster_config["timeouts"][partition]
 
-    return run.LocalExecutor(
-        container_image=container,
-        container_mounts=mounts + cluster_config.get('mounts', []),
-        ntasks_per_node=tasks_per_node,
-        gpus_per_node=gpus_per_node,
-    )
+    # return run.LocalExecutor(
+    #     container_image=container,
+    #     container_mounts=mounts + cluster_config.get('mounts', []),
+    #     ntasks_per_node=tasks_per_node,
+    #     gpus_per_node=gpus_per_node,
+    # )
 
     return run.SlurmExecutor(
         account=cluster_config["account"],
@@ -244,37 +239,41 @@ def get_executor(
         packager=run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl'),
         gpus_per_node=gpus_per_node,
         job_name_prefix=cluster_config["job_name_prefix"],
-        srun_args=["--no-container-mount-home", "--mpi=pmix"],
+        srun_args=["--no-container-mount-home", "--mpi=pmix", '--wait=10'],
         exclusive=True,
         mem=0,
         job_paths_cls=MainJobPaths,
         wait_time_for_group_job=0.01,
-        # template_path=str(Path(__file__).parents[0] / "templates" / "slurm-parallel.sh.j2"),
+        monitor_group_job_wait_time=20,
     )
 
 
-def launch_slurm_job(
-    cluster_config,
+def add_step(
+    exp,
     cmd,
+    task_name,
+    cluster_config,
     num_nodes,
     tasks_per_node,
     gpus_per_node,
-    job_name,
     container,
-    mounts,
+    mounts=None,
     partition=None,
     with_sandbox=False,
-    extra_sbatch_args=None,
 ):
-
-    with run.Experiment("my-test-exp", executor=executor) as exp:
+    cmd = cmd.replace("$", "\\$")
+    main_executor = get_executor(
+        cluster_config, num_nodes, tasks_per_node, gpus_per_node, container, mounts, partition
+    )
+    if with_sandbox:
+        sandbox_executor = get_sandbox_executor(main_executor, cluster_config)
         exp.add(
             [run.Script(inline=get_sandox_cmd()), run.Script(inline=cmd)],
-            executor=[get_sandbox_executor(executor, cluster_config), executor],
-            name=job_name,
+            executor=[sandbox_executor, main_executor],
+            name=task_name,
         )
-        print(executor.container_mounts)
-        exp.dryrun()
+    else:
+        exp.add(run.Script(inline=cmd), executor=main_executor, name=task_name)
 
 
 def launch_slurm_job_bp(
