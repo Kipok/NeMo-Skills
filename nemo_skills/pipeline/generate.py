@@ -18,7 +18,7 @@ from pathlib import Path
 import nemo_run as run
 import yaml
 
-from nemo_skills.pipeline.utils import GENERATION_CMD, add_task
+from nemo_skills.pipeline import GENERATION_CMD, add_task
 from nemo_skills.utils import setup_logging
 
 

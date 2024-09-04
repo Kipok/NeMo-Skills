@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 
 import nemo_run as run
+from huggingface_hub import get_token
 from nemo_run.core.execution.slurm import JobPaths
 
 LOG = logging.getLogger(__file__)
@@ -71,10 +72,10 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_pa
         num_tasks = num_gpus
 
     server_cmd = (
-        "nvidia-smi && "
-        "cd /nemo_run/code && "
-        "export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"export HF_TOKEN={os.getenv('HF_TOKEN', '')} && "
+        f"nvidia-smi && "
+        f"cd /nemo_run/code && "
+        f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
+        f"export HF_TOKEN={get_token()} && "
         f"{server_start_cmd} "
     )
     return server_cmd, num_tasks
@@ -197,18 +198,19 @@ def add_task(
         commands.append(server_cmd)
         executors.append(server_executor)
 
-    # then goes the main task
-    commands.append(cmd)
-    executors.append(
-        get_executor(
-            cluster_config=cluster_config,
-            container=container,
-            num_nodes=num_nodes,
-            tasks_per_node=num_tasks,
-            gpus_per_node=num_gpus,
-            partition=partition,
+    # then goes the main task unless it's empty
+    if cmd:
+        commands.append(cmd)
+        executors.append(
+            get_executor(
+                cluster_config=cluster_config,
+                container=container,
+                num_nodes=num_nodes,
+                tasks_per_node=num_tasks,
+                gpus_per_node=num_gpus,
+                partition=partition,
+            )
         )
-    )
 
     # finally a sandbox if needed
     if with_sandbox:

@@ -19,7 +19,7 @@ import nemo_run as run
 import yaml
 
 from nemo_skills.evaluation.settings import EXTRA_EVAL_ARGS, EXTRA_GENERATION_ARGS
-from nemo_skills.pipeline.utils import GENERATION_CMD, add_task
+from nemo_skills.pipeline import GENERATION_CMD, add_task
 from nemo_skills.utils import setup_logging
 
 
