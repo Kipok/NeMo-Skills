@@ -12,41 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 from argparse import ArgumentParser
 from pathlib import Path
 
 import nemo_run as run
 import yaml
 
-from nemo_skills.pipeline.utils import GENERATION_CMD, add_task, get_server_command
-
-try:
-    from nemo_skills.inference.generate import HELP_MESSAGE
-except (ImportError, TypeError):
-    HELP_MESSAGE = """
-TODO
-"""
 from nemo_skills.evaluation.settings import EXTRA_EVAL_ARGS, EXTRA_GENERATION_ARGS
+from nemo_skills.pipeline.utils import GENERATION_CMD, add_task
 from nemo_skills.utils import setup_logging
-
-SCRIPT_HELP = """
-TODO
-"""
 
 
 def get_greedy_cmd(benchmark, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments=""):
     extra_eval_args = f"{EXTRA_EVAL_ARGS.get(benchmark, '')} {extra_eval_args}"
     extra_arguments = f"{EXTRA_GENERATION_ARGS.get(benchmark, '')} {extra_arguments}"
-    # TODO: format nicely
-    return f"""echo "Evaluating benchmark {benchmark}" && \
-python nemo_skills/inference/generate.py \
-    ++dataset={benchmark} \
-    ++output_file=/nemo_run/eval-results/{benchmark}/{output_name} \
-    {extra_arguments} && \
-python nemo_skills/evaluation/evaluate_results.py \
-    ++prediction_jsonl_files=/nemo_run/eval-results/{benchmark}/{output_name} {extra_eval_args}
-""".strip()
+    cmd = (
+        f'echo "Evaluating benchmark {benchmark}" && '
+        f'python nemo_skills/inference/generate.py '
+        f'    ++dataset={benchmark} '
+        f'    ++output_file=/nemo_run/eval-results/{benchmark}/{output_name} '
+        f'    {extra_arguments} && '
+        f'python nemo_skills/evaluation/evaluate_results.py '
+        f'    ++prediction_jsonl_files=/nemo_run/eval-results/{benchmark}/{output_name} {extra_eval_args}'
+    )
+    return cmd
 
 
 def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments=""):
@@ -61,7 +50,7 @@ def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments
 
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
-    parser = ArgumentParser(usage=SCRIPT_HELP + '\n\nscript arguments:\n\n' + HELP_MESSAGE)
+    parser = ArgumentParser(usage="TODO")
     wrapper_args = parser.add_argument_group('wrapper arguments')
     wrapper_args.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     wrapper_args.add_argument("--expname", required=True, help="Experiment name")
