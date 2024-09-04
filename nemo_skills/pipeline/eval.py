@@ -160,6 +160,7 @@ if __name__ == "__main__":
                 exp,
                 cmd=GENERATION_CMD.format(server_address=args.server_address, generation_commands=eval_cmd),
                 task_name=f'eval-{idx}',
+                container=cluster_config["containers"]["nemo-skills"],
                 cluster_config=cluster_config,
                 partition=args.partition,
                 server_config=server_config,

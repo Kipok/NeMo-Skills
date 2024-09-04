@@ -31,7 +31,7 @@ GENERATION_CMD = (
     f"export OPENAI_API_KEY={os.getenv('OPENAI_API_KEY', '')} && "
     # this will try to handshake in a loop and unblock when the server responds
     "echo 'Waiting for the server to start' && "
-    "while [ $(curl -X PUT {server_address} >/dev/null 2>&1; echo $?) -ne 0 ]; do sleep 3; done"
+    "while [ $(curl -X PUT {server_address} >/dev/null 2>&1; echo $?) -ne 0 ]; do sleep 3; done && "
     # will run in a single task always (no need to check mpi env vars)
     "{generation_commands}"
 )
@@ -114,7 +114,7 @@ class MainJobPaths(JobPaths):
         return Path(self.folder / "slurm-logs" / "job_logs.txt")
 
 
-def get_server_executor(
+def get_executor(
     cluster_config,
     container,
     num_nodes,
@@ -122,7 +122,6 @@ def get_server_executor(
     gpus_per_node,
     partition=None,
 ):
-    mounts = mounts or []
     partition = partition or cluster_config.get("partition")
     if 'timeouts' not in cluster_config:
         timeout = "10000:00:00:00"
@@ -148,7 +147,16 @@ def get_server_executor(
         packager=run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl'),
         gpus_per_node=gpus_per_node,
         job_name_prefix=cluster_config["job_name_prefix"],
-        srun_args=["--no-container-mount-home", "--overlap", "--mpi=pmix", '--wait=10'],
+        srun_args=[
+            "--no-container-mount-home",
+            "--overlap",
+            "--mpi=pmix",
+            '--wait=10',
+            # we need to be explicit about this in srun as commands might need to run in parallel
+            f"--ntasks={tasks_per_node * num_nodes}",
+            f"--nodes={num_nodes}",
+        ],
+        # TODO: can we relax this to allow partial node allocation?
         exclusive=True,
         mem=0,
         job_paths_cls=MainJobPaths,
@@ -162,21 +170,23 @@ def add_task(
     cmd,
     task_name,
     cluster_config,
-    num_tasks,
-    num_gpus,
-    num_nodes,
     container,
+    # TODO: are these good defaults?
+    num_tasks=1,
+    num_gpus=1,
+    num_nodes=1,
     partition=None,
     with_sandbox=False,
     server_config=None,
 ):
-    commands = [cmd]
-    executors = [...]
+    commands = []
+    executors = []
+    # assuming server always has the largest resources request, so it needs to go first
     if server_config is not None:
         server_cmd, num_server_tasks = get_server_command(**server_config, cluster_config=cluster_config)
         if 'container' not in server_config:
             server_container = cluster_config["containers"][server_config['server_type']]
-        server_executor = get_server_executor(
+        server_executor = get_executor(
             cluster_config=cluster_config,
             container=server_container,
             num_nodes=server_config['num_nodes'],
@@ -184,15 +194,39 @@ def add_task(
             gpus_per_node=server_config['num_gpus'],
             partition=partition,
         )
+        commands.append(server_cmd)
+        executors.append(server_executor)
+
+    # then goes the main task
+    commands.append(cmd)
+    executors.append(
+        get_executor(
+            cluster_config=cluster_config,
+            container=container,
+            num_nodes=num_nodes,
+            tasks_per_node=num_tasks,
+            gpus_per_node=num_gpus,
+            partition=partition,
+        )
+    )
+
+    # finally a sandbox if needed
+    if with_sandbox:
+        sandbox_executor = get_executor(
+            cluster_config=cluster_config,
+            container=cluster_config["containers"]["sandbox"],
+            num_nodes=executors[0].nodes,
+            tasks_per_node=1,
+            gpus_per_node=num_gpus,
+            partition=partition,
+        )
+        sandbox_executor.mounts = []  # we don't want to mount anything
+        commands.append(get_sandox_command())
+        executors.append(sandbox_executor)
 
     commands = [cmd.replace("$", "\\$") for cmd in commands]
-    if with_sandbox:
-        sandbox_executor = get_sandbox_executor(main_executor, cluster_config)
-        client_executor = get_client_executor(main_executor, cluster_config)
-        exp.add(
-            [run.Script(inline=cmds[0]), run.Script(inline=get_sandox_command()), run.Script(inline=cmds[1])],
-            executor=[main_executor, sandbox_executor, client_executor],
-            name=task_name,
-        )
-    else:
-        exp.add(run.Script(inline=cmds[0]), executor=main_executor, name=task_name)
+    exp.add(
+        [run.Script(inline=command) for command in commands],
+        executor=executors,
+        name=task_name,
+    )
