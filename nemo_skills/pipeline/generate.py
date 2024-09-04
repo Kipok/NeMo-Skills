@@ -33,7 +33,7 @@ def get_generation_cmd(random_seed, extra_arguments, extra_eval_args):
         f"    output_file=/nemo_run/generation/output-rs{random_seed}.jsonl "
         f"    {extra_arguments} && "
         f"python nemo_skills/evaluation/evaluate_results.py "
-        f"    prediction_jsonl_files=nemo_run/generation/output-rs{random_seed}.jsonl {extra_eval_args}"
+        f"    prediction_jsonl_files=/nemo_run/generation/output-rs{random_seed}.jsonl {extra_eval_args}"
     )
     return cmd
 
