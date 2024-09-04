@@ -19,7 +19,7 @@ from pathlib import Path
 import nemo_run as run
 import yaml
 
-from nemo_skills.pipeline.utils import add_task, get_server_command
+from nemo_skills.pipeline.utils import GENERATION_CMD, add_task, get_server_command
 
 try:
     from nemo_skills.inference.generate import HELP_MESSAGE
@@ -41,7 +41,6 @@ def get_greedy_cmd(benchmark, output_name='output-greedy.jsonl', extra_eval_args
     # TODO: format nicely
     return f"""echo "Evaluating benchmark {benchmark}" && \
 python nemo_skills/inference/generate.py \
-    ++server.server_type={{server_type}} \
     ++dataset={benchmark} \
     ++output_file=/nemo_run/eval-results/{benchmark}/{output_name} \
     {extra_arguments} && \
@@ -60,50 +59,6 @@ def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments
     )
 
 
-# TODO: can we use something generic instead of SLURM_PROCID?
-# TODO: eventually migrate server to a separate job completely via another srun / docker call
-#       this way we can reuse existing NIM containers without modifications
-CMD = (
-    # boilerplate code to setup the environment
-    "nvidia-smi && "
-    "cd /nemo_run/code && "
-    "export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-    "export HF_TOKEN={HF_TOKEN} && "
-    "export NVIDIA_API_KEY={NVIDIA_API_KEY} && "
-    "export OPENAI_API_KEY={OPENAI_API_KEY} && "
-    # launching the server and waiting for it to start
-    # server_start_cmd = "sleep infinity" if host/port are not specified (so server is running elsewhere)
-    # but of course in that case this script itself is meant to be run locally and not on a GPU cluster
-    "if [ $SLURM_PROCID -eq 0 ]; then "
-    #    running in background to be able to communicate with the server
-    "    {server_start_cmd} & "
-    "    echo 'Waiting for the server to start' && "
-    "    while [ $(curl -X PUT {server_address} >/dev/null 2>&1; echo $?) -ne 0 ]; do sleep 3; done && "
-    "    {eval_cmds} "
-    #    command to kill the server if it was started by this script
-    "    {server_end_cmd}; "
-    "else "
-    #    this is a blocking call to keep non-zero ranks from exiting and killing the job
-    "    {server_start_cmd}; "
-    "fi "
-)
-
-
-SERVER_CMD = (
-    "nvidia-smi && "
-    "cd /nemo_run/code && "
-    "export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-    "export HF_TOKEN={HF_TOKEN} && "
-    # TODO: this is on the client side, right?
-    "export NVIDIA_API_KEY={NVIDIA_API_KEY} && "
-    "export OPENAI_API_KEY={OPENAI_API_KEY} && "
-    "{server_start_cmd} "
-)
-
-
-CLIENT_CMD = "export PYTHONPATH=$PYTHONPATH:/nemo_run/code && {wait_for_server} && {eval_cmds}"
-
-
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser(usage=SCRIPT_HELP + '\n\nscript arguments:\n\n' + HELP_MESSAGE)
@@ -111,6 +66,7 @@ if __name__ == "__main__":
     wrapper_args.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     wrapper_args.add_argument("--expname", required=True, help="Experiment name")
     wrapper_args.add_argument("--model", required=False, help="Path to the model or model name in API.")
+    # TODO: should all this be inside a single dictionary config?
     wrapper_args.add_argument(
         "--server_address",
         required=False,
@@ -123,19 +79,19 @@ if __name__ == "__main__":
         default='tensorrt_llm',
         help="Type of the server to start. This parameter is ignored if server_address is specified.",
     )
-    wrapper_args.add_argument("--num_gpus", type=int, required=True)
+    wrapper_args.add_argument("--server_gpus", type=int, required=False)
+    wrapper_args.add_argument(
+        "--server_nodes",
+        type=int,
+        default=1,
+        help="Number of nodes required for hosting LLM server.",
+    )
     wrapper_args.add_argument("--starting_seed", type=int, default=0)
     wrapper_args.add_argument(
         "--benchmarks",
         nargs="+",
         help="Need to be in a format <benchmark>:<num samples for majority voting>. "
         "Use <benchmark>:0 to only run greedy decoding.",
-    )
-    wrapper_args.add_argument(
-        "--num_nodes",
-        type=int,
-        default=1,
-        help="Number of nodes required for hosting LLM server.",
     )
     wrapper_args.add_argument(
         "--num_jobs",
@@ -162,41 +118,23 @@ if __name__ == "__main__":
     with open(Path(__file__).parents[2] / 'cluster_configs' / f'{args.cluster}.yaml', "rt", encoding="utf-8") as fin:
         cluster_config = yaml.safe_load(fin)
 
-    # model is hosted elsewhere
-    if args.server_address is not None:
-        server_start_cmd = "sleep infinity"
-        server_end_cmd = "echo 'done'"
-        job_name = "eval-remote"
-        num_tasks = 1
-        if args.server_type == "openai":
-            extra_arguments += f" ++server.base_url={args.server_address} ++server.model={args.model}"
-        # TODO: run without container if remote server?
-        container = cluster_config["containers"]['nemo']
-    else:
-        model_path = Path(args.model).absolute()
-        server_start_cmd, num_tasks = get_server_command(
-            args.server_type, args.num_gpus, args.num_nodes, model_path, cluster_config
-        )
-        server_end_cmd = "pkill -f nemo_skills/inference/server"
-        job_name = f"eval-{model_path.name}"
-        # also mounting the model in this case
+    if args.server_address is None:  # we need to host the model
+        assert args.server_gpus is not None, "Need to specify server_gpus if hosting the model"
         args.server_address = "localhost:5000"
-        container = cluster_config["containers"][args.server_type]
-
-    wait_for_server = (
-        f"    echo 'Waiting for the server to start' && "
-        f"    while [ $(curl -X PUT {args.server_address} >/dev/null 2>&1; echo $?) -ne 0 ]; do sleep 3; done"
-    )
-
-    format_dict = {
-        "server_start_cmd": server_start_cmd,
-        "server_end_cmd": server_end_cmd,
-        "server_address": args.server_address,
-        "server_type": args.server_type,
-        "HF_TOKEN": os.getenv("HF_TOKEN", ""),
-        "OPENAI_API_KEY": os.getenv("OPENAI_API_KEY", ""),
-        "NVIDIA_API_KEY": os.getenv("NVIDIA_API_KEY", ""),
-    }
+        server_config = {
+            "model_path": args.model,
+            "server_type": args.server_type,
+            "num_gpus": args.server_gpus,
+            "num_nodes": args.server_nodes,
+        }
+        extra_arguments += f" ++server.server_type={args.server_type} "
+    else:  # model is hosted elsewhere
+        server_config = None
+        extra_arguments += (
+            f"++server.server_type={args.server_type} "
+            f"++server.base_url={args.server_address} "
+            f"++server.model={args.model} "
+        )
 
     # if benchmarks are specified, only run those
     BENCHMARKS = {k: int(v) for k, v in [b.split(":") for b in args.benchmarks]}
@@ -220,17 +158,11 @@ if __name__ == "__main__":
         for idx, eval_cmd in enumerate(eval_cmds):
             add_task(
                 exp,
-                cmds=[
-                    SERVER_CMD.format(**format_dict),
-                    CLIENT_CMD.format(wait_for_server=wait_for_server, eval_cmds=eval_cmd.format(**format_dict)),
-                ],
+                cmd=GENERATION_CMD.format(server_address=args.server_address, generation_commands=eval_cmd),
                 task_name=f'eval-{idx}',
                 cluster_config=cluster_config,
-                num_nodes=args.num_nodes,
-                tasks_per_node=num_tasks,
-                gpus_per_node=args.num_gpus,
-                container=container,
                 partition=args.partition,
+                server_config=server_config,
                 with_sandbox=True,
             )
         exp.run(detach=True)

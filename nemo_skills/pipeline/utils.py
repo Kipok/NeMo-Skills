@@ -22,6 +22,21 @@ from nemo_run.core.execution.slurm import JobPaths
 LOG = logging.getLogger(__file__)
 
 
+# TODO: should we fill up this vars not at import time?
+GENERATION_CMD = (
+    "export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
+    "cd /nemo_run/code && "
+    # might be required if we are not hosting server ourselves
+    f"export NVIDIA_API_KEY={os.getenv('NVIDIA_API_KEY', '')} && "
+    f"export OPENAI_API_KEY={os.getenv('OPENAI_API_KEY', '')} && "
+    # this will try to handshake in a loop and unblock when the server responds
+    "echo 'Waiting for the server to start' && "
+    "while [ $(curl -X PUT {server_address} >/dev/null 2>&1; echo $?) -ne 0 ]; do sleep 3; done"
+    # will run in a single task always (no need to check mpi env vars)
+    "{generation_commands}"
+)
+
+
 def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_path: str, cluster_config: dict):
     num_tasks = num_gpus
     if server_type == 'nemo':
@@ -54,7 +69,15 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_pa
             f"--model_path {model_path}"
         )
         num_tasks = num_gpus
-    return server_start_cmd, num_tasks
+
+    server_cmd = (
+        "nvidia-smi && "
+        "cd /nemo_run/code && "
+        "export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
+        f"export HF_TOKEN={os.getenv('HF_TOKEN', '')} && "
+        f"{server_start_cmd} "
+    )
+    return server_cmd, num_tasks
 
 
 def get_sandox_command():
@@ -93,11 +116,10 @@ class MainJobPaths(JobPaths):
 
 def get_server_executor(
     cluster_config,
+    container,
     num_nodes,
     tasks_per_node,
     gpus_per_node,
-    container,
-    mounts=None,
     partition=None,
 ):
     mounts = mounts or []
@@ -109,7 +131,7 @@ def get_server_executor(
 
     # return run.LocalExecutor(
     #     container_image=container,
-    #     container_mounts=mounts + cluster_config.get('mounts', []),
+    #     container_mounts=cluster_config.get('mounts', []),
     #     ntasks_per_node=tasks_per_node,
     #     gpus_per_node=gpus_per_node,
     # )
@@ -121,7 +143,7 @@ def get_server_executor(
         ntasks_per_node=tasks_per_node,
         tunnel=run.SSHTunnel(**cluster_config["ssh_tunnel"]),
         container_image=container,
-        container_mounts=mounts + cluster_config.get('mounts', []),
+        container_mounts=cluster_config.get('mounts', []),
         time=timeout,
         packager=run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl'),
         gpus_per_node=gpus_per_node,
@@ -137,22 +159,33 @@ def get_server_executor(
 
 def add_task(
     exp,
-    cmds,
+    cmd,
     task_name,
     cluster_config,
+    num_tasks,
+    num_gpus,
     num_nodes,
-    tasks_per_node,
-    gpus_per_node,
     container,
-    mounts=None,
     partition=None,
     with_sandbox=False,
+    server_config=None,
 ):
-    cmds[0] = cmds[0].replace("$", "\\$")
-    cmds[1] = cmds[1].replace("$", "\\$")
-    main_executor = get_server_executor(
-        cluster_config, num_nodes, tasks_per_node, gpus_per_node, container, mounts, partition
-    )
+    commands = [cmd]
+    executors = [...]
+    if server_config is not None:
+        server_cmd, num_server_tasks = get_server_command(**server_config, cluster_config=cluster_config)
+        if 'container' not in server_config:
+            server_container = cluster_config["containers"][server_config['server_type']]
+        server_executor = get_server_executor(
+            cluster_config=cluster_config,
+            container=server_container,
+            num_nodes=server_config['num_nodes'],
+            tasks_per_node=num_server_tasks,
+            gpus_per_node=server_config['num_gpus'],
+            partition=partition,
+        )
+
+    commands = [cmd.replace("$", "\\$") for cmd in commands]
     if with_sandbox:
         sandbox_executor = get_sandbox_executor(main_executor, cluster_config)
         client_executor = get_client_executor(main_executor, cluster_config)
