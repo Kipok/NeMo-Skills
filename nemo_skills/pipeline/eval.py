@@ -38,6 +38,7 @@ TODO
 def get_greedy_cmd(benchmark, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments=""):
     extra_eval_args = f"{EXTRA_EVAL_ARGS.get(benchmark, '')} {extra_eval_args}"
     extra_arguments = f"{EXTRA_GENERATION_ARGS.get(benchmark, '')} {extra_arguments}"
+    # TODO: format nicely
     return f"""echo "Evaluating benchmark {benchmark}" && \
 python nemo_skills/inference/generate.py \
     ++server.server_type={{server_type}} \
@@ -45,8 +46,8 @@ python nemo_skills/inference/generate.py \
     ++output_file=/nemo_run/eval-results/{benchmark}/{output_name} \
     {extra_arguments} && \
 python nemo_skills/evaluation/evaluate_results.py \
-    ++prediction_jsonl_files=/nemo_run/eval-results/{benchmark}/{output_name} {extra_eval_args} && \
-"""
+    ++prediction_jsonl_files=/nemo_run/eval-results/{benchmark}/{output_name} {extra_eval_args}
+""".strip()
 
 
 def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments=""):
@@ -93,13 +94,14 @@ SERVER_CMD = (
     "cd /nemo_run/code && "
     "export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
     "export HF_TOKEN={HF_TOKEN} && "
+    # TODO: this is on the client side, right?
     "export NVIDIA_API_KEY={NVIDIA_API_KEY} && "
     "export OPENAI_API_KEY={OPENAI_API_KEY} && "
     "{server_start_cmd} "
 )
 
 
-CLIENT_CMD = "{wait_for_server} && " "{eval_cmds}"
+CLIENT_CMD = "export PYTHONPATH=$PYTHONPATH:/nemo_run/code && {wait_for_server} && {eval_cmds}"
 
 
 if __name__ == "__main__":
@@ -183,7 +185,7 @@ if __name__ == "__main__":
 
     wait_for_server = (
         f"    echo 'Waiting for the server to start' && "
-        f"    while [ $(curl -X PUT {args.server_address} >/dev/null 2>&1; echo $?) -ne 0 ]; do sleep 3; done && "
+        f"    while [ $(curl -X PUT {args.server_address} >/dev/null 2>&1; echo $?) -ne 0 ]; do sleep 3; done"
     )
 
     format_dict = {
@@ -212,7 +214,7 @@ if __name__ == "__main__":
         args.num_jobs = len(eval_cmds)
 
     # splitting eval cmds equally across num_jobs nodes
-    eval_cmds = [" ".join(eval_cmds[i :: args.num_jobs]) for i in range(args.num_jobs)]
+    eval_cmds = [" && ".join(eval_cmds[i :: args.num_jobs]) for i in range(args.num_jobs)]
 
     with run.Experiment(args.expname) as exp:
         for idx, eval_cmd in enumerate(eval_cmds):
