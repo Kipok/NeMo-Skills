@@ -23,19 +23,20 @@ from nemo_run.core.execution.slurm import JobPaths
 LOG = logging.getLogger(__file__)
 
 
-# TODO: should we fill up this vars not at import time?
-GENERATION_CMD = (
-    "export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-    "cd /nemo_run/code && "
-    # might be required if we are not hosting server ourselves
-    f"export NVIDIA_API_KEY={os.getenv('NVIDIA_API_KEY', '')} && "
-    f"export OPENAI_API_KEY={os.getenv('OPENAI_API_KEY', '')} && "
-    # this will try to handshake in a loop and unblock when the server responds
-    "echo 'Waiting for the server to start' && "
-    "while [ $(curl -X PUT {server_address} >/dev/null 2>&1; echo $?) -ne 0 ]; do sleep 3; done && "
-    # will run in a single task always (no need to check mpi env vars)
-    "{generation_commands}"
-)
+def get_generation_command(server_address, generation_commands):
+    cmd = (
+        f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
+        f"cd /nemo_run/code && "
+        # might be required if we are not hosting server ourselves
+        f"export NVIDIA_API_KEY={os.getenv('NVIDIA_API_KEY', '')} && "
+        f"export OPENAI_API_KEY={os.getenv('OPENAI_API_KEY', '')} && "
+        # this will try to handshake in a loop and unblock when the server responds
+        f"echo 'Waiting for the server to start' && "
+        f"while [ $(curl -X PUT {server_address} >/dev/null 2>&1; echo $?) -ne 0 ]; do sleep 3; done && "
+        # will run in a single task always (no need to check mpi env vars)
+        f"{generation_commands}"
+    )
+    return cmd
 
 
 def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_path: str, cluster_config: dict):

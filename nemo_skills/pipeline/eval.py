@@ -19,7 +19,7 @@ import nemo_run as run
 import yaml
 
 from nemo_skills.evaluation.settings import EXTRA_EVAL_ARGS, EXTRA_GENERATION_ARGS
-from nemo_skills.pipeline import GENERATION_CMD, add_task
+from nemo_skills.pipeline import add_task, get_generation_command
 from nemo_skills.utils import setup_logging
 
 
@@ -147,7 +147,7 @@ if __name__ == "__main__":
         for idx, eval_cmd in enumerate(eval_cmds):
             add_task(
                 exp,
-                cmd=GENERATION_CMD.format(server_address=args.server_address, generation_commands=eval_cmd),
+                cmd=get_generation_command(server_address=args.server_address, generation_commands=eval_cmd),
                 task_name=f'eval-{idx}',
                 container=cluster_config["containers"]["nemo-skills"],
                 cluster_config=cluster_config,

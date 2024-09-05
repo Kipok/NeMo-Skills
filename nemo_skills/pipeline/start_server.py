@@ -53,7 +53,6 @@ if __name__ == "__main__":
     with open(Path(__file__).parents[2] / 'cluster_configs' / f'{args.cluster}.yaml', "rt", encoding="utf-8") as fin:
         cluster_config = yaml.safe_load(fin)
 
-    server_address = "localhost:5000"
     server_config = {
         "model_path": args.model,
         "server_type": args.server_type,

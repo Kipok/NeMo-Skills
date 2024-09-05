@@ -18,11 +18,11 @@ from pathlib import Path
 import nemo_run as run
 import yaml
 
-from nemo_skills.pipeline import GENERATION_CMD, add_task
+from nemo_skills.pipeline import add_task, get_generation_command
 from nemo_skills.utils import setup_logging
 
 
-def get_generation_cmd(random_seed, extra_arguments, extra_eval_args):
+def get_cmd(random_seed, extra_arguments, extra_eval_args):
     cmd = (
         f"python nemo_skills/inference/generate.py "
         f"    skip_filled=True "
@@ -112,12 +112,10 @@ if __name__ == "__main__":
         for seed in range(args.starting_seed, args.starting_seed + args.num_runs):
             # TODO: needs support on nemorun side
             assert args.dependent_jobs == 0
-            cmd = get_generation_cmd(
-                random_seed=seed, extra_arguments=extra_arguments, extra_eval_args=args.extra_eval_args
-            )
+            cmd = get_cmd(random_seed=seed, extra_arguments=extra_arguments, extra_eval_args=args.extra_eval_args)
             add_task(
                 exp,
-                cmd=GENERATION_CMD.format(server_address=args.server_address, generation_commands=cmd),
+                cmd=get_generation_command(server_address=args.server_address, generation_commands=cmd),
                 task_name=f'generate-rs{seed}',
                 container=cluster_config["containers"]["nemo-skills"],
                 cluster_config=cluster_config,
