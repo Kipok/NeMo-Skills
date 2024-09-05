@@ -190,3 +190,6 @@ if __name__ == "__main__":
         exp.run(detach=True, sequential=True)
 
     # TODO: add prepare eval here directly, not reason to keep it separate
+    # TODO: instead let's create a --depends_on or --after flag to all scripts
+    #    so that users can chain them together in any way they want.
+    #    It's more flexible than trying to put everything inside a "pipeline"
