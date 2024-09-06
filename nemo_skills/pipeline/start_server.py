@@ -60,7 +60,7 @@ if __name__ == "__main__":
         "num_nodes": args.server_nodes,
     }
 
-    with run.Experiment('server') as exp:
+    with run.Experiment("server") as exp:
         add_task(
             exp,
             cmd="",  # not running anything except the server
@@ -71,6 +71,7 @@ if __name__ == "__main__":
             server_config=server_config,
             with_sandbox=args.with_sandbox,
         )
-        exp.run(detach=False, tail_logs=True)  # we don't want to detach in this case
+        # we don't want to detach in this case even on slurm, so not using run_exp
+        exp.run(detach=False, tail_logs=True)
         # TODO: seems like not being killed? If nemorun doesn't do this, we can catch the signal and kill the server ourselves
         # TODO: logs not streamed, probably a bug with custom log path

@@ -18,6 +18,7 @@ from pathlib import Path
 
 import nemo_run as run
 from huggingface_hub import get_token
+from nemo_run.core.execution.docker import DockerExecutor
 from nemo_run.core.execution.slurm import JobPaths
 
 LOG = logging.getLogger(__file__)
@@ -86,26 +87,6 @@ def get_sandox_command():
     return "/entrypoint.sh && /start.sh"
 
 
-def get_sandbox_executor(executor, cluster_config):
-    sandbox_executor = executor.clone()
-    sandbox_executor.container_image = cluster_config["containers"]["sandbox"]
-    sandbox_executor.container_mounts = []
-    sandbox_executor.srun_args += [f"--ntasks={sandbox_executor.nodes}", "--overlap", '--wait=1']
-    # sandbox_executor.job_paths_cls = SandboxJobPaths
-    return sandbox_executor
-
-
-def get_client_executor(executor, cluster_config):
-    client_executor = executor.clone()
-    # TODO: change to "main", which is nemo-skills only container
-    client_executor.container_image = cluster_config["containers"]["tensorrt_llm"]
-    client_executor.container_mounts = []
-    client_executor.srun_args += [f"--ntasks=1", "--nodes=1", '--wait=1']
-    # client_executor.job_paths_cls = SandboxJobPaths
-    return client_executor
-
-
-# def log_path()
 class MainJobPaths(JobPaths):
     @property
     def stdout(self) -> Path:
@@ -124,18 +105,24 @@ def get_executor(
     gpus_per_node,
     partition=None,
 ):
+    if cluster_config["executor"] == "local":
+        if num_nodes > 1:
+            raise ValueError("Local executor does not support multi-node execution")
+        return DockerExecutor(
+            container_image=container,
+            packager=run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl'),
+            ipc_mode="host",
+            volumes=cluster_config.get('mounts', []),
+            ntasks_per_node=tasks_per_node,
+            num_gpus=gpus_per_node,
+            env_vars={"PYTHONUNBUFFERED": "1"},  # this makes sure logs are streamed right away
+        )
+
     partition = partition or cluster_config.get("partition")
     if 'timeouts' not in cluster_config:
         timeout = "10000:00:00:00"
     else:
         timeout = cluster_config["timeouts"][partition]
-
-    # return run.LocalExecutor(
-    #     container_image=container,
-    #     container_mounts=cluster_config.get('mounts', []),
-    #     ntasks_per_node=tasks_per_node,
-    #     gpus_per_node=gpus_per_node,
-    # )
 
     return run.SlurmExecutor(
         account=cluster_config["account"],
@@ -218,12 +205,16 @@ def add_task(
         sandbox_executor = get_executor(
             cluster_config=cluster_config,
             container=cluster_config["containers"]["sandbox"],
-            num_nodes=executors[0].nodes,
+            num_nodes=executors[0].nodes if cluster_config["executor"] == "slurm" else 1,
             tasks_per_node=1,
             gpus_per_node=num_gpus,
             partition=partition,
         )
-        sandbox_executor.mounts = []  # we don't want to mount anything
+        # annoyingly named differently in nemo.run
+        if cluster_config["executor"] == "local":
+            sandbox_executor.volumes = []
+        else:
+            sandbox_executor.mounts = []  # we don't want to mount anything
         commands.append(get_sandox_command())
         executors.append(sandbox_executor)
 
@@ -233,3 +224,10 @@ def add_task(
         executor=executors,
         name=task_name,
     )
+
+
+def run_exp(exp, cluster_config):
+    if cluster_config['executor'] == 'local':
+        exp.run(detach=False, tail_logs=True)
+    else:
+        exp.run(detach=True)

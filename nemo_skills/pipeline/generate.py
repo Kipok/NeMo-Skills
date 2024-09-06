@@ -18,7 +18,7 @@ from pathlib import Path
 import nemo_run as run
 import yaml
 
-from nemo_skills.pipeline import add_task, get_generation_command
+from nemo_skills.pipeline import add_task, get_generation_command, run_exp
 from nemo_skills.utils import setup_logging
 
 
@@ -123,5 +123,5 @@ if __name__ == "__main__":
                 server_config=server_config,
                 with_sandbox=True,
             )
-        exp.run(detach=True)
+        run_exp(exp, cluster_config)
         # exp.dryrun()

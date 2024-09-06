@@ -19,6 +19,7 @@ containers:
   vllm: igitman/nemo-skills-vllm:0.3.1
   nemo: igitman/nemo-skills-sft:0.3.0
   sandbox: igitman/nemo-skills-sandbox:0.3.2
+  nemo-skills: igitman/nemo-skills:0.4.0
 
 mounts:
   - /mnt/datadrive/models/trt_models:/trt_models

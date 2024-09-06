@@ -21,7 +21,7 @@ import nemo_run as run
 import yaml
 from huggingface_hub import get_token
 
-from nemo_skills.pipeline import add_task
+from nemo_skills.pipeline import add_task, run_exp
 from nemo_skills.utils import setup_logging
 
 
@@ -187,7 +187,7 @@ if __name__ == "__main__":
                 partition=args.partition,
                 with_sandbox=args.with_sandbox,
             )
-        exp.run(detach=True, sequential=True)
+        run_exp(exp, cluster_config)
 
     # TODO: add prepare eval here directly, not reason to keep it separate
     # TODO: instead let's create a --depends_on or --after flag to all scripts
