@@ -25,11 +25,13 @@ generation_suffix: ""  # suffix to add to the end of expected response (e.g. <|e
 
 input_key: question
 output_key: generation
+contamination_key: contaminated
 
 filters:
   drop_multi_boxed: true
+  drop_contaminated: true
   drop_useless_code: false
-  drop_broken_code: true
+  drop_broken_code: false
   trim_solutions: true
   drop_incorrect_arithmetic: true
   split_arithmetic: true
@@ -47,6 +49,10 @@ processors:
     add_correct: ${add_correct}
     add_incorrect: ${add_incorrect}
 
+  - _target_: nemo_skills.finetuning.data_preparation_utils.filters.DropContaminated
+    should_run: ${filters.drop_contaminated}
+    contamination_key: ${contamination_key}
+
   - _target_: nemo_skills.finetuning.data_preparation_utils.filters.DropMultiBoxed
     should_run: ${filters.drop_multi_boxed}
     solution_key: ${output_key}
@@ -58,6 +64,12 @@ processors:
   - _target_: nemo_skills.finetuning.data_preparation_utils.filters.DropBrokenCode
     should_run: ${filters.drop_broken_code}
     solution_key: ${output_key}
+
+  - _target_: nemo_skills.finetuning.data_preparation_utils.filters.TrimPrefix
+    should_run: ${filters.trim_solutions}
+    solution_key: ${output_key}
+    test_cases:
+      - {input: {generation: "My solution:\nSubtract 3 from 5"}, output: {generation: "Subtract 3 from 5"}}
 
   - _target_: nemo_skills.finetuning.data_preparation_utils.filters.TrimSolutions
     should_run: ${filters.trim_solutions}

@@ -31,6 +31,7 @@ from nemo_skills.synthetic_arithmetic.utils import extract_expressions
 
 LOG = logging.getLogger(__file__)
 
+PATTERN_ANS_START="My solution:\n"
 PATTERN_ANS = re.compile(r"\\boxed\{([^}]*)\}")
 PATTERN_CODE = re.compile(CODE_SEPARATORS[0])
 
@@ -58,6 +59,18 @@ class BaseFilter(BaseParallelProcessor):
         if 'num_modified' in metrics[0]:
             num_modified_entries = sum(metric.get('num_modified', 0) for metric in metrics)
             LOG.info("Number of modified entries: %d", num_modified_entries)
+
+
+class DropContaminated(BaseFilter):
+
+    def __init__(self, contamination_key: str = "contaminated", **kwargs):
+        super().__init__(**kwargs)
+        self.contamination_key = contamination_key
+
+    def process_dataset_entry(self, data_entry) -> List:
+        if self.contamination_key in data_entry and data_entry[self.contamination_key]: 
+            return [DataEntry(data=None, metrics=dict(num_removed=1))]
+        return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
 
 class DropMultiBoxed(BaseFilter):
@@ -154,6 +167,21 @@ class RemoveLenOutlierSolutions(BaseFilter):
             return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
         else:
             return [DataEntry(data=None, metrics=dict(num_removed=1))]
+
+
+class TrimPrefix(BaseFilter):
+
+    def __init__(self, solution_key: str = "generation", **kwargs):
+        super().__init__(**kwargs)
+        self.solution_key = solution_key
+
+    def process_dataset_entry(self, data_entry) -> List:
+        is_modified = False
+        if data_entry[self.solution_key].startswith(PATTERN_ANS_START):
+            data_entry[self.solution_key] = data_entry[self.solution_key][len(PATTERN_ANS_START):]
+            is_modified = True
+        
+        return [DataEntry(data=data_entry, metrics=dict(num_modified=int(is_modified)))]
 
 
 class TrimSolutions(BaseFilter):
