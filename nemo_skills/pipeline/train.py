@@ -109,8 +109,8 @@ def get_training_cmd(
         f"    trainer.num_nodes={num_nodes} "
         f"    {logging_params} "
         f"    exp_manager.name={expname} "
-        f"    exp_manager.explicit_log_dir=/results "
-        f"    exp_manager.exp_dir=/results "
+        f"    exp_manager.explicit_log_dir=/exp/training "
+        f"    exp_manager.exp_dir=/exp/training "
         f"    ++exp_manager.max_time_per_run={timeout} "
         f"    {extra_arguments} "
     )

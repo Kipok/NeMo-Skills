@@ -30,10 +30,10 @@ def get_cmd(random_seed, extra_arguments, extra_eval_args):
         f"    inference.temperature=1.0 "
         f"    inference.top_k=0 "
         f"    inference.top_p=0.95 "
-        f"    output_file=/nemo_run/generation/output-rs{random_seed}.jsonl "
+        f"    output_file=/exp/generation/output-rs{random_seed}.jsonl "
         f"    {extra_arguments} && "
         f"python nemo_skills/evaluation/evaluate_results.py "
-        f"    prediction_jsonl_files=/nemo_run/generation/output-rs{random_seed}.jsonl {extra_eval_args}"
+        f"    prediction_jsonl_files=/exp/generation/output-rs{random_seed}.jsonl {extra_eval_args}"
     )
     return cmd
 
@@ -116,7 +116,8 @@ if __name__ == "__main__":
             add_task(
                 exp,
                 cmd=get_generation_command(server_address=args.server_address, generation_commands=cmd),
-                task_name=f'generate-rs{seed}',
+                # TODO: has to be the same currently to reuse the code, need a fix in nemo.run
+                task_name="generate",  # f'generate-rs{seed}',
                 container=cluster_config["containers"]["nemo-skills"],
                 cluster_config=cluster_config,
                 partition=args.partition,

@@ -30,10 +30,10 @@ def get_greedy_cmd(benchmark, output_name='output-greedy.jsonl', extra_eval_args
         f'echo "Evaluating benchmark {benchmark}" && '
         f'python nemo_skills/inference/generate.py '
         f'    ++dataset={benchmark} '
-        f'    ++output_file=/nemo_run/eval-results/{benchmark}/{output_name} '
+        f'    ++output_file=/exp/eval-results/{benchmark}/{output_name} '
         f'    {extra_arguments} && '
         f'python nemo_skills/evaluation/evaluate_results.py '
-        f'    ++prediction_jsonl_files=/nemo_run/eval-results/{benchmark}/{output_name} {extra_eval_args}'
+        f'    ++prediction_jsonl_files=/exp/eval-results/{benchmark}/{output_name} {extra_eval_args}'
     )
     return cmd
 
@@ -148,7 +148,8 @@ if __name__ == "__main__":
             add_task(
                 exp,
                 cmd=get_generation_command(server_address=args.server_address, generation_commands=eval_cmd),
-                task_name=f'eval-{idx}',
+                # TODO: has to be the same currently to reuse the code, need a fix in nemo.run
+                task_name="eval",  # f'eval-{idx}',
                 container=cluster_config["containers"]["nemo-skills"],
                 cluster_config=cluster_config,
                 partition=args.partition,
