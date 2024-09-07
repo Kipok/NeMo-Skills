@@ -1,0 +1,17 @@
+# Deepseek prompt
+
+system: ""
+
+user: |-
+  {question}
+  Please reason step by step, and put your final answer within \boxed{{}}
+
+# they do this weird thing that the answers always start with a space. So to run generations, you need to use this prompt,
+# but when you prepare the data, you'd need to make sure to add a " " in front of all solutions.
+prompt_template: |-
+  <｜begin▁of▁sentence｜>User: {user}
+
+  Assistant:{generation}
+
+# don't forget to add this to SFT data
+stop_phrases: ["<｜end▁of▁sentence｜>"]

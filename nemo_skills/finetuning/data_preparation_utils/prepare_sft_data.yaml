@@ -21,15 +21,21 @@ hf_model_name: "meta-llama/Meta-Llama-3.1-8B"
 
 prompt_type: openmathinstruct/sft
 chat_format: null  # null/nemotron/llama
+generation_prefix: ""
 generation_suffix: ""  # suffix to add to the end of expected response (e.g. <|eot_id|>)
+
 
 input_key: question
 output_key: generation
+
+# Keys for processing generated QA 
 contamination_key: contaminated
+vote_key: "majority_votes"
+min_vote: 0
 
 filters:
   drop_multi_boxed: true
-  drop_contaminated: true
+  process_generated_qa: true
   drop_useless_code: false
   drop_broken_code: false
   trim_solutions: true
@@ -49,9 +55,12 @@ processors:
     add_correct: ${add_correct}
     add_incorrect: ${add_incorrect}
 
-  - _target_: nemo_skills.finetuning.data_preparation_utils.filters.DropContaminated
-    should_run: ${filters.drop_contaminated}
+
+  - _target_: nemo_skills.finetuning.data_preparation_utils.filters.ProcessGeneratedQA
+    should_run: ${filters.process_generated_qa}
     contamination_key: ${contamination_key}
+    min_vote: ${min_vote}
+    vote_key: ${vote_key}
 
   - _target_: nemo_skills.finetuning.data_preparation_utils.filters.DropMultiBoxed
     should_run: ${filters.drop_multi_boxed}
@@ -123,5 +132,6 @@ processors:
     input_key: ${input_key}
     output_key: ${output_key}
     chat_format: ${chat_format}
+    generation_prefix: ${generation_prefix}
     generation_suffix: ${generation_suffix}
     metadata: ${metadata}

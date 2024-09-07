@@ -240,6 +240,7 @@ class WriteFinalSftManifest(BaseProcessor):
         chat_format: str | None = None,  # nemotron/llama/None
         input_key: str = "input",
         output_key: str = "output",
+        generation_prefix: str = "",
         generation_suffix: str = "",
         metadata: Optional[Dict] = None,
         **kwargs,
@@ -250,6 +251,7 @@ class WriteFinalSftManifest(BaseProcessor):
         self.output_key = output_key
         self.chat_format = chat_format
         self.metadata = metadata
+        self.generation_prefix = generation_prefix
         self.generation_suffix = generation_suffix
         if self.generation_suffix and self.chat_format:
             raise ValueError("generation_suffix can only be used with chat_format=False")
@@ -263,8 +265,11 @@ class WriteFinalSftManifest(BaseProcessor):
             open(self.input_manifest_file, "rt", encoding="utf-8") as fin,
             open(self.output_manifest_file, "wt", encoding="utf-8") as fout,
         ):
-            prompt_config = get_prompt_config(self.prompt_type)
-            prompt = Prompt(config=prompt_config)
+            if self.prompt_type is None:  
+                prompt = None
+            else:
+                prompt_config = get_prompt_config(self.prompt_type)
+                prompt = Prompt(config=prompt_config)
             # only looping over the correct samples (unless asked for incorrect)
             for line in fin:
                 elem = json.loads(line)
@@ -276,8 +281,9 @@ class WriteFinalSftManifest(BaseProcessor):
 
                 if self.chat_format is None:
                     generation = elem.pop(self.output_key)
-                    elem["input"] = prompt.build_string(input_dict=elem)
-                    elem["output"] = generation + self.generation_suffix
+                    if prompt is not None:
+                        elem["input"] = prompt.build_string(input_dict=elem)
+                    elem["output"] = self.generation_prefix +  generation + self.generation_suffix
                 elif self.chat_format.lower() == "nemotron":
                     elem['conversations'] = [
                         {'value': prompt_config.user.format(**elem), 'from': 'User', 'canonical_form': ''},

@@ -61,15 +61,21 @@ class BaseFilter(BaseParallelProcessor):
             LOG.info("Number of modified entries: %d", num_modified_entries)
 
 
-class DropContaminated(BaseFilter):
+class ProcessGeneratedQA(BaseFilter):
 
-    def __init__(self, contamination_key: str = "contaminated", **kwargs):
+    def __init__(self, contamination_key: str = "contaminated", min_vote: int = 0, vote_key : str = "majority_votes", **kwargs):
         super().__init__(**kwargs)
         self.contamination_key = contamination_key
-
+        self.min_vote = min_vote
+        self.vote_key = vote_key
+ 
     def process_dataset_entry(self, data_entry) -> List:
         if self.contamination_key in data_entry and data_entry[self.contamination_key]: 
             return [DataEntry(data=None, metrics=dict(num_removed=1))]
+        
+        if self.vote_key in data_entry and data_entry[self.vote_key] < self.min_vote:
+            return [DataEntry(data=None, metrics=dict(num_removed=1))]
+
         return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
 
@@ -156,12 +162,11 @@ class RemoveLenOutlierSolutions(BaseFilter):
         self.min_length = min_length
 
         from transformers import AutoTokenizer
-
         self.tokenizer = AutoTokenizer.from_pretrained(hf_model_name)
 
     def process_dataset_entry(self, data_entry):
         solution = data_entry[self.solution_key]
-        solution_len = len(self.tokenizer.encode(solution, add_special_tokens=False))
+        solution_len = len(self.tokenizer.tokenize(solution, add_special_tokens=False))
 
         if self.min_length <= solution_len <= self.max_length:
             return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
