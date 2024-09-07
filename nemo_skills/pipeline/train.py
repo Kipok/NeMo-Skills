@@ -21,7 +21,7 @@ import nemo_run as run
 import yaml
 from huggingface_hub import get_token
 
-from nemo_skills.pipeline import add_task, run_exp
+from nemo_skills.pipeline import add_task, get_cluster_config, run_exp
 from nemo_skills.utils import setup_logging
 
 
@@ -152,8 +152,7 @@ if __name__ == "__main__":
     args, unknown = parser.parse_known_args()
     extra_arguments = f'{" ".join(unknown)}'
 
-    with open(Path(__file__).parents[2] / 'cluster_configs' / f'{args.cluster}.yaml', "rt", encoding="utf-8") as fin:
-        cluster_config = yaml.safe_load(fin)
+    cluster_config = get_cluster_config(args.cluster)
 
     train_cmd = get_training_cmd(
         cluster_config=cluster_config,
@@ -190,6 +189,6 @@ if __name__ == "__main__":
         run_exp(exp, cluster_config)
 
     # TODO: add prepare eval here directly, not reason to keep it separate
-    # TODO: instead let's create a --depends_on or --after flag to all scripts
+    # TODO: instead let's create a --depends_on or --run_after flag to all scripts
     #    so that users can chain them together in any way they want.
     #    It's more flexible than trying to put everything inside a "pipeline"

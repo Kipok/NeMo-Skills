@@ -12,17 +12,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import os
+from functools import lru_cache
 from pathlib import Path
 
 import nemo_run as run
+import yaml
 from huggingface_hub import get_token
-
-# from nemo_run.core.execution.docker import DockerExecutor
+from nemo_run.config import NEMORUN_HOME
+from nemo_run.core.execution.docker import DockerExecutor
 from nemo_run.core.execution.slurm import JobPaths
+from nemo_run.core.serialization.zlib_json import ZlibJSONSerializer
 
 LOG = logging.getLogger(__file__)
+
+
+def _get_latest_dir(path) -> str:
+    dirs = [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
+    latest_dir = max(dirs, key=lambda d: os.path.getctime(os.path.join(path, d)))
+    return os.path.join(path, latest_dir)
+
+
+def get_exp_handles(expname):
+    # TODO: remove this after we can properly use .from_title api
+    parent_dir = os.path.join(NEMORUN_HOME, "experiments", expname)
+    exp_dir = _get_latest_dir(parent_dir)
+
+    with open(os.path.join(exp_dir, '_TASKS')) as f:
+        serialized_jobs = json.load(f)
+
+    serializer = ZlibJSONSerializer()
+    handles = []
+    for job in serialized_jobs:
+        handles.extend(serializer.deserialize(job[0]).handles)
+
+    handles = [handle.split('/')[-1] for handle in handles]
+
+    return handles
 
 
 def get_generation_command(server_address, generation_commands):
@@ -101,6 +129,35 @@ def get_sandox_command():
 #     return MainJobPaths
 
 
+class MainJobPaths(JobPaths):
+    @property
+    def stdout(self) -> Path:
+        return Path(self.folder / "slurm-logs" / "sbatch.txt")
+
+    @property
+    def srun_stdout(self) -> Path:
+        return Path(self.folder / "slurm-logs" / "job_logs.txt")
+
+
+# a very hacky way to cache cluster config - is there a better way to do this?
+class hashabledict(dict):
+    def __hash__(self):
+        return hash(frozenset(self))
+
+
+def get_cluster_config(cluster, config_folder=Path(__file__).parents[2] / 'cluster_configs'):
+    with open(Path(__file__).parents[2] / 'cluster_configs' / f'{cluster}.yaml', "rt", encoding="utf-8") as fin:
+        cluster_config = yaml.safe_load(fin)
+
+    return hashabledict(cluster_config)
+
+
+@lru_cache
+def get_tunnel(cluster_config):
+    return run.SSHTunnel(**cluster_config["ssh_tunnel"])
+
+
+@lru_cache
 def get_executor(
     cluster_config,
     expname,
@@ -108,9 +165,11 @@ def get_executor(
     num_nodes,
     tasks_per_node,
     gpus_per_node,
+    mounts=None,
     partition=None,
 ):
-    mounts = cluster_config.get('mounts', []) + [f"{cluster_config['workspace']}/{expname}:/exp"]
+    config_mounts = cluster_config.get('mounts', []) + [f"{cluster_config['workspace']}/{expname}:/exp"]
+    mounts = mounts or config_mounts
     if cluster_config["executor"] == "local":
         # creating a folder
         os.makedirs(f"{cluster_config['workspace']}/{expname}", exist_ok=True)
@@ -120,15 +179,16 @@ def get_executor(
             container_image=container,
             packager=run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl'),
             ipc_mode="host",
-            volumes=cluster_config.get('mounts', []),
+            volumes=mounts,
             ntasks_per_node=tasks_per_node,
             num_gpus=gpus_per_node,
+            network="host",
             env_vars={"PYTHONUNBUFFERED": "1"},  # this makes sure logs are streamed right away
         )
 
     # creating a folder - need to do it through Tunnel to ensure it's on the remote machine
     # TODO: reuse the tunnel
-    tunnel = run.SSHTunnel(**cluster_config["ssh_tunnel"])
+    tunnel = get_tunnel(cluster_config)
     tunnel.run(f"mkdir -p {cluster_config['workspace']}/{expname}")
 
     partition = partition or cluster_config.get("partition")
@@ -226,16 +286,14 @@ def add_task(
             tasks_per_node=1,
             gpus_per_node=num_gpus,
             partition=partition,
+            mounts=tuple(),  # we don't want to mount anything
         )
-        # annoyingly named differently in nemo.run
-        if cluster_config["executor"] == "local":
-            sandbox_executor.volumes = []
-        else:
-            sandbox_executor.mounts = []  # we don't want to mount anything
         commands.append(get_sandox_command())
         executors.append(sandbox_executor)
 
-    commands = [cmd.replace("$", "\\$") for cmd in commands]
+    if cluster_config["executor"] == "slurm":
+        commands = [cmd.replace("$", "\\$") for cmd in commands]
+
     exp.add(
         [run.Script(inline=command) for command in commands],
         executor=executors,

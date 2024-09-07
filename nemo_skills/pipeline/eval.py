@@ -19,7 +19,7 @@ import nemo_run as run
 import yaml
 
 from nemo_skills.evaluation.settings import EXTRA_EVAL_ARGS, EXTRA_GENERATION_ARGS
-from nemo_skills.pipeline import add_task, get_generation_command, run_exp
+from nemo_skills.pipeline import add_task, get_cluster_config, get_generation_command, run_exp
 from nemo_skills.utils import setup_logging
 
 
@@ -104,8 +104,7 @@ if __name__ == "__main__":
 
     extra_arguments = f'{" ".join(unknown)}'
 
-    with open(Path(__file__).parents[2] / 'cluster_configs' / f'{args.cluster}.yaml', "rt", encoding="utf-8") as fin:
-        cluster_config = yaml.safe_load(fin)
+    cluster_config = get_cluster_config(args.cluster)
 
     if args.server_address is None:  # we need to host the model
         assert args.server_gpus is not None, "Need to specify server_gpus if hosting the model"

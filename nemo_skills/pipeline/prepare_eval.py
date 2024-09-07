@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 from argparse import ArgumentParser
 from pathlib import Path
 
-# adding nemo_skills to python path to avoid requiring installation
-sys.path.append(str(Path(__file__).absolute().parents[1]))
+import nemo_run as run
+import yaml
 
-from nemo_skills.pipeline.utils import CLUSTER_CONFIG, NEMO_SKILLS_CODE, launch_job
+from nemo_skills.pipeline import add_task, get_generation_command, run_exp
 from nemo_skills.utils import setup_logging
 
 SLURM_CMD = (
@@ -38,12 +37,16 @@ MOUNTS = (
 JOB_NAME = "prepare-for-eval-{inference_model_name}"
 
 
+def get_cmd(average_steps):
+    pass
+
+
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser()
     parser.add_argument("--training_folder", required=True)
     parser.add_argument("--server_type", choices=('nemo',), default='nemo')
-    parser.add_argument("--output_path", required=True, help="Path to save the TensorRT-LLM model")
+    parser.add_argument("--output_path", required=True, help="Path to save the prepared model")
     parser.add_argument("--nemo_model", required=True, help="Only need this to get the config file")
     parser.add_argument("--num_gpus", required=True, type=int)
     parser.add_argument(
@@ -59,16 +62,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    args.training_folder = Path(args.training_folder).absolute()
-    args.output_path = Path(args.output_path).absolute()
-    model_name = args.output_path.name
-
-    if model_name.endswith('.nemo'):
-        # mounting the parent folder instead
-        args.output_path = args.output_path.parent
-    args.output_path.mkdir(exist_ok=True, parents=True)
-
-    conversion_step = f"&& mv /training_folder/model-averaged.nemo /inference_folder/{model_name}"
+    conversion_step = f"&& mv {args.training_folder}/model-averaged.nemo {args.output_path}"
     # TODO: add NeMo to TensorRT-LLM conversion step
 
     format_dict = {

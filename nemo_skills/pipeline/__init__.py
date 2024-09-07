@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_skills.pipeline.utils import add_task, get_generation_command, run_exp
+from nemo_skills.pipeline.utils import add_task, get_cluster_config, get_generation_command, run_exp

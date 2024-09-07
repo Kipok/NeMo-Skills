@@ -18,7 +18,7 @@ from pathlib import Path
 import nemo_run as run
 import yaml
 
-from nemo_skills.pipeline import add_task
+from nemo_skills.pipeline import add_task, get_cluster_config
 from nemo_skills.utils import setup_logging
 
 if __name__ == "__main__":
@@ -50,8 +50,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    with open(Path(__file__).parents[2] / 'cluster_configs' / f'{args.cluster}.yaml', "rt", encoding="utf-8") as fin:
-        cluster_config = yaml.safe_load(fin)
+    cluster_config = get_cluster_config(args.cluster)
 
     server_config = {
         "model_path": args.model,
