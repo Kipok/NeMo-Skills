@@ -117,6 +117,20 @@ def get_training_cmd(
     return cmd
 
 
+def get_conversion_cmd(nemo_model, average_steps):
+    # TODO: add an option to convert to vllm/trtllm
+    cmd = (
+        f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
+        f"cd /nemo_run/code && "
+        f"python /code/nemo_skills/finetuning/average_checkpoints.py "
+        f"    --untarred_nemo_folder {nemo_model} "
+        f"    --name_prefix=model "
+        f"    --checkpoint_dir=/exp/training {average_steps} &&"
+        f"mv /exp/training/model-averaged.nemo /exp "
+    )
+    return cmd
+
+
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser()
@@ -126,7 +140,9 @@ if __name__ == "__main__":
     parser.add_argument("--nemo_model", required=True)
     parser.add_argument("--num_nodes", type=int, default=1)
     parser.add_argument("--num_gpus", type=int)
-    parser.add_argument("--dependent_jobs", type=int, default=0)
+    parser.add_argument(
+        "--num_training_jobs", type=int, default=1, help="Set to 0 if you only want to convert the model."
+    )
     parser.add_argument("--training_algo", default="sft", choices=["sft", "dpo"])
     # have to be handled explicitly since hydra requires these to be first arguments
     parser.add_argument("--config-name", "-cn", required=False, help="If not specified will use (sft/dpo)_config")
@@ -147,6 +163,12 @@ if __name__ == "__main__":
         "--partition",
         required=False,
         help="Can specify if need interactive jobs or a specific non-default partition",
+    )
+    parser.add_argument(
+        "--average_steps",
+        nargs="+",
+        type=int,
+        help="List of checkpoint steps to average. If not specified, will average all.",
     )
 
     args, unknown = parser.parse_known_args()
@@ -171,7 +193,7 @@ if __name__ == "__main__":
     )
 
     with run.Experiment(args.expname) as exp:
-        for job_id in range(args.dependent_jobs + 1):
+        for job_id in range(args.num_training_jobs):
             # TODO: doesn't work currently since folder is not shared
             #       either need to use different cluster path or wait for nemorun to support it
             add_task(
@@ -186,9 +208,25 @@ if __name__ == "__main__":
                 partition=args.partition,
                 with_sandbox=args.with_sandbox,
             )
+
+        cmd = get_conversion_cmd(
+            nemo_model=args.nemo_model,
+            average_steps=f"--steps {' '.join(map(str, args.average_steps))} " if args.average_steps else "",
+        )
+        add_task(
+            exp,
+            cmd=cmd,
+            task_name="prepare-eval",
+            container=cluster_config["containers"][args.server_type],
+            cluster_config=cluster_config,
+            partition=args.partition,
+            num_nodes=1,
+            num_tasks=1,
+            num_gpus=args.num_gpus,
+        )
+
         run_exp(exp, cluster_config)
 
-    # TODO: add prepare eval here directly, not reason to keep it separate
-    # TODO: instead let's create a --depends_on or --run_after flag to all scripts
+    # TODO: let's create a --depends_on or --run_after flag to all scripts
     #    so that users can chain them together in any way they want.
     #    It's more flexible than trying to put everything inside a "pipeline"
