@@ -129,14 +129,14 @@ def get_sandox_command():
 #     return MainJobPaths
 
 
-class MainJobPaths(JobPaths):
-    @property
-    def stdout(self) -> Path:
-        return Path(self.folder / "slurm-logs" / "sbatch.txt")
+# class MainJobPaths(JobPaths):
+#     @property
+#     def stdout(self) -> Path:
+#         return Path(self.folder / "slurm-logs" / "sbatch.txt")
 
-    @property
-    def srun_stdout(self) -> Path:
-        return Path(self.folder / "slurm-logs" / "job_logs.txt")
+#     @property
+#     def srun_stdout(self) -> Path:
+#         return Path(self.folder / "slurm-logs" / "job_logs.txt")
 
 
 # a very hacky way to cache cluster config - is there a better way to do this?
@@ -290,9 +290,6 @@ def add_task(
         )
         commands.append(get_sandox_command())
         executors.append(sandbox_executor)
-
-    if cluster_config["executor"] == "slurm":
-        commands = [cmd.replace("$", "\\$") for cmd in commands]
 
     exp.add(
         [run.Script(inline=command) for command in commands],
