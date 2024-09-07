@@ -48,8 +48,6 @@ def get_exp_handles(expname):
     for job in serialized_jobs:
         handles.extend(serializer.deserialize(job[0]).handles)
 
-    handles = [handle.split('/')[-1] for handle in handles]
-
     return handles
 
 
@@ -167,6 +165,7 @@ def get_executor(
     gpus_per_node,
     mounts=None,
     partition=None,
+    dependencies=None,
 ):
     config_mounts = cluster_config.get('mounts', []) + [f"{cluster_config['workspace']}/{expname}:/exp"]
     mounts = mounts or config_mounts
@@ -225,6 +224,7 @@ def get_executor(
         # job_paths_cls=MainJobPaths,
         wait_time_for_group_job=0.01,
         monitor_group_job_wait_time=20,
+        dependencies=dependencies,
     )
 
 
@@ -234,7 +234,7 @@ def add_task(
     task_name,
     cluster_config,
     container,
-    # TODO: are these good defaults?
+    # TODO: these are good defaults for generation jobs, but probably not the best overall?
     num_tasks=1,
     num_gpus=1,
     num_nodes=1,
@@ -243,8 +243,10 @@ def add_task(
     server_config=None,
     run_after=None,
 ):
-    if run_after is not None:
-        pass  # TODO
+    if run_after is not None and cluster_config["executor"] == "slurm":
+        dependencies = tuple(get_exp_handles(run_after))
+    else:
+        dependencies = None
     commands = []
     executors = []
     # assuming server always has the largest resources request, so it needs to go first
@@ -260,6 +262,7 @@ def add_task(
             tasks_per_node=num_server_tasks,
             gpus_per_node=server_config['num_gpus'],
             partition=partition,
+            dependencies=dependencies,
         )
         commands.append(server_cmd)
         executors.append(server_executor)
@@ -276,6 +279,7 @@ def add_task(
                 tasks_per_node=num_tasks,
                 gpus_per_node=num_gpus,
                 partition=partition,
+                dependencies=dependencies,
             )
         )
 
@@ -290,6 +294,7 @@ def add_task(
             gpus_per_node=num_gpus,
             partition=partition,
             mounts=tuple(),  # we don't want to mount anything
+            dependencies=dependencies,
         )
         commands.append(get_sandox_command())
         executors.append(sandbox_executor)
