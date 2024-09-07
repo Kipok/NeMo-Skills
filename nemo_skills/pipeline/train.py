@@ -170,6 +170,11 @@ if __name__ == "__main__":
         type=int,
         help="List of checkpoint steps to average. If not specified, will average all.",
     )
+    parser.add_argument(
+        "--run_after",
+        required=False,
+        help="Can specify an expname that needs to be completed before this one starts (will use as slurm dependency)",
+    )
 
     args, unknown = parser.parse_known_args()
     extra_arguments = f'{" ".join(unknown)}'
@@ -207,6 +212,7 @@ if __name__ == "__main__":
                 cluster_config=cluster_config,
                 partition=args.partition,
                 with_sandbox=args.with_sandbox,
+                run_after=args.run_after,
             )
 
         cmd = get_conversion_cmd(
@@ -223,9 +229,10 @@ if __name__ == "__main__":
             num_nodes=1,
             num_tasks=1,
             num_gpus=args.num_gpus,
+            run_after=args.run_after,
         )
 
-        run_exp(exp, cluster_config)
+        run_exp(exp, cluster_config, sequential=True)
 
     # TODO: let's create a --depends_on or --run_after flag to all scripts
     #    so that users can chain them together in any way they want.

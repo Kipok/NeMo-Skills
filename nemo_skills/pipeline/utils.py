@@ -241,7 +241,10 @@ def add_task(
     partition=None,
     with_sandbox=False,
     server_config=None,
+    run_after=None,
 ):
+    if run_after is not None:
+        pass  # TODO
     commands = []
     executors = []
     # assuming server always has the largest resources request, so it needs to go first
@@ -298,8 +301,9 @@ def add_task(
     )
 
 
-def run_exp(exp, cluster_config):
+def run_exp(exp, cluster_config, sequential=False):
     if cluster_config['executor'] == 'local':
-        exp.run(detach=False, tail_logs=True)
+        # locally we are always running sequentially - does that need to be changed?
+        exp.run(detach=False, tail_logs=True, sequential=True)
     else:
-        exp.run(detach=True)
+        exp.run(detach=True, sequential=sequential)

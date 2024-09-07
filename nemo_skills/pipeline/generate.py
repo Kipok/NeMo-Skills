@@ -83,6 +83,11 @@ if __name__ == "__main__":
         default="",
         help="Any extra arguments to pass to nemo_skills/evaluation/evaluate_results.py",
     )
+    parser.add_argument(
+        "--run_after",
+        required=False,
+        help="Can specify an expname that needs to be completed before this one starts (will use as slurm dependency)",
+    )
     args, unknown = parser.parse_known_args()
 
     extra_arguments = f'{" ".join(unknown)}'
@@ -122,6 +127,7 @@ if __name__ == "__main__":
                 partition=args.partition,
                 server_config=server_config,
                 with_sandbox=True,
+                run_after=args.run_after,
             )
         run_exp(exp, cluster_config)
         # exp.dryrun()
