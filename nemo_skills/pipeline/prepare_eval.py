@@ -18,33 +18,28 @@ from pathlib import Path
 import nemo_run as run
 import yaml
 
-from nemo_skills.pipeline import add_task, get_generation_command, run_exp
+from nemo_skills.pipeline import add_task, get_cluster_config, get_generation_command, run_exp
 from nemo_skills.utils import setup_logging
 
-SLURM_CMD = (
-    "python /code/nemo_skills/finetuning/average_checkpoints.py "
-    "    --untarred_nemo_folder /nemo_model "
-    "    --name_prefix=model "
-    "    --checkpoint_dir=/training_folder {average_steps}"
-    "{conversion_step}"
-)
-MOUNTS = (
-    "{NEMO_SKILLS_CODE}:/code,"
-    "{training_folder}:/training_folder,"
-    "{output_path}:/inference_folder,"
-    "{nemo_model}:/nemo_model"
-)
-JOB_NAME = "prepare-for-eval-{inference_model_name}"
 
-
-def get_cmd(average_steps):
-    pass
+def get_cmd(training_folder, nemo_model, average_steps, conversion_step):
+    cmd = (
+        f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
+        f"cd /nemo_run/code && "
+        f"python /code/nemo_skills/finetuning/average_checkpoints.py "
+        f"    --untarred_nemo_folder {nemo_model} "
+        f"    --name_prefix=model "
+        f"    --checkpoint_dir={training_folder} {average_steps} &&"
+        f"{conversion_step}"
+    )
+    return cmd
 
 
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser()
     parser.add_argument("--training_folder", required=True)
+    parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     parser.add_argument("--server_type", choices=('nemo',), default='nemo')
     parser.add_argument("--output_path", required=True, help="Path to save the prepared model")
     parser.add_argument("--nemo_model", required=True, help="Only need this to get the config file")
@@ -62,27 +57,27 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    conversion_step = f"&& mv {args.training_folder}/model-averaged.nemo {args.output_path}"
+    conversion_step = f"mv {args.training_folder}/model-averaged.nemo {args.output_path}"
     # TODO: add NeMo to TensorRT-LLM conversion step
 
-    format_dict = {
-        "training_folder": args.training_folder,
-        "inference_model_name": model_name,
-        "nemo_model": args.nemo_model,
-        "output_path": args.output_path,
-        "conversion_step": conversion_step,
-        "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
-        "average_steps": f"--steps {' '.join(map(str, args.average_steps))} " if args.average_steps else "",
-    }
+    cluster_config = get_cluster_config(args.cluster)
 
-    launch_job(
-        cmd=SLURM_CMD.format(**format_dict),
-        num_nodes=1,
-        tasks_per_node=1,
-        gpus_per_node=args.num_gpus,
-        job_name=JOB_NAME.format(**format_dict),
-        container=CLUSTER_CONFIG["containers"][args.server_type],
-        mounts=MOUNTS.format(**format_dict),
-        partition=args.partition,
-        with_sandbox=False,
-    )
+    with run.Experiment(args.expname) as exp:
+        cmd = get_cmd(
+            training_folder=args.training_folder,
+            nemo_model=args.nemo_model,
+            average_steps=f"--steps {' '.join(map(str, args.average_steps))} " if args.average_steps else "",
+            conversion_step=conversion_step,
+        )
+        add_task(
+            exp,
+            cmd=cmd,
+            task_name="prepare-eval",
+            container=cluster_config["containers"][args.server_type],
+            cluster_config=cluster_config,
+            partition=args.partition,
+            num_nodes=1,
+            num_tasks=1,
+            num_gpus=args.num_gpus,
+        )
+        run_exp(exp, cluster_config)
