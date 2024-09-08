@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
 import os
 from argparse import ArgumentParser
-from pathlib import Path
+from datetime import datetime
 
 import nemo_run as run
-import yaml
 from huggingface_hub import get_token
 
 from nemo_skills.pipeline import add_task, get_cluster_config, run_exp
@@ -223,7 +221,7 @@ if __name__ == "__main__":
             exp,
             cmd=cmd,
             task_name="prepare-eval",
-            container=cluster_config["containers"][args.server_type],
+            container=cluster_config["containers"]['nemo'],
             cluster_config=cluster_config,
             partition=args.partition,
             num_nodes=1,
@@ -233,7 +231,4 @@ if __name__ == "__main__":
         )
 
         run_exp(exp, cluster_config, sequential=True)
-
-    # TODO: let's create a --depends_on or --run_after flag to all scripts
-    #    so that users can chain them together in any way they want.
-    #    It's more flexible than trying to put everything inside a "pipeline"
+        # exp.dryrun()

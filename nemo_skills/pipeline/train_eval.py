@@ -127,52 +127,15 @@ def run_eval(
     return last_job_id
 
 
-stages_map = {
-    'sft': run_training,
-    'dpo': run_training,
-    'prepare_eval': run_prepare_eval,
-    'eval': run_eval,
-}
-
-
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser()
-    # by default we are using a shared project
-    parser.add_argument("--project", default="nemo-skills-exps")
-    parser.add_argument("--expname", required=True, help="Experiment name for logging purposes")
-    parser.add_argument("--nemo_model", required=True)
-    parser.add_argument("--num_nodes", type=int, default=1)
-    parser.add_argument("--num_gpus", type=int)
-    parser.add_argument("--num_training_jobs", type=int, default=1)
-    parser.add_argument("--server_type", choices=('nemo',), default='nemo')
-    parser.add_argument("--stages", nargs="+", default=["sft", "prepare_eval", "eval"])
+    parser.add_argument("--expname", required=True, help="Experiment name")
     parser.add_argument("--extra_eval_args", default="")
-    parser.add_argument("--extra_prepare_eval_args", default="")
     args, unknown = parser.parse_known_args()
 
     # these are the extra training arguments you can provide
     extra_training_args = f'{" ".join(unknown)}'
-
-    format_dict = {
-        "NEMO_SKILLS_CODE": NEMO_SKILLS_CODE,
-    }
-    fill_env_vars(format_dict, ["NEMO_SKILLS_RESULTS"])
-
-    exp_path = f"{format_dict['NEMO_SKILLS_RESULTS']}/{args.project}"
-
-    checkpoints_folder = Path(f"{exp_path}/checkpoints/{args.expname}")
-    checkpoints_folder.mkdir(exist_ok=True, parents=True)
-
-    results_folder = Path(f"{exp_path}/results/{args.expname}")
-    results_folder.mkdir(exist_ok=True, parents=True)
-
-    current_folder = Path(__file__).parent.absolute()
-
-    if args.server_type == "nemo":  # adding expname for better logging
-        inference_path = f"{checkpoints_folder}/{args.expname}.nemo"
-    else:
-        inference_path = f"{checkpoints_folder}/{args.server_type}"
 
     last_job_id = None
     for stage in args.stages:

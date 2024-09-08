@@ -299,11 +299,15 @@ def add_task(
         commands.append(get_sandox_command())
         executors.append(sandbox_executor)
 
-    exp.add(
-        [run.Script(inline=command) for command in commands],
-        executor=executors,
-        name=task_name,
-    )
+    if len(commands) == 1:
+        # to keep sbatch script simpler, we don't wrap in a list in this case
+        exp.add(run.Script(inline=commands[0]), executor=executors[0], name=task_name)
+    else:
+        exp.add(
+            [run.Script(inline=command) for command in commands],
+            executor=executors,
+            name=task_name,
+        )
 
 
 def run_exp(exp, cluster_config, sequential=False):
