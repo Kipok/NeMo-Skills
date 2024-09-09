@@ -91,6 +91,9 @@ if __name__ == "__main__":
 
     extra_arguments = f'{" ".join(unknown)}'
 
+    if not args.output_dir.startswith("/"):
+        raise ValueError("output_dir must be referenced in a mounted location (mounts section in the config file)")
+
     cluster_config = get_cluster_config(args.cluster)
 
     if args.server_address is None:  # we need to host the model
@@ -106,9 +109,9 @@ if __name__ == "__main__":
     else:  # model is hosted elsewhere
         server_config = None
         extra_arguments += (
-            f"++server.server_type={args.server_type} "
-            f"++server.base_url={args.server_address} "
-            f"++server.model={args.model} "
+            f" ++server.server_type={args.server_type} "
+            f" ++server.base_url={args.server_address} "
+            f" ++server.model={args.model} "
         )
 
     with run.Experiment(args.expname) as exp:

@@ -13,8 +13,6 @@
 # limitations under the License.
 
 executor: local
-# will be used for nemo-run metadata as well as to store job results
-workspace: /mnt/datadrive/experiments/
 
 containers:
   tensorrt_llm: igitman/nemo-skills-trtllm:0.4.0
@@ -26,7 +24,4 @@ containers:
 mounts:
   - /mnt/datadrive/models/trt_models:/trt_models
   - /mnt/datadrive/models/nemo_models:/nemo_models
-
-# change this to "sudo docker" if non-root user access is not set up
-# to set up non-root access, follow https://docs.docker.com/engine/install/linux-postinstall/#manage-docker-as-a-non-root-user
-docker_cmd: "docker"
+  - /mnt/datadrive/experiments:/exps

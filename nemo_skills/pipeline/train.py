@@ -172,6 +172,9 @@ if __name__ == "__main__":
     args, unknown = parser.parse_known_args()
     extra_arguments = f'{" ".join(unknown)}'
 
+    if not args.output_dir.startswith("/"):
+        raise ValueError("output_dir must be referenced in a mounted location (mounts section in the config file)")
+
     cluster_config = get_cluster_config(args.cluster)
 
     train_cmd = get_training_cmd(
