@@ -1,5 +1,55 @@
 # Supervised finetuning
 
+instead of run_pipeline.py
+
+EXPNAME=test-training
+
+python nemo_skills/pipeline/train.py \
+    --cluster draco-ord \
+    --expname $EXPNAME \
+    --output_dir /exps/checkpoints/$EXPNAME \
+    --nemo_model /nemo_models/llama3.1-8b-base \
+    --num_nodes 2 \
+    --num_gpus 8 \
+    --num_training_jobs 2 \
+    --average_steps 4000 8000 12000 16000 20000 24000 \
+    --training_data /data/llama_data_all_max_len_1024.jsonl \
+    ++model.data.train_ds.add_eos=False \
+    ++model.data.train_ds.global_batch_size=1024 \
+    ++model.data.train_ds.micro_batch_size=4 \
+    ++trainer.sft.val_check_interval=10 \
+    ++trainer.sft.save_interval=10 \
+    ++trainer.sft.limit_val_batches=1 \
+    ++trainer.sft.max_steps=30 \
+    ++trainer.sft.max_epochs=10 \
+    ++model.optim.lr=5e-6 \
+    ++model.optim.sched.warmup_steps=0 \
+    ++model.tensor_model_parallel_size=4 \
+    ++model.pipeline_model_parallel_size=1 \
+    ++exp_manager.checkpoint_callback_params.save_top_k=50 \
+    ++exp_manager.max_time_per_run=00:03:45:00 \
+    --partition interactive
+
+python nemo_skills/pipeline/eval.py \
+    --cluster draco-ord \
+    --model /exps/checkpoints/$EXPNAME/model-averaged.nemo \
+    --server_type nemo \
+    --output_dir /exps/results/$EXPNAME \
+    --benchmarks gsm8k:0 math:0 \
+    --server_gpus 8 \
+    --server_nodes 1 \
+    --run_after $EXPNAME \
+    ++prompt_template=llama3-instruct \
+    ++batch_size=128 \
+    ++split_name=test
+
+
+
+
+
+
+
+
 Supervised finetuning (SFT) is the final stage of our pipeline. We use [NeMo-Aligner](https://github.com/NVIDIA/NeMo-Aligner/)
 to run SFT and would encourage you to check their documentation to learn more details.
 Here are the commands to prepare data, run SFT and evaluate the finetuned models.
