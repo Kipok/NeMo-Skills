@@ -28,6 +28,7 @@ def get_training_cmd(
     partition,
     config_name,
     config_path,
+    nemo_model,
     num_gpus,
     num_nodes,
     expname,
@@ -50,13 +51,13 @@ def get_training_cmd(
     if chat_format:
         extra_arguments = (
             " ++model.data.chat=True "
-            f" model.data.validation_ds.file_path=/code/datasets/{validation_dataset}/validation-sft-chat.jsonl "
+            f" model.data.validation_ds.file_path=/nemo_run/code/nemo_skills/dataset/{validation_dataset}/validation-sft-chat.jsonl "
         ) + extra_arguments
     else:
         if training_algo == "sft":
             extra_arguments = (
                 " ++model.data.chat=False "
-                f" model.data.validation_ds.file_path=/code/datasets/{validation_dataset}/validation-sft.jsonl "
+                f" model.data.validation_ds.file_path=/nemo_run/code/nemo_skills/dataset/{validation_dataset}/validation-sft.jsonl "
             ) + extra_arguments
 
     if training_algo == "dpo":
@@ -65,9 +66,9 @@ def get_training_cmd(
         # ++model.data.data_prefix.validation='[/data/paired_val_openmath_train.jsonl]' \
         # ++model.data.data_prefix.test='[/data/paired_val_openmath_train.jsonl]'
 
-        extra_arguments = " pretrained_checkpoint.restore_from_path=/nemo_model " + extra_arguments
+        extra_arguments = f" pretrained_checkpoint.restore_from_path={nemo_model} " + extra_arguments
     else:
-        extra_arguments = " model.restore_from_path=/nemo_model " + extra_arguments
+        extra_arguments = f" model.restore_from_path={nemo_model} " + extra_arguments
 
     if 'timeouts' not in cluster_config:
         timeout = "10000:00:00:00"
@@ -184,6 +185,7 @@ if __name__ == "__main__":
         partition=args.partition,
         config_name=args.config_name,
         config_path=args.config_path,
+        nemo_model=args.nemo_model,
         num_gpus=args.num_gpus,
         num_nodes=args.num_nodes,
         expname=args.expname,
