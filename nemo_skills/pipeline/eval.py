@@ -23,17 +23,17 @@ from nemo_skills.pipeline import add_task, get_cluster_config, get_generation_co
 from nemo_skills.utils import setup_logging
 
 
-def get_greedy_cmd(benchmark, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments=""):
+def get_greedy_cmd(benchmark, output_dir, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments=""):
     extra_eval_args = f"{EXTRA_EVAL_ARGS.get(benchmark, '')} {extra_eval_args}"
     extra_arguments = f"{EXTRA_GENERATION_ARGS.get(benchmark, '')} {extra_arguments}"
     cmd = (
         f'echo "Evaluating benchmark {benchmark}" && '
         f'python nemo_skills/inference/generate.py '
         f'    ++dataset={benchmark} '
-        f'    ++output_file=/exp/eval-results/{benchmark}/{output_name} '
+        f'    ++output_file={output_dir}/eval-results/{benchmark}/{output_name} '
         f'    {extra_arguments} && '
         f'python nemo_skills/evaluation/evaluate_results.py '
-        f'    ++prediction_jsonl_files=/exp/eval-results/{benchmark}/{output_name} {extra_eval_args}'
+        f'    ++prediction_jsonl_files={output_dir}/eval-results/{benchmark}/{output_name} {extra_eval_args}'
     )
     return cmd
 
@@ -53,7 +53,8 @@ if __name__ == "__main__":
     parser = ArgumentParser(usage="TODO")
     wrapper_args = parser.add_argument_group('wrapper arguments')
     wrapper_args.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
-    wrapper_args.add_argument("--expname", required=True, help="Experiment name")
+    wrapper_args.add_argument("--output_dir", required=True, help="Where to put results")
+    wrapper_args.add_argument("--expname", default="eval", help="Nemo run experiment name")
     wrapper_args.add_argument("--model", required=False, help="Path to the model or model name in API.")
     # TODO: should all this be inside a single dictionary config?
     wrapper_args.add_argument(
@@ -133,11 +134,15 @@ if __name__ == "__main__":
     BENCHMARKS = {k: int(v) for k, v in [b.split(":") for b in args.benchmarks]}
 
     eval_cmds = [
-        get_greedy_cmd(benchmark, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments)
+        get_greedy_cmd(
+            benchmark, args.output_dir, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments
+        )
         for benchmark in BENCHMARKS.keys()
     ]
     eval_cmds += [
-        get_sampling_cmd(benchmark, rs, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments)
+        get_sampling_cmd(
+            benchmark, args.output_dir, rs, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments
+        )
         for benchmark, rs_num in BENCHMARKS.items()
         for rs in range(args.starting_seed, args.starting_seed + rs_num)
     ]

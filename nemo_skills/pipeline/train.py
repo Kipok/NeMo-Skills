@@ -29,12 +29,13 @@ def get_training_cmd(
     config_name,
     config_path,
     nemo_model,
+    output_dir,
+    training_data,
+    validation_data,
     num_gpus,
     num_nodes,
     expname,
     training_algo,
-    chat_format,
-    validation_dataset,
     disable_wandb,
     wandb_project,
     extra_arguments,
@@ -45,30 +46,22 @@ def get_training_cmd(
     if training_algo == "sft" and config_name is None:
         config_name = "sft_config"
 
-    if training_algo == "dpo" and chat_format:
-        raise ValueError("DPO does not support chat format")
-
-    if chat_format:
-        extra_arguments = (
-            " ++model.data.chat=True "
-            f" model.data.validation_ds.file_path=/nemo_run/code/nemo_skills/dataset/{validation_dataset}/validation-sft-chat.jsonl "
-        ) + extra_arguments
-    else:
-        if training_algo == "sft":
-            extra_arguments = (
-                " ++model.data.chat=False "
-                f" model.data.validation_ds.file_path=/nemo_run/code/nemo_skills/dataset/{validation_dataset}/validation-sft.jsonl "
-            ) + extra_arguments
+    if validation_data is None:
+        validation_data = training_data
 
     if training_algo == "dpo":
-        # TODO: for DPO currently user has to be explicit about validation/test sets
-        # ++model.data.data_prefix.train='[/data/paired_all_openmath.jsonl]' \
-        # ++model.data.data_prefix.validation='[/data/paired_val_openmath_train.jsonl]' \
-        # ++model.data.data_prefix.test='[/data/paired_val_openmath_train.jsonl]'
-
-        extra_arguments = f" pretrained_checkpoint.restore_from_path={nemo_model} " + extra_arguments
+        extra_arguments = (
+            f" ++model.data.data_prefix.train='[{training_data}]' "
+            f" ++model.data.data_prefix.validation='[{validation_data}]' "
+            f" ++model.data.data_prefix.test='[{validation_data}]' "
+            f" pretrained_checkpoint.restore_from_path={nemo_model} " + extra_arguments
+        )
     else:
-        extra_arguments = f" model.restore_from_path={nemo_model} " + extra_arguments
+        extra_arguments = (
+            f" ++model.data.train_ds.file_path='{training_data}' "
+            f" ++model.data.validation_ds.file_path='{validation_data}' "
+            f" model.restore_from_path={nemo_model} " + extra_arguments
+        )
 
     if 'timeouts' not in cluster_config:
         timeout = "10000:00:00:00"
@@ -108,15 +101,15 @@ def get_training_cmd(
         f"    trainer.num_nodes={num_nodes} "
         f"    {logging_params} "
         f"    exp_manager.name={expname} "
-        f"    exp_manager.explicit_log_dir=/exp/training "
-        f"    exp_manager.exp_dir=/exp/training "
+        f"    exp_manager.explicit_log_dir={output_dir}/training "
+        f"    exp_manager.exp_dir={output_dir}/training "
         f"    ++exp_manager.max_time_per_run={timeout} "
         f"    {extra_arguments} "
     )
     return cmd
 
 
-def get_conversion_cmd(nemo_model, average_steps):
+def get_conversion_cmd(nemo_model, output_dir, average_steps):
     # TODO: add an option to convert to vllm/trtllm
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
@@ -124,8 +117,8 @@ def get_conversion_cmd(nemo_model, average_steps):
         f"python /code/nemo_skills/finetuning/average_checkpoints.py "
         f"    --untarred_nemo_folder {nemo_model} "
         f"    --name_prefix=model "
-        f"    --checkpoint_dir=/exp/training {average_steps} &&"
-        f"mv /exp/training/model-averaged.nemo /exp "
+        f"    --checkpoint_dir={output_dir}/training {average_steps} &&"
+        f"mv {output_dir}/training/model-averaged.nemo {output_dir} "
     )
     return cmd
 
@@ -135,8 +128,15 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     # by default we are using a shared project
     parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
+    # TODO: maybe not required and reuse expname in that case?
+    parser.add_argument("--output_dir", required=True, help="Where to put results")
     parser.add_argument("--expname", required=True, help="Experiment name")
     parser.add_argument("--nemo_model", required=True)
+    parser.add_argument("--training_data", required=True)
+    # TODO: this needs to be fixed in nemo-aligner
+    parser.add_argument(
+        "--validation_data", required=False, help="Will default to the training data, since we can't disable it"
+    )
     parser.add_argument("--num_nodes", type=int, default=1)
     parser.add_argument("--num_gpus", type=int)
     parser.add_argument(
@@ -146,12 +146,6 @@ if __name__ == "__main__":
     # have to be handled explicitly since hydra requires these to be first arguments
     parser.add_argument("--config-name", "-cn", required=False, help="If not specified will use (sft/dpo)_config")
     parser.add_argument("--config-path", "-cp", default='/nemo_run/code/nemo_skills/finetuning/')
-    parser.add_argument(
-        "--validation_dataset",
-        default="gsm8k",
-        # TODO: how to disable it by default?
-        help="Validation dataset to use. Make sure it exists inside datasets folder",
-    )
     parser.add_argument("--wandb_project", default="nemo-skills")
     parser.add_argument(
         "--disable_wandb", action="store_true", help="Disable wandb logging and use tensorboard instead"
@@ -186,12 +180,13 @@ if __name__ == "__main__":
         config_name=args.config_name,
         config_path=args.config_path,
         nemo_model=args.nemo_model,
+        output_dir=args.output_dir,
+        training_data=args.training_data,
+        validation_data=args.validation_data,
         num_gpus=args.num_gpus,
         num_nodes=args.num_nodes,
         expname=args.expname,
         training_algo=args.training_algo,
-        chat_format=args.chat_format,
-        validation_dataset=args.validation_dataset,
         disable_wandb=args.disable_wandb,
         wandb_project=args.wandb_project,
         extra_arguments=extra_arguments,
@@ -199,12 +194,10 @@ if __name__ == "__main__":
 
     with run.Experiment(args.expname) as exp:
         for job_id in range(args.num_training_jobs):
-            # TODO: doesn't work currently since folder is not shared
-            #       either need to use different cluster path or wait for nemorun to support it
             add_task(
                 exp,
                 cmd=train_cmd,
-                task_name=f'{args.training_algo}-{job_id}',
+                task_name=f'{args.training_algo}',  # f'{args.training_algo}-{job_id}',
                 container=cluster_config["containers"]["nemo"],
                 num_gpus=args.num_gpus,
                 num_nodes=args.num_nodes,

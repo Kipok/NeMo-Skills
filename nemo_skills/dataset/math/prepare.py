@@ -97,8 +97,8 @@ def extract_answer_string_2(answer_str):
 
 
 def save_data(split_name, random_seed, validation_size):
-    output_folder = Path(__file__).absolute().parent
-    output_folder.mkdir(exist_ok=True)
+    output_dir = Path(__file__).absolute().parent
+    output_dir.mkdir(exist_ok=True)
     actual_split_name = "test" if split_name == "test" else "train"
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -160,19 +160,12 @@ def save_data(split_name, random_seed, validation_size):
                 random.shuffle(instances)
             if split_name == "validation":
                 data = instances[:validation_size]
-                # dumping SFT-ready validation file as well right away
-                # with open(output_folder / "validation-sft.jsonl", "wt", encoding="utf-8") as fout:
-                #     for entry in prepare_for_sft(data, prompt_type, "math", chat_format=False):
-                #         fout.write(json.dumps(entry) + "\n")
-                # with open(output_folder / "validation-sft-chat.jsonl", "wt", encoding="utf-8") as fout:
-                #     for entry in prepare_for_sft(data, prompt_type, "math", chat_format=True):
-                #         fout.write(json.dumps(entry) + "\n")
             elif split_name == "train":
                 data = instances[validation_size:]
             else:
                 data = instances
 
-            output_file = os.path.join(output_folder, f"{split_name}.jsonl")
+            output_file = os.path.join(output_dir, f"{split_name}.jsonl")
             with open(output_file, "wt", encoding="utf-8") as writer_f:
                 for instance in data:
                     writer_f.write(json.dumps(instance) + "\n")

@@ -13,16 +13,14 @@
 # limitations under the License.
 
 from argparse import ArgumentParser
-from pathlib import Path
 
 import nemo_run as run
-import yaml
 
 from nemo_skills.pipeline import add_task, get_cluster_config, get_generation_command, run_exp
 from nemo_skills.utils import setup_logging
 
 
-def get_cmd(random_seed, extra_arguments, extra_eval_args):
+def get_cmd(random_seed, output_dir, extra_arguments, extra_eval_args):
     cmd = (
         f"python nemo_skills/inference/generate.py "
         f"    skip_filled=True "
@@ -30,10 +28,10 @@ def get_cmd(random_seed, extra_arguments, extra_eval_args):
         f"    inference.temperature=1.0 "
         f"    inference.top_k=0 "
         f"    inference.top_p=0.95 "
-        f"    output_file=/exp/generation/output-rs{random_seed}.jsonl "
+        f"    output_file={output_dir}/generation/output-rs{random_seed}.jsonl "
         f"    {extra_arguments} && "
         f"python nemo_skills/evaluation/evaluate_results.py "
-        f"    prediction_jsonl_files=/exp/generation/output-rs{random_seed}.jsonl {extra_eval_args}"
+        f"    prediction_jsonl_files={output_dir}/generation/output-rs{random_seed}.jsonl {extra_eval_args}"
     )
     return cmd
 
@@ -42,7 +40,8 @@ if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser()
     parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
-    parser.add_argument("--expname", required=True, help="Experiment name")
+    parser.add_argument("--output_dir", required=True, help="Where to put results")
+    parser.add_argument("--expname", default="generate", help="Nemo run experiment name")
     parser.add_argument("--model", required=False, help="Path to the model or model name in API.")
     # TODO: should all this be inside a single dictionary config?
     parser.add_argument(
@@ -116,7 +115,12 @@ if __name__ == "__main__":
         for seed in range(args.starting_seed, args.starting_seed + args.num_runs):
             # TODO: needs support on nemorun side
             assert args.dependent_jobs == 0
-            cmd = get_cmd(random_seed=seed, extra_arguments=extra_arguments, extra_eval_args=args.extra_eval_args)
+            cmd = get_cmd(
+                random_seed=seed,
+                output_dir=args.output_dir,
+                extra_arguments=extra_arguments,
+                extra_eval_args=args.extra_eval_args,
+            )
             add_task(
                 exp,
                 cmd=get_generation_command(server_address=args.server_address, generation_commands=cmd),

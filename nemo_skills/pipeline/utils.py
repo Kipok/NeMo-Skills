@@ -158,7 +158,6 @@ def get_tunnel(cluster_config):
 @lru_cache
 def get_executor(
     cluster_config,
-    expname,
     container,
     num_nodes,
     tasks_per_node,
@@ -167,11 +166,9 @@ def get_executor(
     partition=None,
     dependencies=None,
 ):
-    config_mounts = cluster_config.get('mounts', []) + [f"{cluster_config['workspace']}/{expname}:/exp"]
+    config_mounts = cluster_config.get('mounts', [])
     mounts = mounts or config_mounts
     if cluster_config["executor"] == "local":
-        # creating a folder
-        os.makedirs(f"{cluster_config['workspace']}/{expname}", exist_ok=True)
         if num_nodes > 1:
             raise ValueError("Local executor does not support multi-node execution")
         return DockerExecutor(
@@ -185,11 +182,6 @@ def get_executor(
             env_vars={"PYTHONUNBUFFERED": "1"},  # this makes sure logs are streamed right away
         )
 
-    # creating a folder - need to do it through Tunnel to ensure it's on the remote machine
-    # TODO: reuse the tunnel
-    tunnel = get_tunnel(cluster_config)
-    tunnel.run(f"mkdir -p {cluster_config['workspace']}/{expname}")
-
     partition = partition or cluster_config.get("partition")
     if 'timeouts' not in cluster_config:
         timeout = "10000:00:00:00"
@@ -201,7 +193,7 @@ def get_executor(
         partition=partition,
         nodes=num_nodes,
         ntasks_per_node=tasks_per_node,
-        tunnel=tunnel,
+        tunnel=get_tunnel(cluster_config),
         container_image=container,
         container_mounts=mounts,
         time=timeout,
@@ -256,7 +248,6 @@ def add_task(
             server_container = cluster_config["containers"][server_config['server_type']]
         server_executor = get_executor(
             cluster_config=cluster_config,
-            expname=exp._title,
             container=server_container,
             num_nodes=server_config['num_nodes'],
             tasks_per_node=num_server_tasks,
@@ -273,7 +264,6 @@ def add_task(
         executors.append(
             get_executor(
                 cluster_config=cluster_config,
-                expname=exp._title,
                 container=container,
                 num_nodes=num_nodes,
                 tasks_per_node=num_tasks,
@@ -287,7 +277,6 @@ def add_task(
     if with_sandbox:
         sandbox_executor = get_executor(
             cluster_config=cluster_config,
-            expname=exp._title,
             container=cluster_config["containers"]["sandbox"],
             num_nodes=executors[0].nodes if cluster_config["executor"] == "slurm" else 1,
             tasks_per_node=1,
