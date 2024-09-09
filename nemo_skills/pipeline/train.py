@@ -210,6 +210,7 @@ if __name__ == "__main__":
 
         cmd = get_conversion_cmd(
             nemo_model=args.nemo_model,
+            output_dir=args.output_dir,
             average_steps=f"--steps {' '.join(map(str, args.average_steps))} " if args.average_steps else "",
         )
         add_task(

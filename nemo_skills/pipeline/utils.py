@@ -46,8 +46,7 @@ def get_exp_handles(expname):
     serializer = ZlibJSONSerializer()
     handles = []
     for job in serialized_jobs:
-        handles.extend(serializer.deserialize(job[0]).handles)
-
+        handles.append(serializer.deserialize(job[0]).handle)
     return handles
 
 
