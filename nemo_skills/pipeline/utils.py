@@ -143,7 +143,7 @@ class hashabledict(dict):
 
 
 def get_cluster_config(cluster, config_folder=Path(__file__).parents[2] / 'cluster_configs'):
-    with open(Path(__file__).parents[2] / 'cluster_configs' / f'{cluster}.yaml', "rt", encoding="utf-8") as fin:
+    with open(Path(config_folder) / f'{cluster}.yaml', "rt", encoding="utf-8") as fin:
         cluster_config = yaml.safe_load(fin)
 
     return hashabledict(cluster_config)
