@@ -87,6 +87,7 @@ def get_hf_to_nemo_cmd(input_model, output_model, hf_model_name, dtype, num_gpus
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser()
+    parser.add_argument("--config_folder", default=None, help="Path to the cluster_configs folder")
     parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     parser.add_argument("--input_model", required=True)
     parser.add_argument("--output_model", required=True, help="Where to put the final model")
@@ -122,7 +123,7 @@ if __name__ == "__main__":
     if args.convert_to != "tensorrt_llm" and args.hf_model_name is None:
         raise ValueError("--hf_model_name is required")
 
-    cluster_config = get_cluster_config(args.cluster)
+    cluster_config = get_cluster_config(args.cluster, args.config_folder)
     check_if_mounted(cluster_config, args.input_model)
     check_if_mounted(cluster_config, args.output_model)
 

@@ -151,8 +151,13 @@ class hashabledict(dict):
         return hash(frozenset(self))
 
 
-def get_cluster_config(cluster, config_folder=Path(__file__).parents[2] / 'cluster_configs'):
-    with open(Path(config_folder) / f'{cluster}.yaml', "rt", encoding="utf-8") as fin:
+def get_cluster_config(cluster, config_folder=None):
+    if config_folder is None:
+        config_folder = Path(__file__).parents[2] / 'cluster_configs'
+    else:
+        config_folder = Path(config_folder)
+
+    with open(config_folder / f'{cluster}.yaml', "rt", encoding="utf-8") as fin:
         cluster_config = yaml.safe_load(fin)
 
     return hashabledict(cluster_config)
