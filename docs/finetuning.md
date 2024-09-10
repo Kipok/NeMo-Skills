@@ -44,8 +44,40 @@ python nemo_skills/pipeline/eval.py \
     ++split_name=test
 
 
+or with conversion
 
+python nemo_skills/pipeline/convert.py \
+    --cluster draco-ord \
+    --input_model /exps/checkpoints/$EXPNAME/model-averaged.nemo \
+    --output_model /exps/checkpoints/$EXPNAME/model-averaged-hf \
+    --expname $EXPNAME-to-hf \
+    --convert_to hf \
+    --num_gpus 8 \
+    --hf_model_name meta-llama/Meta-Llama-3.1-8B
 
+python nemo_skills/pipeline/convert.py \
+    --cluster draco-ord \
+    --input_model /exps/checkpoints/$EXPNAME/model-averaged-hf \
+    --output_model /exps/checkpoints/$EXPNAME/model-averaged-trtllm \
+    --expname $EXPNAME-to-trtllm \
+    --run_after $EXPNAME-to-hf \
+    --num_gpus 8 \
+    --convert_from hf \
+    --convert_to tensorrt_llm \
+
+python nemo_skills/pipeline/eval.py \
+    --cluster draco-ord \
+    --model /exps/checkpoints/$EXPNAME/model-averaged-trtllm \
+    --server_type tensorrt_llm \
+    --output_dir /exps/results/$EXPNAME/trtllm-eval \
+    --benchmarks gsm8k:0 math:0 \
+    --server_gpus 8 \
+    --server_nodes 1 \
+    --num_jobs 1 \
+    --run_after $EXPNAME-to-trtllm \
+    ++prompt_template=llama3-instruct \
+    ++batch_size=512 \
+    ++split_name=test
 
 
 

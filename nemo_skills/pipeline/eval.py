@@ -17,7 +17,7 @@ from argparse import ArgumentParser
 import nemo_run as run
 
 from nemo_skills.evaluation.settings import EXTRA_EVAL_ARGS, EXTRA_GENERATION_ARGS
-from nemo_skills.pipeline import add_task, get_cluster_config, get_generation_command, run_exp
+from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, get_generation_command, run_exp
 from nemo_skills.utils import setup_logging
 
 
@@ -109,6 +109,7 @@ if __name__ == "__main__":
     extra_arguments = f'{" ".join(unknown)}'
 
     cluster_config = get_cluster_config(args.cluster)
+    check_if_mounted(cluster_config, args.output_dir)
 
     if not args.output_dir.startswith("/"):
         raise ValueError("output_dir must be referenced in a mounted location (mounts section in the config file)")
