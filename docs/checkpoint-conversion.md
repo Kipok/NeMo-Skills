@@ -1,4 +1,4 @@
-****# Checkpoint conversion
+# Checkpoint conversion
 
 Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
 
