@@ -100,7 +100,7 @@ if __name__ == "__main__":
     parser.add_argument("--dtype", default="bf16", choices=["bf16", "fp16", "fp32"])
     parser.add_argument("--expname", default="conversion", help="NeMo-Run experiment name")
     parser.add_argument("--num_nodes", type=int, default=1)
-    parser.add_argument("--num_gpus", type=int)
+    parser.add_argument("--num_gpus", required=True, type=int)
     parser.add_argument(
         "--partition",
         required=False,
@@ -136,11 +136,20 @@ if __name__ == "__main__":
         ("hf", "nemo"): cluster_config["containers"]["nemo"],
         ("hf", "tensorrt_llm"): cluster_config["containers"]["tensorrt_llm"],
     }
+    conversion_cmd = conversion_cmd_map[(args.convert_from, args.convert_to)](
+        input_model=args.input_model,
+        output_model=args.output_model,
+        hf_model_name=args.hf_model_name,
+        dtype=args.dtype,
+        num_gpus=args.num_gpus,
+        num_nodes=args.num_nodes,
+        extra_arguments=extra_arguments,
+    )
 
     with run.Experiment(args.expname) as exp:
         add_task(
             exp,
-            cmd=conversion_cmd_map[(args.convert_from, args.convert_to)],
+            cmd=conversion_cmd,
             task_name=f'conversion-{args.convert_from}:{args.convert_to}',
             container=container_map[(args.convert_from, args.convert_to)],
             num_gpus=args.num_gpus,

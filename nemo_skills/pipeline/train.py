@@ -116,8 +116,8 @@ def get_avg_checkpoints_cmd(nemo_model, output_dir, average_steps):
         f"python nemo_skills/finetuning/average_checkpoints.py "
         f"    --untarred_nemo_folder {nemo_model} "
         f"    --name_prefix=model "
-        f"    --checkpoint_dir={output_dir}/training {average_steps} &&"
-        f"mv {output_dir}/training/model-averaged.nemo {output_dir} "
+        f"    --checkpoint_dir={output_dir}/training/checkpoints {average_steps} &&"
+        f"mv {output_dir}/training/checkpoints/model-averaged.nemo {output_dir} "
     )
     return cmd
 
