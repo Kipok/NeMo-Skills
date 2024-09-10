@@ -15,6 +15,7 @@
 import json
 import logging
 import os
+import shlex
 from functools import lru_cache
 from pathlib import Path
 
@@ -83,7 +84,7 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_pa
     elif server_type == 'vllm':
         server_start_cmd = (
             f"NUM_GPUS={num_gpus} bash /nemo_run/code/nemo_skills/inference/server/serve_vllm.sh "
-            f"{model_path} {os.path.basename(model_path)} 0 openai 5000"
+            f"{model_path} self-hosted-model 0 openai 5000"
         )
 
         if os.environ.get("MAX_SEQ_LEN", None) is not None:
@@ -175,7 +176,7 @@ def get_executor(
             packager=run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl'),
             ipc_mode="host",
             volumes=mounts,
-            ntasks_per_node=tasks_per_node,
+            ntasks_per_node=1,
             num_gpus=gpus_per_node,
             network="host",
             env_vars={"PYTHONUNBUFFERED": "1"},  # this makes sure logs are streamed right away
@@ -254,11 +255,15 @@ def add_task(
             partition=partition,
             dependencies=dependencies,
         )
+        if cluster_config["executor"] == "local" and num_server_tasks > 1:
+            server_cmd = f"mpirun --allow-run-as-root -np {num_server_tasks} bash -c {shlex.quote(server_cmd)}"
         commands.append(server_cmd)
         executors.append(server_executor)
 
     # then goes the main task unless it's empty
     if cmd:
+        if cluster_config["executor"] == "local" and num_tasks > 1:
+            cmd = f"mpirun --allow-run-as-root -np {num_tasks} bash -c {shlex.quote(cmd)}"
         commands.append(cmd)
         executors.append(
             get_executor(
