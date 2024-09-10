@@ -38,7 +38,7 @@ from transformers import AutoTokenizer, T5Tokenizer
 
 
 # keeping it here to make this file self-contained. This is duplicated from model.py
-def remove_stop_tokens(text: str, stop_phrases: List[str]) -> str:
+def trim_after_stop_phrases(text: str, stop_phrases: List[str]) -> str:
     """Removes everything after the last stop token."""
     if not stop_phrases:
         return text
@@ -444,7 +444,7 @@ def _stream(
             matching_stop_word = stop_word
             break
     if matching_stop_word is not None:
-        out_string = remove_stop_tokens(out_string, stop_words_list)
+        out_string = trim_after_stop_phrases(out_string, stop_words_list)
         # adding it back, since we only need to remove what's *after* the stop phrase
         out_string += matching_stop_word
     return out_string
@@ -486,7 +486,7 @@ class TensorRTLLM:
                 self.runner,
                 batch_input_ids[0],
                 max_new_tokens=max_output_token,
-                end_id=self.end_id,
+                end_id=-1,
                 pad_id=self.pad_id,
                 temperature=temperature,
                 top_k=top_k,

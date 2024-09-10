@@ -72,6 +72,7 @@ def setup_logging(disable_hydra_logs: bool = True, log_level: int = logging.INFO
     formatter = logging.Formatter('%(asctime)s %(levelname)s  %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+    logging.getLogger("sshtunnel_requests.cache").setLevel(logging.ERROR)
 
     if disable_hydra_logs:
         # hacking the arguments to always disable hydra's output
