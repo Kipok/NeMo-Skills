@@ -4,11 +4,11 @@
 
 TODO: clean this up. Some example commands
 
-python pipeline/run_eval.py --model /mnt/datadrive/models/Meta-Llama-3.1-8B-Instruct-trt --server_type tensorrt_llm --output_dir test-p --benchmarks gsm8k:0 --num_gpus 1 --num_nodes 1 ++prompt_template=llama3-instruct ++split_name=test ++max_samples=10
+python nemo_skills/pipeline/eval.py --cluster local --model /trt_models/llama3.1-8b-instruct --server_type tensorrt_llm --output_dir /exps/test-eval --benchmarks gsm8k:0 --server_gpus 1 --server_nodes 1 ++prompt_template=llama3-instruct ++split_name=test ++max_samples=10
 
-python pipeline/run_eval.py --model meta/llama-3.1-8b-instruct --server_type openai --server_address https://integrate.api.nvidia.com/v1 --output_dir test-p --benchmarks gsm8k:0 --num_gpus 1 --num_nodes 1 ++split_name=test ++max_samples=10
+python nemo_skills/pipeline/eval.py --cluster local --model meta/llama-3.1-8b-instruct --server_type openai --server_address https://integrate.api.nvidia.com/v1  --benchmarks gsm8k:0 --output_dir /exps/test-eval2 ++split_name=test ++max_samples=10
 
-python pipeline/run_eval.py --model gpt-4o-mini --server_type openai --server_address https://api.openai.com/v1 --output_dir test-p --benchmarks gsm8k:0 --num_gpus 1 --num_nodes 1 ++split_name=test ++max_samples=10
+python nemo_skills/pipeline/eval.py --cluster local --model gpt-4o-mini --server_type openai --server_address https://api.openai.com/v1  --benchmarks gsm8k:0 --output_dir /exps/test-eval3 ++split_name=test ++max_samples=10
 
 
 

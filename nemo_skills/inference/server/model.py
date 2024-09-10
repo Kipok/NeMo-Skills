@@ -505,7 +505,7 @@ class VLLMModel(BaseModel):
             }
         }
         response = self.oai_client.completions.create(
-            model=self.model,
+            model='self-hosted-model',
             prompt=prompt,
             max_tokens=max_tokens,
             temperature=temperature,

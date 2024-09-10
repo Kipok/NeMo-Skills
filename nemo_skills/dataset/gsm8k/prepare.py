@@ -77,13 +77,6 @@ def save_data(split_name, random_seed, validation_size):
         random.shuffle(data)
     if split_name == "validation":
         data = data[:validation_size]
-        # dumping SFT-ready validation file as well right away
-        # with open(data_folder / "validation-sft.jsonl", "wt", encoding="utf-8") as fout:
-        #     for entry in prepare_for_sft(data, prompt_type, "gsm8k", chat_format=False):
-        #         fout.write(json.dumps(entry) + "\n")
-        # with open(data_folder / "validation-sft-chat.jsonl", "wt", encoding="utf-8") as fout:
-        #     for entry in prepare_for_sft(data, prompt_type, "gsm8k", chat_format=True):
-        #         fout.write(json.dumps(entry) + "\n")
     elif split_name == "train":
         data = data[validation_size:]
 

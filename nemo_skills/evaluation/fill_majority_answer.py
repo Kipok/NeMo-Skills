@@ -44,7 +44,7 @@ class FillMajorityAnswerConfig:
 
     # minimum number of majority votes to use the answer.
     # -1 means use half of the votes, which is a good default value
-    min_votes: int = -1
+    min_votes: int = 0
 
     # will be used to fill up when not enough votes are available for the majority
     default_answer: str = "no_answer"
@@ -89,11 +89,12 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
         valid_answers_and_results = [
             (elem['predicted_answer'], elem['is_correct']) for elem in data if elem['predicted_answer'] is not None
         ]
-        majority_answers.append(cfg.default_answer)
+        majority_answers.append((cfg.default_answer, (0, len(file_handles))))
         if len(valid_answers_and_results) == 0:
             continue
         (majority_answer, _), num_votes = Counter(valid_answers_and_results).most_common(1)[0]
 
+        # TODO: remove all of this logic as it should be moved to preprocessing of sft data
         if num_votes <= cfg.min_votes:
             continue
 
@@ -109,7 +110,7 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
             if cfg.drop_noninteger_answers and not majority_answer.is_integer():
                 continue
 
-        majority_answers[-1] = majority_answer
+        majority_answers[-1] = (majority_answer, (num_votes, len(file_handles)))
         retained_questions += 1
 
     LOG.info("Total questions: %d, retained questions: %d", len(all_predictions), retained_questions)
@@ -121,7 +122,9 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
     file_handles = [open(file, "wt", encoding="utf-8") for file in unroll_files(cfg.prediction_jsonl_files)]
     for idx, predictions in enumerate(all_predictions):
         for lidx, handle in enumerate(file_handles):
-            predictions[lidx]["expected_answer"] = majority_answers[idx]
+            predictions[lidx]["expected_answer"] = majority_answers[idx][0]
+            predictions[lidx]["majority_votes"], predictions[lidx]["total_votes"] = majority_answers[idx][1]
+            predictions[lidx]["is_correct"] = predictions[lidx]["predicted_answer"] == majority_answers[idx][0]
             handle.write(json.dumps(predictions[lidx]) + "\n")
 
     for file_handle in file_handles:

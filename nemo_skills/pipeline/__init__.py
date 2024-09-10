@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,9 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# NOTE: needs to run from the root of the repo!
-
-SANDBOX_NAME=${1:-'local-sandbox'}
-
-docker build --tag=${SANDBOX_NAME} --build-arg="UWSGI_PROCESSES=$((`nproc --all` * 10))" --build-arg="UWSGI_CHEAPER=`nproc --all`" -f dockerfiles/Dockerfile.sandbox .
-docker run --network=host --rm --name=local-sandbox ${SANDBOX_NAME}
+from nemo_skills.pipeline.utils import add_task, get_cluster_config, get_generation_command, run_exp
