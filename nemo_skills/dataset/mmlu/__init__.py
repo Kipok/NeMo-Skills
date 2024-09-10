@@ -13,3 +13,4 @@
 # limitations under the License.
 
 PROMPT_CONFIG = 'generic/multichoice'
+DATASET_GROUP = 'multichoice'

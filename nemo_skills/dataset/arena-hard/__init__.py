@@ -13,3 +13,4 @@
 # limitations under the License.
 
 PROMPT_CONFIG = 'generic/default'
+DATASET_GROUP = 'chat'
