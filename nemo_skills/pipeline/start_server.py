@@ -24,7 +24,7 @@ from nemo_skills.utils import setup_logging
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser()
-    parser.add_argument("--config_folder", required=True, help="Path to the cluster_configs folder")
+    parser.add_argument("--config_folder", default=None, help="Path to the cluster_configs folder")
     parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     parser.add_argument("--model", required=True, help="Path to the model.")
     parser.add_argument(

@@ -50,7 +50,7 @@ if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser(usage="TODO")
     wrapper_args = parser.add_argument_group('wrapper arguments')
-    wrapper_args.add_argument("--config_folder", required=True, help="Path to the cluster_configs folder")
+    wrapper_args.add_argument("--config_folder", default=None, help="Path to the cluster_configs folder")
     wrapper_args.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     wrapper_args.add_argument("--output_dir", required=True, help="Where to put results")
     wrapper_args.add_argument("--expname", default="eval", help="Nemo run experiment name")

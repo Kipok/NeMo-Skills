@@ -39,7 +39,7 @@ def get_cmd(random_seed, output_dir, extra_arguments, extra_eval_args):
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser()
-    parser.add_argument("--config_folder", required=True, help="Path to the cluster_configs folder")
+    parser.add_argument("--config_folder", default=None, help="Path to the cluster_configs folder")
     parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     parser.add_argument("--output_dir", required=True, help="Where to put results")
     parser.add_argument("--expname", default="generate", help="Nemo run experiment name")
