@@ -13,3 +13,4 @@
 # limitations under the License.
 
 PROMPT_CONFIG = 'generic/math'
+DATASET_GROUP = 'math'

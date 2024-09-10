@@ -39,6 +39,7 @@ def get_cmd(random_seed, output_dir, extra_arguments, extra_eval_args):
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser()
+    parser.add_argument("--config_folder", default=None, help="Path to the cluster_configs folder")
     parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     parser.add_argument("--output_dir", required=True, help="Where to put results")
     parser.add_argument("--expname", default="generate", help="Nemo run experiment name")
@@ -94,7 +95,7 @@ if __name__ == "__main__":
     if not args.output_dir.startswith("/"):
         raise ValueError("output_dir must be referenced in a mounted location (mounts section in the config file)")
 
-    cluster_config = get_cluster_config(args.cluster)
+    cluster_config = get_cluster_config(args.cluster, args.config_folder)
     check_if_mounted(cluster_config, args.output_dir)
 
     if args.server_address is None:  # we need to host the model

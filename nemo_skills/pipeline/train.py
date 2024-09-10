@@ -126,6 +126,7 @@ if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser()
     # by default we are using a shared project
+    parser.add_argument("--config_folder", default=None, help="Path to the cluster_configs folder")
     parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     # TODO: maybe not required and reuse expname in that case?
     parser.add_argument("--output_dir", required=True, help="Where to put results")
@@ -174,7 +175,7 @@ if __name__ == "__main__":
     if not args.output_dir.startswith("/"):
         raise ValueError("output_dir must be referenced in a mounted location (mounts section in the config file)")
 
-    cluster_config = get_cluster_config(args.cluster)
+    cluster_config = get_cluster_config(args.cluster, args.config_folder)
     check_if_mounted(cluster_config, args.output_dir)
     check_if_mounted(cluster_config, args.nemo_model)
     check_if_mounted(cluster_config, args.training_data)
