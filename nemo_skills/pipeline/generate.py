@@ -16,7 +16,7 @@ from argparse import ArgumentParser
 
 import nemo_run as run
 
-from nemo_skills.pipeline import add_task, get_cluster_config, get_generation_command, run_exp
+from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, get_generation_command, run_exp
 from nemo_skills.utils import setup_logging
 
 
@@ -95,6 +95,7 @@ if __name__ == "__main__":
         raise ValueError("output_dir must be referenced in a mounted location (mounts section in the config file)")
 
     cluster_config = get_cluster_config(args.cluster)
+    check_if_mounted(cluster_config, args.output_dir)
 
     if args.server_address is None:  # we need to host the model
         assert args.server_gpus is not None, "Need to specify server_gpus if hosting the model"

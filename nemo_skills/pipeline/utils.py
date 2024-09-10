@@ -30,6 +30,14 @@ from nemo_run.core.serialization.zlib_json import ZlibJSONSerializer
 LOG = logging.getLogger(__file__)
 
 
+def check_if_mounted(cluster_config, path_to_check):
+    """Will check that path_to_check is referenced inside one of the mounts."""
+    for mount in cluster_config.get('mounts', []):
+        if path_to_check.startswith(mount.split(":")[1]):
+            return
+    raise ValueError(f"The path '{path_to_check}' is not mounted. Check cluster config.")
+
+
 def _get_latest_dir(path) -> str:
     dirs = [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
     latest_dir = max(dirs, key=lambda d: os.path.getctime(os.path.join(path, d)))

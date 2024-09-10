@@ -19,7 +19,7 @@ from datetime import datetime
 import nemo_run as run
 from huggingface_hub import get_token
 
-from nemo_skills.pipeline import add_task, get_cluster_config, run_exp
+from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, run_exp
 from nemo_skills.utils import setup_logging
 
 
@@ -109,12 +109,11 @@ def get_training_cmd(
     return cmd
 
 
-def get_conversion_cmd(nemo_model, output_dir, average_steps):
-    # TODO: add an option to convert to vllm/trtllm
+def get_avg_checkpoints_cmd(nemo_model, output_dir, average_steps):
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"cd /nemo_run/code && "
-        f"python /code/nemo_skills/finetuning/average_checkpoints.py "
+        f"python nemo_skills/finetuning/average_checkpoints.py "
         f"    --untarred_nemo_folder {nemo_model} "
         f"    --name_prefix=model "
         f"    --checkpoint_dir={output_dir}/training {average_steps} &&"
@@ -176,6 +175,11 @@ if __name__ == "__main__":
         raise ValueError("output_dir must be referenced in a mounted location (mounts section in the config file)")
 
     cluster_config = get_cluster_config(args.cluster)
+    check_if_mounted(cluster_config, args.output_dir)
+    check_if_mounted(cluster_config, args.nemo_model)
+    check_if_mounted(cluster_config, args.training_data)
+    if args.validation_data:
+        check_if_mounted(cluster_config, args.validation_data)
 
     train_cmd = get_training_cmd(
         cluster_config=cluster_config,
@@ -211,7 +215,7 @@ if __name__ == "__main__":
                 run_after=args.run_after,
             )
 
-        cmd = get_conversion_cmd(
+        cmd = get_avg_checkpoints_cmd(
             nemo_model=args.nemo_model,
             output_dir=args.output_dir,
             average_steps=f"--steps {' '.join(map(str, args.average_steps))} " if args.average_steps else "",
