@@ -150,7 +150,7 @@ if __name__ == "__main__":
         add_task(
             exp,
             cmd=conversion_cmd,
-            task_name=f'conversion-{args.convert_from}:{args.convert_to}',
+            task_name=f'conversion-{args.convert_from}-{args.convert_to}',
             container=container_map[(args.convert_from, args.convert_to)],
             num_gpus=args.num_gpus,
             num_nodes=args.num_nodes,
