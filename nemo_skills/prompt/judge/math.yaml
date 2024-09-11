@@ -69,4 +69,4 @@ user: |-
 
     Question: {question}
     Predicted Answer: {predicted_answer}
-    Expected Answer: {original_answer}
+    Expected Answer: {expected_answer}

@@ -125,6 +125,8 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
             continue
 
         data_points = []
+        judgements = []
+        prefilled_indices = []
 
         output_file = jsonl_file + '-judgement'
         starting_idx = 0
@@ -143,22 +145,18 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
                 if judgement is None:
                     data_points.append(data_point)
                 else:
-                    judgements.append({'judgement': judgement})
-                    judgements[-1].update(data_point)
+                    judgements.append({'judgement': judgement, **data_point})
                     prefilled_indices.append(idx)
 
-                if len(data_points) == cfg.batch_size or idx == cfg.max_samples - 1:
-                    if cfg.prompt_template:  # using strings as input if template is provided
-                        outputs = llm.generate(
-                            prompts=[prompt.build_string(data_point) for data_point in data_points],
-                            stop_phrases=list(prompt.config.template.stop_phrases),
-                            **asdict(cfg.inference),
-                        )
+                if len(data_points) == cfg.batch_size or idx == len(data) - 1:
+                    if cfg.prompt_template:
+                        prompts = [prompt.build_string(dp) for dp in data_points]
+                        stop_phrases = list(prompt.config.template.stop_phrases)
                     else:
-                        outputs = llm.generate(
-                            prompts=[prompt.build_messages(data_point) for data_point in data_points],
-                            **asdict(cfg.inference),
-                        )
+                        prompts = [prompt.build_messages(dp) for dp in data_points]
+                        stop_phrases = None
+
+                    outputs = llm.generate(prompts=prompts, stop_phrases=stop_phrases, **asdict(cfg.inference))
 
                     prefilled_idx = 0
                     generated_idx = 0
@@ -167,14 +165,15 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
                             fout.write(json.dumps(judgements[prefilled_idx]) + "\n")
                             prefilled_idx += 1
                         else:
-                            output, original_data_point = outputs[generated_idx], data_points[generated_idx]
+                            output = outputs[generated_idx]
                             output['judgement'] = output.pop("generation")
-                            output.update(original_data_point)
+                            output.update(data_points[generated_idx])
                             fout.write(json.dumps(output) + "\n")
                             generated_idx += 1
-                    data_points = []
-                    judgements = []
-                    prefilled_indices = []
+
+                    data_points.clear()
+                    judgements.clear()
+                    prefilled_indices.clear()
 
         # fusing back into original file
         with open(jsonl_file, 'wt', encoding='utf-8') as fout, open(output_file, 'rt', encoding='utf-8') as fin:
