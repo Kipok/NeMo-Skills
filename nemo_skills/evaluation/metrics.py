@@ -46,7 +46,7 @@ class BaseEval(abc.ABC):
     def reset(self):
         pass
 
-    def setup(self, prediction_jsonl_files):
+    def setup(self, input_files):
         pass
 
 
@@ -58,11 +58,11 @@ def is_correct_judgement(judgement):
 
 
 class MathEval(BaseEval):
-    def setup(self, prediction_jsonl_files):
+    def setup(self, input_files):
         # checking if judgements are ready and fusing them with predictions
         # might get permission errors when running locally, since original file
         # is generated inside docker. Is there any way around that?
-        for jsonl_file in unroll_files(prediction_jsonl_files):
+        for jsonl_file in unroll_files(input_files):
             if Path(jsonl_file + '-batch-request-id').exists():
                 with open(jsonl_file + '-batch-request-id', 'rt', encoding='utf-8') as fin:
                     request_id = json.load(fin)['request_id']
@@ -353,11 +353,11 @@ class ArenaEval(BaseEval):
     def __init__(self):
         self.reset()
 
-    def setup(self, prediction_jsonl_files):
+    def setup(self, input_files):
         # checking if judgements are ready and fusing them with predictions
         # might get permission errors when running locally, since original file
         # is generated inside docker. Is there any way around that?
-        for jsonl_file in unroll_files(prediction_jsonl_files):
+        for jsonl_file in unroll_files(input_files):
             if Path(jsonl_file + '-batch-request-id').exists():
                 with open(jsonl_file + '-batch-request-id', 'rt', encoding='utf-8') as fin:
                     request_id = json.load(fin)['request_id']
@@ -495,16 +495,16 @@ def read_predictions(predictions, evaluator, allow_incomplete=False):
 
 
 def compute_metrics(
-    prediction_jsonl_files,
+    input_files,
     evaluator,
     allow_incomplete=False,
     max_samples=-1,
     aggregation_mode='first',
 ):
     evaluator.reset()
-    evaluator.setup(prediction_jsonl_files)
+    evaluator.setup(input_files)
 
-    file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(prediction_jsonl_files)]
+    file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(input_files)]
     for idx, predictions in enumerate(zip_longest(*file_handles)):
         if idx == max_samples:
             break

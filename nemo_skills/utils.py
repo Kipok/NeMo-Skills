@@ -59,8 +59,8 @@ def nested_dataclass(*args, **kwargs):
     return wrapper(args[0]) if args else wrapper
 
 
-def unroll_files(prediction_jsonl_files):
-    for file_pattern in prediction_jsonl_files:
+def unroll_files(input_files):
+    for file_pattern in input_files:
         for file in sorted(glob.glob(file_pattern, recursive=True)):
             yield file
 

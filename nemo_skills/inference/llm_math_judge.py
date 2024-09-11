@@ -59,8 +59,8 @@ def prefill_judgement(data_point: dict) -> str | None:
 
 
 @hydra.main(version_base=None, config_name='base_llm_math_judge_config', config_path='.')
-def llm_math_judge(cfg: GenerateSolutionsConfig):
-    cfg = GenerateSolutionsConfig(_init_nested=True, **cfg)
+def llm_math_judge(cfg: LlmMathJudgeConfig):
+    cfg = LlmMathJudgeConfig(_init_nested=True, **cfg)
 
     LOG.info("Config used: %s", cfg)
     if cfg.code_execution:

@@ -32,7 +32,7 @@ class ReadData(BaseProcessor):
 
     def __init__(
         self,
-        prediction_jsonl_files: Optional[str] = None,
+        input_files: Optional[str] = None,
         preprocessed_dataset_files: Optional[str] = None,
         input_key="question",
         output_key="generation",
@@ -42,7 +42,7 @@ class ReadData(BaseProcessor):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.prediction_jsonl_files = prediction_jsonl_files
+        self.input_files = input_files
         self.preprocessed_dataset_files = preprocessed_dataset_files
         self.input_key = input_key
         self.output_key = output_key
@@ -50,14 +50,14 @@ class ReadData(BaseProcessor):
         self.add_correct = add_correct
         self.add_incorrect = add_incorrect
 
-        if isinstance(self.prediction_jsonl_files, str):
-            self.prediction_jsonl_files = self.prediction_jsonl_files.split(" ")
+        if isinstance(self.input_files, str):
+            self.input_files = self.input_files.split(" ")
 
         if isinstance(self.preprocessed_dataset_files, str):
             self.preprocessed_dataset_files = self.preprocessed_dataset_files.split(" ")
 
-        if self.prediction_jsonl_files is None and self.preprocessed_dataset_files is None:
-            raise ValueError("Either `prediction_jsonl_files` or `preprocessed_dataset_files` should be provided")
+        if self.input_files is None and self.preprocessed_dataset_files is None:
+            raise ValueError("Either `input_files` or `preprocessed_dataset_files` should be provided")
 
         if not self.add_correct and not self.add_incorrect:
             raise ValueError("At least one of `add_correct` and `add_incorrect` should be True")
@@ -122,8 +122,8 @@ class ReadData(BaseProcessor):
 
     def process(self):
         samples = []
-        if self.prediction_jsonl_files:
-            args = [(file, self._read_raw_data) for file in unroll_files(self.prediction_jsonl_files)]
+        if self.input_files:
+            args = [(file, self._read_raw_data) for file in unroll_files(self.input_files)]
             results = process_map(self._parallel_read_file, args, max_workers=4, chunksize=1)
             samples.extend(list(chain(*results)))
         if self.preprocessed_dataset_files:

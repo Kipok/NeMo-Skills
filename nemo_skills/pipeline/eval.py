@@ -26,12 +26,12 @@ def get_greedy_cmd(benchmark, output_dir, output_name='output-greedy.jsonl', ext
     extra_arguments = f"{EXTRA_GENERATION_ARGS.get(benchmark, '')} {extra_arguments}"
     cmd = (
         f'echo "Evaluating benchmark {benchmark}" && '
-        f'python nemo_skills/inference/generate.py '
+        f'python -m nemo_skills.inference.generate '
         f'    ++dataset={benchmark} '
         f'    ++output_file={output_dir}/eval-results/{benchmark}/{output_name} '
         f'    {extra_arguments} && '
-        f'python nemo_skills/evaluation/evaluate_results.py '
-        f'    ++prediction_jsonl_files={output_dir}/eval-results/{benchmark}/{output_name} {extra_eval_args}'
+        f'python -m nemo_skills.evaluation.evaluate_results '
+        f'    ++input_files={output_dir}/eval-results/{benchmark}/{output_name} {extra_eval_args}'
     )
     return cmd
 

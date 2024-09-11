@@ -40,26 +40,25 @@ class DummyFuture:
         return self.return_value
 
 
-def unroll_files(prediction_jsonl_files):
-    for manifest_pattern in prediction_jsonl_files:
+def unroll_files(input_files):
+    for manifest_pattern in input_files:
         for manifest in sorted(glob.glob(manifest_pattern, recursive=True)):
             yield manifest
 
 
-def cleanup_tmp_files(prediction_jsonl_files):
+def cleanup_tmp_files(input_files):
     # removing any potentially present tmp files
-    for manifest in unroll_files(prediction_jsonl_files):
+    for manifest in unroll_files(input_files):
         try:
             os.remove(manifest + "-tmp")
         except OSError:
             pass
 
 
-def dump_data(prediction_jsonl_files, data, map_to_future, update_fn):
+def dump_data(input_files, data, map_to_future, update_fn):
     LOG.info("Waiting for current results and dumping to tmp files")
     tmp_file_handles = [
-        open(manifest + f"-tmp", "at", encoding="utf-8", buffering=1)
-        for manifest in unroll_files(prediction_jsonl_files)
+        open(manifest + f"-tmp", "at", encoding="utf-8", buffering=1) for manifest in unroll_files(input_files)
     ]
 
     for line_data in data:
@@ -77,10 +76,10 @@ def dump_data(prediction_jsonl_files, data, map_to_future, update_fn):
         file_handle.close()
 
 
-def write_tmp_files_back(prediction_jsonl_files):
+def write_tmp_files_back(input_files):
     """Will gracefully handle early exits on errors by properly merging files"""
     LOG.info("Writing temporary files back into original files")
-    for manifest in unroll_files(prediction_jsonl_files):
+    for manifest in unroll_files(input_files):
         # copying the rest of the results unchanged if any to tmp file
         with open(manifest + "-tmp", "rt") as fin:
             processed_lines = sum(1 for _ in fin)
@@ -276,7 +275,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
 
     def batch_evaluate_results(
         self,
-        prediction_jsonl_files: List[str],
+        input_files: List[str],
         num_parallel_requests=100,
         in_memory_lines=1500,
         include_percentage=True,
@@ -289,8 +288,8 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         """Will write if the results are correct back into the original files."""
         import tqdm
 
-        file_handles = [open(manifest, "rt", encoding="utf-8") for manifest in unroll_files(prediction_jsonl_files)]
-        cleanup_tmp_files(prediction_jsonl_files)
+        file_handles = [open(manifest, "rt", encoding="utf-8") for manifest in unroll_files(input_files)]
+        cleanup_tmp_files(input_files)
 
         def update_fn(map_to_future, line_dict):
             line_dict["is_correct"] = map_to_future[
@@ -302,7 +301,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
             for line_idx, lines in tqdm.tqdm(enumerate(zip_longest(*file_handles))):
                 if line_idx % in_memory_lines == 0:
                     if line_idx > 0:  # dumping into tmp files
-                        dump_data(prediction_jsonl_files, data, map_to_future, update_fn)
+                        dump_data(input_files, data, map_to_future, update_fn)
                     # new in-memory buffer
                     data = []
                     map_to_future = {}
@@ -344,9 +343,9 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                 file_handle.close()
 
             if len(data) > 0:
-                dump_data(prediction_jsonl_files, data, map_to_future, update_fn)
+                dump_data(input_files, data, map_to_future, update_fn)
 
-        write_tmp_files_back(prediction_jsonl_files)
+        write_tmp_files_back(input_files)
 
 
 class LocalSandbox(Sandbox):

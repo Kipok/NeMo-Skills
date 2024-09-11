@@ -37,7 +37,7 @@ class FillMajorityAnswerConfig:
     # Can specify multiple patterns separated by space
     # e.g. "path/to/file1.jsonl path/to/file2.jsonl" or with regex
     # "test_folder/output-rs*.jsonl"
-    prediction_jsonl_files: Any = MISSING
+    input_files: Any = MISSING
 
     # if set to True will error if any responses/data is missing
     allow_incomplete: bool = False
@@ -59,8 +59,8 @@ class FillMajorityAnswerConfig:
 
     def __post_init__(self):
         """Building data_file from dataset/split_name if not provided directly."""
-        if isinstance(self.prediction_jsonl_files, str):
-            self.prediction_jsonl_files = self.prediction_jsonl_files.split(" ")
+        if isinstance(self.input_files, str):
+            self.input_files = self.input_files.split(" ")
 
 
 cs = hydra.core.config_store.ConfigStore.instance()
@@ -72,7 +72,7 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
     cfg = FillMajorityAnswerConfig(_init_nested=True, **cfg)
     LOG.info("Config used: %s", cfg)
 
-    file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(cfg.prediction_jsonl_files)]
+    file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(cfg.input_files)]
     if cfg.min_votes < 0:
         cfg.min_votes = len(file_handles) // 2
 
@@ -119,7 +119,7 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
         file_handle.close()
 
     # writing the majority answers back to the files
-    file_handles = [open(file, "wt", encoding="utf-8") for file in unroll_files(cfg.prediction_jsonl_files)]
+    file_handles = [open(file, "wt", encoding="utf-8") for file in unroll_files(cfg.input_files)]
     for idx, predictions in enumerate(all_predictions):
         for lidx, handle in enumerate(file_handles):
             predictions[lidx]["expected_answer"] = majority_answers[idx][0]

@@ -69,32 +69,32 @@ if __name__ == "__main__":
             if evaluator is not MathEval:
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
                     results[benchmark]['greedy'] = compute_metrics(
-                        prediction_jsonl_files=[f"{benchmark_path}/output-greedy.jsonl"],
+                        input_files=[f"{benchmark_path}/output-greedy.jsonl"],
                         evaluator=evaluator,
                     )
                 sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
                 if len(sampling_outputs) > 0:
                     results[benchmark][f'pass@{len(sampling_outputs)}'] = compute_metrics(
-                        prediction_jsonl_files=sampling_outputs,
+                        input_files=sampling_outputs,
                         evaluator=evaluator,
                         aggregation_mode="best",
                     )
             else:
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
                     results[benchmark]['greedy'] = compute_metrics(
-                        prediction_jsonl_files=[f"{benchmark_path}/output-greedy.jsonl"],
+                        input_files=[f"{benchmark_path}/output-greedy.jsonl"],
                         evaluator=evaluator,
                     )
 
                 sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
                 if len(sampling_outputs) > 0:
                     results[benchmark][f'majority@{len(sampling_outputs)}'] = compute_metrics(
-                        prediction_jsonl_files=sampling_outputs,
+                        input_files=sampling_outputs,
                         evaluator=evaluator,
                         aggregation_mode="majority",
                     )
                     results[benchmark][f'pass@{len(sampling_outputs)}'] = compute_metrics(
-                        prediction_jsonl_files=sampling_outputs,
+                        input_files=sampling_outputs,
                         evaluator=evaluator,
                         aggregation_mode="best",
                     )

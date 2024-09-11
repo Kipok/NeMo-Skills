@@ -31,7 +31,7 @@ LOG = logging.getLogger(__file__)
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--prediction_jsonl_files",
+        "--input_files",
         required=True,
         nargs="+",
         help="Can also specify multiple glob patterns, like output-rs*.jsonl",
@@ -70,14 +70,14 @@ if __name__ == '__main__':
     evaluator = EVALUATOR_MAP[args.benchmark]()
 
     metrics = compute_metrics(
-        args.prediction_jsonl_files,
+        args.input_files,
         evaluator,
         args.allow_incomplete,
         args.max_samples,
         args.aggregation_mode,
     )
 
-    LOG.info(f"Evaluation results for %s", args.prediction_jsonl_files)
+    LOG.info(f"Evaluation results for %s", args.input_files)
     for metric_key, metric_value in metrics.items():
         if isinstance(metric_value, float):
             metric_value = f"{metric_value:.2f}"

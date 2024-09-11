@@ -20,80 +20,68 @@ from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config,
 from nemo_skills.utils import setup_logging
 
 
-def get_cmd(random_seed, output_dir, extra_arguments, extra_eval_args):
+def get_greedy_cmd(benchmark, output_dir, output_name='output-greedy.jsonl', extra_arguments=""):
     cmd = (
-        f"python -m nemo_skills.inference.generate "
-        f"    skip_filled=True "
-        f"    inference.random_seed={random_seed} "
-        f"    inference.temperature=1.0 "
-        f"    inference.top_k=0 "
-        f"    inference.top_p=0.95 "
-        f"    output_file={output_dir}/generation/output-rs{random_seed}.jsonl "
-        f"    {extra_arguments} && "
-        f"python -m nemo_skills.evaluation.evaluate_results "
-        f"    input_files={output_dir}/generation/output-rs{random_seed}.jsonl {extra_eval_args}"
+        f'echo "Evaluating benchmark {benchmark}" && '
+        f'python -m nemo_skills.inference.llm_math_judge '
+        f'    ++dataset={benchmark} '
+        f'    ++output_file={output_dir}/eval-results/{benchmark}/{output_name} '
+        f'    {extra_arguments}'
     )
     return cmd
 
 
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
-    parser = ArgumentParser()
-    parser.add_argument("--config_folder", default=None, help="Path to the cluster_configs folder")
-    parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
-    parser.add_argument("--output_dir", required=True, help="Where to put results")
-    parser.add_argument("--expname", default="generate", help="Nemo run experiment name")
-    parser.add_argument("--model", required=False, help="Path to the model or model name in API.")
+    parser = ArgumentParser(usage="TODO")
+    wrapper_args = parser.add_argument_group('wrapper arguments')
+    wrapper_args.add_argument("--config_folder", default=None, help="Path to the cluster_configs folder")
+    wrapper_args.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
+    wrapper_args.add_argument("--input_files", required=True, help="Will add judgement field to each file")
+    wrapper_args.add_argument("--expname", default="llm-math-judge", help="Nemo run experiment name")
+    wrapper_args.add_argument("--model", required=False, help="Path to the model or model name in API.")
     # TODO: should all this be inside a single dictionary config?
-    parser.add_argument(
+    wrapper_args.add_argument(
         "--server_address",
         required=False,
         help="Use ip:port for self-hosted models or the API url if using model providers.",
     )
     # TODO: let's make it not needed - we just need to unify our api calls
-    parser.add_argument(
+    wrapper_args.add_argument(
         "--server_type",
         choices=('nemo', 'tensorrt_llm', 'vllm', 'openai'),
         default='tensorrt_llm',
         help="Type of the server to start. This parameter is ignored if server_address is specified.",
     )
-    parser.add_argument("--server_gpus", type=int, required=False)
-    parser.add_argument(
+    wrapper_args.add_argument("--server_gpus", type=int, required=False)
+    wrapper_args.add_argument(
         "--server_nodes",
         type=int,
         default=1,
         help="Number of nodes required for hosting LLM server.",
     )
-    parser.add_argument("--num_runs", type=int, default=1)
-    parser.add_argument(
-        "--dependent_jobs",
-        type=int,
-        default=0,
-        help="Specify this to launch that number of dependent jobs. Useful for large datasets, "
-        "where you're not able to process everything before slurm timeout.",
-    )
-    parser.add_argument("--starting_seed", type=int, default=0)
-    parser.add_argument(
+    # TODO: support this
+    # wrapper_args.add_argument(
+    #     "--num_jobs",
+    #     type=int,
+    #     default=-1,
+    #     help="Will launch this many separate jobs and split the benchmarks across them. "
+    #     "Set -1 to run each benchmark / random seed as a separate job.",
+    # )
+    wrapper_args.add_argument(
         "--partition",
         required=False,
         help="Can specify if need interactive jobs or a specific non-default partition",
     )
-    parser.add_argument(
-        "--extra_eval_args",
-        default="",
-        help="Any extra arguments to pass to nemo_skills/evaluation/evaluate_results.py",
-    )
-    parser.add_argument(
+    wrapper_args.add_argument(
         "--run_after",
         required=False,
         help="Can specify an expname that needs to be completed before this one starts (will use as slurm dependency)",
     )
+
     args, unknown = parser.parse_known_args()
 
     extra_arguments = f'{" ".join(unknown)}'
-
-    if not args.output_dir.startswith("/"):
-        raise ValueError("output_dir must be referenced in a mounted location (mounts section in the config file)")
 
     cluster_config = get_cluster_config(args.cluster, args.config_folder)
     check_if_mounted(cluster_config, args.output_dir)
@@ -116,21 +104,35 @@ if __name__ == "__main__":
             f" ++server.model={args.model} "
         )
 
+    # if benchmarks are specified, only run those
+    BENCHMARKS = {k: int(v) for k, v in [b.split(":") for b in args.benchmarks]}
+
+    eval_cmds = [
+        get_greedy_cmd(
+            benchmark, args.output_dir, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments
+        )
+        for benchmark in BENCHMARKS.keys()
+    ]
+    eval_cmds += [
+        get_sampling_cmd(
+            benchmark, args.output_dir, rs, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments
+        )
+        for benchmark, rs_num in BENCHMARKS.items()
+        for rs in range(args.starting_seed, args.starting_seed + rs_num)
+    ]
+    if args.num_jobs == -1:
+        args.num_jobs = len(eval_cmds)
+
+    # splitting eval cmds equally across num_jobs nodes
+    eval_cmds = [" && ".join(eval_cmds[i :: args.num_jobs]) for i in range(args.num_jobs)]
+
     with run.Experiment(args.expname) as exp:
-        for seed in range(args.starting_seed, args.starting_seed + args.num_runs):
-            # TODO: needs support on nemorun side
-            assert args.dependent_jobs == 0
-            cmd = get_cmd(
-                random_seed=seed,
-                output_dir=args.output_dir,
-                extra_arguments=extra_arguments,
-                extra_eval_args=args.extra_eval_args,
-            )
+        for idx, eval_cmd in enumerate(eval_cmds):
             add_task(
                 exp,
-                cmd=get_generation_command(server_address=args.server_address, generation_commands=cmd),
+                cmd=get_generation_command(server_address=args.server_address, generation_commands=eval_cmd),
                 # TODO: has to be the same currently to reuse the code, need a fix in nemo.run
-                task_name="generate",  # f'generate-rs{seed}',
+                task_name="llm-math-judge",  # f'llm-math-judge-{idx}',
                 container=cluster_config["containers"]["nemo-skills"],
                 cluster_config=cluster_config,
                 partition=args.partition,
@@ -139,4 +141,3 @@ if __name__ == "__main__":
                 run_after=args.run_after,
             )
         run_exp(exp, cluster_config)
-        # exp.dryrun()
