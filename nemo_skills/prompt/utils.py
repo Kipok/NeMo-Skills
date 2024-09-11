@@ -183,9 +183,12 @@ class Prompt:
         user = self.config.user.format(examples=examples, **input_dict)
         return user
 
-    def build_string(self, input_dict: Dict[str, str]) -> str:
+    def build_string(self, input_dict: Dict[str, str], include_generation: bool = False) -> str:
         """Returns the complete prompt string representation."""
-        generation = input_dict.get("generation", "")
+        if include_generation:
+            generation = input_dict.get("generation", "")
+        else:
+            generation = ""
 
         prompt = Prompt.TEMPLATE.format(
             system=self.config.system,
@@ -195,7 +198,7 @@ class Prompt:
         )
         return prompt
 
-    def build_messages(self, input_dict: Dict[str, str]) -> List[dict]:
+    def build_messages(self, input_dict: Dict[str, str], include_generation: bool = False) -> List[dict]:
         """Returns the messages as required by OpenAI API."""
         generation = input_dict.get("generation", "")
 
@@ -203,7 +206,7 @@ class Prompt:
             {"role": "system", "content": self.config.system},
             {"role": "user", "content": self.build_user_message(input_dict)},
         ]
-        if generation:
+        if generation and include_generation:
             messages.append({"role": "assistant", "content": generation})
         return messages
 
