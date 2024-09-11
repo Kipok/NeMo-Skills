@@ -128,6 +128,43 @@ class DropIncorrectCodeBlocks(BaseFilter):
         return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
 
+class MajorityFilter(BaseFilter):
+    def __init__(
+        self,
+        min_majority_votes: int = 0,
+        min_majority_portion: int = 0.0,
+        drop_negative_answers: bool = False,
+        drop_noninteger_answers: bool = False,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.min_majority_votes = min_majority_votes
+        self.min_majority_portion = min_majority_portion
+        self.drop_negative_answers = drop_negative_answers
+        self.drop_noninteger_answers = drop_noninteger_answers
+
+    def process_dataset_entry(self, data_entry) -> List:
+        majority_votes = data_entry.get("majority_votes", None)
+        total_votes = data_entry.get("total_votes", None)
+        if majority_votes is None or total_votes is None:
+            return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
+        if majority_votes < self.min_majority_votes or majority_votes < total_votes * self.min_majority_portion:
+            return [DataEntry(data=None, metrics=dict(num_removed=1))]
+        if self.drop_negative_answers or self.drop_noninteger_answers:
+            try:
+                majority_answer = float(data_entry.get("expected_answer", 0))
+            except ValueError:
+                return [DataEntry(data=None, metrics=dict(num_removed=1))]
+
+            if self.drop_negative_answers and majority_answer < 0:
+                return [DataEntry(data=None, metrics=dict(num_removed=1))]
+
+            if self.drop_noninteger_answers and not majority_answer.is_integer():
+                return [DataEntry(data=None, metrics=dict(num_removed=1))]
+
+        return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
+
+
 class TrimSolutions(BaseFilter):
 
     def __init__(self, solution_key: str = "generation", **kwargs):

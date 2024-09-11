@@ -235,6 +235,7 @@ class WriteFinalSftManifest(BaseProcessor):
         output_key: str = "output",
         generation_suffix: str = "",
         metadata: Optional[Dict] = None,
+        exclude_optional_keys: bool = True,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -243,6 +244,7 @@ class WriteFinalSftManifest(BaseProcessor):
         self.output_key = output_key
         self.chat_format = chat_format
         self.metadata = metadata
+        self.exclude_optional_keys = exclude_optional_keys
         self.generation_suffix = generation_suffix
         if self.generation_suffix and self.chat_format:
             raise ValueError("generation_suffix can only be used with chat_format=False")
@@ -268,19 +270,24 @@ class WriteFinalSftManifest(BaseProcessor):
                     continue
                 seen_predictions[question].add(elem[self.output_key])
 
+                # take only required keys from the input if exclude_optional_keys is True
+                output_sample = {}
+                if not self.exclude_optional_keys:
+                    output_sample = json.loads(line)
+
                 if self.chat_format is None:
                     generation = elem.pop(self.output_key)
-                    elem["input"] = prompt.build_string(input_dict=elem)
-                    elem["output"] = generation + self.generation_suffix
+                    output_sample["input"] = prompt.build_string(input_dict=elem)
+                    output_sample["output"] = generation + self.generation_suffix
                 elif self.chat_format.lower() == "nemotron":
-                    elem['conversations'] = [
+                    output_sample['conversations'] = [
                         {'value': prompt_config.user.format(**elem), 'from': 'User', 'canonical_form': ''},
                         {'value': elem.pop(self.output_key), 'from': 'Assistant', 'canonical_form': ''},
                     ]
-                    elem['system'] = prompt_config.system
-                    elem['mask'] = 'User'
+                    output_sample['system'] = prompt_config.system
+                    output_sample['mask'] = 'User'
                 elif self.chat_format.lower() == "llama":
-                    elem['conversations'] = [
+                    output_sample['conversations'] = [
                         {
                             'value': prompt_config.user.format(**elem),
                             'from': '<|start_header_id|>user<|end_header_id|>',
@@ -292,12 +299,12 @@ class WriteFinalSftManifest(BaseProcessor):
                             'canonical_form': '',
                         },
                     ]
-                    elem['system'] = prompt_config.system
-                    elem['mask'] = '<|start_header_id|>user<|end_header_id|>'
+                    output_sample['system'] = prompt_config.system
+                    output_sample['mask'] = '<|start_header_id|>user<|end_header_id|>'
                 else:
                     raise ValueError(f"Chat format {self.chat_format} is not supported")
-                elem.update(self.metadata)
-                fout.write(json.dumps(elem) + "\n")
+                output_sample.update(self.metadata)
+                fout.write(json.dumps(output_sample) + "\n")
                 samples_count += 1
 
         LOG.info("Prepared dataset size: %d", samples_count)
