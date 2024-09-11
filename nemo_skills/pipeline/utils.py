@@ -168,6 +168,16 @@ def get_tunnel(cluster_config):
     return run.SSHTunnel(**cluster_config["ssh_tunnel"])
 
 
+def recursive_get(tunnel, remote_dir, local_dir):
+    for item in tunnel.run(f'ls -1 {remote_dir}', hide=True).stdout.strip().split('\n'):
+        remote_path = os.path.join(remote_dir, item)
+        local_path = os.path.join(local_dir, item)
+        if tunnel.run(f'test -d {remote_path}', warn=True).failed:
+            tunnel.get(remote_path, local_path)
+        else:
+            recursive_get(tunnel, remote_path, local_path)
+
+
 @lru_cache
 def get_executor(
     cluster_config,
