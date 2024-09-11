@@ -22,7 +22,7 @@ from nemo_skills.utils import setup_logging
 
 def get_cmd(random_seed, output_dir, extra_arguments, extra_eval_args):
     cmd = (
-        f"python nemo_skills/inference/generate.py "
+        f"python -m nemo_skills.inference.generate "
         f"    skip_filled=True "
         f"    inference.random_seed={random_seed} "
         f"    inference.temperature=1.0 "
@@ -30,7 +30,7 @@ def get_cmd(random_seed, output_dir, extra_arguments, extra_eval_args):
         f"    inference.top_p=0.95 "
         f"    output_file={output_dir}/generation/output-rs{random_seed}.jsonl "
         f"    {extra_arguments} && "
-        f"python nemo_skills/evaluation/evaluate_results.py "
+        f"python -m nemo_skills.evaluation.evaluate_results "
         f"    prediction_jsonl_files={output_dir}/generation/output-rs{random_seed}.jsonl {extra_eval_args}"
     )
     return cmd

@@ -106,7 +106,7 @@ cs.store(name="base_generation_config", node=GenerateSolutionsConfig)
 
 
 @hydra.main(version_base=None, config_name='base_generation_config')
-def generate_solutions(cfg: GenerateSolutionsConfig):
+def generate(cfg: GenerateSolutionsConfig):
     cfg = GenerateSolutionsConfig(_init_nested=True, **cfg)
 
     LOG.info("Config used: %s", cfg)
@@ -212,4 +212,4 @@ if __name__ == "__main__":
         print(HELP_MESSAGE)
     else:
         setup_logging()
-        generate_solutions()
+        generate()

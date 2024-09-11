@@ -22,6 +22,7 @@ import hydra
 from tqdm import tqdm
 
 from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
+from nemo_skills.inference.generate import GenerateSolutionsConfig
 from nemo_skills.inference.server.code_execution_model import (
     ErrorRecoveryConfig,
     get_code_execution_model,
@@ -35,73 +36,15 @@ LOG = logging.getLogger(__file__)
 
 
 @nested_dataclass(kw_only=True)
-class InferenceConfig:
-    temperature: float = 0.0  # Temperature of 0 means greedy decoding
-    top_k: int = 0
-    top_p: float = 0.95
-    random_seed: int = 0
-    tokens_to_generate: int = 2048
-    repetition_penalty: float = 1.0
-
-
-@nested_dataclass(kw_only=True)
-class GenerateSolutionsConfig:
+class LlmMathJudgeConfig(GenerateSolutionsConfig):
     """Top-level parameters for the script"""
 
-    output_file: str  # Where to save the generations
-    # Inference server configuration {server_params} {error_recovery_params}
-    server: dict
-    # Sandbox configuration {sandbox_params}
-    sandbox: dict
-    # Prompt configuration - path to yaml files
-    prompt_template: str | None = None  # not required for OpenAI server
     prompt_config: str = "judge/math"
-    inference: InferenceConfig = field(default_factory=InferenceConfig)  # LLM call parameters
-
-    # Can specify one of the existing datasets.
-    dataset: str | None = None
-    split_name: str | None = None  # Can be train, validation, test or train_full (train + validation)
-    data_file: str | None = None  # Can directly specify a data file, if using a custom dataset
-
-    batch_size: int = 16
-    max_samples: int = -1  # If > 0, will stop after generating this many samples. Useful for debugging
-    skip_filled: bool = False  # If True, will skip the generations that are already in the output file
-
-    # if > 0, will skip this many samples from the beginning of the data file.
-    # Useful if need to run multiple slurm jobs on the same data file
-    offset: int = 0
-
     generation_key: str = "judgement"
-
-    # can add this flag to just print the first prompt instead of running generation
-    # useful to double check that your data can be loaded and prompt has what you expect
-    dry_run: bool = False
-
-    # set to True if code execution needs to be supported
-    code_execution: bool = False
-
-    def __post_init__(self):
-        """Building data_file from dataset/split_name if not provided directly."""
-        if self.data_file is not None:
-            if self.dataset is not None or self.split_name is not None:
-                raise ValueError("Either `data_file` or `dataset` and `split_name` should be provided, but not both")
-        else:
-            if self.dataset is None or self.split_name is None:
-                raise ValueError("Either `data_file` or `dataset` and `split_name` should be provided")
-            self.data_file = Path(__file__).parents[1] / "dataset" / self.dataset / f"{self.split_name}.jsonl"
-
-        if self.dataset is None and self.prompt_config is None:
-            raise ValueError("If `dataset` is not provided, `prompt_config` is required")
-
-        if self.server.server_type != "openai" and self.prompt_template is None:
-            raise ValueError("Prompt template is required for non-OpenAI servers")
-
-        if self.server.server_type == "openai" and self.prompt_template is not None:
-            raise ValueError("Prompt template is not supported for OpenAI server")
 
 
 cs = hydra.core.config_store.ConfigStore.instance()
-cs.store(name="base_generation_config", node=GenerateSolutionsConfig)
+cs.store(name="base_llm_math_judge_config", node=LlmMathJudgeConfig)
 
 
 def prefill_judgement(data_point: dict) -> str | None:
@@ -115,8 +58,8 @@ def prefill_judgement(data_point: dict) -> str | None:
     return None
 
 
-@hydra.main(version_base=None, config_name='generation_config', config_path='.')
-def generate_solutions(cfg: GenerateSolutionsConfig):
+@hydra.main(version_base=None, config_name='base_llm_math_judge_config', config_path='.')
+def llm_math_judge(cfg: GenerateSolutionsConfig):
     cfg = GenerateSolutionsConfig(_init_nested=True, **cfg)
 
     LOG.info("Config used: %s", cfg)
@@ -229,4 +172,4 @@ if __name__ == "__main__":
         print(HELP_MESSAGE)
     else:
         setup_logging()
-        generate_solutions()
+        llm_math_judge()
