@@ -162,7 +162,7 @@ def generate(cfg: GenerateSolutionsConfig):
         for idx, data_point in tqdm(enumerate(data), initial=starting_idx, total=len(data) + starting_idx):
             if idx >= cfg.max_samples:
                 break
-
+            data_point.pop(cfg.generation_key, None)
             data_points.append(data_point)
 
             if len(data_points) == cfg.batch_size or idx == cfg.max_samples - 1:
@@ -180,9 +180,6 @@ def generate(cfg: GenerateSolutionsConfig):
                     # all of the ground-truth data to the output file alongside the generated solutions
                     if cfg.generation_key != "generation":
                         output[cfg.generation_key] = output.pop("generation")
-                        original_data_point.pop(cfg.generation_key, None)
-                    else:
-                        original_data_point.pop('generation', None)
                     output.update(original_data_point)
 
                     fout.write(json.dumps(output) + "\n")

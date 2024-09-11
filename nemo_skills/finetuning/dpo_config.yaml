@@ -73,6 +73,7 @@ model:
   precision: bf16
   sequence_parallel: False
   dist_ckpt_format: zarr
+  save_ckpt_format: zarr
 
   dpo:
     # This default value ensures there are no numeric differences beween trained and reference policies when computing log probs.

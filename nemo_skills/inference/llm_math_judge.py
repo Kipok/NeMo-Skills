@@ -141,6 +141,7 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
         # saving to a tmp file to avoid corrupting original generation in case something goes wrong
         with open(output_file, "at" if cfg.skip_filled else "wt", encoding="utf-8", buffering=1) as fout:
             for idx, data_point in enumerate(tqdm(data, initial=starting_idx, total=len(data) + starting_idx)):
+                data_point.pop(cfg.generation_key, None)
                 judgement = prefill_judgement(data_point)
                 if judgement is None:
                     data_points.append(data_point)
@@ -175,11 +176,8 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
                     judgements.clear()
                     prefilled_indices.clear()
 
-        # fusing back into original file
-        with open(jsonl_file, 'wt', encoding='utf-8') as fout, open(output_file, 'rt', encoding='utf-8') as fin:
-            for data_point, judgement_line in zip(data, fin):
-                data_point.update(json.loads(judgement_line))
-                fout.write(json.dumps(data_point) + "\n")
+        # replacing original file with the judgement file
+        Path(jsonl_file).replace(output_file)
 
         # removing judgement file
         Path(output_file).unlink()
