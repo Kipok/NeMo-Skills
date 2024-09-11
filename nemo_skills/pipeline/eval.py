@@ -13,11 +13,19 @@
 # limitations under the License.
 
 from argparse import ArgumentParser
+from pathlib import Path
 
 import nemo_run as run
 
 from nemo_skills.evaluation.settings import EXTRA_EVAL_ARGS, EXTRA_GENERATION_ARGS
-from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, get_generation_command, run_exp
+from nemo_skills.pipeline import (
+    add_task,
+    check_if_mounted,
+    check_uncommitted_changes,
+    get_cluster_config,
+    get_generation_command,
+    run_exp,
+)
 from nemo_skills.utils import setup_logging
 
 
@@ -111,6 +119,7 @@ if __name__ == "__main__":
 
     cluster_config = get_cluster_config(args.cluster, args.config_folder)
     check_if_mounted(cluster_config, args.output_dir)
+    check_uncommitted_changes(Path(__file__).parents[2])
 
     if not args.output_dir.startswith("/"):
         raise ValueError("output_dir must be referenced in a mounted location (mounts section in the config file)")

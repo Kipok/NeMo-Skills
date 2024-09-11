@@ -13,11 +13,12 @@
 # limitations under the License.
 
 from argparse import ArgumentParser
+from pathlib import Path
 
 import nemo_run as run
 from huggingface_hub import get_token
 
-from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, run_exp
+from nemo_skills.pipeline import add_task, check_if_mounted, check_uncommitted_changes, get_cluster_config, run_exp
 from nemo_skills.utils import setup_logging
 
 
@@ -126,6 +127,7 @@ if __name__ == "__main__":
     cluster_config = get_cluster_config(args.cluster, args.config_folder)
     check_if_mounted(cluster_config, args.input_model)
     check_if_mounted(cluster_config, args.output_model)
+    check_uncommitted_changes(Path(__file__).parents[2])
 
     conversion_cmd_map = {
         ("nemo", "hf"): get_nemo_to_hf_cmd,

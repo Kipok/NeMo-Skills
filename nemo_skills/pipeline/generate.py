@@ -13,10 +13,18 @@
 # limitations under the License.
 
 from argparse import ArgumentParser
+from pathlib import Path
 
 import nemo_run as run
 
-from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, get_generation_command, run_exp
+from nemo_skills.pipeline import (
+    add_task,
+    check_if_mounted,
+    check_uncommitted_changes,
+    get_cluster_config,
+    get_generation_command,
+    run_exp,
+)
 from nemo_skills.utils import setup_logging
 
 
@@ -97,6 +105,7 @@ if __name__ == "__main__":
 
     cluster_config = get_cluster_config(args.cluster, args.config_folder)
     check_if_mounted(cluster_config, args.output_dir)
+    check_uncommitted_changes(Path(__file__).parents[2])
 
     if args.server_address is None:  # we need to host the model
         assert args.server_gpus is not None, "Need to specify server_gpus if hosting the model"

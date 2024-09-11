@@ -15,11 +15,12 @@
 import os
 from argparse import ArgumentParser
 from datetime import datetime
+from pathlib import Path
 
 import nemo_run as run
 from huggingface_hub import get_token
 
-from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, run_exp
+from nemo_skills.pipeline import add_task, check_if_mounted, check_uncommitted_changes, get_cluster_config, run_exp
 from nemo_skills.utils import setup_logging
 
 
@@ -181,6 +182,7 @@ if __name__ == "__main__":
     check_if_mounted(cluster_config, args.training_data)
     if args.validation_data:
         check_if_mounted(cluster_config, args.validation_data)
+    check_uncommitted_changes(Path(__file__).parents[2])
 
     train_cmd = get_training_cmd(
         cluster_config=cluster_config,

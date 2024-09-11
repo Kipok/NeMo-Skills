@@ -18,7 +18,7 @@ from pathlib import Path
 import nemo_run as run
 import yaml
 
-from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config
+from nemo_skills.pipeline import add_task, check_if_mounted, check_uncommitted_changes, get_cluster_config
 from nemo_skills.utils import setup_logging
 
 if __name__ == "__main__":
@@ -53,6 +53,7 @@ if __name__ == "__main__":
 
     cluster_config = get_cluster_config(args.cluster, args.config_folder)
     check_if_mounted(cluster_config, args.model)
+    check_uncommitted_changes(Path(__file__).parents[2])
 
     server_config = {
         "model_path": args.model,

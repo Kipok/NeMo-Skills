@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import shlex
+import subprocess
 from functools import lru_cache
 from pathlib import Path
 
@@ -36,6 +37,26 @@ def check_if_mounted(cluster_config, path_to_check):
         if path_to_check.startswith(mount.split(":")[1]):
             return
     raise ValueError(f"The path '{path_to_check}' is not mounted. Check cluster config.")
+
+
+# TODO: How this function is expected to work if we install nemo-skills as a package?
+def check_uncommitted_changes(path: Path) -> bool:
+    # Check for modified files
+    cmd_modified = f"cd {shlex.quote(str(path))} && git diff --name-only nemo_skills"
+    result_modified = subprocess.run(
+        cmd_modified, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
+
+    # Check for staged files
+    cmd_staged = f"cd {shlex.quote(str(path))} && git diff --name-only --cached nemo_skills"
+    result_staged = subprocess.run(cmd_staged, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    changed_files = result_modified.stdout.strip().split("\n") + result_staged.stdout.strip().split("\n")
+    changed_files = [f for f in changed_files if f]
+    if changed_files:
+        raise ValueError(
+            f"There are uncommitted changes in the repository: {changed_files}. Please commit or stash them before running the experiment."
+        )
 
 
 def _get_latest_dir(path) -> str:
