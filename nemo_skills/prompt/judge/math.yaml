@@ -5,7 +5,7 @@ system: ""
 user: |-
     You will be asked to look at the two answers (predicted and expected) to a math problem and to judge whether they are equivalent within the context of the problem.
 
-    Please first explain your rationale in a couple of sentences. Then respond with only Yes or No as your judgement on whether the two answers are the same.
+    Please first explain your reasoning in a couple of sentences. Then respond with only Yes or No as your judgement on whether the two answers are the same.
     When comparing answers only perform trivial simplifications.
 
     Here are a few examples.
@@ -16,7 +16,7 @@ user: |-
     Predicted answer: $7x(x - 2)(x - 1)$
     Expected answer: $7x(x-1)(x-2)$
 
-    The order of the factors does not matter, so the answers are the same.
+    Reasoning: The order of the factors does not matter, so the answers are the same.
     Judgement: Yes
 
 
@@ -25,7 +25,7 @@ user: |-
     Predicted answer: 3/2
     Expected answer: 1.5
 
-    3/2 is the same as 1.5
+    Reasoning: 3/2 is the same as 1.5
     Judgement: Yes
 
 
@@ -34,7 +34,7 @@ user: |-
     Predicted answer: 71
     Expected answer: 12\sqrt{{35}}.
 
-    This is non-trivial to simplify, so the answers are different.
+    Reasoning: This is non-trivial to simplify, so the answers are different.
     Judgement: No
 
 
@@ -43,7 +43,7 @@ user: |-
     Predicted answer: 7 x y^{{2}} \\sqrt{{2 x y z}}
     Expected answer: C
 
-    Predicted answer is the same as the expected answer choice C.
+    Reasoning: Predicted answer is the same as the expected answer choice C.
     Judgement: Yes
 
 
@@ -52,7 +52,7 @@ user: |-
     Predicted answer:  -2, 6
     Expected answer: 6, -2
 
-    The order doesn't matter in the context of the problem.
+    Reasoning: The order doesn't matter in the context of the problem.
     Judgement: Yes
 
 
@@ -61,7 +61,7 @@ user: |-
     Predicted answer: 0, \pi
     Expected answer: 0,\pi,2\pi.
 
-    Number of solutions is different.
+    Reasoning: Number of solutions is different.
     Judgement: No
 
 

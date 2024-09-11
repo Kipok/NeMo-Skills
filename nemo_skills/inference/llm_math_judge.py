@@ -81,10 +81,10 @@ cs.store(name="base_llm_math_judge_config", node=LlmMathJudgeConfig)
 def prefill_judgement(data_point: dict) -> str | None:
     """Will automatically fill judgement if there is an exact match or the answer is None."""
     if data_point['predicted_answer'] is None:
-        return "No answer was provided.\nJudgement: No"
+        return "Reasoning: No answer was provided.\nJudgement: No"
 
     if str(data_point['predicted_answer']).strip() == str(data_point['expected_answer']).strip():
-        return "The two answers are identical.\nJudgement: Yes"
+        return "Reasoning: The two answers are identical.\nJudgement: Yes"
 
     return None
 
@@ -177,10 +177,7 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
                     prefilled_indices.clear()
 
         # replacing original file with the judgement file
-        Path(jsonl_file).replace(output_file)
-
-        # removing judgement file
-        Path(output_file).unlink()
+        Path(output_file).replace(jsonl_file)
 
 
 error_recovery_params = '\n' + get_fields_docstring(
