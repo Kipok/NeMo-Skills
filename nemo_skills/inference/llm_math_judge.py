@@ -17,12 +17,13 @@ import logging
 import sys
 from dataclasses import asdict, field
 from pathlib import Path
+from typing import Any
 
 import hydra
 from tqdm import tqdm
 
 from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
-from nemo_skills.inference.generate import GenerateSolutionsConfig
+from nemo_skills.inference.generate import InferenceConfig
 from nemo_skills.inference.server.code_execution_model import (
     ErrorRecoveryConfig,
     get_code_execution_model,
@@ -36,11 +37,40 @@ LOG = logging.getLogger(__file__)
 
 
 @nested_dataclass(kw_only=True)
-class LlmMathJudgeConfig(GenerateSolutionsConfig):
+class LlmMathJudgeConfig:
     """Top-level parameters for the script"""
 
+    # TODO: just a single file?
+    input_files: Any  # will update them with judgements
+    # Inference server configuration {server_params} {error_recovery_params}
+    server: dict = field(default_factory=dict)
+    # Sandbox configuration {sandbox_params}
+    sandbox: dict = field(default_factory=dict)
+    # Prompt configuration - path to yaml files
+    prompt_template: str | None = None  # not required for OpenAI server
     prompt_config: str = "judge/math"
+    inference: InferenceConfig = field(default_factory=InferenceConfig)  # LLM call parameters
+
+    batch_size: int = 16
     generation_key: str = "judgement"
+
+    # can add this flag to just print the first prompt instead of running generation
+    # useful to double check that your data can be loaded and prompt has what you expect
+    dry_run: bool = False
+
+    # set to True if code execution needs to be supported
+    code_execution: bool = False
+
+    def __post_init__(self):
+        """Building data_file from dataset/split_name if not provided directly."""
+        if isinstance(self.input_files, str):
+            self.input_files = self.input_files.split(" ")
+
+        if self.server.server_type != "openai" and self.prompt_template is None:
+            raise ValueError("Prompt template is required for non-OpenAI servers")
+
+        if self.server.server_type == "openai" and self.prompt_template is not None:
+            raise ValueError("Prompt template is not supported for OpenAI server")
 
 
 cs = hydra.core.config_store.ConfigStore.instance()
