@@ -26,7 +26,7 @@ from nemo_skills.utils import nested_dataclass, unroll_files
 LOG = logging.getLogger(__file__)
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class SympyGraderConfig:
     # Sandbox configuration {sandbox_params}
     sandbox: dict = field(default_factory=lambda: {'sandbox_type': 'local'})
@@ -38,7 +38,7 @@ class SympyGraderConfig:
     ignore_cache: bool = False
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class LlmGraderConfig:
     batch_size: int = 100  # lower if running into rate limits
     tokens_to_generate: int = 4096  # will auto-lower to max possible for NGC models
@@ -49,7 +49,7 @@ class LlmGraderConfig:
     skip_filled: bool = True
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class MathGraderConfig:
     # Sandbox configuration {sandbox_params}
     grading_type: str = "sympy"  # sympy or llm

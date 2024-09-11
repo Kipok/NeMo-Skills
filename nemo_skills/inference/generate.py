@@ -35,7 +35,7 @@ from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dat
 LOG = logging.getLogger(__file__)
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class InferenceConfig:
     temperature: float = 0.0  # Temperature of 0 means greedy decoding
     top_k: int = 0
@@ -45,15 +45,15 @@ class InferenceConfig:
     repetition_penalty: float = 1.0
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class GenerateSolutionsConfig:
-    """Top-level parameters for the script"""
+    """LLM generation parameters."""
 
     output_file: str  # Where to save the generations
     # Inference server configuration {server_params} {error_recovery_params}
-    server: dict
+    server: dict = field(default_factory=dict)
     # Sandbox configuration {sandbox_params}
-    sandbox: dict
+    sandbox: dict = field(default_factory=dict)
     # Prompt configuration - path to yaml files
     prompt_template: str | None = None  # not required for OpenAI server
     prompt_config: str | None = None  # we will fetch it from dataset folder if not provided
@@ -105,7 +105,7 @@ cs = hydra.core.config_store.ConfigStore.instance()
 cs.store(name="base_generation_config", node=GenerateSolutionsConfig)
 
 
-@hydra.main(version_base=None, config_name='generation_config', config_path='.')
+@hydra.main(version_base=None, config_name='base_generation_config')
 def generate_solutions(cfg: GenerateSolutionsConfig):
     cfg = GenerateSolutionsConfig(_init_nested=True, **cfg)
 

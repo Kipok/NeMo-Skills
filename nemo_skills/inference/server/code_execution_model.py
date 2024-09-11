@@ -34,7 +34,7 @@ from nemo_skills.utils import nested_dataclass, python_doc_to_cmd_help
 LOG = logging.getLogger(__name__)
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class ErrorRecoveryConfig:
     # Number of attempts to recover from code execution error
     recovery_attempts: int = 0
@@ -50,7 +50,7 @@ class ErrorRecoveryConfig:
     top_k: int = 0
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class CodeExecutionConfig:
     max_code_output_characters: int = 1000
     code_execution_timeout: float = 10.0

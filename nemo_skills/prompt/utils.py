@@ -48,7 +48,7 @@ class BM25Retriever:
         return self.bm25.get_top_n(tokenized_query, self.entries, n=top_k)
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class FewShotExamplesConfig:
     prefix: str = ""
     template: str = ""
@@ -98,7 +98,7 @@ class FewShotExamplesConfig:
             raise ValueError("You need to construct either example_dicts or retriever if num_few_shots > 0")
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class PromptTemplate:
     text_begin: str
     system_begin: str
@@ -112,7 +112,7 @@ class PromptTemplate:
     stop_phrases: List[str]
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class PromptConfig:
     # TODO: is there a better name for this? Too many templates + this contains pieces
     user: str

@@ -34,7 +34,7 @@ from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dat
 LOG = logging.getLogger(__file__)
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class InferenceConfig:
     temperature: float = 0.0  # Temperature of 0 means greedy decoding
     top_k: int = 0
@@ -44,7 +44,7 @@ class InferenceConfig:
     repetition_penalty: float = 1.0
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class GenerateSolutionsConfig:
     """Top-level parameters for the script"""
 

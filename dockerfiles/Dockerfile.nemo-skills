@@ -11,3 +11,6 @@ RUN mkdir /opt/benchmarks
 RUN git clone https://github.com/google-research/google-research.git /opt/benchmarks/google-research --depth=1 && \
     pip install langdetect absl-py immutabledict nltk && \
     python -c "import nltk; nltk.download('punkt')"
+
+COPY nemo_skills /opt/nemo_skills
+RUN cd /opt/nemo_skills && pip install .

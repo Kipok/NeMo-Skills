@@ -400,7 +400,7 @@ sandboxes = {
 }
 
 
-def get_sandbox(sandbox_type, **kwargs):
+def get_sandbox(sandbox_type: str = "local", **kwargs):
     """A helper function to make it easier to set sandbox through cmd."""
     sandbox_class = sandboxes[sandbox_type.lower()]
     return sandbox_class(**kwargs)
