@@ -173,7 +173,7 @@ class MathEval(BaseEval):
                     "Question: %s\nPredicted answer: %s\nExpected answer: %s\nLLM reasoning: %s\n",
                     bool(current_correct_sympy),
                     bool(current_correct_judge),
-                    predictions[0]['question'],
+                    predictions[0]['problem'],
                     predictions[0]['predicted_answer'],
                     predictions[0]['expected_answer'],
                     predictions[0]['judgement'],

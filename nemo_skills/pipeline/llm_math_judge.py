@@ -30,7 +30,12 @@ if __name__ == "__main__":
     wrapper_args = parser.add_argument_group('wrapper arguments')
     wrapper_args.add_argument("--config_folder", default=None, help="Path to the cluster_configs folder")
     wrapper_args.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
-    wrapper_args.add_argument("--input_files", required=True, help="Will add judgement field to each file")
+    wrapper_args.add_argument(
+        "--input_files",
+        required=True,
+        nargs="+",
+        help="Can also specify multiple glob patterns, like output-rs*.jsonl. Will add judgement field to each file",
+    )
     wrapper_args.add_argument("--expname", default="llm-math-judge", help="Nemo run experiment name")
     wrapper_args.add_argument("--model", required=False, help="Path to the model or model name in API.")
     # TODO: should all this be inside a single dictionary config?
@@ -77,7 +82,9 @@ if __name__ == "__main__":
     extra_arguments = f'{" ".join(unknown)}'
 
     cluster_config = get_cluster_config(args.cluster, args.config_folder)
-    check_if_mounted(cluster_config, args.input_files)
+    for input_file in args.input_files:
+        check_if_mounted(cluster_config, input_file)
+    args.input_files = f'"{" ".join(args.input_files)}"'
 
     if args.server_address is None:  # we need to host the model
         assert args.server_gpus is not None, "Need to specify server_gpus if hosting the model"
