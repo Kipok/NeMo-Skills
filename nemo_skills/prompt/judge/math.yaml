@@ -39,8 +39,8 @@ user: |-
 
 
     Example 4:
-    Question: What is the simplified form of the expression $\\sqrt{98 x^{3} y^{5} z}$ ?\n\\begin{align*}\n\\text{A)}\\ & 2 x y z \\sqrt{7 x y z} &\n\\text{B)}\\ &  7 x^{2} y^{2} \\sqrt{2 y z}\n\\\\\n\\text{C)}\\ & 7 x y^{2} \\sqrt{2 x y z}  &\n\\text{D)}\\ &49 x y^{2} \\sqrt{2 x y z} \\\\\n\\end{align*}    \n\\end{problem}\n\\noindent
-    Predicted Answer: 7 x y^{2} \\sqrt{2 x y z}
+    Question: What is the simplified form of the expression $\\sqrt{{98 x^{{3}} y^{{5}} z}} ?\n\\begin{{align*}}\n\\text{{A)}}\\ & 2 x y z \\sqrt{{7 x y z}} &\n\\text{{B)}}\\ &  7 x^{{2}} y^{{2}} \\sqrt{{2 y z}}\n\\\\\n\\text{{C)}}\\ & 7 x y^{{2}} \\sqrt{{2 x y z}}  &\n\\text{{D)}}\\ &49 x y^{{2}} \\sqrt{{2 x y z}} \\\\\n\\end{{align*}}    \n\\end{{problem}}\n\\noindent
+    Predicted Answer: 7 x y^{{2}} \\sqrt{{2 x y z}}
     Expected Answer: C
 
     Predicted answer is the same as the expected answer choice C.

@@ -26,3 +26,4 @@ mounts:
   - /mnt/datadrive/models/nemo_models:/nemo_models
   - /mnt/datadrive/models/hf_models:/hf_models
   - /mnt/datadrive/experiments:/exps
+  - /home/igitman/workspace:/workspace

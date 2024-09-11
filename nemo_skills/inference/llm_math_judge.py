@@ -104,7 +104,10 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
     LOG.info("Prompt used: %s", prompt)
 
     # assuming everything fits in memory for simplicity
-    for jsonl_file in unroll_files(cfg.input_files):
+    all_files = unroll_files(cfg.input_files)
+    if not all_files:
+        raise ValueError(f"No files found for the input pattern: {cfg.input_files}")
+    for jsonl_file in all_files:
         LOG.info("Processing file: %s", jsonl_file)
         with open(jsonl_file, 'rt', encoding='utf-8') as fin:
             data = [json.loads(line) for line in fin]
