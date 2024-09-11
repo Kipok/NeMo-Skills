@@ -5,7 +5,7 @@ few_shot_examples:
   template: |-
     Given the following problem, reason and give a final answer to the problem.
     Problem: {problem}
-    Your response should end with "The final answer is \boxed{{[answer]}}" where [answer] is the response to the problem.{user_end}{assistant_begin}{reference_solution_no_box}{assistant_end}{user_begin}
+    Your response should end with "The final answer is \boxed{{[answer]}}" where [answer] is the response to the problem.{user_end}{assistant_begin}{solution}{assistant_end}{user_begin}
   suffix: ""
 
   num_few_shots: 8
