@@ -112,12 +112,10 @@ if __name__ == "__main__":
     cluster_config = get_cluster_config(args.cluster, args.config_folder)
     check_if_mounted(cluster_config, args.output_dir)
 
-    if not args.output_dir.startswith("/"):
-        raise ValueError("output_dir must be referenced in a mounted location (mounts section in the config file)")
-
     if args.server_address is None:  # we need to host the model
         assert args.server_gpus is not None, "Need to specify server_gpus if hosting the model"
         args.server_address = "localhost:5000"
+        check_if_mounted(cluster_config, args.model)
         server_config = {
             "model_path": args.model,
             "server_type": args.server_type,

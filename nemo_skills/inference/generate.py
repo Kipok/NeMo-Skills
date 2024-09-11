@@ -64,7 +64,7 @@ class GenerateSolutionsConfig:
     split_name: str | None = None  # Can be train, validation, test or train_full (train + validation)
     data_file: str | None = None  # Can directly specify a data file, if using a custom dataset
 
-    batch_size: int = 16
+    batch_size: int = 128
     max_samples: int = -1  # If > 0, will stop after generating this many samples. Useful for debugging
     skip_filled: bool = False  # If True, will skip the generations that are already in the output file
 

@@ -20,15 +20,8 @@ from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config,
 from nemo_skills.utils import setup_logging
 
 
-def get_greedy_cmd(benchmark, output_dir, output_name='output-greedy.jsonl', extra_arguments=""):
-    cmd = (
-        f'echo "Evaluating benchmark {benchmark}" && '
-        f'python -m nemo_skills.inference.llm_math_judge '
-        f'    ++dataset={benchmark} '
-        f'    ++output_file={output_dir}/eval-results/{benchmark}/{output_name} '
-        f'    {extra_arguments}'
-    )
-    return cmd
+def get_judge_cmd(input_files, extra_arguments=""):
+    return f'python -m nemo_skills.inference.llm_math_judge ++input_files={input_files} {extra_arguments}'
 
 
 if __name__ == "__main__":
@@ -84,11 +77,12 @@ if __name__ == "__main__":
     extra_arguments = f'{" ".join(unknown)}'
 
     cluster_config = get_cluster_config(args.cluster, args.config_folder)
-    check_if_mounted(cluster_config, args.output_dir)
+    check_if_mounted(cluster_config, args.input_files)
 
     if args.server_address is None:  # we need to host the model
         assert args.server_gpus is not None, "Need to specify server_gpus if hosting the model"
         args.server_address = "localhost:5000"
+        check_if_mounted(cluster_config, args.model)
         server_config = {
             "model_path": args.model,
             "server_type": args.server_type,
@@ -104,40 +98,19 @@ if __name__ == "__main__":
             f" ++server.model={args.model} "
         )
 
-    # if benchmarks are specified, only run those
-    BENCHMARKS = {k: int(v) for k, v in [b.split(":") for b in args.benchmarks]}
-
-    eval_cmds = [
-        get_greedy_cmd(
-            benchmark, args.output_dir, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments
-        )
-        for benchmark in BENCHMARKS.keys()
-    ]
-    eval_cmds += [
-        get_sampling_cmd(
-            benchmark, args.output_dir, rs, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments
-        )
-        for benchmark, rs_num in BENCHMARKS.items()
-        for rs in range(args.starting_seed, args.starting_seed + rs_num)
-    ]
-    if args.num_jobs == -1:
-        args.num_jobs = len(eval_cmds)
-
-    # splitting eval cmds equally across num_jobs nodes
-    eval_cmds = [" && ".join(eval_cmds[i :: args.num_jobs]) for i in range(args.num_jobs)]
-
     with run.Experiment(args.expname) as exp:
-        for idx, eval_cmd in enumerate(eval_cmds):
-            add_task(
-                exp,
-                cmd=get_generation_command(server_address=args.server_address, generation_commands=eval_cmd),
-                # TODO: has to be the same currently to reuse the code, need a fix in nemo.run
-                task_name="llm-math-judge",  # f'llm-math-judge-{idx}',
-                container=cluster_config["containers"]["nemo-skills"],
-                cluster_config=cluster_config,
-                partition=args.partition,
-                server_config=server_config,
-                with_sandbox=True,
-                run_after=args.run_after,
-            )
+        add_task(
+            exp,
+            cmd=get_generation_command(
+                server_address=args.server_address,
+                generation_commands=get_judge_cmd(args.input_files, extra_arguments),
+            ),
+            task_name="llm-math-judge",
+            container=cluster_config["containers"]["nemo-skills"],
+            cluster_config=cluster_config,
+            partition=args.partition,
+            server_config=server_config,
+            with_sandbox=True,
+            run_after=args.run_after,
+        )
         run_exp(exp, cluster_config)
