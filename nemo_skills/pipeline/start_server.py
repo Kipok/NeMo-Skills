@@ -25,6 +25,7 @@ if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser()
     parser.add_argument("--config_folder", default=None, help="Path to the cluster_configs folder")
+    parser.add_argument("--log_folder", required=False, help="Can specify a custom location for slurm logs")
     parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     parser.add_argument("--model", required=True, help="Path to the model.")
     parser.add_argument(
@@ -53,6 +54,8 @@ if __name__ == "__main__":
 
     cluster_config = get_cluster_config(args.cluster, args.config_folder)
     check_if_mounted(cluster_config, args.model)
+    if args.log_folder:
+        check_if_mounted(cluster_config, args.log_folder)
 
     server_config = {
         "model_path": args.model,
@@ -66,6 +69,7 @@ if __name__ == "__main__":
             exp,
             cmd="",  # not running anything except the server
             task_name=f'server-{args.model.replace("/", "-")}',
+            log_folder=args.log_folder,
             container=cluster_config["containers"]["nemo-skills"],
             cluster_config=cluster_config,
             partition=args.partition,

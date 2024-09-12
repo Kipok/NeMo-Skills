@@ -130,8 +130,8 @@ if __name__ == "__main__":
             add_task(
                 exp,
                 cmd=get_generation_command(server_address=args.server_address, generation_commands=cmd),
-                # TODO: has to be the same currently to reuse the code, need a fix in nemo.run
-                task_name="generate",  # f'generate-rs{seed}',
+                task_name=f'generate-rs{seed}',
+                log_folder=f"{args.output_dir}/generation-logs",
                 container=cluster_config["containers"]["nemo-skills"],
                 cluster_config=cluster_config,
                 partition=args.partition,
