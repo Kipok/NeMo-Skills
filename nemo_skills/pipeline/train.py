@@ -117,7 +117,7 @@ def get_avg_checkpoints_cmd(nemo_model, output_dir, final_nemo_path, average_ste
         f"    --untarred_nemo_folder {nemo_model} "
         f"    --name_prefix=model "
         f"    --checkpoint_dir={output_dir}/training/checkpoints {average_steps} && "
-        f"mv {output_dir}/training/checkpoints/model-averaged.nemo {final_nemo_path} "
+        f"mv {output_dir}/training/checkpoints/model-averaged {final_nemo_path} "
     )
     return cmd
 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--final_nemo_path",
         required=False,
-        help="Where to put the final checkpoint. By default, it will be saved in the output_dir/model-averaged.nemo",
+        help="Where to put the final checkpoint. By default, it will be saved in the output_dir/model-averaged-nemo",
     )
     parser.add_argument("--expname", required=True, help="Experiment name")
     parser.add_argument("--nemo_model", required=True)
@@ -188,7 +188,7 @@ if __name__ == "__main__":
             raise ValueError("training_data is required when num_training_jobs > 0")
         check_if_mounted(cluster_config, args.training_data)
     if not args.final_nemo_path:
-        args.final_nemo_path = f"{args.output_dir}/model-averaged.nemo"
+        args.final_nemo_path = f"{args.output_dir}/model-averaged-nemo"
     check_if_mounted(cluster_config, args.final_nemo_path)
     if args.validation_data:
         check_if_mounted(cluster_config, args.validation_data)
