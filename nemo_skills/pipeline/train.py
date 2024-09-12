@@ -109,7 +109,7 @@ def get_training_cmd(
     return cmd
 
 
-def get_avg_checkpoints_cmd(nemo_model, output_dir, final_model_path, average_steps):
+def get_avg_checkpoints_cmd(nemo_model, output_dir, final_nemo_path, average_steps):
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"cd /nemo_run/code && "
@@ -117,7 +117,7 @@ def get_avg_checkpoints_cmd(nemo_model, output_dir, final_model_path, average_st
         f"    --untarred_nemo_folder {nemo_model} "
         f"    --name_prefix=model "
         f"    --checkpoint_dir={output_dir}/training/checkpoints {average_steps} && "
-        f"mv {output_dir}/training/checkpoints/model-averaged.nemo {final_model_path} "
+        f"mv {output_dir}/training/checkpoints/model-averaged.nemo {final_nemo_path} "
     )
     return cmd
 
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--expname", required=True, help="Experiment name")
     parser.add_argument("--nemo_model", required=True)
-    parser.add_argument("--training_data", required=True)
+    parser.add_argument("--training_data", required=False, help="Path to the training data")
     # TODO: this needs to be fixed in nemo-aligner
     parser.add_argument(
         "--validation_data", required=False, help="Will default to the training data, since we can't disable it"
@@ -183,10 +183,13 @@ if __name__ == "__main__":
     cluster_config = get_cluster_config(args.cluster, args.config_folder)
     check_if_mounted(cluster_config, args.output_dir)
     check_if_mounted(cluster_config, args.nemo_model)
-    check_if_mounted(cluster_config, args.training_data)
-    if not args.final_model_path:
-        args.final_model_path = f"{args.output_dir}/model-averaged.nemo"
-    check_if_mounted(cluster_config, args.final_model_path)
+    if args.num_training_jobs > 0:
+        if args.training_data is None:
+            raise ValueError("training_data is required when num_training_jobs > 0")
+        check_if_mounted(cluster_config, args.training_data)
+    if not args.final_nemo_path:
+        args.final_nemo_path = f"{args.output_dir}/model-averaged.nemo"
+    check_if_mounted(cluster_config, args.final_nemo_path)
     if args.validation_data:
         check_if_mounted(cluster_config, args.validation_data)
 
@@ -228,7 +231,7 @@ if __name__ == "__main__":
         cmd = get_avg_checkpoints_cmd(
             nemo_model=args.nemo_model,
             output_dir=args.output_dir,
-            final_model_path=args.final_model_path,
+            final_nemo_path=args.final_nemo_path,
             average_steps=f"--steps {' '.join(map(str, args.average_steps))} " if args.average_steps else "",
         )
         add_task(

@@ -1,0 +1,5 @@
+# Math prompt with no instructions
+
+system: ""
+
+user: "{problem}"
