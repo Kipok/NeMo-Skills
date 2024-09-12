@@ -18,6 +18,7 @@ import argparse
 import glob
 import json
 import logging
+import os
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -29,13 +30,22 @@ sys.path.append(str(Path(__file__).absolute().parents[0]))
 from compute_metrics import EVALUATOR_MAP, compute_metrics
 
 from nemo_skills.evaluation.metrics import MathEval
+from nemo_skills.pipeline import get_cluster_config, get_tunnel, recursive_get
 from nemo_skills.utils import setup_logging
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         'results_folder',
-        help="Path to the folder with results. Needs to contain <benchmark> folders inside.",
+        help=(
+            "Path to the folder with results. Needs to contain <benchmark> folders inside. "
+            "If cluster is not `local`, results from the cluster will be copied to this folder."
+        ),
+    )
+    parser.add_argument('--cluster', default="local", help="Cluster configuration to take results from.")
+    parser.add_argument('--config_folder', default=None, help="Path to the cluster_configs folder.")
+    parser.add_argument(
+        '--remote_results_path', default=None, help="Remote path to copy results from when cluster is not `local`."
     )
     parser.add_argument(
         '--benchmarks',
@@ -47,6 +57,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not args.debug else logging.DEBUG)
+
+    if args.cluster != "local":
+        if not args.remote_results_path:
+            raise ValueError("If cluster is not `local`, `remote_results_path` needs to be specified.")
+
+        # copying results from the cluster
+        cluster_config = get_cluster_config(args.cluster, args.config_folder)
+        tunnel = get_tunnel(cluster_config)
+        os.makedirs(args.results_folder, exist_ok=True)
+        recursive_get(tunnel, args.remote_results_path, args.results_folder)
+        tunnel.cleanup()
 
     # running compute_metrics.py to get greedy, majority and pass @k results for all benchmarks available
     benchmarks = glob.glob(f'{args.results_folder}/*')
