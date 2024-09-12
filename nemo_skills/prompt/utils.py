@@ -48,7 +48,7 @@ class BM25Retriever:
         return self.bm25.get_top_n(tokenized_query, self.entries, n=top_k)
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class FewShotExamplesConfig:
     prefix: str = ""
     template: str = ""
@@ -98,7 +98,7 @@ class FewShotExamplesConfig:
             raise ValueError("You need to construct either example_dicts or retriever if num_few_shots > 0")
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class PromptTemplate:
     text_begin: str
     system_begin: str
@@ -112,7 +112,7 @@ class PromptTemplate:
     stop_phrases: List[str]
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class PromptConfig:
     # TODO: is there a better name for this? Too many templates + this contains pieces
     user: str
@@ -183,9 +183,12 @@ class Prompt:
         user = self.config.user.format(examples=examples, **input_dict)
         return user
 
-    def build_string(self, input_dict: Dict[str, str]) -> str:
+    def build_string(self, input_dict: Dict[str, str], include_generation: bool = False) -> str:
         """Returns the complete prompt string representation."""
-        generation = input_dict.get("generation", "")
+        if include_generation:
+            generation = input_dict.get("generation", "")
+        else:
+            generation = ""
 
         prompt = Prompt.TEMPLATE.format(
             system=self.config.system,
@@ -195,7 +198,7 @@ class Prompt:
         )
         return prompt
 
-    def build_messages(self, input_dict: Dict[str, str]) -> List[dict]:
+    def build_messages(self, input_dict: Dict[str, str], include_generation: bool = False) -> List[dict]:
         """Returns the messages as required by OpenAI API."""
         generation = input_dict.get("generation", "")
 
@@ -203,7 +206,7 @@ class Prompt:
             {"role": "system", "content": self.config.system},
             {"role": "user", "content": self.build_user_message(input_dict)},
         ]
-        if generation:
+        if generation and include_generation:
             messages.append({"role": "assistant", "content": generation})
         return messages
 

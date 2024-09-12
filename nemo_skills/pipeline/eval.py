@@ -26,12 +26,12 @@ def get_greedy_cmd(benchmark, output_dir, output_name='output-greedy.jsonl', ext
     extra_arguments = f"{EXTRA_GENERATION_ARGS.get(benchmark, '')} {extra_arguments}"
     cmd = (
         f'echo "Evaluating benchmark {benchmark}" && '
-        f'python nemo_skills/inference/generate.py '
+        f'python -m nemo_skills.inference.generate '
         f'    ++dataset={benchmark} '
         f'    ++output_file={output_dir}/eval-results/{benchmark}/{output_name} '
         f'    {extra_arguments} && '
-        f'python nemo_skills/evaluation/evaluate_results.py '
-        f'    ++prediction_jsonl_files={output_dir}/eval-results/{benchmark}/{output_name} {extra_eval_args}'
+        f'python -m nemo_skills.evaluation.evaluate_results '
+        f'    ++input_files={output_dir}/eval-results/{benchmark}/{output_name} {extra_eval_args}'
     )
     return cmd
 
@@ -112,12 +112,10 @@ if __name__ == "__main__":
     cluster_config = get_cluster_config(args.cluster, args.config_folder)
     check_if_mounted(cluster_config, args.output_dir)
 
-    if not args.output_dir.startswith("/"):
-        raise ValueError("output_dir must be referenced in a mounted location (mounts section in the config file)")
-
     if args.server_address is None:  # we need to host the model
         assert args.server_gpus is not None, "Need to specify server_gpus if hosting the model"
         args.server_address = "localhost:5000"
+        check_if_mounted(cluster_config, args.model)
         server_config = {
             "model_path": args.model,
             "server_type": args.server_type,

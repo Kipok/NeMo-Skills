@@ -17,7 +17,7 @@ executor: local
 containers:
   tensorrt_llm: igitman/nemo-skills-trtllm:0.4.0
   vllm: igitman/nemo-skills-vllm:0.3.1
-  nemo: igitman/nemo-skills-sft:0.3.0
+  nemo: igitman/nemo-skills-sft:0.4.0
   sandbox: igitman/nemo-skills-sandbox:0.3.2
   nemo-skills: igitman/nemo-skills:0.4.0
 
@@ -26,3 +26,5 @@ mounts:
   - /mnt/datadrive/models/nemo_models:/nemo_models
   - /mnt/datadrive/models/hf_models:/hf_models
   - /mnt/datadrive/experiments:/exps
+  - /mnt/datadrive/data:/data
+  - /home/igitman/workspace:/workspace

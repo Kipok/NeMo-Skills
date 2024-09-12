@@ -29,10 +29,9 @@ LOG = logging.getLogger(__file__)
 
 
 if __name__ == '__main__':
-    setup_logging(disable_hydra_logs=False)
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--prediction_jsonl_files",
+        "--input_files",
         required=True,
         nargs="+",
         help="Can also specify multiple glob patterns, like output-rs*.jsonl",
@@ -58,6 +57,7 @@ if __name__ == '__main__':
         required=True,
         help="To select which evaluator to use",
     )
+    parser.add_argument("--debug", action="store_true", help="Print debug information")
     parser.add_argument(
         "--aggregation_mode",
         choices=["best", "majority", "first"],
@@ -65,17 +65,19 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
+    setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not args.debug else logging.DEBUG)
+
     evaluator = EVALUATOR_MAP[args.benchmark]()
 
     metrics = compute_metrics(
-        args.prediction_jsonl_files,
+        args.input_files,
         evaluator,
         args.allow_incomplete,
         args.max_samples,
         args.aggregation_mode,
     )
 
-    LOG.info(f"Evaluation results for %s", args.prediction_jsonl_files)
+    LOG.info(f"Evaluation results for %s", args.input_files)
     for metric_key, metric_value in metrics.items():
         if isinstance(metric_value, float):
             metric_value = f"{metric_value:.2f}"

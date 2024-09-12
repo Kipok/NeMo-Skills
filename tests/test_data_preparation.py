@@ -16,7 +16,7 @@ def test_code_files():
         [
             "python",
             "nemo_skills/finetuning/prepare_sft_data.py",
-            "prediction_jsonl_files='tests/data/output-rs*.test'",
+            "input_files='tests/data/output-rs*.test'",
             f"output_path={output_file}",
             "filters.drop_multi_boxed=true",
             "filters.drop_broken_code=true",

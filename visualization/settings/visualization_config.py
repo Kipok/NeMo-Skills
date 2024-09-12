@@ -22,7 +22,7 @@ from nemo_skills.inference.generate import GenerateSolutionsConfig
 from nemo_skills.utils import nested_dataclass, unroll_files
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class BaseVisualizationConfig:
     model_prediction: Dict[str, str] = field(default_factory=dict)
 
@@ -38,7 +38,7 @@ class BaseVisualizationConfig:
         }
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class VisualizationConfig(GenerateSolutionsConfig):
     visualization_params: BaseVisualizationConfig = field(default_factory=BaseVisualizationConfig)
 

@@ -22,7 +22,6 @@ from pathlib import Path
 import hydra
 from tqdm import tqdm
 
-from nemo_skills.code_execution import extract_error_message
 from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
 from nemo_skills.inference.server.code_execution_model import (
     ErrorRecoveryConfig,
@@ -36,7 +35,7 @@ from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dat
 LOG = logging.getLogger(__file__)
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class InferenceConfig:
     temperature: float = 0.0  # Temperature of 0 means greedy decoding
     top_k: int = 0
@@ -46,15 +45,15 @@ class InferenceConfig:
     repetition_penalty: float = 1.0
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class GenerateSolutionsConfig:
-    """Top-level parameters for the script"""
+    """LLM generation parameters."""
 
     output_file: str  # Where to save the generations
     # Inference server configuration {server_params} {error_recovery_params}
-    server: dict
+    server: dict = field(default_factory=dict)
     # Sandbox configuration {sandbox_params}
-    sandbox: dict
+    sandbox: dict = field(default_factory=dict)
     # Prompt configuration - path to yaml files
     prompt_template: str | None = None  # not required for OpenAI server
     prompt_config: str | None = None  # we will fetch it from dataset folder if not provided
@@ -65,7 +64,7 @@ class GenerateSolutionsConfig:
     split_name: str | None = None  # Can be train, validation, test or train_full (train + validation)
     data_file: str | None = None  # Can directly specify a data file, if using a custom dataset
 
-    batch_size: int = 16
+    batch_size: int = 128
     max_samples: int = -1  # If > 0, will stop after generating this many samples. Useful for debugging
     skip_filled: bool = False  # If True, will skip the generations that are already in the output file
 
@@ -106,8 +105,8 @@ cs = hydra.core.config_store.ConfigStore.instance()
 cs.store(name="base_generation_config", node=GenerateSolutionsConfig)
 
 
-@hydra.main(version_base=None, config_name='generation_config', config_path='.')
-def generate_solutions(cfg: GenerateSolutionsConfig):
+@hydra.main(version_base=None, config_name='base_generation_config')
+def generate(cfg: GenerateSolutionsConfig):
     cfg = GenerateSolutionsConfig(_init_nested=True, **cfg)
 
     LOG.info("Config used: %s", cfg)
@@ -163,31 +162,25 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
         for idx, data_point in tqdm(enumerate(data), initial=starting_idx, total=len(data) + starting_idx):
             if idx >= cfg.max_samples:
                 break
-
+            data_point.pop(cfg.generation_key, None)
             data_points.append(data_point)
 
             if len(data_points) == cfg.batch_size or idx == cfg.max_samples - 1:
-                if cfg.prompt_template:  # using strings as input if template is provided
-                    outputs = llm.generate(
-                        prompts=[prompt.build_string(data_point) for data_point in data_points],
-                        stop_phrases=list(prompt.config.template.stop_phrases),
-                        **asdict(cfg.inference),
-                    )
+                if cfg.prompt_template:
+                    prompts = [prompt.build_string(dp) for dp in data_points]
+                    stop_phrases = list(prompt.config.template.stop_phrases)
                 else:
-                    outputs = llm.generate(
-                        prompts=[prompt.build_messages(data_point) for data_point in data_points],
-                        **asdict(cfg.inference),
-                    )
+                    prompts = [prompt.build_messages(dp) for dp in data_points]
+                    stop_phrases = None
+
+                outputs = llm.generate(prompts=prompts, stop_phrases=stop_phrases, **asdict(cfg.inference))
 
                 for output, original_data_point in zip(outputs, data_points):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
                     # all of the ground-truth data to the output file alongside the generated solutions
-                    output.update(original_data_point)
-                    if 'error_message' not in output:
-                        output['error_message'] = extract_error_message(output['generation'])
-
                     if cfg.generation_key != "generation":
                         output[cfg.generation_key] = output.pop("generation")
+                    output.update(original_data_point)
 
                     fout.write(json.dumps(output) + "\n")
                 data_points = []
@@ -213,4 +206,4 @@ if __name__ == "__main__":
         print(HELP_MESSAGE)
     else:
         setup_logging()
-        generate_solutions()
+        generate()

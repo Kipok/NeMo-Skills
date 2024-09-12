@@ -79,11 +79,12 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_pa
     num_tasks = num_gpus
     if server_type == 'nemo':
         server_start_cmd = (
-            f"python /nemo_run/code/nemo_skills/inference/server/serve_nemo.py gpt_model_file={model_path} "
-            f"trainer.devices={num_gpus} "
-            f"trainer.num_nodes={num_nodes} "
-            f"tensor_model_parallel_size={num_gpus} "
-            f"pipeline_model_parallel_size={num_nodes} "
+            f"python -m nemo_skills.inference.server.serve_nemo "
+            f"    gpt_model_file={model_path} "
+            f"    trainer.devices={num_gpus} "
+            f"    trainer.num_nodes={num_nodes} "
+            f"    tensor_model_parallel_size={num_gpus} "
+            f"    pipeline_model_parallel_size={num_nodes} "
         )
         # somehow on slurm nemo needs multiple tasks, but locally only 1
         if cluster_config["executor"] == "local":
@@ -91,7 +92,7 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_pa
 
     elif server_type == 'vllm':
         server_start_cmd = (
-            f"NUM_GPUS={num_gpus} bash /nemo_run/code/nemo_skills/inference/server/serve_vllm.sh "
+            f"NUM_GPUS={num_gpus} bash nemo_skills/inference/server/serve_vllm.sh "
             f"{model_path} self-hosted-model 0 openai 5000"
         )
 
@@ -103,8 +104,8 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_pa
         # adding sleep to ensure the logs file exists
         # need this flag for stable Nemotron-4-340B deployment
         server_start_cmd = (
-            f"FORCE_NCCL_ALL_REDUCE_STRATEGY=1 python /nemo_run/code/nemo_skills/inference/server/serve_trt.py "
-            f"--model_path {model_path}"
+            f"FORCE_NCCL_ALL_REDUCE_STRATEGY=1 python -m nemo_skills.inference.server.serve_trt "
+            f"    --model_path {model_path}"
         )
         num_tasks = num_gpus
 

@@ -40,26 +40,25 @@ class DummyFuture:
         return self.return_value
 
 
-def unroll_files(prediction_jsonl_files):
-    for manifest_pattern in prediction_jsonl_files:
+def unroll_files(input_files):
+    for manifest_pattern in input_files:
         for manifest in sorted(glob.glob(manifest_pattern, recursive=True)):
             yield manifest
 
 
-def cleanup_tmp_files(prediction_jsonl_files):
+def cleanup_tmp_files(input_files):
     # removing any potentially present tmp files
-    for manifest in unroll_files(prediction_jsonl_files):
+    for manifest in unroll_files(input_files):
         try:
             os.remove(manifest + "-tmp")
         except OSError:
             pass
 
 
-def dump_data(prediction_jsonl_files, data, map_to_future, update_fn):
+def dump_data(input_files, data, map_to_future, update_fn):
     LOG.info("Waiting for current results and dumping to tmp files")
     tmp_file_handles = [
-        open(manifest + f"-tmp", "at", encoding="utf-8", buffering=1)
-        for manifest in unroll_files(prediction_jsonl_files)
+        open(manifest + f"-tmp", "at", encoding="utf-8", buffering=1) for manifest in unroll_files(input_files)
     ]
 
     for line_data in data:
@@ -77,10 +76,10 @@ def dump_data(prediction_jsonl_files, data, map_to_future, update_fn):
         file_handle.close()
 
 
-def write_tmp_files_back(prediction_jsonl_files):
+def write_tmp_files_back(input_files):
     """Will gracefully handle early exits on errors by properly merging files"""
     LOG.info("Writing temporary files back into original files")
-    for manifest in unroll_files(prediction_jsonl_files):
+    for manifest in unroll_files(input_files):
         # copying the rest of the results unchanged if any to tmp file
         with open(manifest + "-tmp", "rt") as fin:
             processed_lines = sum(1 for _ in fin)
@@ -106,14 +105,6 @@ class Sandbox(abc.ABC):
         ssh_key_path: Optional[str] = None - Path to the ssh key for tunneling.
             Can also be specified through NEMO_SKILLS_SSH_KEY_PATH env var.
     """
-
-    NOT_EXECUTED = "<not_executed>"
-    EXECUTION_ERROR = "Execution error:"
-    SYNTAX_ERROR = "Syntax error:"
-    RESULT_NOT_DEFINED_ERROR = "Result is not defined"
-    TIMEOUT_ERROR = "timeout"
-    UNDEFINED_ERROR = "Undefined error:"
-    ERROR_PREFIXES = (EXECUTION_ERROR, SYNTAX_ERROR, RESULT_NOT_DEFINED_ERROR, TIMEOUT_ERROR, UNDEFINED_ERROR)
 
     def __init__(
         self,
@@ -201,25 +192,19 @@ try:
     for code in code_snippets:
         with io.capture_output() as captured:
             exec_result = shell.run_cell(code)
-    # serializing to str to make sure things like Rational can be converted to json
-    output = f"{{captured.stdout}}{{captured.stderr}}".strip().replace("Out[1]: ", "")
-    if len(output) > {max_output_characters}:
-        output = output[:{max_output_characters}] + "<output cut>"
-    error_message = ""
-    if exec_result.error_in_exec is not None:
-        # full traceback will be part of output
-        error_message = f"{Sandbox.EXECUTION_ERROR} {{str(exec_result.error_in_exec)}}"
-    elif exec_result.error_before_exec is not None:
-        # full traceback will be part of output
-        error_message = f"{Sandbox.SYNTAX_ERROR} {{str(exec_result.error_before_exec)}}"
-    elif output == "":
-        error_message = "{Sandbox.RESULT_NOT_DEFINED_ERROR}"
-    to_return = {{"result": output, "error_message": error_message}}
+    stdout = captured.stdout.replace("Out[1]: ", "").strip()
+    stderr = captured.stderr.replace("Out[1]: ", "").strip()
+    if len(stdout) > {max_output_characters}:
+        stdout = stdout[:{max_output_characters}] + "<output cut>"
+    if len(stderr) > {max_output_characters}:
+        stderr = stderr[:{max_output_characters}] + "<output cut>"
+    to_return = {{"process_status": "completed", "stdout": stdout, "stderr": stderr}}
 except Exception:
     # removing useless prefix from traceback
     to_return = {{
-        "result": None,
-        "error_message": "{Sandbox.UNDEFINED_ERROR}" + "\\n".join(traceback.format_exc().split("\\n")[3:]),
+        "process_status": "error",
+        "stdout": "",
+        "stderr": "\\n".join(traceback.format_exc().split("\\n")[3:]),
     }}
 print(json.dumps(to_return))
 """
@@ -227,11 +212,10 @@ print(json.dumps(to_return))
         try:
             output = self._send_request(request, timeout)
         except requests.exceptions.Timeout:
-            output = {'result': None, 'error_message': Sandbox.TIMEOUT_ERROR}
-        # resetting state to not re-execute code with errors
-        if output['error_message']:
-            self.clear_session(session_id)
-            session_id = None
+            output = {"process_status": "timeout", "stdout": "Timed out", "stderr": "Timed out"}
+        # removing last state to not re-execute code with errors
+        if output['stderr']:
+            self.sessions[session_id] = self.sessions[session_id][:-1]
         return output, session_id
 
     def is_output_correct(self, pred_output, gt_output, include_percentage=True, tolerance=1e-4, timeout=10.0):
@@ -291,7 +275,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
 
     def batch_evaluate_results(
         self,
-        prediction_jsonl_files: List[str],
+        input_files: List[str],
         num_parallel_requests=100,
         in_memory_lines=1500,
         include_percentage=True,
@@ -304,8 +288,8 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         """Will write if the results are correct back into the original files."""
         import tqdm
 
-        file_handles = [open(manifest, "rt", encoding="utf-8") for manifest in unroll_files(prediction_jsonl_files)]
-        cleanup_tmp_files(prediction_jsonl_files)
+        file_handles = [open(manifest, "rt", encoding="utf-8") for manifest in unroll_files(input_files)]
+        cleanup_tmp_files(input_files)
 
         def update_fn(map_to_future, line_dict):
             line_dict["is_correct"] = map_to_future[
@@ -317,7 +301,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
             for line_idx, lines in tqdm.tqdm(enumerate(zip_longest(*file_handles))):
                 if line_idx % in_memory_lines == 0:
                     if line_idx > 0:  # dumping into tmp files
-                        dump_data(prediction_jsonl_files, data, map_to_future, update_fn)
+                        dump_data(input_files, data, map_to_future, update_fn)
                     # new in-memory buffer
                     data = []
                     map_to_future = {}
@@ -359,9 +343,9 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                 file_handle.close()
 
             if len(data) > 0:
-                dump_data(prediction_jsonl_files, data, map_to_future, update_fn)
+                dump_data(input_files, data, map_to_future, update_fn)
 
-        write_tmp_files_back(prediction_jsonl_files)
+        write_tmp_files_back(input_files)
 
 
 class LocalSandbox(Sandbox):
@@ -415,7 +399,7 @@ sandboxes = {
 }
 
 
-def get_sandbox(sandbox_type, **kwargs):
+def get_sandbox(sandbox_type: str = "local", **kwargs):
     """A helper function to make it easier to set sandbox through cmd."""
     sandbox_class = sandboxes[sandbox_type.lower()]
     return sandbox_class(**kwargs)

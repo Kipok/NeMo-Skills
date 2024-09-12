@@ -26,7 +26,7 @@ from nemo_skills.utils import nested_dataclass, unroll_files
 LOG = logging.getLogger(__file__)
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class SympyGraderConfig:
     # Sandbox configuration {sandbox_params}
     sandbox: dict = field(default_factory=lambda: {'sandbox_type': 'local'})
@@ -38,7 +38,7 @@ class SympyGraderConfig:
     ignore_cache: bool = False
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class LlmGraderConfig:
     batch_size: int = 100  # lower if running into rate limits
     tokens_to_generate: int = 4096  # will auto-lower to max possible for NGC models
@@ -49,7 +49,7 @@ class LlmGraderConfig:
     skip_filled: bool = True
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class MathGraderConfig:
     # Sandbox configuration {sandbox_params}
     grading_type: str = "sympy"  # sympy or llm
@@ -70,7 +70,7 @@ def math_grader(cfg):
         grading_config = asdict(grading_config)
         grading_config.pop('sandbox')
         sandbox.batch_evaluate_results(
-            prediction_jsonl_files=cfg.prediction_jsonl_files,
+            input_files=cfg.input_files,
             **grading_config,
             extract_from_boxed=eval_config.extract_from_boxed,
             extract_regex=eval_config.extract_regex,
@@ -96,7 +96,7 @@ def math_grader(cfg):
     prompt = Prompt(config=get_prompt_config('openai/math-answer-judge'))
 
     # assuming everything fits in memory for simplicity
-    for jsonl_file in unroll_files(cfg.prediction_jsonl_files):
+    for jsonl_file in unroll_files(cfg.input_files):
         with open(jsonl_file, 'rt', encoding='utf-8') as fin:
             data = [json.loads(line) for line in fin]
 
@@ -188,7 +188,7 @@ def code_grader(cfg):
     from nemo_skills.evaluation.code_utils import preprocess_code
 
     # processing each generation separately (TODO: evalplus can do it together, but need to figure out the format)
-    for jsonl_file in unroll_files(cfg.prediction_jsonl_files):
+    for jsonl_file in unroll_files(cfg.input_files):
         with open(jsonl_file) as f:
             samples = [preprocess_code(json.loads(line)) for line in f]
         # all changes will be done with a new key "completion", so it's ok to write to the same file
@@ -225,7 +225,7 @@ def code_grader(cfg):
 
 
 def if_grader(cfg):
-    for jsonl_file in unroll_files(cfg.prediction_jsonl_files):
+    for jsonl_file in unroll_files(cfg.input_files):
         parent_dir = Path(jsonl_file).absolute().parent
         cmd = (
             'cd /opt/benchmarks/google-research && python -m instruction_following_eval.evaluation_main '
@@ -277,7 +277,7 @@ def arena_grader(cfg):
     prompt = Prompt(config=get_prompt_config('openai/arena-judge'))
 
     # assuming everything fits in memory for simplicity
-    for jsonl_file in unroll_files(cfg.prediction_jsonl_files):
+    for jsonl_file in unroll_files(cfg.input_files):
         with open(jsonl_file, 'rt', encoding='utf-8') as fin:
             data = [json.loads(line) for line in fin]
 

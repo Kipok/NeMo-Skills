@@ -124,7 +124,7 @@ class WholeDatasetModeStrategy(ModeStrategies):
                 logging.info("Generate solutions")
                 generate_solutions(OmegaConf.structured(generate_solutions_config))
                 evaluate_results_config = EvaluateResultsConfig(
-                    prediction_jsonl_files=output_file,
+                    input_files=output_file,
                     sandbox=current_app.config['data_explorer']['sandbox'],
                 )
                 logging.info("Evaluate results")

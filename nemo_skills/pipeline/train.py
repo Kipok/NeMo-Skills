@@ -94,7 +94,7 @@ def get_training_cmd(
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"cd /nemo_run/code && "
         f"echo 'Starting training' && "
-        f"python nemo_skills/finetuning/start_{training_algo}.py "
+        f"python -m nemo_skills.finetuning.start_{training_algo} "
         f"    --config-name={config_name} --config-path={config_path} "
         f"    ++model.tensor_model_parallel_size={num_gpus} "
         f"    trainer.devices={num_gpus} "
@@ -113,10 +113,10 @@ def get_avg_checkpoints_cmd(nemo_model, output_dir, average_steps):
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"cd /nemo_run/code && "
-        f"python nemo_skills/finetuning/average_checkpoints.py "
+        f"python -m nemo_skills.finetuning.average_checkpoints "
         f"    --untarred_nemo_folder {nemo_model} "
         f"    --name_prefix=model "
-        f"    --checkpoint_dir={output_dir}/training/checkpoints {average_steps} &&"
+        f"    --checkpoint_dir={output_dir}/training/checkpoints {average_steps} && "
         f"mv {output_dir}/training/checkpoints/model-averaged.nemo {output_dir} "
     )
     return cmd
