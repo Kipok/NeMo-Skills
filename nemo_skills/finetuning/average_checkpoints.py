@@ -31,7 +31,7 @@ def main():
     parser.add_argument(
         "--name_prefix",
         required=True,
-        help="Name of the final checkpoint. Will append -averaged.nemo automatically.",
+        help="Name of the final checkpoint. Will append -averaged automatically.",
     )
     parser.add_argument(
         "--untarred_nemo_folder",
@@ -168,11 +168,7 @@ def main():
     for file in glob.glob(f"{args.untarred_nemo_folder}/*.model"):
         shutil.copy(file, os.path.join(ckpt_name, os.path.basename(file)))
 
-    with tarfile.open(ckpt_name + ".nemo", "w") as tar:
-        tar.add(ckpt_name, arcname=os.path.sep)
-
-    shutil.rmtree(ckpt_name)
-    logging.info(f"Averaged distributed checkpoint saved as : {ckpt_name + '.nemo'}")
+    logging.info(f"Averaged distributed checkpoint saved as: {ckpt_name}")
 
 
 if __name__ == "__main__":

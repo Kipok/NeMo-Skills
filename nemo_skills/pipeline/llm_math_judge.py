@@ -29,6 +29,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(usage="TODO")
     wrapper_args = parser.add_argument_group('wrapper arguments')
     wrapper_args.add_argument("--config_folder", default=None, help="Path to the cluster_configs folder")
+    wrapper_args.add_argument("--log_folder", required=False, help="Can specify a custom location for slurm logs")
     wrapper_args.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     wrapper_args.add_argument(
         "--input_files",
@@ -84,6 +85,8 @@ if __name__ == "__main__":
     cluster_config = get_cluster_config(args.cluster, args.config_folder)
     for input_file in args.input_files:
         check_if_mounted(cluster_config, input_file)
+    if args.log_folder:
+        check_if_mounted(cluster_config, args.log_folder)
     args.input_files = f'"{" ".join(args.input_files)}"'
 
     if args.server_address is None:  # we need to host the model
@@ -113,6 +116,7 @@ if __name__ == "__main__":
                 generation_commands=get_judge_cmd(args.input_files, extra_arguments),
             ),
             task_name="llm-math-judge",
+            log_folder=args.log_folder,
             container=cluster_config["containers"]["nemo-skills"],
             cluster_config=cluster_config,
             partition=args.partition,

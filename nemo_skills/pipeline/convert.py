@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from argparse import ArgumentParser
+from pathlib import Path
 
 import nemo_run as run
 from huggingface_hub import get_token
@@ -152,6 +153,9 @@ if __name__ == "__main__":
             exp,
             cmd=conversion_cmd,
             task_name=f'conversion-{args.convert_from}-{args.convert_to}',
+            log_folder=str(
+                Path(args.output_model).parent / "conversion-logs" / f"{args.convert_from}-{args.convert_to}"
+            ),
             container=container_map[(args.convert_from, args.convert_to)],
             num_gpus=args.num_gpus,
             num_nodes=args.num_nodes,
