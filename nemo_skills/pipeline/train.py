@@ -110,7 +110,7 @@ def get_training_cmd(
 
 
 def get_avg_checkpoints_cmd(nemo_model, output_dir, final_nemo_path, average_steps):
-    name = "model-" + ("-".join(args.steps) if args.steps is not None else '') + "-averaged"
+    name = "model" + ("-".join(average_steps[len('--steps ') :].split()) if average_steps else '') + "-averaged"
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"cd /nemo_run/code && "

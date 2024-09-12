@@ -122,7 +122,9 @@ def main():
     # Save model
     ckpt_name = os.path.join(
         args.checkpoint_dir,
-        args.name_prefix + ("-".join(args.steps) if args.steps is not None else '') + "-averaged",
+        args.name_prefix
+        + ("-".join([str(step) for step in args.steps]) if args.steps is not None else '')
+        + "-averaged",
         "model_weights",
     )
 
