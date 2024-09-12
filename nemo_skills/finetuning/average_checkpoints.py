@@ -120,7 +120,11 @@ def main():
             avg_weights[k] = array_z
 
     # Save model
-    ckpt_name = os.path.join(args.checkpoint_dir, args.name_prefix + "-averaged", "model_weights")
+    ckpt_name = os.path.join(
+        args.checkpoint_dir,
+        args.name_prefix + ("-".join(args.steps) if args.steps is not None else '') + "-averaged",
+        "model_weights",
+    )
 
     # save avg_weights
     for k in avg_weights:
