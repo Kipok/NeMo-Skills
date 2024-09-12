@@ -158,8 +158,8 @@ if __name__ == "__main__":
             add_task(
                 exp,
                 cmd=get_generation_command(server_address=args.server_address, generation_commands=eval_cmd),
-                # TODO: has to be the same currently to reuse the code, need a fix in nemo.run
-                task_name="eval",  # f'eval-{idx}',
+                task_name=f'eval-{idx}',
+                log_folder=f"{args.output_dir}/eval-logs",
                 container=cluster_config["containers"]["nemo-skills"],
                 cluster_config=cluster_config,
                 partition=args.partition,

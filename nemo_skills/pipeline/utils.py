@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import shlex
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
@@ -24,7 +25,8 @@ import yaml
 from huggingface_hub import get_token
 from nemo_run.config import NEMORUN_HOME
 from nemo_run.core.execution.docker import DockerExecutor
-from nemo_run.core.execution.slurm import JobPaths
+
+# from nemo_run.core.execution.slurm import SlurmJobDetails
 from nemo_run.core.serialization.zlib_json import ZlibJSONSerializer
 
 LOG = logging.getLogger(__file__)
@@ -36,6 +38,16 @@ def check_if_mounted(cluster_config, path_to_check):
         if path_to_check.startswith(mount.split(":")[1]):
             return
     raise ValueError(f"The path '{path_to_check}' is not mounted. Check cluster config.")
+
+
+def get_unmounted_path(cluster_config, path):
+    """Will return the path on the filesystem before it's mounted."""
+    if path is None:
+        return None
+    for mount in cluster_config.get('mounts', []):
+        if path.startswith(mount.split(":")[1]):
+            return mount.split(":")[0] + path[len(mount.split(":")[1]) :]
+    raise ValueError(f"The path '{path}' is not mounted. Check cluster config.")
 
 
 def _get_latest_dir(path) -> str:
@@ -123,27 +135,25 @@ def get_sandox_command():
     return "/entrypoint.sh && /start.sh"
 
 
-# def get_logs_cls(cluster_config, expname):
-#     class MainJobPaths(JobPaths):
-#         @property
-#         def stdout(self) -> Path:
-#             return Path(f"{cluster_config['workspace']}/{expname}" / "slurm-logs" / "sbatch.txt")
+# @dataclass(kw_only=True)
+# class CustomJobDetails(SlurmJobDetails):
+#     log_prefix: str = "main"
 
-#         @property
-#         def srun_stdout(self) -> Path:
-#             return Path(f"{cluster_config['workspace']}/{expname}" / "slurm-logs" / "job_logs.txt")
-
-#     return MainJobPaths
-
-
-# class MainJobPaths(JobPaths):
 #     @property
 #     def stdout(self) -> Path:
-#         return Path(self.folder / "slurm-logs" / "sbatch.txt")
+#         return Path(self.folder) / f"{self.log_prefix}_sbatch.log"
 
 #     @property
 #     def srun_stdout(self) -> Path:
-#         return Path(self.folder / "slurm-logs" / "job_logs.txt")
+#         return Path(self.folder) / f"{self.log_prefix}_srun.log"
+
+#     @property
+#     def stderr(self) -> Path:
+#         return Path(self.folder) / f"{self.log_prefix}_sbatch.log"
+
+#     @property
+#     def srun_stderr(self) -> Path:
+#         return Path(self.folder) / f"{self.log_prefix}_srun.log"
 
 
 # a very hacky way to cache cluster config - is there a better way to do this?
@@ -176,6 +186,9 @@ def get_executor(
     num_nodes,
     tasks_per_node,
     gpus_per_node,
+    job_name,
+    log_folder,
+    log_prefix: str = "main",
     mounts=None,
     partition=None,
     dependencies=None,
@@ -213,7 +226,6 @@ def get_executor(
         time=timeout,
         packager=run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl'),
         gpus_per_node=gpus_per_node,
-        job_name_prefix=cluster_config["job_name_prefix"],
         srun_args=[
             "--no-container-mount-home",
             "--overlap",
@@ -226,8 +238,11 @@ def get_executor(
         # TODO: can we relax this to allow partial node allocation?
         exclusive=True,
         mem=0,
-        # job_paths_cls=get_logs_cls(cluster_config, expname),
-        # job_paths_cls=MainJobPaths,
+        job_details=CustomJobDetails(
+            job_name=cluster_config.get("job_name_prefix", "") + job_name,
+            folder=get_unmounted_path(cluster_config, log_folder),
+            log_prefix=log_prefix,
+        ),
         wait_time_for_group_job=0.01,
         monitor_group_job_wait_time=20,
         dependencies=dependencies,
@@ -244,6 +259,7 @@ def add_task(
     num_tasks=1,
     num_gpus=1,
     num_nodes=1,
+    log_folder=None,
     partition=None,
     with_sandbox=False,
     server_config=None,
@@ -268,6 +284,9 @@ def add_task(
             gpus_per_node=server_config['num_gpus'],
             partition=partition,
             dependencies=dependencies,
+            job_name=task_name,
+            log_folder=log_folder,
+            log_prefix="server",
         )
         if cluster_config["executor"] == "local" and num_server_tasks > 1:
             server_cmd = f"mpirun --allow-run-as-root -np {num_server_tasks} bash -c {shlex.quote(server_cmd)}"
@@ -288,6 +307,9 @@ def add_task(
                 gpus_per_node=num_gpus,
                 partition=partition,
                 dependencies=dependencies,
+                job_name=task_name,
+                log_folder=log_folder,
+                log_prefix="main",
             )
         )
 
@@ -302,18 +324,21 @@ def add_task(
             partition=partition,
             mounts=tuple(),  # we don't want to mount anything
             dependencies=dependencies,
+            job_name=task_name,
+            log_folder=log_folder,
+            log_prefix="sandbox",
         )
         commands.append(get_sandox_command())
         executors.append(sandbox_executor)
 
     if len(commands) == 1:
         # to keep sbatch script simpler, we don't wrap in a list in this case
-        exp.add(run.Script(inline=commands[0]), executor=executors[0], name=task_name)
+        exp.add(run.Script(inline=commands[0]), executor=executors[0], name="nemo-run")
     else:
         exp.add(
             [run.Script(inline=command) for command in commands],
             executor=executors,
-            name=task_name,
+            name="nemo-run",
         )
 
 

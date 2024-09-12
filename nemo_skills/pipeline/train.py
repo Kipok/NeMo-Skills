@@ -205,7 +205,8 @@ if __name__ == "__main__":
             add_task(
                 exp,
                 cmd=train_cmd,
-                task_name=f'{args.training_algo}',  # f'{args.training_algo}-{job_id}',
+                task_name=f'{args.training_algo}-{job_id}',
+                log_folder=f"{args.output_dir}/training-logs",
                 container=cluster_config["containers"]["nemo"],
                 num_gpus=args.num_gpus,
                 num_nodes=args.num_nodes,
@@ -225,6 +226,7 @@ if __name__ == "__main__":
             exp,
             cmd=cmd,
             task_name="prepare-eval",
+            log_folder=f"{args.output_dir}/prepare-eval-logs",
             container=cluster_config["containers"]['nemo'],
             cluster_config=cluster_config,
             partition=args.partition,
@@ -235,4 +237,3 @@ if __name__ == "__main__":
         )
 
         run_exp(exp, cluster_config, sequential=True)
-        # exp.dryrun()
