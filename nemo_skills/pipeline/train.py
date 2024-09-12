@@ -110,6 +110,7 @@ def get_training_cmd(
 
 
 def get_avg_checkpoints_cmd(nemo_model, output_dir, final_nemo_path, average_steps):
+    name = "model" + ("-".join(average_steps[len('--steps ') :].split()) if average_steps else '') + "-averaged"
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"cd /nemo_run/code && "
@@ -117,7 +118,8 @@ def get_avg_checkpoints_cmd(nemo_model, output_dir, final_nemo_path, average_ste
         f"    --untarred_nemo_folder {nemo_model} "
         f"    --name_prefix=model "
         f"    --checkpoint_dir={output_dir}/training/checkpoints {average_steps} && "
-        f"mv {output_dir}/training/checkpoints/model-averaged {final_nemo_path} "
+        f"mkdir -p {os.path.dirname(final_nemo_path)} && "
+        f"mv {output_dir}/training/checkpoints/{name} {final_nemo_path} "
     )
     return cmd
 
