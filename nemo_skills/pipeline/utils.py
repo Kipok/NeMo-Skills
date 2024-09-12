@@ -25,8 +25,7 @@ import yaml
 from huggingface_hub import get_token
 from nemo_run.config import NEMORUN_HOME
 from nemo_run.core.execution.docker import DockerExecutor
-
-# from nemo_run.core.execution.slurm import SlurmJobDetails
+from nemo_run.core.execution.slurm import SlurmJobDetails
 from nemo_run.core.serialization.zlib_json import ZlibJSONSerializer
 
 LOG = logging.getLogger(__file__)
@@ -135,25 +134,25 @@ def get_sandox_command():
     return "/entrypoint.sh && /start.sh"
 
 
-# @dataclass(kw_only=True)
-# class CustomJobDetails(SlurmJobDetails):
-#     log_prefix: str = "main"
+@dataclass(kw_only=True)
+class CustomJobDetails(SlurmJobDetails):
+    log_prefix: str = "main"
 
-#     @property
-#     def stdout(self) -> Path:
-#         return Path(self.folder) / f"{self.log_prefix}_sbatch.log"
+    @property
+    def stdout(self) -> Path:
+        return Path(self.folder) / f"{self.log_prefix}_sbatch.log"
 
-#     @property
-#     def srun_stdout(self) -> Path:
-#         return Path(self.folder) / f"{self.log_prefix}_srun.log"
+    @property
+    def srun_stdout(self) -> Path:
+        return Path(self.folder) / f"{self.log_prefix}_srun.log"
 
-#     @property
-#     def stderr(self) -> Path:
-#         return Path(self.folder) / f"{self.log_prefix}_sbatch.log"
+    @property
+    def stderr(self) -> Path:
+        return Path(self.folder) / f"{self.log_prefix}_sbatch.log"
 
-#     @property
-#     def srun_stderr(self) -> Path:
-#         return Path(self.folder) / f"{self.log_prefix}_srun.log"
+    @property
+    def srun_stderr(self) -> Path:
+        return Path(self.folder) / f"{self.log_prefix}_srun.log"
 
 
 # a very hacky way to cache cluster config - is there a better way to do this?

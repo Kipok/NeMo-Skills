@@ -109,7 +109,7 @@ def get_training_cmd(
     return cmd
 
 
-def get_avg_checkpoints_cmd(nemo_model, output_dir, average_steps):
+def get_avg_checkpoints_cmd(nemo_model, output_dir, final_model_path, average_steps):
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"cd /nemo_run/code && "
@@ -117,7 +117,7 @@ def get_avg_checkpoints_cmd(nemo_model, output_dir, average_steps):
         f"    --untarred_nemo_folder {nemo_model} "
         f"    --name_prefix=model "
         f"    --checkpoint_dir={output_dir}/training/checkpoints {average_steps} && "
-        f"mv {output_dir}/training/checkpoints/model-averaged.nemo {output_dir} "
+        f"mv {output_dir}/training/checkpoints/model-averaged.nemo {final_model_path} "
     )
     return cmd
 
@@ -130,6 +130,11 @@ if __name__ == "__main__":
     parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     # TODO: maybe not required and reuse expname in that case?
     parser.add_argument("--output_dir", required=True, help="Where to put results")
+    parser.add_argument(
+        "--final_nemo_path",
+        required=False,
+        help="Where to put the final checkpoint. By default, it will be saved in the output_dir/model-averaged.nemo",
+    )
     parser.add_argument("--expname", required=True, help="Experiment name")
     parser.add_argument("--nemo_model", required=True)
     parser.add_argument("--training_data", required=True)
@@ -179,6 +184,9 @@ if __name__ == "__main__":
     check_if_mounted(cluster_config, args.output_dir)
     check_if_mounted(cluster_config, args.nemo_model)
     check_if_mounted(cluster_config, args.training_data)
+    if not args.final_model_path:
+        args.final_model_path = f"{args.output_dir}/model-averaged.nemo"
+    check_if_mounted(cluster_config, args.final_model_path)
     if args.validation_data:
         check_if_mounted(cluster_config, args.validation_data)
 
@@ -220,6 +228,7 @@ if __name__ == "__main__":
         cmd = get_avg_checkpoints_cmd(
             nemo_model=args.nemo_model,
             output_dir=args.output_dir,
+            final_model_path=args.final_model_path,
             average_steps=f"--steps {' '.join(map(str, args.average_steps))} " if args.average_steps else "",
         )
         add_task(
