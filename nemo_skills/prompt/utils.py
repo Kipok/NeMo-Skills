@@ -69,7 +69,10 @@ class FewShotExamplesConfig:
     def __post_init__(self):
         """Error checks + building example_dicts and retriever if needed."""
         if self.examples_type is not None:  # building example_dicts
-            self.example_dicts = examples_map[self.examples_type][: self.num_few_shots]
+            self.example_dicts = examples_map[self.examples_type]
+            if self.num_few_shots == 0:
+                self.num_few_shots = len(self.example_dicts)
+            self.example_dicts = self.example_dicts[: self.num_few_shots]
 
         if self.example_dicts is not None and self.num_few_shots > len(self.example_dicts):
             raise ValueError(
