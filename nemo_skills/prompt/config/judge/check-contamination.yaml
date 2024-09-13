@@ -1,0 +1,13 @@
+# adapted from https://github.com/lm-sys/llm-decontaminator/blob/main/detect_instruct.py
+
+system: ""
+
+user: |-
+  Please help me determine if the following two questions are the same.
+
+  Original question: {question}
+  Candidate question: {candidate}
+
+  Disregard the names, numbers, and minor changes in word order that appear within.
+  If the two questions are very similar and if they produce the same answer, we consider them to be the same question.
+  Please respond with only "True" (questions are the same) or "False" (questions are different). Do not respond with anything else.
