@@ -178,8 +178,7 @@ def generate(cfg: GenerateSolutionsConfig):
                 for output, original_data_point in zip(outputs, data_points):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
                     # all of the ground-truth data to the output file alongside the generated solutions
-                    if cfg.generation_key != "generation":
-                        output[cfg.generation_key] = output.pop("generation")
+                    output[cfg.generation_key] = output.pop("generation")
                     output.update(original_data_point)
 
                     fout.write(json.dumps(output) + "\n")

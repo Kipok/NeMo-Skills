@@ -47,12 +47,12 @@ class CheckContaminationConfig:
 
     batch_size: int = 128
     generation_key: str = "contaminated"
+    retrieve_key: str = "problem"  # will be used to fill in prompt with retrieve_key1 and retrieve_key2
 
     skip_filled: bool = False  # skip already filled generations
 
-    # TODO: support this
-    # ask both with question / candidate and candidate / question and fill True if any is True
-    # ask_both_ways: bool = False
+    # ask both with retrieve_key1 / retrieve_key2 and retrieve_key2 / retrieve_key1 and fill True if any is True
+    ask_both_ways: bool = False
 
     # can add this flag to just print the first prompt instead of running generation
     # useful to double check that your data can be loaded and prompt has what you expect
@@ -68,14 +68,6 @@ class CheckContaminationConfig:
 
 cs = hydra.core.config_store.ConfigStore.instance()
 cs.store(name="base_check_contamination_config", node=CheckContaminationConfig)
-
-
-def prefill_result(question: str, candidate: str) -> str | None:
-    """Will automatically fill result if there is an exact match."""
-    # TODO: update with ngram match?
-    if question.strip() == candidate.strip():
-        return "True"
-    return None
 
 
 # TODO: try to unify common parts in 3 similar generation scripts
@@ -100,8 +92,11 @@ def check_contamination(cfg: CheckContaminationConfig):
         return
 
     data_points = []
-    prefilled_results = []
-    prefilled_indices = []
+
+    # we need to make top_k (* 2 if cfg.ask_both_ways) generations for each data point
+    # correcting to not exceed the requesting batch size
+    top_k = len(data[0]['similar_items'])
+    cfg.batch_size = cfg.batch_size // top_k // (2 if cfg.ask_both_ways else 1)
 
     starting_idx = 0
     if cfg.skip_filled:
@@ -115,39 +110,47 @@ def check_contamination(cfg: CheckContaminationConfig):
     with open(cfg.output_file, "at" if cfg.skip_filled else "wt", encoding="utf-8", buffering=1) as fout:
         for idx, data_point in enumerate(tqdm(data, initial=starting_idx, total=len(data) + starting_idx)):
             data_point.pop(cfg.generation_key, None)
-            result = prefill_result(data_point)
-            if result is None:
-                data_points.append(data_point)
-            else:
-                prefilled_results.append({cfg.generation_key: result, **data_point})
-                prefilled_indices.append(idx)
+            data_points.append(data_point)
 
             if len(data_points) == cfg.batch_size or idx == len(data) - 1:
+                # constructing the data for llm calls
+                all_data = []
+                for original_data_point in data_points:
+                    for similar_item in original_data_point['similar_items']:
+                        all_data.append(
+                            {
+                                f'{cfg.retrieve_key}1': original_data_point[cfg.retrieve_key],
+                                f'{cfg.retrieve_key}2': similar_item,
+                            }
+                        )
+
+                        if cfg.ask_both_ways:
+                            all_data.append(
+                                {
+                                    f'{cfg.retrieve_key}2': original_data_point[cfg.retrieve_key],
+                                    f'{cfg.retrieve_key}1': similar_item,
+                                }
+                            )
                 if cfg.prompt_template:
-                    prompts = [prompt.build_string(dp) for dp in data_points]
+                    prompts = [prompt.build_string(dp) for dp in all_data]
                     stop_phrases = list(prompt.config.template.stop_phrases)
                 else:
-                    prompts = [prompt.build_messages(dp) for dp in data_points]
+                    prompts = [prompt.build_messages(dp) for dp in all_data]
                     stop_phrases = None
 
                 outputs = llm.generate(prompts=prompts, stop_phrases=stop_phrases, **asdict(cfg.inference))
-
-                prefilled_idx = 0
-                generated_idx = 0
-                for cur_idx in range(idx - len(data_points) - len(prefilled_results) + 1, idx + 1):
-                    if cur_idx in prefilled_indices:
-                        fout.write(json.dumps(prefilled_results[prefilled_idx]) + "\n")
-                        prefilled_idx += 1
-                    else:
-                        output = outputs[generated_idx]
-                        output[cfg.generation_key] = output.pop("generation")
-                        output.update(data_points[generated_idx])
-                        fout.write(json.dumps(output) + "\n")
-                        generated_idx += 1
-
-                data_points.clear()
-                prefilled_results.clear()
-                prefilled_indices.clear()
+                output_idx = 0
+                contaminated = False
+                for original_data_point in data_points:
+                    all_generations = []
+                    for output in outputs[output_idx : output_idx + top_k * (2 if cfg.ask_both_ways else 1)]:
+                        all_generations.append(output['generation'])
+                        if output['generation'].strip() == "True":
+                            contaminated = True
+                        output_idx += 1
+                    output[cfg.generation_key] = contaminated
+                    output["all_generations"] = all_generations
+                    output.update(original_data_point)
 
 
 HELP_MESSAGE = get_help_message(
