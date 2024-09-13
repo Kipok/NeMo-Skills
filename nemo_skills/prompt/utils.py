@@ -53,9 +53,10 @@ class FewShotExamplesConfig:
     prefix: str = ""
     template: str = ""
     suffix: str = ""
-    num_few_shots: int = 0
+    num_few_shots: int | None = None
 
     examples_type: Optional[str] = None
+    # TODO: we should remove this as a variable and only allow type to be passed
     example_dicts: Optional[List[Dict[str, Any]]] = None
 
     retrieval_field: Optional[str] = None  # e.g. question, reference_solution, etc.
@@ -70,15 +71,19 @@ class FewShotExamplesConfig:
         """Error checks + building example_dicts and retriever if needed."""
         if self.examples_type is not None:  # building example_dicts
             self.example_dicts = examples_map[self.examples_type]
-            if self.num_few_shots == 0:
+        if self.num_few_shots is None:
+            if self.example_dicts is not None:
                 self.num_few_shots = len(self.example_dicts)
-            self.example_dicts = self.example_dicts[: self.num_few_shots]
+            else:
+                self.num_few_shots = 0
 
         if self.example_dicts is not None and self.num_few_shots > len(self.example_dicts):
             raise ValueError(
                 f"There are not enough few shot examples in {self.examples_type}. "
                 f"Max number is {len(self.example_dicts)}"
             )
+        if self.example_dicts is not None:
+            self.example_dicts = self.example_dicts[: self.num_few_shots]
 
         if self.retrieved_entries == 0:
             self.retrieved_entries = 2 * self.num_few_shots
