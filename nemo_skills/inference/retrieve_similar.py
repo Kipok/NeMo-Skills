@@ -37,12 +37,12 @@ def encode(model, data, batch_size):
     return model.encode(data, batch_size=batch_size, show_progress_bar=True)
 
 
-def read_data(file_paths, retrieve_key) -> set:
+def read_data(file_paths, retrieve_key) -> list:
     all_data = set()
     for file_path in unroll_files(file_paths):
         with open(file_path, 'rt', encoding='utf-8') as file:
             all_data.update(set([json.loads(line)[retrieve_key] for line in file]))
-    return all_data
+    return list(all_data)
 
 
 @nested_dataclass
@@ -83,8 +83,8 @@ def retrieve_similar(cfg: RetrieveSimilarConfig):
 
     model = SentenceTransformer(cfg.model)
 
-    retrieve_from_list = list(read_data(cfg.retrieve_from, cfg.retrieve_key))
-    compare_to_list = list(read_data(cfg.compare_to, cfg.retrieve_key))
+    retrieve_from_list = read_data(cfg.retrieve_from, cfg.retrieve_key)
+    compare_to_list = read_data(cfg.compare_to, cfg.retrieve_key)
 
     retrieve_from_embeddings = encode(model, retrieve_from_list, batch_size=cfg.batch_size)
     compare_to_embeddings = encode(model, compare_to_list, batch_size=cfg.batch_size)

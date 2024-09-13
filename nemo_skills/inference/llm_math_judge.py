@@ -54,7 +54,7 @@ class LlmMathJudgeConfig:
     batch_size: int = 128
     generation_key: str = "judgement"
 
-    skip_filled: bool = True  # skip already filled judgements
+    skip_filled: bool = False  # skip already filled judgements
 
     # can add this flag to just print the first prompt instead of running generation
     # useful to double check that your data can be loaded and prompt has what you expect
@@ -64,7 +64,6 @@ class LlmMathJudgeConfig:
     code_execution: bool = False
 
     def __post_init__(self):
-        """Building data_file from dataset/split_name if not provided directly."""
         if isinstance(self.input_files, str):
             self.input_files = self.input_files.split(" ")
 
@@ -90,6 +89,7 @@ def prefill_judgement(data_point: dict) -> str | None:
     return None
 
 
+# TODO: should we change this to write to different files, so that it's easy to do things like majority voting?
 @hydra.main(version_base=None, config_name='base_llm_math_judge_config', config_path='.')
 def llm_math_judge(cfg: LlmMathJudgeConfig):
     cfg = LlmMathJudgeConfig(_init_nested=True, **cfg)
@@ -122,7 +122,7 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
         if cfg.dry_run:
             return
 
-        if cfg.skip_filled and all('judgement' in data_point for data_point in data):
+        if cfg.skip_filled and all(cfg.generation_key in data_point for data_point in data):
             continue
 
         data_points = []
@@ -147,7 +147,7 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
                 if judgement is None:
                     data_points.append(data_point)
                 else:
-                    judgements.append({'judgement': judgement, **data_point})
+                    judgements.append({cfg.generation_key: judgement, **data_point})
                     prefilled_indices.append(idx)
 
                 if len(data_points) == cfg.batch_size or idx == len(data) - 1:
@@ -168,7 +168,7 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
                             prefilled_idx += 1
                         else:
                             output = outputs[generated_idx]
-                            output['judgement'] = output.pop("generation")
+                            output[cfg.generation_key] = output.pop("generation")
                             output.update(data_points[generated_idx])
                             fout.write(json.dumps(output) + "\n")
                             generated_idx += 1

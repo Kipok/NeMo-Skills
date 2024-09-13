@@ -3,11 +3,11 @@
 system: ""
 
 user: |-
-  Please help me determine if the following two questions are the same.
+  Please help me determine if the following two math problems are the same.
 
-  Original question: {question}
-  Candidate question: {candidate}
+  First problem: {problem1}
+  Second problem: {problem2}
 
   Disregard the names, numbers, and minor changes in word order that appear within.
-  If the two questions are very similar and if they produce the same answer, we consider them to be the same question.
-  Please respond with only "True" (questions are the same) or "False" (questions are different). Do not respond with anything else.
+  If the two problems are very similar and if they produce the same answer, we consider them to be the same problem.
+  Please respond with only "True" (problems are the same) or "False" (problems are different). Do not respond with anything else.
