@@ -232,7 +232,7 @@ def load_config(config: str, config_folder: str | None = None) -> dict:
         The loaded dictionary.
     """
     if config_folder is None:
-        config_folder = str(Path(__file__).parent.absolute())
+        config_folder = str(Path(__file__).parent.absolute() / 'config')
 
     if config.endswith(".yaml"):
         config_path = Path(config).absolute()
