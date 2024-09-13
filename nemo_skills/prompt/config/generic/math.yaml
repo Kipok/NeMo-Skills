@@ -6,8 +6,8 @@ few_shot_examples:
   suffix: "Here is the problem you need to solve:\n"
   # this is built as <prefix>{template.format(example1)}{template.format(example2)}...{template.format(exampleN)}<suffix>
   # and available as {examples} key in the final prompt
-  # if num_few_shots = 0, then {examples} will be empty
-  num_few_shots: 0  # by default there are no examples, but can be changed from code/cmd
+  # if examples_type is not specified, then {examples} will be empty
+  # by default there are no examples, but can be changed from code/cmd
 
 system: ""
 

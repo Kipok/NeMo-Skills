@@ -7,8 +7,6 @@ few_shot_examples:
     Problem: {problem}
     Your response should end with "The final answer is \boxed{{[answer]}}" where [answer] is the response to the problem.{user_end}{assistant_begin}{solution}{assistant_end}{user_begin}
   suffix: ""
-
-  num_few_shots: 8
   examples_type: gsm8k_standard_few_shot
 
 
