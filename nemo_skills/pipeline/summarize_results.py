@@ -40,7 +40,7 @@ if __name__ == "__main__":
         'results_folder',
         help=(
             "Path to the folder with results. Needs to contain <benchmark> folders inside. "
-            "If cluster is not `local`, results from the cluster will be copied to this folder."
+            "If cluster is specified, will fetch the results from there."
         ),
     )
     parser.add_argument(
