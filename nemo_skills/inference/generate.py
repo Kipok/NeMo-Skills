@@ -57,6 +57,7 @@ class GenerateSolutionsConfig:
     # Prompt configuration - path to yaml files
     prompt_template: str | None = None  # not required for OpenAI server
     prompt_config: str | None = None  # we will fetch it from dataset folder if not provided
+    examples_type: str | None = None  # to be able to customize few-shot examples
     inference: InferenceConfig = field(default_factory=InferenceConfig)  # LLM call parameters
 
     # Can specify one of the existing datasets.
@@ -143,7 +144,7 @@ def generate(cfg: GenerateSolutionsConfig):
         dataset_module = importlib.import_module(f"nemo_skills.dataset.{cfg.dataset}")
         cfg.prompt_config = dataset_module.PROMPT_CONFIG
 
-    prompt = get_prompt(cfg.prompt_config, cfg.prompt_template)
+    prompt = get_prompt(cfg.prompt_config, cfg.prompt_template, examples_type=cfg.examples_type)
     LOG.info("Prompt used: %s", prompt)
 
     if cfg.max_samples < 0:

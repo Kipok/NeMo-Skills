@@ -48,6 +48,7 @@ class LlmMathJudgeConfig:
     # Prompt configuration - path to yaml files
     prompt_template: str | None = None  # not required for OpenAI server
     prompt_config: str = "judge/math"
+    examples_type: str | None = None  # to be able to customize few-shot examples
     inference: InferenceConfig = field(default_factory=InferenceConfig)  # LLM call parameters
 
     batch_size: int = 128
@@ -100,7 +101,7 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
     else:
         llm = get_model(**cfg.server)
 
-    prompt = get_prompt(cfg.prompt_config, cfg.prompt_template)
+    prompt = get_prompt(cfg.prompt_config, cfg.prompt_template, examples_type=cfg.examples_type)
     LOG.info("Prompt used: %s", prompt)
 
     # assuming everything fits in memory for simplicity
