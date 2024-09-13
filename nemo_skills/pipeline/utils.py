@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import shlex
+import tarfile
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -176,6 +177,32 @@ def get_cluster_config(cluster, config_folder=None):
 @lru_cache
 def get_tunnel(cluster_config):
     return run.SSHTunnel(**cluster_config["ssh_tunnel"])
+
+
+def cluster_download(tunnel, remote_dir, local_dir):
+    remote_dir = remote_dir.rstrip('/')
+    remote_tar = f"{remote_dir}.tar.gz"
+    local_tar = os.path.join(local_dir, os.path.basename(remote_tar))
+
+    # Create tarball of the remote directory
+    tunnel.run(
+        f"cd {os.path.dirname(remote_dir)} && tar -czf {remote_tar} {os.path.basename(remote_dir)}",
+        hide=True,
+    )
+
+    # Download the tarball to the local directory
+    tunnel.get(remote_tar, local_tar)
+
+    # Extract the tarball locally
+    os.makedirs(local_dir, exist_ok=True)
+    with tarfile.open(local_tar, "r:gz") as tar:
+        tar.extractall(path=local_dir)
+
+    # Clean up the tarball from the remote server
+    tunnel.run(f'rm {remote_tar}', hide=True)
+
+    # Clean up the local tarball
+    os.remove(local_tar)
 
 
 @lru_cache
