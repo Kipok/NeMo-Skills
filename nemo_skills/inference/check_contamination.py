@@ -52,7 +52,7 @@ class CheckContaminationConfig:
     skip_filled: bool = False  # skip already filled generations
 
     # ask both with retrieve_key1 / retrieve_key2 and retrieve_key2 / retrieve_key1 and fill True if any is True
-    ask_both_ways: bool = False
+    check_both_ways: bool = False
 
     # can add this flag to just print the first prompt instead of running generation
     # useful to double check that your data can be loaded and prompt has what you expect
@@ -84,19 +84,31 @@ def check_contamination(cfg: CheckContaminationConfig):
     with open(cfg.input_file, 'rt', encoding='utf-8') as fin:
         data = [json.loads(line) for line in fin]
 
+    first_element = {
+        f'{cfg.retrieve_key}1': data[0][cfg.retrieve_key],
+        f'{cfg.retrieve_key}2': data[0]['similar_items'][0],
+    }
     if cfg.prompt_template:
-        LOG.info("Example prompt:\nData dictionary: %s\nPrompt string: %s", data[0], prompt.build_string(data[0]))
+        LOG.info(
+            "Example prompt:\nData dictionary: %s\nPrompt string: %s",
+            first_element,
+            prompt.build_string(first_element),
+        )
     else:
-        LOG.info("Example prompt:\nData dictionary: %s\nPrompt messages: %s", data[0], prompt.build_messages(data[0]))
+        LOG.info(
+            "Example prompt:\nData dictionary: %s\nPrompt messages: %s",
+            first_element,
+            prompt.build_messages(first_element),
+        )
     if cfg.dry_run:
         return
 
     data_points = []
 
-    # we need to make top_k (* 2 if cfg.ask_both_ways) generations for each data point
+    # we need to make top_k (* 2 if cfg.check_both_ways) generations for each data point
     # correcting to not exceed the requesting batch size
     top_k = len(data[0]['similar_items'])
-    cfg.batch_size = cfg.batch_size // top_k // (2 if cfg.ask_both_ways else 1)
+    cfg.batch_size = max(1, cfg.batch_size // top_k // (2 if cfg.check_both_ways else 1))
 
     starting_idx = 0
     if cfg.skip_filled:
@@ -124,7 +136,7 @@ def check_contamination(cfg: CheckContaminationConfig):
                             }
                         )
 
-                        if cfg.ask_both_ways:
+                        if cfg.check_both_ways:
                             all_data.append(
                                 {
                                     f'{cfg.retrieve_key}2': original_data_point[cfg.retrieve_key],
@@ -143,14 +155,17 @@ def check_contamination(cfg: CheckContaminationConfig):
                 contaminated = False
                 for original_data_point in data_points:
                     all_generations = []
-                    for output in outputs[output_idx : output_idx + top_k * (2 if cfg.ask_both_ways else 1)]:
+                    elem = {}
+                    for output in outputs[output_idx : output_idx + top_k * (2 if cfg.check_both_ways else 1)]:
                         all_generations.append(output['generation'])
                         if output['generation'].strip() == "True":
                             contaminated = True
                         output_idx += 1
-                    output[cfg.generation_key] = contaminated
-                    output["all_generations"] = all_generations
-                    output.update(original_data_point)
+                    elem[cfg.generation_key] = contaminated
+                    elem["all_generations"] = all_generations
+                    elem.update(original_data_point)
+                    fout.write(json.dumps(elem) + '\n')
+                data_points = []
 
 
 HELP_MESSAGE = get_help_message(
