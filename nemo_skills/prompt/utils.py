@@ -162,8 +162,11 @@ class Prompt:
         """Builds all examples string concatenated by delimiter."""
         example_dicts = self.build_examples_dict(input_dict)
 
-        filled_examples = [self.build_filled_example(example) for example in example_dicts]
-        examples = "".join(filled_examples)
+        filled_examples = "".join([self.build_filled_example(example) for example in example_dicts])
+        if not filled_examples:
+            examples = ""
+        else:
+            examples = f"{self.config.few_shot_examples.prefix}{filled_examples}{self.config.few_shot_examples.suffix}"
         user = self.config.user.format(examples=examples, **input_dict)
         return user
 
