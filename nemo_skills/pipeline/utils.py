@@ -221,12 +221,13 @@ def get_executor(
 ):
     config_mounts = cluster_config.get('mounts', [])
     mounts = mounts or config_mounts
+    packager = run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl', check_uncommitted_changes=True)
     if cluster_config["executor"] == "local":
         if num_nodes > 1:
             raise ValueError("Local executor does not support multi-node execution")
         return DockerExecutor(
             container_image=container,
-            packager=run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl'),
+            packager=packager,
             ipc_mode="host",
             volumes=mounts,
             ntasks_per_node=1,
@@ -250,8 +251,8 @@ def get_executor(
         container_image=container,
         container_mounts=mounts,
         time=timeout,
-        packager=run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl'),
-        gpus_per_node=gpus_per_node,
+        packager=packager,
+        gpus_per_node=gpus_per_node if not cluster_config.get("disable_gpus_per_node", False) else None,
         srun_args=[
             "--no-container-mount-home",
             "--overlap",
