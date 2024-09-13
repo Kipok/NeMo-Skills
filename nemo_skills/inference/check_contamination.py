@@ -16,17 +16,15 @@ import json
 import logging
 import sys
 from dataclasses import asdict, field
-from pathlib import Path
-from typing import Any
 
 import hydra
 from tqdm import tqdm
 
-from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
+from nemo_skills.code_execution.sandbox import sandbox_params
 from nemo_skills.inference.generate import InferenceConfig
 from nemo_skills.inference.server.code_execution_model import get_model, server_params
 from nemo_skills.prompt.utils import get_prompt
-from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging, unroll_files
+from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging
 
 LOG = logging.getLogger(__file__)
 
@@ -118,6 +116,8 @@ def check_contamination(cfg: CheckContaminationConfig):
         except FileNotFoundError:
             LOG.warning(f"File `{cfg.output_file}` not found, starting from scratch")
     data = data[starting_idx:]
+    total = 0
+    num_contaminated = 0
 
     with open(cfg.output_file, "at" if cfg.skip_filled else "wt", encoding="utf-8", buffering=1) as fout:
         for idx, data_point in enumerate(tqdm(data, initial=starting_idx, total=len(data) + starting_idx)):
@@ -152,20 +152,25 @@ def check_contamination(cfg: CheckContaminationConfig):
 
                 outputs = llm.generate(prompts=prompts, stop_phrases=stop_phrases, **asdict(cfg.inference))
                 output_idx = 0
-                contaminated = False
                 for original_data_point in data_points:
                     all_generations = []
                     elem = {}
+                    contaminated = False
                     for output in outputs[output_idx : output_idx + top_k * (2 if cfg.check_both_ways else 1)]:
                         all_generations.append(output['generation'])
                         if output['generation'].strip() == "True":
                             contaminated = True
                         output_idx += 1
                     elem[cfg.generation_key] = contaminated
+                    if contaminated:
+                        num_contaminated += 1
+                    total += 1
                     elem["all_generations"] = all_generations
                     elem.update(original_data_point)
                     fout.write(json.dumps(elem) + '\n')
                 data_points = []
+    if total > 0:
+        LOG.info("Contamination portion: %.2f%% (%d/%d)", 100 * num_contaminated / total, num_contaminated, total)
 
 
 HELP_MESSAGE = get_help_message(
