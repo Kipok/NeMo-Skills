@@ -63,7 +63,7 @@ class GenerateSolutionsConfig:
     # Can specify one of the existing datasets.
     dataset: str | None = None
     split_name: str | None = None  # Can be train, validation, test or train_full (train + validation)
-    data_file: str | None = None  # Can directly specify a data file, if using a custom dataset
+    input_file: str | None = None  # Can directly specify an input file, if using a custom dataset
 
     batch_size: int = 128
     max_samples: int = -1  # If > 0, will stop after generating this many samples. Useful for debugging
@@ -83,14 +83,13 @@ class GenerateSolutionsConfig:
     code_execution: bool = False
 
     def __post_init__(self):
-        """Building data_file from dataset/split_name if not provided directly."""
-        if self.data_file is not None:
+        if self.input_file is not None:
             if self.dataset is not None or self.split_name is not None:
-                raise ValueError("Either `data_file` or `dataset` and `split_name` should be provided, but not both")
+                raise ValueError("Either `input_file` or `dataset` and `split_name` should be provided, but not both")
         else:
             if self.dataset is None or self.split_name is None:
-                raise ValueError("Either `data_file` or `dataset` and `split_name` should be provided")
-            self.data_file = Path(__file__).parents[1] / "dataset" / self.dataset / f"{self.split_name}.jsonl"
+                raise ValueError("Either `input_file` or `dataset` and `split_name` should be provided")
+            self.input_file = Path(__file__).parents[1] / "dataset" / self.dataset / f"{self.split_name}.jsonl"
 
         if self.dataset is None and self.prompt_config is None:
             raise ValueError("If `dataset` is not provided, `prompt_config` is required")
@@ -122,7 +121,7 @@ def generate(cfg: GenerateSolutionsConfig):
 
     # we currently assume the dataset is small enough to be loaded into memory
     data = []
-    with open(cfg.data_file, "rt", encoding="utf-8") as fin:
+    with open(cfg.input_file, "rt", encoding="utf-8") as fin:
         for line in fin:
             data.append(json.loads(line))
 
@@ -179,8 +178,7 @@ def generate(cfg: GenerateSolutionsConfig):
                 for output, original_data_point in zip(outputs, data_points):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
                     # all of the ground-truth data to the output file alongside the generated solutions
-                    if cfg.generation_key != "generation":
-                        output[cfg.generation_key] = output.pop("generation")
+                    output[cfg.generation_key] = output.pop("generation")
                     output.update(original_data_point)
 
                     fout.write(json.dumps(output) + "\n")
