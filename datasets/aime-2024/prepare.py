@@ -153,8 +153,8 @@ if __name__ == "__main__":
         new_entry = {}
 
         if url.endswith("2024_AIME_I_Problems/Problem_12"):
-            expected_answer = '385' 
-        
+            expected_answer = '385'
+
         new_entry["question"] = question
         new_entry["expected_answer"] = expected_answer
         new_entry["reference_solution"] = solution
