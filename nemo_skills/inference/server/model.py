@@ -19,6 +19,7 @@ import logging
 import os
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Union
 
 import requests
@@ -30,7 +31,9 @@ def remove_stop_phrases(text: str, stop_phrases: list[str]) -> str:
     """Removes everything after the last stop token."""
     if not stop_phrases:
         return text
-    return re.split("|".join([sp.replace('|', '\\|') for sp in stop_phrases]), text, maxsplit=1)[0]
+    # Escape all special characters in stop phrases
+    escaped_stop_phrases = [re.escape(sp) for sp in stop_phrases]
+    return re.split("|".join(escaped_stop_phrases), text, maxsplit=1)[0]
 
 
 def preprocess_request(request: dict):
@@ -72,8 +75,12 @@ class BaseModel(abc.ABC):
     ):
         self.server_host = host
         self.server_port = port
-        self.ssh_server = os.getenv("NEMO_SKILLS_SSH_SERVER", ssh_server)
-        self.ssh_key_path = os.getenv("NEMO_SKILLS_SSH_KEY_PATH", ssh_key_path)
+        self.ssh_server = ssh_server
+        self.ssh_key_path = ssh_key_path
+        if ssh_server is None:
+            self.ssh_server = os.getenv("NEMO_SKILLS_SSH_SERVER")
+        if ssh_key_path is None:
+            self.ssh_key_path = os.getenv("NEMO_SKILLS_SSH_KEY_PATH")
 
         if self.ssh_server and self.ssh_key_path:
             import sshtunnel_requests
@@ -209,22 +216,35 @@ class NemoModel(BaseModel):
         return outputs
 
 
-# TODO: this is broken
 class OpenAIModel(BaseModel):
     def __init__(
         self,
-        model,
+        model=None,
+        base_url=None,
         api_key=None,
+        max_parallel_requests: int = 100,  # can adjust to avoid rate-limiting
         **kwargs,
     ):
         super().__init__(**kwargs)
         from openai import OpenAI
 
+        if model is None:
+            model = os.getenv("NEMO_SKILLS_OPENAI_MODEL")
+            if model is None:
+                raise ValueError("model argument is required for OpenAI model.")
+
+        if base_url is None:
+            base_url = os.getenv("NEMO_SKILLS_OPENAI_BASE_URL")
+
         if api_key is None:
-            api_key = os.getenv("OPENAI_API_KEY", api_key)
+            if base_url is not None and 'api.nvidia.com' in base_url:
+                api_key = os.getenv("NVIDIA_API_KEY", api_key)
+            else:
+                api_key = os.getenv("OPENAI_API_KEY", api_key)
 
         self.model = model
-        self.client = OpenAI(api_key=api_key)
+        self.client = OpenAI(api_key=api_key, base_url=base_url)
+        self.max_parallel_requests = max_parallel_requests
 
     def generate(
         self,
@@ -236,30 +256,111 @@ class OpenAIModel(BaseModel):
         repetition_penalty: float = 1.0,
         random_seed: int = 0,
         stop_phrases: list[str] | None = None,
+        reduce_generation_tokens_if_error: bool = True,
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
         if stop_phrases is None:
             stop_phrases = []
         if top_k != 0:
-            raise ValueError("`top_k` is not supported by OpenAI, please set it to default value `0`.")
+            raise ValueError("`top_k` is not supported by OpenAI API, please set it to default value `0`.")
 
-        outputs = []
-        for prompt in prompts:
-            response = self._send_request(
-                prompt=prompt,
-                tokens_to_generate=tokens_to_generate,
-                temperature=temperature,
-                top_p=top_p,
-                repetition_penalty=repetition_penalty,
-                random_seed=random_seed,
-                stop_phrases=stop_phrases,
-            )
-            outputs.append({'generation': response})
+        futures = []
+        with ThreadPoolExecutor(max_workers=self.max_parallel_requests) as executor:
+            for prompt in prompts:
+                futures.append(
+                    executor.submit(
+                        self._send_request,
+                        prompt=prompt,
+                        tokens_to_generate=tokens_to_generate,
+                        temperature=temperature,
+                        top_p=top_p,
+                        repetition_penalty=repetition_penalty,
+                        random_seed=random_seed,
+                        stop_phrases=stop_phrases,
+                        reduce_generation_tokens_if_error=reduce_generation_tokens_if_error,
+                    )
+                )
+
+        outputs = [{'generation': future.result()} for future in futures]
 
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
 
         return outputs
+
+    def batch_generate(
+        self,
+        prompts: list[str],
+        tokens_to_generate: int = 512,
+        temperature: float = 0.0,
+        top_p: float = 0.95,
+        top_k: int = 0,
+        repetition_penalty: float = 1.0,
+        random_seed: int = 0,
+        stop_phrases: list[str] | None = None,
+    ) -> list[dict]:
+        # only supported by the OpenAI endpoint!
+        if stop_phrases is None:
+            stop_phrases = []
+        if top_k != 0:
+            raise ValueError("`top_k` is not supported by OpenAI API, please set it to default value `0`.")
+
+        # preparing the requests jsonl file
+        with open("requests.jsonl", "wt", encoding='utf-8') as fout:
+            for idx, prompt in enumerate(prompts):
+                fout.write(
+                    json.dumps(
+                        {
+                            "custom_id": f"{idx}",
+                            "method": "POST",
+                            "url": "/v1/chat/completions",
+                            "body": {
+                                "model": self.model,
+                                "messages": self._parse_prompt(prompt),
+                                "max_tokens": tokens_to_generate,
+                                "temperature": temperature,
+                                "top_p": top_p,
+                                "presence_penalty": repetition_penalty,
+                                "seed": random_seed,
+                                "stop": stop_phrases,
+                            },
+                        }
+                    )
+                    + "\n"
+                )
+
+        with open("requests.jsonl", "rb") as batch_file_handle:
+            batch_file_id = self.client.files.create(file=batch_file_handle, purpose="batch").id
+
+            metadata = self.client.batches.create(
+                input_file_id=batch_file_id,
+                endpoint="/v1/chat/completions",
+                completion_window="24h",  # the only supported value, but should finish faster
+                metadata={"description": "batch job"},
+            )
+
+        return metadata
+
+    def get_batch_results(self, batch_id):
+        metadata = self.client.batches.retrieve(batch_id)
+        outputs = None
+        if metadata.status == 'completed' and metadata.output_file_id is not None:
+            file_response = self.client.files.content(metadata.output_file_id)
+            responses = file_response.text
+            outputs = []
+            for line in responses.split('\n')[:-1]:
+                data = json.loads(line)
+                outputs.append(
+                    {
+                        'custom_id': data['custom_id'],
+                        'generation': data['response']['body']['choices'][0]['message']['content'],
+                    }
+                )
+            outputs = sorted(outputs, key=lambda x: int(x['custom_id']))
+            for output in outputs:
+                output.pop('custom_id')
+
+        return metadata, outputs
 
     def _send_request(
         self,
@@ -270,18 +371,53 @@ class OpenAIModel(BaseModel):
         repetition_penalty: float,
         random_seed: int,
         stop_phrases: list[str],
+        reduce_generation_tokens_if_error: bool = True,
     ) -> str:
+        import openai
+
         messages = self._parse_prompt(prompt)
-        response = self.client.chat.completions.create(
-            model=self.model,
-            temperature=temperature,
-            top_p=top_p,
-            max_tokens=tokens_to_generate,
-            presence_penalty=repetition_penalty,
-            seed=random_seed,
-            stop=stop_phrases,
-            messages=messages,
-        ).choices[0]
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                temperature=temperature,
+                top_p=top_p,
+                max_tokens=tokens_to_generate,
+                presence_penalty=repetition_penalty,
+                seed=random_seed,
+                stop=stop_phrases,
+                messages=messages,
+            )
+            response = response.choices[0]
+        except openai.BadRequestError as e:
+            # this likely only works for Nvidia-hosted models
+            if not reduce_generation_tokens_if_error:
+                raise
+            msg = e.body['detail']
+            # expected message:
+            # This model's maximum context length is N tokens.
+            # However, you requested X tokens (Y in the messages, Z in the completion).
+            # Please reduce the length of the messages or completion.
+            if msg.startswith("This model's maximum context length is"):
+                numbers = re.findall(r"\d+", msg)
+                max_tokens = int(numbers[0]) - int(numbers[2])
+                LOG.warning("Reached max tokens! Reducing the number of tokens to generate to %d", max_tokens)
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    temperature=temperature,
+                    top_p=top_p,
+                    max_tokens=max_tokens,
+                    presence_penalty=repetition_penalty,
+                    seed=random_seed,
+                    stop=stop_phrases,
+                    messages=messages,
+                ).choices[0]
+            else:
+                raise
+        except AttributeError:
+            # sometimes response is a string?
+            LOG.error("Unexpected response from OpenAI API: %s", response)
+            raise
+
         output = response.message.content
         return output
 
@@ -293,13 +429,24 @@ class OpenAIModel(BaseModel):
         system_pattern = re.compile(r"<system_start>(.*?)<system_end>", re.DOTALL)
         user_pattern = re.compile(r"<user_start>(.*?)<user_end>", re.DOTALL)
         generation_pattern = re.compile(r"<assistant_start>(.*)", re.DOTALL)
+        try:
+            system_message = system_pattern.search(prompt).group(1)
+        except AttributeError:
+            system_message = ""
+        try:
+            user_message = user_pattern.search(prompt).group(1)
+        except AttributeError:
+            user_message = prompt
         messages = [
-            {"role": "system", "content": system_pattern.search(prompt).group(1)},
-            {"role": "user", "content": user_pattern.search(prompt).group(1)},
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message},
         ]
-        generation_msg = generation_pattern.search(prompt).group(1)
-        if generation_msg:
-            messages.append({"role": "assistant", "content": generation_msg})
+        try:
+            assistant_message = generation_pattern.search(prompt).group(1)
+            if assistant_message:
+                messages.append({"role": "assistant", "content": assistant_message})
+        except AttributeError:
+            pass
         return messages
 
 

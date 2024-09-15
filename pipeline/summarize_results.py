@@ -18,7 +18,6 @@ import argparse
 import glob
 import json
 import logging
-import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -28,6 +27,9 @@ sys.path.append(str(Path(__file__).absolute().parents[1]))
 sys.path.append(str(Path(__file__).absolute().parents[0]))
 
 from compute_metrics import EVALUATOR_MAP, compute_metrics
+
+from nemo_skills.evaluation.metrics import MathEval
+from nemo_skills.utils import setup_logging
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -41,7 +43,10 @@ if __name__ == "__main__":
         default=[],
         help="Specify benchmarks to run. If not specified, all benchmarks in the results_folder will be used.",
     )
+    parser.add_argument("--debug", action="store_true", help="Print debug information")
     args = parser.parse_args()
+
+    setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not args.debug else logging.DEBUG)
 
     # running compute_metrics.py to get greedy, majority and pass @k results for all benchmarks available
     benchmarks = glob.glob(f'{args.results_folder}/*')
@@ -58,8 +63,10 @@ if __name__ == "__main__":
         if not Path(benchmark_path).is_dir():
             continue
         try:
-            evaluator = EVALUATOR_MAP[benchmark]()
-            if benchmark in ['human-eval', 'mbpp']:
+            evaluator = EVALUATOR_MAP.get(benchmark, MathEval)()
+            results[benchmark] = {}
+            # TODO: we should just return all available aggregations from compute_metrics directly
+            if evaluator is not MathEval:
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
                     results[benchmark]['greedy'] = compute_metrics(
                         prediction_jsonl_files=[f"{benchmark_path}/output-greedy.jsonl"],
@@ -73,7 +80,6 @@ if __name__ == "__main__":
                         aggregation_mode="best",
                     )
             else:
-                results[benchmark] = {}
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
                     results[benchmark]['greedy'] = compute_metrics(
                         prediction_jsonl_files=[f"{benchmark_path}/output-greedy.jsonl"],
@@ -92,29 +98,30 @@ if __name__ == "__main__":
                         evaluator=evaluator,
                         aggregation_mode="best",
                     )
-
-        except subprocess.CalledProcessError as e:
+        except Exception as e:
             print(f"Error running compute_metrics.py for {benchmark}: {e}")
 
     lines_to_write = []
     for benchmark, benchmark_results in results.items():
+        if not benchmark_results:
+            continue
         max_widths = {}
-        max_widths['evaluation mode'] = len('evaluation mode')
+        max_widths['evaluation_mode'] = len('evaluation_mode')
         for eval_mode, metrics in benchmark_results.items():
             for metric_key, metric_value in metrics.items():
                 max_widths[metric_key] = max(
                     max_widths.get(metric_key, len(metric_key)),
                     len(f"{metric_value:.2f}" if isinstance(metric_value, float) else str(metric_value)),
                 )
-            max_widths['evaluation mode'] = max(max_widths['evaluation mode'], len(eval_mode))
+            max_widths['evaluation_mode'] = max(max_widths['evaluation_mode'], len(eval_mode))
 
         total_width = sum(max_widths.values()) + (len(max_widths) - 1) * 3
         print(f' {benchmark} '.center(total_width, '-'))
-        headers = ['evaluation mode'] + list(list(benchmark_results.values())[0].keys())
+        headers = ['evaluation_mode'] + list(list(benchmark_results.values())[0].keys())
         print(' | '.join([f'{header:<{max_widths[header]}}' for header in headers]))
 
         for eval_mode, metrics in benchmark_results.items():
-            values = [f'{eval_mode:<{max_widths["evaluation mode"]}}']
+            values = [f'{eval_mode:<{max_widths["evaluation_mode"]}}']
             for metric_key, metric_value in metrics.items():
                 if isinstance(metric_value, float):
                     metric_value = f"{metric_value:.2f}"

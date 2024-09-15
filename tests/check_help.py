@@ -26,7 +26,7 @@ pipeline_script_list = [
     'pipeline/run_eval.py',
     'pipeline/run_labeling.py',
     'pipeline/run_pipeline.py',
-    'pipeline/run_sft.py',
+    'pipeline/run_training.py',
     'pipeline/start_server.py',
     'pipeline/summarize_results.py',
 ]
@@ -35,6 +35,7 @@ pipeline_script_list = [
 skills_script_list = [
     'nemo_skills/inference/generate_solutions.py',
     'nemo_skills/evaluation/evaluate_results.py',
+    'nemo_skills/evaluation/fill_majority_answer.py',
 ]
 
 

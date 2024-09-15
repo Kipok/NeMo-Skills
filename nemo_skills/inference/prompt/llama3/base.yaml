@@ -1,5 +1,7 @@
+# Generic prompt for Llama base
+
 few_shot_examples:
-  template: "Question:\n{question}{context}\n\nMy solution:\n{generation}\n\n\n\n\n\n"
+  template: "Question:\n{question}\n\nMy solution:\n{generation}\n\n\n\n\n\n"
 
 system: ""
 user: |-
@@ -7,7 +9,7 @@ user: |-
     Make sure to put the answer (and only answer) inside \boxed{{}}.
 
     {examples}Question:
-    {question}{context}
+    {question}
 
 prompt_template: "<|begin_of_text|>{user}\n\nMy solution:\n{generation}"
 

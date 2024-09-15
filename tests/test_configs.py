@@ -24,7 +24,6 @@ def test_error_on_extra_params():
         output_file=./test-results/gsm8k/output-greedy.jsonl \
         +prompt=openmathinstruct/sft \
         ++prompt.few_shot_examples.examples_type=null \
-        ++prompt.context_type=empty \
         ++dataset=gsm8k \
         ++split_name=test \
         ++server.server_type=nemo \
@@ -42,7 +41,6 @@ def test_error_on_extra_params():
         +prompt=openmathinstruct/sft \
         ++prompt.few_shot_examples.examples_type=null \
         ++prompt.num_few_shots=0 \
-        ++prompt.context_type=empty \
         ++dataset=gsm8k \
         ++split_name=test \
         ++server.server_type=nemo \
@@ -56,7 +54,8 @@ def test_error_on_extra_params():
     # sandbox.sandbox_host is not supported
     cmd = """python nemo_skills/evaluation/evaluate_results.py \
         ++prediction_jsonl_files=./test-results/gsm8k/output-greedy.jsonl \
-        ++sandbox.sandbox_host=123"""
+        ++eval_config.grading_config.sandbox.sandbox_type=local \
+        ++eval_config.grading_config.sandbox.sandbox_host=123"""
     try:
         subprocess.run(cmd, shell=True, check=True, capture_output=True)
     except subprocess.CalledProcessError as e:

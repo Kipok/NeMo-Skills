@@ -150,6 +150,7 @@ if __name__ == "__main__":
         question = get_question_or_solution(url, choice='question')
         solution, expected_answer = get_question_or_solution(url, choice='solution')
         new_entry = {}
+<<<<<<< HEAD
         
         ### fix one expected_error
         if url.endswith("2024_AIME_I_Problems/Problem_12"):
@@ -162,6 +163,13 @@ if __name__ == "__main__":
         new_entry["expected_answer"] = expected_answer
         new_entry["reference_solution"] = solution
         
+=======
+
+        new_entry["question"] = question
+        new_entry["expected_answer"] = expected_answer
+        new_entry["reference_solution"] = solution
+
+>>>>>>> c72baa85953315b3a310ad29fa8b0ce4a4e067c9
         data.append(new_entry)
 
     with open(output_file, "wt", encoding="utf-8") as fout:
