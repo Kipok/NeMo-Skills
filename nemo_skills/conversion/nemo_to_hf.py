@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # largely copied from https://github.com/NVIDIA/NeMo/blob/main/scripts/nlp_language_modeling/convert_nemo_llama_to_hf.py
-# NOTE: Only works with Llama-like models (Llama2, CodeLlama, Mistral)
+# NOTE: Only works with Llama-like models
 
 
 import os
