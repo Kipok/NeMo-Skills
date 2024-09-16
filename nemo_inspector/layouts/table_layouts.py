@@ -663,7 +663,7 @@ def get_update_dataset_layout(base_model: str, update_function: str, models: Lis
                         available_models,
                         update_eval_function,
                         data,
-                        0,
+                        data,
                         errors_dict,
                     ),
                     table_data[question_id][base_model],
