@@ -18,7 +18,8 @@ from pathlib import Path
 
 # tuple of dataset name, available splits and prepared sft files
 DATASETS = [
-    ('aime-2024', ['test']),
+    ('aime24', ['test']),
+    ('amc23', ['test']),
     ('algebra222', ['test']),
     ('arena-hard', ['test']),
     ('asdiv', ['test']),
