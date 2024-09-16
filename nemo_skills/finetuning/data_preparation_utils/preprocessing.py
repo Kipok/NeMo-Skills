@@ -22,7 +22,7 @@ from typing import Dict, Optional
 from sdp.processors.base_processor import BaseProcessor
 from tqdm.contrib.concurrent import process_map
 
-from nemo_skills.prompt.utils import Prompt, get_prompt_config
+from nemo_skills.prompt.utils import Prompt, get_prompt
 from nemo_skills.utils import unroll_files
 
 LOG = logging.getLogger(__file__)
@@ -229,7 +229,8 @@ class ShuffleAndDownsampleData(BaseProcessor):
 class WriteFinalSftManifest(BaseProcessor):
     def __init__(
         self,
-        prompt_type: str,
+        prompt_config: str,
+        prompt_template: str,
         chat_format: str | None = None,  # nemotron/llama/None
         input_key: str = "input",
         output_key: str = "output",
@@ -239,7 +240,8 @@ class WriteFinalSftManifest(BaseProcessor):
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.prompt_type = prompt_type
+        self.prompt_config = prompt_config
+        self.prompt_template = prompt_template
         self.input_key = input_key
         self.output_key = output_key
         self.chat_format = chat_format
@@ -258,8 +260,7 @@ class WriteFinalSftManifest(BaseProcessor):
             open(self.input_manifest_file, "rt", encoding="utf-8") as fin,
             open(self.output_manifest_file, "wt", encoding="utf-8") as fout,
         ):
-            prompt_config = get_prompt_config(self.prompt_type)
-            prompt = Prompt(config=prompt_config)
+            prompt = get_prompt(self.prompt_config, self.prompt_template)
             # only looping over the correct samples (unless asked for incorrect)
             for line in fin:
                 elem = json.loads(line)
@@ -274,6 +275,8 @@ class WriteFinalSftManifest(BaseProcessor):
                 output_sample = {}
                 if not self.exclude_optional_keys:
                     output_sample = json.loads(line)
+                elif "expected_answer" in elem:
+                    output_sample["expected_answer"] = elem["expected_answer"]
 
                 if self.chat_format is None:
                     generation = elem.pop(self.output_key)
@@ -281,15 +284,15 @@ class WriteFinalSftManifest(BaseProcessor):
                     output_sample["output"] = generation + self.generation_suffix
                 elif self.chat_format.lower() == "nemotron":
                     output_sample['conversations'] = [
-                        {'value': prompt_config.user.format(**elem), 'from': 'User', 'canonical_form': ''},
+                        {'value': self.prompt.config.user.format(**elem), 'from': 'User', 'canonical_form': ''},
                         {'value': elem.pop(self.output_key), 'from': 'Assistant', 'canonical_form': ''},
                     ]
-                    output_sample['system'] = prompt_config.system
+                    output_sample['system'] = self.prompt.config.system
                     output_sample['mask'] = 'User'
                 elif self.chat_format.lower() == "llama":
                     output_sample['conversations'] = [
                         {
-                            'value': prompt_config.user.format(**elem),
+                            'value': self.prompt.config.user.format(**elem),
                             'from': '<|start_header_id|>user<|end_header_id|>',
                             'canonical_form': '',
                         },
@@ -299,7 +302,7 @@ class WriteFinalSftManifest(BaseProcessor):
                             'canonical_form': '',
                         },
                     ]
-                    output_sample['system'] = prompt_config.system
+                    output_sample['system'] = self.prompt.config.system
                     output_sample['mask'] = '<|start_header_id|>user<|end_header_id|>'
                 else:
                     raise ValueError(f"Chat format {self.chat_format} is not supported")

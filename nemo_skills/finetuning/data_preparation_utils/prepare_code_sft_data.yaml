@@ -6,7 +6,7 @@ preprocessed_dataset_files: null  # can specify multiple patters separated by sp
 prediction_jsonl_files: null  # can specify datasets from HF instead of prediction_jsonl_files
 output_path: ???
 
-exclude_optional_keys: true # exclude keys other than input and output from the final manifest
+exclude_optional_keys: true # exclude keys other than input, output and expected_answer from the final manifest
 metadata: null  # can provide additional metadata to store (e.g. dataset or generation_type)
 skip_first: 0  # useful for skipping validation set from train_full generation (it's always first)
 

@@ -26,8 +26,6 @@ from sdp.processors.base_processor import BaseParallelProcessor, DataEntry
 from tqdm.contrib.concurrent import process_map
 
 from nemo_skills.code_execution import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS
-from nemo_skills.synthetic_arithmetic.solve_expression import merge_solution_steps, solve_expression
-from nemo_skills.synthetic_arithmetic.utils import extract_expressions
 
 LOG = logging.getLogger(__file__)
 
@@ -132,14 +130,14 @@ class MajorityFilter(BaseFilter):
     def __init__(
         self,
         min_majority_votes: int = 0,
-        min_majority_portion: int = 0.0,
+        min_majority_percentage: int = 0.0,
         drop_negative_answers: bool = False,
         drop_noninteger_answers: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.min_majority_votes = min_majority_votes
-        self.min_majority_portion = min_majority_portion
+        self.min_majority_percentage = min_majority_percentage
         self.drop_negative_answers = drop_negative_answers
         self.drop_noninteger_answers = drop_noninteger_answers
 
@@ -148,19 +146,8 @@ class MajorityFilter(BaseFilter):
         total_votes = data_entry.get("total_votes", None)
         if majority_votes is None or total_votes is None:
             return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
-        if majority_votes < self.min_majority_votes or majority_votes < total_votes * self.min_majority_portion:
+        if majority_votes < self.min_majority_votes or majority_votes < total_votes * self.min_majority_percentage:
             return [DataEntry(data=None, metrics=dict(num_removed=1))]
-        if self.drop_negative_answers or self.drop_noninteger_answers:
-            try:
-                majority_answer = float(data_entry.get("expected_answer", 0))
-            except ValueError:
-                return [DataEntry(data=None, metrics=dict(num_removed=1))]
-
-            if self.drop_negative_answers and majority_answer < 0:
-                return [DataEntry(data=None, metrics=dict(num_removed=1))]
-
-            if self.drop_noninteger_answers and not majority_answer.is_integer():
-                return [DataEntry(data=None, metrics=dict(num_removed=1))]
 
         return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
@@ -190,93 +177,6 @@ class TrimSolutions(BaseFilter):
         trimmed_output = "\n".join(output_lines[: stop_idx + 1])
         is_modified = trimmed_output != data_entry[self.solution_key]
         data_entry[self.solution_key] = trimmed_output
-
-        return [DataEntry(data=data_entry, metrics=dict(num_modified=int(is_modified)))]
-
-
-class DropIncorrectArithmetic(BaseFilter):
-
-    def __init__(self, solution_key: str = "generation", tolerance=1e-4, **kwargs):
-        super().__init__(**kwargs)
-        self.solution_key = solution_key
-        self.tolerance = tolerance
-
-    def process_dataset_entry(self, data_entry: str) -> str:
-        for expression, _ in extract_expressions(data_entry[self.solution_key]):
-            parts = expression.split("=")
-            if len(parts) < 2:
-                continue
-
-            expr, ans = parts[0], parts[-1]
-
-            try:
-                solution_steps = solve_expression(expr)
-                # ignore eval warnings
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", category=SyntaxWarning)
-                    if not isclose(eval(solution_steps[-1]), eval(ans), rel_tol=self.tolerance):
-                        return [DataEntry(data=None, metrics=dict(num_removed=1))]
-            except KeyboardInterrupt:
-                raise
-            except:
-                pass
-
-        return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
-
-
-class SplitArithmetic(BaseFilter):
-
-    def __init__(self, solution_key: str = "generation", **kwargs):
-        super().__init__(**kwargs)
-        self.solution_key = solution_key
-
-    def process_dataset_entry(self, data_entry: str) -> str:
-        """
-        Extends short arithmetic expressions solutions to step-by-step ones
-        For example `1 + 2 + 3 + 4 = 10` -> `1 + 2 + 3 + 4 = 3 + 3 + 4 = 6 + 4 = 10`.
-        """
-        text = data_entry[self.solution_key]
-        new_text = []
-        last_end = 0
-
-        for expression, start in extract_expressions(text):
-            end = start + len(expression)
-            parts = expression.split("=")
-
-            if len(parts) != 2:
-                new_text.append(text[last_end:end])
-                last_end = end
-                continue
-            expr, ans = parts
-
-            try:
-                solution_steps = solve_expression(expr)
-            except:
-                new_text.append(text[last_end:end])
-                last_end = end
-                continue
-
-            solution = merge_solution_steps(solution_steps)
-
-            try:
-                # ignore eval warnings
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", category=SyntaxWarning)
-                    if eval(solution_steps[-1]) == eval(ans):
-                        new_text.append(text[last_end:start] + solution)
-                    else:
-                        new_text.append(text[last_end:end])
-
-                last_end = end
-            except KeyboardInterrupt:
-                raise
-            except:
-                new_text.append(text[last_end:end])
-                last_end = end
-
-        new_text.append(text[last_end:])
-        data_entry[self.solution_key] = "".join(new_text)
-        is_modified = text != data_entry[self.solution_key]
 
         return [DataEntry(data=data_entry, metrics=dict(num_modified=int(is_modified)))]
 
