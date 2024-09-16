@@ -94,7 +94,7 @@ def get_training_cmd(
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"cd /nemo_run/code && "
         f"echo 'Starting training' && "
-        f"python nemo_skills/finetuning/start_{training_algo}.py "
+        f"python -m nemo_skills.finetuning.start_{training_algo} "
         f"    --config-name={config_name} --config-path={config_path} "
         f"    ++model.tensor_model_parallel_size={num_gpus} "
         f"    trainer.devices={num_gpus} "
@@ -109,15 +109,17 @@ def get_training_cmd(
     return cmd
 
 
-def get_avg_checkpoints_cmd(nemo_model, output_dir, average_steps):
+def get_avg_checkpoints_cmd(nemo_model, output_dir, final_nemo_path, average_steps):
+    name = "model" + ("-".join(average_steps[len('--steps ') :].split()) if average_steps else '') + "-averaged"
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"cd /nemo_run/code && "
-        f"python nemo_skills/finetuning/average_checkpoints.py "
+        f"python -m nemo_skills.finetuning.average_checkpoints "
         f"    --untarred_nemo_folder {nemo_model} "
         f"    --name_prefix=model "
-        f"    --checkpoint_dir={output_dir}/training/checkpoints {average_steps} &&"
-        f"mv {output_dir}/training/checkpoints/model-averaged.nemo {output_dir} "
+        f"    --checkpoint_dir={output_dir}/training/checkpoints {average_steps} && "
+        f"mkdir -p {os.path.dirname(final_nemo_path)} && "
+        f"mv {output_dir}/training/checkpoints/{name} {final_nemo_path} "
     )
     return cmd
 
@@ -130,9 +132,14 @@ if __name__ == "__main__":
     parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     # TODO: maybe not required and reuse expname in that case?
     parser.add_argument("--output_dir", required=True, help="Where to put results")
+    parser.add_argument(
+        "--final_nemo_path",
+        required=False,
+        help="Where to put the final checkpoint. By default, it will be saved in the output_dir/model-averaged-nemo",
+    )
     parser.add_argument("--expname", required=True, help="Experiment name")
     parser.add_argument("--nemo_model", required=True)
-    parser.add_argument("--training_data", required=True)
+    parser.add_argument("--training_data", required=False, help="Path to the training data")
     # TODO: this needs to be fixed in nemo-aligner
     parser.add_argument(
         "--validation_data", required=False, help="Will default to the training data, since we can't disable it"
@@ -178,7 +185,13 @@ if __name__ == "__main__":
     cluster_config = get_cluster_config(args.cluster, args.config_folder)
     check_if_mounted(cluster_config, args.output_dir)
     check_if_mounted(cluster_config, args.nemo_model)
-    check_if_mounted(cluster_config, args.training_data)
+    if args.num_training_jobs > 0:
+        if args.training_data is None:
+            raise ValueError("training_data is required when num_training_jobs > 0")
+        check_if_mounted(cluster_config, args.training_data)
+    if not args.final_nemo_path:
+        args.final_nemo_path = f"{args.output_dir}/model-averaged-nemo"
+    check_if_mounted(cluster_config, args.final_nemo_path)
     if args.validation_data:
         check_if_mounted(cluster_config, args.validation_data)
 
@@ -205,7 +218,8 @@ if __name__ == "__main__":
             add_task(
                 exp,
                 cmd=train_cmd,
-                task_name=f'{args.training_algo}',  # f'{args.training_algo}-{job_id}',
+                task_name=f'{args.training_algo}-{job_id}',
+                log_folder=f"{args.output_dir}/training-logs",
                 container=cluster_config["containers"]["nemo"],
                 num_gpus=args.num_gpus,
                 num_nodes=args.num_nodes,
@@ -219,12 +233,14 @@ if __name__ == "__main__":
         cmd = get_avg_checkpoints_cmd(
             nemo_model=args.nemo_model,
             output_dir=args.output_dir,
+            final_nemo_path=args.final_nemo_path,
             average_steps=f"--steps {' '.join(map(str, args.average_steps))} " if args.average_steps else "",
         )
         add_task(
             exp,
             cmd=cmd,
             task_name="prepare-eval",
+            log_folder=f"{args.output_dir}/prepare-eval-logs",
             container=cluster_config["containers"]['nemo'],
             cluster_config=cluster_config,
             partition=args.partition,
@@ -235,4 +251,3 @@ if __name__ == "__main__":
         )
 
         run_exp(exp, cluster_config, sequential=True)
-        # exp.dryrun()

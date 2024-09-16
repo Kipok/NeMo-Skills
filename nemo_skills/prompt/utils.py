@@ -48,19 +48,18 @@ class BM25Retriever:
         return self.bm25.get_top_n(tokenized_query, self.entries, n=top_k)
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class FewShotExamplesConfig:
     prefix: str = ""
     template: str = ""
     suffix: str = ""
-    num_few_shots: int = 0
 
     examples_type: Optional[str] = None
-    example_dicts: Optional[List[Dict[str, Any]]] = None
 
     retrieval_field: Optional[str] = None  # e.g. question, reference_solution, etc.
     retrieval_file: Optional[str] = None  # needs to be provided if retrieval_field is not None
-    retrieved_entries: int = 0
+    retrieved_entries: int = 10  # need to set higher than few_shots to filter out exact matches
+    retrieved_few_shots: int = 5
     randomize_retrieved_entries: bool = False
     max_retrieved_chars: int = 100000000  # no limit by default
     max_retrieved_chars_field: str = "reference_solution"
@@ -68,20 +67,8 @@ class FewShotExamplesConfig:
 
     def __post_init__(self):
         """Error checks + building example_dicts and retriever if needed."""
-        if self.examples_type is not None:  # building example_dicts
-            self.example_dicts = examples_map[self.examples_type][: self.num_few_shots]
-
-        if self.example_dicts is not None and self.num_few_shots > len(self.example_dicts):
-            raise ValueError(
-                f"There are not enough few shot examples in {self.examples_type}. "
-                f"Max number is {len(self.example_dicts)}"
-            )
-
-        if self.retrieved_entries == 0:
-            self.retrieved_entries = 2 * self.num_few_shots
-
-        if self.example_dicts is not None and self.retriever is not None:
-            raise ValueError("example_dicts and retriever cannot be used together")
+        if self.examples_type is not None and self.retriever is not None:
+            raise ValueError("examples_type and retriever cannot be used together")
 
         if self.retriever is not None:
             return
@@ -94,11 +81,8 @@ class FewShotExamplesConfig:
             if self.retrieval_file is not None:
                 raise ValueError("retrieval_field must be provided if retrieval_file is not None")
 
-        if self.example_dicts is None and self.retriever is None and self.num_few_shots > 0:
-            raise ValueError("You need to construct either example_dicts or retriever if num_few_shots > 0")
 
-
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class PromptTemplate:
     text_begin: str
     system_begin: str
@@ -112,7 +96,7 @@ class PromptTemplate:
     stop_phrases: List[str]
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class PromptConfig:
     # TODO: is there a better name for this? Too many templates + this contains pieces
     user: str
@@ -137,11 +121,11 @@ class Prompt:
         return self.config.few_shot_examples.template.format(**example_dict, **asdict(self.config.template))
 
     def build_examples_dict(self, input_dict):
-        if self.config.few_shot_examples.num_few_shots == 0:
-            return []
+        if self.config.few_shot_examples.examples_type:
+            return examples_map[self.config.few_shot_examples.examples_type]
 
-        if self.config.few_shot_examples.example_dicts:
-            return self.config.few_shot_examples.example_dicts[: self.config.few_shot_examples.num_few_shots]
+        if self.config.few_shot_examples.retriever is None:
+            return []
 
         example_dicts = self.config.few_shot_examples.retriever.retrieve(
             query=input_dict[self.config.few_shot_examples.retrieval_field],
@@ -160,7 +144,7 @@ class Prompt:
             < self.config.few_shot_examples.max_retrieved_chars
         ]
 
-        if len(example_dicts) < self.config.few_shot_examples.num_few_shots:
+        if len(example_dicts) < self.config.few_shot_examples.retrieved_few_shots:
             LOG.warning(
                 'Too little examples (%d) found for the query "%s"',
                 len(example_dicts),
@@ -168,7 +152,7 @@ class Prompt:
             )
 
         # let's reverse the order to show the most relevant last
-        examples = example_dicts[: self.config.few_shot_examples.num_few_shots][::-1]
+        examples = example_dicts[: self.config.few_shot_examples.retrieved_few_shots][::-1]
         if self.config.few_shot_examples.randomize_retrieved_entries:
             random.shuffle(examples)
 
@@ -178,14 +162,20 @@ class Prompt:
         """Builds all examples string concatenated by delimiter."""
         example_dicts = self.build_examples_dict(input_dict)
 
-        filled_examples = [self.build_filled_example(example) for example in example_dicts]
-        examples = "".join(filled_examples)
+        filled_examples = "".join([self.build_filled_example(example) for example in example_dicts])
+        if not filled_examples:
+            examples = ""
+        else:
+            examples = f"{self.config.few_shot_examples.prefix}{filled_examples}{self.config.few_shot_examples.suffix}"
         user = self.config.user.format(examples=examples, **input_dict)
         return user
 
-    def build_string(self, input_dict: Dict[str, str]) -> str:
+    def build_string(self, input_dict: Dict[str, str], include_generation: bool = False) -> str:
         """Returns the complete prompt string representation."""
-        generation = input_dict.get("generation", "")
+        if include_generation:
+            generation = input_dict.get("generation", "")
+        else:
+            generation = ""
 
         prompt = Prompt.TEMPLATE.format(
             system=self.config.system,
@@ -195,7 +185,7 @@ class Prompt:
         )
         return prompt
 
-    def build_messages(self, input_dict: Dict[str, str]) -> List[dict]:
+    def build_messages(self, input_dict: Dict[str, str], include_generation: bool = False) -> List[dict]:
         """Returns the messages as required by OpenAI API."""
         generation = input_dict.get("generation", "")
 
@@ -203,7 +193,7 @@ class Prompt:
             {"role": "system", "content": self.config.system},
             {"role": "user", "content": self.build_user_message(input_dict)},
         ]
-        if generation:
+        if generation and include_generation:
             messages.append({"role": "assistant", "content": generation})
         return messages
 
@@ -226,7 +216,7 @@ def load_config(config: str, config_folder: str | None = None) -> dict:
         The loaded dictionary.
     """
     if config_folder is None:
-        config_folder = str(Path(__file__).parent.absolute())
+        config_folder = str(Path(__file__).parent.absolute() / 'config')
 
     if config.endswith(".yaml"):
         config_path = Path(config).absolute()
@@ -242,6 +232,7 @@ def load_config(config: str, config_folder: str | None = None) -> dict:
 def get_prompt(
     prompt_config: str,
     prompt_template: str | None = None,
+    examples_type: str | None = None,
     config_folder: str | None = None,
     template_folder: str | None = None,
 ) -> Prompt:
@@ -250,5 +241,9 @@ def get_prompt(
     config = load_config(prompt_config, config_folder)
     if prompt_template is not None:
         template = load_config(prompt_template, template_folder)
-        return Prompt(PromptConfig(**config, template=PromptTemplate(**template)))
-    return Prompt(PromptConfig(**config))
+        prompt = Prompt(PromptConfig(**config, template=PromptTemplate(**template)))
+    else:
+        prompt = Prompt(PromptConfig(**config))
+    if examples_type is not None:
+        prompt.config.few_shot_examples.examples_type = examples_type
+    return prompt

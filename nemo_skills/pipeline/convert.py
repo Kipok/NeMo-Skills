@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from argparse import ArgumentParser
+from pathlib import Path
 
 import nemo_run as run
 from huggingface_hub import get_token
@@ -26,7 +27,7 @@ def get_nemo_to_hf_cmd(input_model, output_model, hf_model_name, dtype, num_gpus
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"export HF_TOKEN={get_token()} && "
         f"cd /nemo_run/code && "
-        f"python nemo_skills/conversion/nemo_to_hf.py "
+        f"python -m nemo_skills.conversion.nemo_to_hf "
         f"    --in-path {input_model} "
         f"    --out-path {output_model} "
         f"    --hf-model-name {hf_model_name} "
@@ -47,7 +48,7 @@ def get_hf_to_trtllm_cmd(input_model, output_model, hf_model_name, dtype, num_gp
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"export HF_TOKEN={get_token()} && "
         f"cd /nemo_run/code && "
-        f"python nemo_skills/conversion/hf_to_trtllm.py "
+        f"python -m nemo_skills.conversion.hf_to_trtllm "
         f"    --model_dir {input_model} "
         f"    --output_dir {output_model}-tmp "
         f"    --dtype {dtype} "
@@ -74,7 +75,7 @@ def get_hf_to_nemo_cmd(input_model, output_model, hf_model_name, dtype, num_gpus
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"export HF_TOKEN={get_token()} && "
         f"cd /nemo_run/code && "
-        f"python nemo_skills/conversion/hf_to_nemo.py "
+        f"python -m nemo_skills.conversion.hf_to_nemo "
         f"    --in-path {input_model} "
         f"    --out-path {output_model} "
         f"    --hf-model-name {hf_model_name} "
@@ -152,6 +153,9 @@ if __name__ == "__main__":
             exp,
             cmd=conversion_cmd,
             task_name=f'conversion-{args.convert_from}-{args.convert_to}',
+            log_folder=str(
+                Path(args.output_model).parent / "conversion-logs" / f"{args.convert_from}-{args.convert_to}"
+            ),
             container=container_map[(args.convert_from, args.convert_to)],
             num_gpus=args.num_gpus,
             num_nodes=args.num_nodes,

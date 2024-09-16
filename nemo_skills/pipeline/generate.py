@@ -22,7 +22,7 @@ from nemo_skills.utils import setup_logging
 
 def get_cmd(random_seed, output_dir, extra_arguments, extra_eval_args):
     cmd = (
-        f"python nemo_skills/inference/generate.py "
+        f"python -m nemo_skills.inference.generate "
         f"    skip_filled=True "
         f"    inference.random_seed={random_seed} "
         f"    inference.temperature=1.0 "
@@ -30,8 +30,8 @@ def get_cmd(random_seed, output_dir, extra_arguments, extra_eval_args):
         f"    inference.top_p=0.95 "
         f"    output_file={output_dir}/generation/output-rs{random_seed}.jsonl "
         f"    {extra_arguments} && "
-        f"python nemo_skills/evaluation/evaluate_results.py "
-        f"    prediction_jsonl_files={output_dir}/generation/output-rs{random_seed}.jsonl {extra_eval_args}"
+        f"python -m nemo_skills.evaluation.evaluate_results "
+        f"    input_files={output_dir}/generation/output-rs{random_seed}.jsonl {extra_eval_args}"
     )
     return cmd
 
@@ -101,6 +101,7 @@ if __name__ == "__main__":
     if args.server_address is None:  # we need to host the model
         assert args.server_gpus is not None, "Need to specify server_gpus if hosting the model"
         args.server_address = "localhost:5000"
+        check_if_mounted(cluster_config, args.model)
         server_config = {
             "model_path": args.model,
             "server_type": args.server_type,
@@ -129,8 +130,8 @@ if __name__ == "__main__":
             add_task(
                 exp,
                 cmd=get_generation_command(server_address=args.server_address, generation_commands=cmd),
-                # TODO: has to be the same currently to reuse the code, need a fix in nemo.run
-                task_name="generate",  # f'generate-rs{seed}',
+                task_name=f'generate-rs{seed}',
+                log_folder=f"{args.output_dir}/generation-logs",
                 container=cluster_config["containers"]["nemo-skills"],
                 cluster_config=cluster_config,
                 partition=args.partition,

@@ -27,14 +27,14 @@ from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging
 LOG = logging.getLogger(__file__)
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class EvaluateResultsConfig:
     """Top-level parameters for the script"""
 
     # list of files to evaluate. Can specify multiple patterns separated by space
     # e.g. "path/to/file1.jsonl path/to/file2.jsonl" or with regex
     # "test_folder/output-rs*.jsonl"
-    prediction_jsonl_files: Any = MISSING
+    input_files: Any = MISSING
 
     eval_type: str = "math"
     # the supported parameters are different depending on the eval configuration
@@ -43,8 +43,8 @@ class EvaluateResultsConfig:
 
     def __post_init__(self):
         """Building data_file from dataset/split_name if not provided directly."""
-        if isinstance(self.prediction_jsonl_files, str):
-            self.prediction_jsonl_files = self.prediction_jsonl_files.split(" ")
+        if isinstance(self.input_files, str):
+            self.input_files = self.input_files.split(" ")
 
 
 cs = hydra.core.config_store.ConfigStore.instance()

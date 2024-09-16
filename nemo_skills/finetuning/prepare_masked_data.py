@@ -28,7 +28,7 @@ from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging,
 LOG = logging.getLogger(__file__)
 
 
-@nested_dataclass
+@nested_dataclass(kw_only=True)
 class PrepareMaskedDataConfig:
     """Top-level parameters for the script"""
 

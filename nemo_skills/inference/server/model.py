@@ -28,7 +28,7 @@ import requests
 LOG = logging.getLogger(__name__)
 
 
-def remove_stop_phrases(text: str, stop_phrases: list[str]) -> str:
+def trim_after_stop_phrases(text: str, stop_phrases: list[str]) -> str:
     """Removes everything after the last stop token."""
     if not stop_phrases:
         return text
@@ -48,7 +48,7 @@ def preprocess_request(request: dict):
 def postprocess_output(outputs: list[dict], stop_phrases: list[str]):
     """Post-processes the outputs of the model."""
     for output in outputs:
-        output['generation'] = remove_stop_phrases(output['generation'], stop_phrases)
+        output['generation'] = trim_after_stop_phrases(output['generation'], stop_phrases)
 
 
 class BaseModel(abc.ABC):
