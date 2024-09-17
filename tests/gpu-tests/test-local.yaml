@@ -23,3 +23,6 @@ containers:
 
 mounts:
   - /tmp:/tmp
+  # change this if the models are located in a different place
+  # TODO: can we make it simpler?
+  - /mnt/datadrive/nemo-skills-data:/mnt/datadrive/nemo-skills-data

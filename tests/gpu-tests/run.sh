@@ -1,6 +1,8 @@
 # will run all tests starting from only a HF checkpoint. Only requires 1 GPU.
 # also need to define HF_TOKEN for some of the tests
-# example: HF_TOKEN=<> ./tests/gpu-tests/run.sh /mnt/datadrive/models/Meta-Llama-3-8B /mnt/datadrive/models/Meta-Llama-3-8B-Instruct
+# model needs to be inside /mnt/datadrive/nemo-skills-data/Meta-Llama-3.1-8B-Instruct
+# if you need to place it in a different location, modify test-local.yaml config
+# example: HF_TOKEN=<> ./tests/gpu-tests/run.sh
 set -e
 
 if [ $# -eq 0 ] ; then
@@ -8,9 +10,7 @@ if [ $# -eq 0 ] ; then
     exit 1
 fi
 
-export NEMO_SKILLS_TEST_HF_MODEL=$1
-export NEMO_SKILLS_TEST_OUTPUT=/tmp/nemo_skills_test_output
-mkdir -p $NEMO_SKILLS_TEST_OUTPUT
+export NEMO_SKILLS_TEST_HF_MODEL=/mnt/datadrive/nemo-skills-data/Meta-Llama-3.1-8B-Instruct
 
 # first running the conversion tests
 pytest tests/gpu-tests/test_conversion.py -k test_hf_trtllm_conversion -s
