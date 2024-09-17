@@ -22,10 +22,11 @@ from collections import OrderedDict
 from pathlib import Path
 
 import torch
+import yaml
 from nemo.collections.nlp.models.language_modeling.megatron_gpt_model import MegatronGPTModel
-from nemo.collections.nlp.parts.nlp_overrides import NLPDDPStrategy, NLPSaveRestoreConnector
+from nemo.collections.nlp.parts.nlp_overrides import NLPDDPStrategy
 from nemo.utils import logging
-from nemo_aligner.utils.utils import load_from_nemo
+from omegaconf import OmegaConf
 from pytorch_lightning import Trainer
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
@@ -98,7 +99,7 @@ def convert(
     input_nemo_path = os.path.abspath(input_nemo_path)
     output_hf_path = os.path.abspath(output_hf_path)
     dummy_trainer = Trainer(devices=1, accelerator='cpu', strategy=NLPDDPStrategy())
-    model_config = MegatronGPTModel.restore_from(input_nemo_path, trainer=dummy_trainer, return_config=True)
+    model_config = OmegaConf.load(str(Path(input_nemo_path) / "model_config.yaml"))
     model_config.tensor_model_parallel_size = 1
     model_config.pipeline_model_parallel_size = 1
     if cpu_only:
@@ -106,6 +107,18 @@ def convert(
         model_config.use_cpu_initialization = True
     else:
         map_location = None
+
+    if precision is None:
+        precision = model.cfg.precision
+    if precision in [32, "32"]:
+        dtype = torch.float32
+    elif precision in [16, "16", "16-mixed"]:
+        dtype = torch.float16
+    elif precision in ["bf16", "bf16-mixed"]:
+        dtype = torch.bfloat16
+    else:
+        logging.warning(f"Precision string {precision} is not recognized, falling back to fp32")
+        dtype = torch.float32  # fallback
 
     checkpoint_in_memory = False
     if tmp_out_path is None or not Path(tmp_out_path).exists():
@@ -116,17 +129,6 @@ def convert(
         model = MegatronGPTModel.restore_from(
             input_nemo_path, trainer=dummy_trainer, override_config_path=model_config, map_location=map_location
         )
-        if precision is None:
-            precision = model.cfg.precision
-        if precision in [32, "32"]:
-            dtype = torch.float32
-        elif precision in [16, "16", "16-mixed"]:
-            dtype = torch.float16
-        elif precision in ["bf16", "bf16-mixed"]:
-            dtype = torch.bfloat16
-        else:
-            logging.warning(f"Precision string {precision} is not recognized, falling back to fp32")
-            dtype = torch.float32  # fallback
 
         param_to_weights = lambda param: param.to(dtype)
         checkpoint = OrderedDict()
@@ -224,10 +226,10 @@ def convert(
         output_layer_base_name = f'lm_head.weight'
         checkpoint[output_layer_base_name] = param_to_weights(output_layer_weight)
         if tmp_out_path is not None:
-            torch.save(checkpoint, tmp_out_path)
+            torch.save(checkpoint, tmp_out_path, map_location=map_location)
 
     if not checkpoint_in_memory:
-        checkpoint = torch.load(tmp_out_path)
+        checkpoint = torch.load(tmp_out_path, map_location=map_location)
 
     hf_config = create_hf_config(hf_model_name, model_config)
     model = AutoModelForCausalLM.from_config(hf_config)
