@@ -265,11 +265,11 @@ def get_executor(
         # TODO: can we relax this to allow partial node allocation?
         exclusive=True,
         mem=0,
-        job_details=CustomJobDetails(
-            job_name=cluster_config.get("job_name_prefix", "") + job_name,
-            folder=get_unmounted_path(cluster_config, log_folder),
-            log_prefix=log_prefix,
-        ),
+        # job_details=CustomJobDetails(
+        #     job_name=cluster_config.get("job_name_prefix", "") + job_name,
+        #     folder=get_unmounted_path(cluster_config, log_folder),
+        #     log_prefix=log_prefix,
+        # ),
         wait_time_for_group_job=0.01,
         monitor_group_job_wait_time=20,
         dependencies=dependencies,
