@@ -226,7 +226,7 @@ def convert(
         output_layer_base_name = f'lm_head.weight'
         checkpoint[output_layer_base_name] = param_to_weights(output_layer_weight)
         if tmp_out_path is not None:
-            torch.save(checkpoint, tmp_out_path, map_location=map_location)
+            torch.save(checkpoint, tmp_out_path)
 
     if not checkpoint_in_memory:
         checkpoint = torch.load(tmp_out_path, map_location=map_location)
