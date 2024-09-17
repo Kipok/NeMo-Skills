@@ -17,6 +17,7 @@
 # you'd also need 2+ GPUs to run this test
 # the metrics are assuming llama3-8b-base as the model and will fail for other models
 
+import importlib
 import json
 import os
 import subprocess
@@ -27,7 +28,6 @@ import pytest
 
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 from nemo_skills.evaluation.metrics import compute_metrics
-from nemo_skills.evaluation.settings import EVALUATOR_MAP
 
 
 @pytest.mark.gpu
@@ -37,22 +37,32 @@ def test_trtllm_run_eval():
         pytest.skip("Define LLAMA3_8B_BASE_TRTLLM') to run this test")
     output_path = os.getenv('NEMO_SKILLS_TEST_OUTPUT', '/tmp')
 
-    cmd = f""" \
-python pipeline/run_eval.py \
-    --model_path {model_path} \
-    --server_type tensorrt_llm \
-    --output_dir {output_path} \
-    --benchmarks gsm8k:0 \
-    --num_gpus 1 \
-    --num_nodes 1 \
-    +prompt=openmathinstruct/base \
-    ++prompt.few_shot_examples.examples_type=gsm8k_only_code \
-    ++prompt.few_shot_examples.num_few_shots=5 \
-    ++split_name=test \
-    ++server.code_execution.stop_on_code_error=False \
-    ++batch_size=8 \
-    ++max_samples=20 \
-"""
+    cmd = (
+        f"python -m nemo_skills.pipeline.run_eval "
+        f"    --model {model_path} "
+        f"    --server_type tensorrt_llm "
+        f"    --output_dir {output_path} "
+        f"    --benchmarks gsm8k:0 "
+        f"    --server_gpus 1 "
+        f"    --server_nodes 1 "
+    )
+
+    #     f""" \
+    # python pipeline/run_eval.py \
+    #     --model_path {model_path} \
+    #     --server_type tensorrt_llm \
+    #     --output_dir {output_path} \
+    #     --benchmarks gsm8k:0 \
+    #     --num_gpus 1 \
+    #     --num_nodes 1 \
+    #     +prompt=openmathinstruct/base \
+    #     ++prompt.few_shot_examples.examples_type=gsm8k_only_code \
+    #     ++prompt.few_shot_examples.num_few_shots=5 \
+    #     ++split_name=test \
+    #     ++server.code_execution.stop_on_code_error=False \
+    #     ++batch_size=8 \
+    #     ++max_samples=20 \
+    # """
     subprocess.run(cmd, shell=True)
 
     # double checking that code was actually executed
@@ -64,7 +74,8 @@ python pipeline/run_eval.py \
         assert elem['error_message'] != '<not_executed>'
 
     # running compute_metrics to check that results are expected
-    metrics = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"], EVALUATOR_MAP['gsm8k']())
+    metrics_calculator = importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS()
+    metrics = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"], metrics_calculator)
     assert (int(metrics['sympy_correct']), int(metrics['no_answer'])) == (40, 5)
     assert metrics['num_entries'] == 20
 
