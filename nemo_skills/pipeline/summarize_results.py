@@ -162,9 +162,3 @@ if __name__ == "__main__":
             print(' | '.join(values))
 
         print('\n')
-
-    # summarizing results in a .json file
-    results = dict(results)
-    with open(f'{args.results_folder}/results.json', 'wt', encoding="utf-8") as fout:
-        json.dump(results, fout, indent=4)
-    print(f"Summarized results are available in {args.results_folder}/results.json")
