@@ -36,10 +36,11 @@ def get_greedy_cmd(benchmark, output_dir, output_name='output-greedy.jsonl', ext
     return cmd
 
 
-def get_sampling_cmd(benchmark, random_seed, extra_eval_args="", extra_arguments=""):
+def get_sampling_cmd(benchmark, output_dir, random_seed, extra_eval_args="", extra_arguments=""):
     extra_arguments = f" inference.random_seed={random_seed} inference.temperature=0.7 {extra_arguments}"
     return get_greedy_cmd(
         benchmark,
+        output_dir=output_dir,
         output_name=f"output-rs{random_seed}.jsonl",
         extra_eval_args=extra_eval_args,
         extra_arguments=extra_arguments,
@@ -154,7 +155,6 @@ if __name__ == "__main__":
 
     with run.Experiment(args.expname) as exp:
         for idx, eval_cmd in enumerate(eval_cmds):
-            print(eval_cmd)
             add_task(
                 exp,
                 cmd=get_generation_command(server_address=args.server_address, generation_commands=eval_cmd),
