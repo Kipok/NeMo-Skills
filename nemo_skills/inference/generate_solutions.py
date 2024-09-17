@@ -29,6 +29,7 @@ from nemo_skills.inference.server.code_execution_model import (
     get_code_execution_model,
     server_params,
 )
+from nemo_skills.inference.server.model import get_model
 from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dataclass, setup_logging
 
 LOG = logging.getLogger(__file__)
@@ -42,6 +43,8 @@ class InferenceConfig:
     random_seed: int = 0
     tokens_to_generate: int = 2048
     repetition_penalty: float = 1.0
+    use_batch_api: bool = False  # Whether to use batch API for generation
+    use_code: bool = False
 
 
 @nested_dataclass
@@ -94,8 +97,11 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
     cfg = GenerateSolutionsConfig(_init_nested=True, **cfg)
 
     LOG.info("Config used: %s", cfg)
-    sandbox = get_sandbox(**cfg.sandbox) if cfg.sandbox is not None else None
-    llm = get_code_execution_model(**cfg.server, sandbox=sandbox)
+    if cfg.inference.use_code:
+        sandbox = get_sandbox(**cfg.sandbox) if cfg.sandbox is not None else None
+        llm = get_code_execution_model(**cfg.server, sandbox=sandbox)
+    else:
+        llm = get_model(**cfg.server)
 
     # making sure output folder exists
     Path(cfg.output_file).absolute().parent.mkdir(parents=True, exist_ok=True)
@@ -127,47 +133,58 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
     # setting buffering=1 to force to dump the output after every line, so that we can see intermediate generations
     with open(cfg.output_file, "at" if cfg.skip_filled else "wt", encoding="utf-8", buffering=1) as fout:
         data_points = []
-        for idx, data_point in tqdm(enumerate(data), initial=starting_idx, total=len(data) + starting_idx):
-            if idx >= cfg.max_samples:
-                break
 
-            data_points.append(data_point)
-
-            if len(data_points) == cfg.batch_size:
-                # batch-computing the outputs
-                outputs = llm.generate(
-                    prompts=[prompt.build_string(data_point) for data_point in data_points],
-                    stop_phrases=list(cfg.prompt.stop_phrases),
-                    **asdict(cfg.inference),
-                )
-
-                for output, original_data_point in zip(outputs, data_points):
-                    # to make it easier to follow up with evaluation and limit accidental errors, we are adding
-                    # all of the ground-truth data to the output file alongside the generated solutions
-                    output.update(original_data_point)
-                    if 'error_message' not in output:
-                        output['error_message'] = extract_error_message(output['generation'])
-
-                    if cfg.generation_key != "generation":
-                        output[cfg.generation_key] = output.pop("generation")
-
-                    fout.write(json.dumps(output) + "\n")
-                data_points = []
-
-        # collecting the final batch
-        if len(data_points) > 0:
-            outputs = llm.generate(
+        if cfg.inference.use_batch_api:
+            # Using batch API for generation
+            # Accessing the model directly since CodeExecutionWrapper does not support batch_generate
+            data_points = data
+            request_metadata = llm.batch_generate(
                 prompts=[prompt.build_string(data_point) for data_point in data_points],
-                stop_phrases=list(cfg.prompt.stop_phrases),
-                **asdict(cfg.inference),
+                tokens_to_generate=cfg.inference.tokens_to_generate,
             )
-            for output, original_data_point in zip(outputs, data_points):
-                output.update(original_data_point)
-                if 'error_message' not in output:
-                    output['error_message'] = extract_error_message(output['generation'])
-                if cfg.generation_key != "generation":
-                    output[cfg.generation_key] = output.pop("generation")
-                fout.write(json.dumps(output) + "\n")
+            with open(cfg.output_file, 'at', encoding='utf-8') as fout:
+                for data_point in data_points:
+                    fout.write(json.dumps(data_point) + '\n')
+
+            # saving the request id to be able to retrieve results when they are ready
+            with open(cfg.output_file + '-batch-request-id', 'wt', encoding='utf-8') as batch_fout:
+                batch_fout.write(json.dumps({'request_id': request_metadata.id, "generation_key": cfg.generation_key}))
+            LOG.info('Submitted batch evaluation request. Please wait for the results to be ready.')
+            LOG.info(
+                'The current status and final results can be accessed through summarize_results.py or check_batch_gen.py'
+            )
+            LOG.info('Request metadata: %s', str(request_metadata))
+
+            # Clear data_points as we've submitted the batch
+            data_points = []
+        else:
+            for idx, data_point in tqdm(enumerate(data), initial=starting_idx, total=cfg.max_samples + starting_idx):
+                if idx >= cfg.max_samples:
+                    break
+                data_points.append(data_point)
+
+                if len(data_points) == cfg.batch_size or idx == cfg.max_samples - 1:
+                    inference_args = asdict(cfg.inference)
+                    inference_args.pop('use_batch_api', None)
+                    inference_args.pop('use_code', None)
+                    outputs = llm.generate(
+                        prompts=[prompt.build_string(data_point) for data_point in data_points],
+                        stop_phrases=list(cfg.prompt.stop_phrases),
+                        **inference_args,  # Unpack the filtered inference arguments
+                    )
+
+                    for output, original_data_point in zip(outputs, data_points):
+                        # to make it easier to follow up with evaluation and limit accidental errors, we are adding
+                        # all of the ground-truth data to the output file alongside the generated solutions
+                        output.update(original_data_point)
+                        if 'error_message' not in output:
+                            output['error_message'] = extract_error_message(output['generation'])
+
+                        if cfg.generation_key != "generation":
+                            output[cfg.generation_key] = output.pop("generation")
+
+                        fout.write(json.dumps(output) + "\n")
+                    data_points = []
 
 
 error_recovery_params = '\n' + get_fields_docstring(
