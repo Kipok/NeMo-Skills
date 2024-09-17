@@ -546,7 +546,7 @@ class VLLMModel(BaseModel):
 
 
 models = {
-    'tensorrt_llm': TensorRTLLMModel,
+    'trtllm': TensorRTLLMModel,
     'nemo': NemoModel,
     'openai': OpenAIModel,
     'vllm': VLLMModel,

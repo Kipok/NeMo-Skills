@@ -69,10 +69,10 @@ def read_csv_files_from_tar(tar_file_path, split_name):
 
 
 def save_data(split_name):
-    data_folder = Path(__file__).absolute().parent
-    data_file = str(data_folder / f"data.tar")
-    data_folder.mkdir(exist_ok=True)
-    output_file = str(data_folder / f"{split_name}.jsonl")
+    data_dir = Path(__file__).absolute().parent
+    data_file = str(data_dir / f"data.tar")
+    data_dir.mkdir(exist_ok=True)
+    output_file = str(data_dir / f"{split_name}.jsonl")
 
     if not os.path.exists(data_file):
         urllib.request.urlretrieve(URL, data_file)

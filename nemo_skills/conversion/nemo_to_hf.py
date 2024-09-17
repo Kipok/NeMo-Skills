@@ -38,7 +38,7 @@ def get_args():
         required=True,
         help="Path to .nemo file (can be unpacked)",
     )
-    parser.add_argument("--out-path", type=str, default=None, required=True, help="Where to create HF model folder")
+    parser.add_argument("--out-path", type=str, default=None, required=True, help="Where to create HF model dir")
     parser.add_argument(
         "--tmp-out-path",
         type=str,

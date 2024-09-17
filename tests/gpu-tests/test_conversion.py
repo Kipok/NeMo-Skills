@@ -59,7 +59,7 @@ python nemo_skills/conversion/hf_to_trtllm.py \
         tasks_per_node=1,
         gpus_per_node=2,
         job_name='test',
-        container=CLUSTER_CONFIG["containers"]['tensorrt_llm'],
+        container=CLUSTER_CONFIG["containers"]['trtllm'],
         mounts=f"{model_path}:/model,{output_path}:/output,{NEMO_SKILLS_CODE}:/code",
     )
 

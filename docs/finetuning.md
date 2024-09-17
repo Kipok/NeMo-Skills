@@ -63,12 +63,12 @@ python nemo_skills/pipeline/convert.py \
     --run_after $EXPNAME-to-hf \
     --num_gpus 8 \
     --convert_from hf \
-    --convert_to tensorrt_llm \
+    --convert_to trtllm \
 
 python nemo_skills/pipeline/eval.py \
     --cluster draco-ord \
     --model /exps/checkpoints/$EXPNAME/model-averaged-trtllm \
-    --server_type tensorrt_llm \
+    --server_type trtllm \
     --output_dir /exps/results/$EXPNAME/trtllm-eval \
     --benchmarks gsm8k:0 math:0 \
     --server_gpus 8 \
@@ -108,10 +108,10 @@ Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
       --num_nodes <number of nodes> \
       --num_gpus <number of GPUs per node> \
       --extra_eval_args="+prompt=openmathinstruct/sft" \
-      ++model.data.train_ds.file_path=/data/<path to the data inside NEMO_SKILLS_DATA folder>
+      ++model.data.train_ds.file_path=/data/<path to the data inside NEMO_SKILLS_DATA>
    ```
 
-   This will put all checkpoints, results and logs inside `$NEMO_SKILLS_RESULTS` folder.
+   This will put all checkpoints, results and logs inside `$NEMO_SKILLS_RESULTS`.
    Note that you can provide `--stages` argument to control which steps to run. E.g.
    to skip evaluation use `--stages sft prepare_eval` or to only run evaluation
    (e.g. to re-run with different sampling parameters) use `--stages eval`.

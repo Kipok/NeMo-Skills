@@ -56,7 +56,7 @@ class GenerateSolutionsConfig:
     sandbox: dict = field(default_factory=dict)
     # Prompt configuration - path to yaml files
     prompt_template: str | None = None  # not required for OpenAI server
-    prompt_config: str | None = None  # we will fetch it from dataset folder if not provided
+    prompt_config: str | None = None  # we will fetch it from dataset dir if not provided
     examples_type: str | None = None  # to be able to customize few-shot examples
     inference: InferenceConfig = field(default_factory=InferenceConfig)  # LLM call parameters
 
@@ -116,7 +116,7 @@ def generate(cfg: GenerateSolutionsConfig):
     else:
         llm = get_model(**cfg.server)
 
-    # making sure output folder exists
+    # making sure output dir exists
     Path(cfg.output_file).absolute().parent.mkdir(parents=True, exist_ok=True)
 
     # we currently assume the dataset is small enough to be loaded into memory

@@ -138,10 +138,10 @@ def get_question_or_solution(url, choice):
 
 
 if __name__ == "__main__":
-    data_folder = Path(__file__).absolute().parent
-    original_file = str(data_folder / "original_test.json")
-    data_folder.mkdir(exist_ok=True)
-    output_file = str(data_folder / "test.jsonl")
+    data_dir = Path(__file__).absolute().parent
+    original_file = str(data_dir / "original_test.json")
+    data_dir.mkdir(exist_ok=True)
+    output_file = str(data_dir / "test.jsonl")
 
     data = []
 

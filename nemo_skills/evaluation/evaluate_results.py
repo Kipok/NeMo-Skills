@@ -31,7 +31,7 @@ class EvaluateResultsConfig:
 
     # list of files to evaluate. Can specify multiple patterns separated by space
     # e.g. "path/to/file1.jsonl path/to/file2.jsonl" or with regex
-    # "test_folder/output-rs*.jsonl"
+    # "test_dir/output-rs*.jsonl"
     input_files: Any
 
     eval_type: str

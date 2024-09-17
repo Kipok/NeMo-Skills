@@ -18,8 +18,8 @@ from pathlib import Path
 from evalplus.data import get_human_eval_plus
 
 if __name__ == "__main__":
-    data_folder = Path(__file__).absolute().parent
-    output_file = str(data_folder / f"test.jsonl")
+    data_dir = Path(__file__).absolute().parent
+    output_file = str(data_dir / f"test.jsonl")
 
     problems = get_human_eval_plus()
 

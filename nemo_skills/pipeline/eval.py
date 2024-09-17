@@ -53,7 +53,7 @@ if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser(usage="TODO")
     wrapper_args = parser.add_argument_group('wrapper arguments')
-    wrapper_args.add_argument("--config_folder", default=None, help="Path to the cluster_configs folder")
+    wrapper_args.add_argument("--config_dir", default=None, help="Path to the cluster_configs directory")
     wrapper_args.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     wrapper_args.add_argument("--output_dir", required=True, help="Where to put results")
     wrapper_args.add_argument("--expname", default="eval", help="Nemo run experiment name")
@@ -67,8 +67,8 @@ if __name__ == "__main__":
     # TODO: let's make it not needed - we just need to unify our api calls
     wrapper_args.add_argument(
         "--server_type",
-        choices=('nemo', 'tensorrt_llm', 'vllm', 'openai'),
-        default='tensorrt_llm',
+        choices=('nemo', 'trtllm', 'vllm', 'openai'),
+        default='trtllm',
         help="Type of the server to start. This parameter is ignored if server_address is specified.",
     )
     wrapper_args.add_argument("--server_gpus", type=int, required=False)
@@ -112,7 +112,7 @@ if __name__ == "__main__":
 
     extra_arguments = f'{" ".join(unknown)}'
 
-    cluster_config = get_cluster_config(args.cluster, args.config_folder)
+    cluster_config = get_cluster_config(args.cluster, args.config_dir)
     check_if_mounted(cluster_config, args.output_dir)
 
     if args.server_address is None:  # we need to host the model
@@ -161,7 +161,7 @@ if __name__ == "__main__":
                 exp,
                 cmd=get_generation_command(server_address=args.server_address, generation_commands=eval_cmd),
                 task_name=f'eval-{idx}',
-                log_folder=f"{args.output_dir}/eval-logs",
+                log_dir=f"{args.output_dir}/eval-logs",
                 container=cluster_config["containers"]["nemo-skills"],
                 cluster_config=cluster_config,
                 partition=args.partition,

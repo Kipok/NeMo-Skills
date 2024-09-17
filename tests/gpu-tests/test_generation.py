@@ -32,50 +32,29 @@ from nemo_skills.evaluation.metrics import compute_metrics
 
 @pytest.mark.gpu
 def test_trtllm_run_eval():
-    model_path = os.getenv('LLAMA3_8B_BASE_TRTLLM')
+    model_path = os.getenv('NEMO_SKILLS_TEST_TRTLLM_MODEL')
     if not model_path:
-        pytest.skip("Define LLAMA3_8B_BASE_TRTLLM') to run this test")
-    output_path = os.getenv('NEMO_SKILLS_TEST_OUTPUT', '/tmp')
+        pytest.skip("Define NEMO_SKILLS_TEST_TRTLLM_MODEL to run this test")
 
     cmd = (
-        f"python -m nemo_skills.pipeline.run_eval "
+        f"python -m nemo_skills.pipeline.eval "
+        f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --model {model_path} "
-        f"    --server_type tensorrt_llm "
-        f"    --output_dir {output_path} "
+        f"    --server_type trtllm "
+        f"    --output_dir /tmp/nemo-skills-tests/trtllm-eval "
         f"    --benchmarks gsm8k:0 "
         f"    --server_gpus 1 "
         f"    --server_nodes 1 "
+        f"    ++prompt_template=llama3-instruct "
+        f"    ++split_name=test "
     )
-
-    #     f""" \
-    # python pipeline/run_eval.py \
-    #     --model_path {model_path} \
-    #     --server_type tensorrt_llm \
-    #     --output_dir {output_path} \
-    #     --benchmarks gsm8k:0 \
-    #     --num_gpus 1 \
-    #     --num_nodes 1 \
-    #     +prompt=openmathinstruct/base \
-    #     ++prompt.few_shot_examples.examples_type=gsm8k_only_code \
-    #     ++prompt.few_shot_examples.num_few_shots=5 \
-    #     ++split_name=test \
-    #     ++server.code_execution.stop_on_code_error=False \
-    #     ++batch_size=8 \
-    #     ++max_samples=20 \
-    # """
     subprocess.run(cmd, shell=True)
-
-    # double checking that code was actually executed
-    with open(f"{output_path}/gsm8k/output-greedy.jsonl") as fin:
-        data = [json.loads(line) for line in fin]
-
-    for elem in data:
-        assert '<llm-code>' in elem['generation']
-        assert elem['error_message'] != '<not_executed>'
 
     # running compute_metrics to check that results are expected
     metrics_calculator = importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS()
-    metrics = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"], metrics_calculator)
+    metrics = compute_metrics(
+        [f"/tmp/nemo-skills-tests/trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
+    )
     assert (int(metrics['sympy_correct']), int(metrics['no_answer'])) == (40, 5)
     assert metrics['num_entries'] == 20
 
@@ -151,7 +130,7 @@ def test_trtllm_run_eval_retrieval():
     cmd = f""" \
 python pipeline/run_eval.py \
     --model_path {model_path} \
-    --server_type tensorrt_llm \
+    --server_type trtllm \
     --output_dir {output_path} \
     --benchmarks math:0 \
     --num_gpus 1 \
@@ -190,7 +169,7 @@ def test_trtllm_run_labeling():
     cmd = f""" \
 python pipeline/run_labeling.py \
     --model_path {model_path} \
-    --server_type tensorrt_llm \
+    --server_type trtllm \
     --output_dir {output_path} \
     --num_gpus 1 \
     --num_nodes 1 \

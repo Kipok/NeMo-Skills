@@ -3,7 +3,7 @@ FROM python:3.10
 RUN apt-get update && apt-get -y install curl git
 
 # for IFMetrics benchmark
-# TODO: can we get just a single folder?
+# TODO: can we get just a single dir?
 RUN mkdir /opt/benchmarks
 RUN git clone https://github.com/google-research/google-research.git /opt/benchmarks/google-research --depth=1 && \
     pip install langdetect absl-py immutabledict nltk && \

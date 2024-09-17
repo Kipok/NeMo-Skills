@@ -15,11 +15,11 @@
 executor: local
 
 containers:
-  tensorrt_llm: igitman/nemo-skills-trtllm:0.4.0
+  trtllm: igitman/nemo-skills-trtllm:0.4.0
   vllm: igitman/nemo-skills-vllm:0.4.0
   nemo: igitman/nemo-skills-nemo:0.4.0
   sandbox: igitman/nemo-skills-sandbox:0.3.2
   nemo-skills: igitman/nemo-skills:0.4.0
 
 mounts:
-  - /tmp:/tmp/nemo-skills-tests
+  - /tmp:/tmp

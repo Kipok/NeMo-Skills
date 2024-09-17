@@ -36,7 +36,7 @@ class FillMajorityAnswerConfig:
     # list of files to use for majority voting.
     # Can specify multiple patterns separated by space
     # e.g. "path/to/file1.jsonl path/to/file2.jsonl" or with regex
-    # "test_folder/output-rs*.jsonl"
+    # "test_dir/output-rs*.jsonl"
     input_files: Any = MISSING
 
     # if set to True will error if any responses/data is missing

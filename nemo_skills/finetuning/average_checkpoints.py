@@ -34,14 +34,14 @@ def main():
         help="Name of the final checkpoint. Will append -averaged automatically.",
     )
     parser.add_argument(
-        "--untarred_nemo_folder",
+        "--untarred_nemo_dir",
         required=True,
         help="Path to the untarred nemo checkpoint to get config and tokenizers",
     )
     parser.add_argument(
         "--checkpoint_dir",
         required=True,
-        help="Folder containing all the distributed checkpoints.",
+        help="Where all the checkpoints are located.",
     )
     # list of checkpoint steps to average
     parser.add_argument(
@@ -78,7 +78,7 @@ def main():
 
     logging.info(f"Averaging {n} checkpoints ... {'at steps:' + str(args.steps) if args.steps is not None else ''}")
 
-    # item that needs to be copied to the new checkpoint folder
+    # item that needs to be copied to the new checkpoint dir
     copy_items = []
     for ix, path in enumerate(checkpoint_paths):
         full_path = os.path.join(args.checkpoint_dir, path)
@@ -168,10 +168,10 @@ def main():
     # copying config and tokenizers
     ckpt_name = os.path.dirname(ckpt_name)
     shutil.copy(
-        os.path.join(args.untarred_nemo_folder, "model_config.yaml"),
+        os.path.join(args.untarred_nemo_dir, "model_config.yaml"),
         os.path.join(ckpt_name, "model_config.yaml"),
     )
-    for file in glob.glob(f"{args.untarred_nemo_folder}/*.model"):
+    for file in glob.glob(f"{args.untarred_nemo_dir}/*.model"):
         shutil.copy(file, os.path.join(ckpt_name, os.path.basename(file)))
 
     logging.info(f"Averaged distributed checkpoint saved as: {ckpt_name}")

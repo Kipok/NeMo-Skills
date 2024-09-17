@@ -18,7 +18,7 @@ any "teacher" model, e.g. [Mixtral-8x7B](https://huggingface.co/mistralai/Mixtra
    ```
    python pipeline/run_labeling.py \
      --model_path <path to trtllm model> \
-     --server_type tensorrt_llm \
+     --server_type trtllm \
      --output_dir ./synthetic-solutions/ \
      --num_gpus <number of GPUs on your machine/cluster node> \
      --num_runs 128 \
@@ -53,7 +53,7 @@ Here are the steps to create masked solutions for the different dataset or using
    ```
    python pipeline/run_labeling.py \
      --model_path <path to trtllm model> \
-     --server_type tensorrt_llm \
+     --server_type trtllm \
      --output_dir ./masked-solutions/ \
      --num_gpus <number of GPUs on your machine/cluster node> \
      --num_runs 32 \

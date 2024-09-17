@@ -201,7 +201,7 @@ class Prompt:
         return str(self.config)
 
 
-def load_config(config: str, config_folder: str | None = None) -> dict:
+def load_config(config: str, config_dir: str | None = None) -> dict:
     """
     Reads the prompt config/template from the yaml file.
 
@@ -209,21 +209,21 @@ def load_config(config: str, config_folder: str | None = None) -> dict:
         config (str): The location of the prompt config file.
             Can be the full path to a yaml file (if ends with .yaml) or one of the available configs.
             If configs starts with nemo_skills we will look relative to the repo root.
-            If not, we will look relative to the config_folder parameter
-        config_folder (str): The folder to look for the config file.
+            If not, we will look relative to the config_dir parameter
+        config_dir (str): The dir to look for the config file.
 
     Returns:
         The loaded dictionary.
     """
-    if config_folder is None:
-        config_folder = str(Path(__file__).parent.absolute() / 'config')
+    if config_dir is None:
+        config_dir = str(Path(__file__).parent.absolute() / 'config')
 
     if config.endswith(".yaml"):
         config_path = Path(config).absolute()
     elif config.startswith("nemo_skills"):
         config_path = Path(__file__).parents[2].absolute() / f"{config}.yaml"
     else:
-        config_path = Path(config_folder) / f"{config}.yaml"
+        config_path = Path(config_dir) / f"{config}.yaml"
 
     with open(config_path, "rt", encoding="utf-8") as fin:
         return yaml.safe_load(fin)
@@ -233,14 +233,14 @@ def get_prompt(
     prompt_config: str,
     prompt_template: str | None = None,
     examples_type: str | None = None,
-    config_folder: str | None = None,
-    template_folder: str | None = None,
+    config_dir: str | None = None,
+    template_dir: str | None = None,
 ) -> Prompt:
-    if template_folder is None:
-        template_folder = Path(__file__).parent.absolute() / 'template'
-    config = load_config(prompt_config, config_folder)
+    if template_dir is None:
+        template_dir = Path(__file__).parent.absolute() / 'template'
+    config = load_config(prompt_config, config_dir)
     if prompt_template is not None:
-        template = load_config(prompt_template, template_folder)
+        template = load_config(prompt_template, template_dir)
         prompt = Prompt(PromptConfig(**config, template=PromptTemplate(**template)))
     else:
         prompt = Prompt(PromptConfig(**config))
