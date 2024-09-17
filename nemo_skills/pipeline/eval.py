@@ -131,20 +131,19 @@ if __name__ == "__main__":
             f" ++server.model={args.model} "
         )
 
-    # if benchmarks are specified, only run those
-    BENCHMARKS = {k: int(v) for k, v in [b.split(":") for b in args.benchmarks]}
+    benchmarks = {k: int(v) for k, v in [b.split(":") for b in args.benchmarks]}
 
     eval_cmds = [
         get_greedy_cmd(
             benchmark, args.output_dir, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments
         )
-        for benchmark in BENCHMARKS.keys()
+        for benchmark in benchmarks.keys()
     ]
     eval_cmds += [
         get_sampling_cmd(
             benchmark, args.output_dir, rs, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments
         )
-        for benchmark, rs_num in BENCHMARKS.items()
+        for benchmark, rs_num in benchmarks.items()
         for rs in range(args.starting_seed, args.starting_seed + rs_num)
     ]
     if args.num_jobs == -1:
@@ -155,6 +154,7 @@ if __name__ == "__main__":
 
     with run.Experiment(args.expname) as exp:
         for idx, eval_cmd in enumerate(eval_cmds):
+            print(eval_cmd)
             add_task(
                 exp,
                 cmd=get_generation_command(server_address=args.server_address, generation_commands=eval_cmd),
@@ -168,4 +168,3 @@ if __name__ == "__main__":
                 run_after=args.run_after,
             )
         run_exp(exp, cluster_config)
-        # exp.dryrun()
