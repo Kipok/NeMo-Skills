@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import argparse
+import importlib
 import json
 import logging
 import sys
@@ -22,7 +23,6 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 
 from nemo_skills.evaluation.metrics import compute_metrics
-from nemo_skills.evaluation.settings import EVALUATOR_MAP
 from nemo_skills.utils import setup_logging
 
 LOG = logging.getLogger(__file__)
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "--benchmark",
         required=True,
-        help="To select which evaluator to use",
+        help="To select which metric parameters to use to use",
     )
     parser.add_argument("--debug", action="store_true", help="Print debug information")
     parser.add_argument(
@@ -67,11 +67,12 @@ if __name__ == '__main__':
 
     setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not args.debug else logging.DEBUG)
 
-    evaluator = EVALUATOR_MAP[args.benchmark]()
+    benchmark_module = importlib.import_module(f"nemo_skills.dataset.{args.benchmark}")
+    metrics_calculator = benchmark_module.METRICS_CLASS()
 
     metrics = compute_metrics(
         args.input_files,
-        evaluator,
+        metrics_calculator,
         args.allow_incomplete,
         args.max_samples,
         args.aggregation_mode,

@@ -12,18 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import importlib
 from argparse import ArgumentParser
 
 import nemo_run as run
 
-from nemo_skills.evaluation.settings import EXTRA_EVAL_ARGS, EXTRA_GENERATION_ARGS
 from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, get_generation_command, run_exp
 from nemo_skills.utils import setup_logging
 
 
 def get_greedy_cmd(benchmark, output_dir, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments=""):
-    extra_eval_args = f"{EXTRA_EVAL_ARGS.get(benchmark, '')} {extra_eval_args}"
-    extra_arguments = f"{EXTRA_GENERATION_ARGS.get(benchmark, '')} {extra_arguments}"
+    benchmark_module = importlib.import_module(f"nemo_skills.dataset.{benchmark}")
+
+    extra_eval_args = f"{benchmark_module.DEFAULT_EVAL_ARGS} {extra_eval_args}"
+    extra_arguments = f"{benchmark_module.DEFAULT_GENERATION_ARGS} {extra_arguments}"
     cmd = (
         f'echo "Evaluating benchmark {benchmark}" && '
         f'python -m nemo_skills.inference.generate '

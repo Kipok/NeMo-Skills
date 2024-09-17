@@ -496,22 +496,22 @@ def read_predictions(predictions, evaluator, allow_incomplete=False):
 
 def compute_metrics(
     input_files,
-    evaluator,
+    metrics_calculator,
     allow_incomplete=False,
     max_samples=-1,
     aggregation_mode='first',
 ):
-    evaluator.reset()
-    evaluator.setup(input_files)
+    metrics_calculator.reset()
+    metrics_calculator.setup(input_files)
 
     file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(input_files)]
     for idx, predictions in enumerate(zip_longest(*file_handles)):
         if idx == max_samples:
             break
-        data = read_predictions(predictions, evaluator, allow_incomplete)
-        evaluator.update(data, aggregation_mode)
+        data = read_predictions(predictions, metrics_calculator, allow_incomplete)
+        metrics_calculator.update(data, aggregation_mode)
 
     for file_handle in file_handles:
         file_handle.close()
 
-    return evaluator.get_metrics()
+    return metrics_calculator.get_metrics()

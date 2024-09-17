@@ -16,6 +16,7 @@
 
 import argparse
 import glob
+import importlib
 import json
 import logging
 import os
@@ -28,10 +29,9 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 sys.path.append(str(Path(__file__).absolute().parents[0]))
 
-from compute_metrics import EVALUATOR_MAP, compute_metrics
-
 from nemo_skills.evaluation.metrics import MathMetrics
 from nemo_skills.pipeline import check_if_mounted, cluster_download, get_cluster_config, get_tunnel, get_unmounted_path
+from nemo_skills.pipeline.compute_metrics import compute_metrics
 from nemo_skills.utils import setup_logging
 
 if __name__ == "__main__":
@@ -91,39 +91,40 @@ if __name__ == "__main__":
         if not Path(benchmark_path).is_dir():
             continue
         try:
-            evaluator = EVALUATOR_MAP.get(benchmark, MathMetrics)()
+            benchmark_module = importlib.import_module(f"nemo_skills.dataset.{benchmark}")
+            metrics_calculator = benchmark_module.METRICS_CLASS()
             results[benchmark] = {}
             # TODO: we should just return all available aggregations from compute_metrics directly
-            if evaluator is not MathMetrics:
+            if metrics_calculator is not MathMetrics:
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
                     results[benchmark]['greedy'] = compute_metrics(
                         input_files=[f"{benchmark_path}/output-greedy.jsonl"],
-                        evaluator=evaluator,
+                        metrics_calculator=metrics_calculator,
                     )
                 sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
                 if len(sampling_outputs) > 0:
                     results[benchmark][f'pass@{len(sampling_outputs)}'] = compute_metrics(
                         input_files=sampling_outputs,
-                        evaluator=evaluator,
+                        metrics_calculator=metrics_calculator,
                         aggregation_mode="best",
                     )
             else:
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
                     results[benchmark]['greedy'] = compute_metrics(
                         input_files=[f"{benchmark_path}/output-greedy.jsonl"],
-                        evaluator=evaluator,
+                        metrics_calculator=metrics_calculator,
                     )
 
                 sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
                 if len(sampling_outputs) > 0:
                     results[benchmark][f'majority@{len(sampling_outputs)}'] = compute_metrics(
                         input_files=sampling_outputs,
-                        evaluator=evaluator,
+                        metrics_calculator=metrics_calculator,
                         aggregation_mode="majority",
                     )
                     results[benchmark][f'pass@{len(sampling_outputs)}'] = compute_metrics(
                         input_files=sampling_outputs,
-                        evaluator=evaluator,
+                        metrics_calculator=metrics_calculator,
                         aggregation_mode="best",
                     )
         except Exception as e:
