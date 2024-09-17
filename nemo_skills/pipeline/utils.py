@@ -265,11 +265,11 @@ def get_executor(
         # TODO: can we relax this to allow partial node allocation?
         exclusive=True,
         mem=0,
-        # job_details=CustomJobDetails(
-        #     job_name=cluster_config.get("job_name_prefix", "") + job_name,
-        #     folder=get_unmounted_path(cluster_config, log_folder),
-        #     log_prefix=log_prefix,
-        # ),
+        job_details=CustomJobDetails(
+            job_name=cluster_config.get("job_name_prefix", "") + job_name,
+            folder=get_unmounted_path(cluster_config, log_folder),
+            log_prefix=log_prefix,
+        ),
         wait_time_for_group_job=0.01,
         monitor_group_job_wait_time=20,
         dependencies=dependencies,
@@ -360,12 +360,12 @@ def add_task(
 
     if len(commands) == 1:
         # to keep sbatch script simpler, we don't wrap in a list in this case
-        exp.add(run.Script(inline=commands[0]), executor=executors[0], name="nemo-run")
+        exp.add(run.Script(inline=commands[0]), executor=executors[0], name=task_name)
     else:
         exp.add(
             [run.Script(inline=command) for command in commands],
             executor=executors,
-            name="nemo-run",
+            name=task_name,
         )
 
 
