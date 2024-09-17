@@ -53,6 +53,7 @@ general_custom_stats = {}
 deleted_stats = set()
 excluded_rows = set()
 editable_rows = set()
+compared_rows = set()
 
 
 def get_editable_rows() -> Set:
@@ -69,6 +70,10 @@ def get_deleted_stats() -> Set:
 
 def get_custom_stats() -> Dict:
     return custom_stats
+
+
+def get_compared_rows() -> Dict:
+    return compared_rows
 
 
 def get_general_custom_stats() -> Dict:

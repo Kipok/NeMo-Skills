@@ -54,6 +54,7 @@ from settings.constants import (
 from utils.common import (
     calculate_metrics_for_whole_data,
     get_available_models,
+    get_compared_rows,
     get_custom_stats,
     get_deleted_stats,
     get_editable_rows,
@@ -537,6 +538,32 @@ def update_data_table(
 
 
 @app.callback(
+    Output(
+        "dummy_output",
+        'children',
+        allow_duplicate=True,
+    ),
+    Input({"type": "compare_texts_button", "id": ALL}, "n_clicks"),
+    [
+        State("dummy_output", 'children'),
+        State({"type": "row_name", "id": ALL}, "children"),
+        State({"type": "compare_texts_button", "id": ALL}, "n_clicks"),
+    ],
+    prevent_initial_call=True,
+)
+def compare(n_clicks: List[int], dummy_data: str, row_names: str, button_ids: List[str]):
+    ctx = callback_context
+    if not ctx.triggered or not n_clicks:
+        return no_update, [no_update] * len(button_ids)
+    button_id = json.loads(ctx.triggered[0]['prop_id'].split('.')[0])['id']
+    if row_names[button_id] not in get_compared_rows():
+        get_compared_rows().add(row_names[button_id])
+    else:
+        get_compared_rows().remove(row_names[button_id])
+    return dummy_data + '1'
+
+
+@app.callback(
     [
         Output(
             "dummy_output",
@@ -656,6 +683,7 @@ def change_page(page_current: int, page_size: int, base_model: str) -> List[Dict
         State('datatable', "page_current"),
         State('datatable', "page_size"),
         State({"type": 'file_selector', "id": ALL}, 'value'),
+        State({"type": 'text_modes', "id": ALL}, 'value'),
     ],
     prevent_initial_call=True,
 )
@@ -669,6 +697,7 @@ def show_item(
     current_page: int,
     page_size: int,
     file_names: List[str],
+    text_modes: List[List[str]],
 ) -> List[str]:
     if not idx:
         raise PreventUpdate
@@ -694,6 +723,7 @@ def show_item(
             files_id=file_ids,
             filter_functions=filter_functions[1:],
             sorting_functions=sorting_functions[1:],
+            text_modes=text_modes,
         ),
         filter_functions,
         sorting_functions,
@@ -849,11 +879,18 @@ def change_label(
 
 
 @app.callback(
-    Output(
-        {'type': 'detailed_models_answers', 'id': ALL},
-        'children',
-        allow_duplicate=True,
-    ),
+    [
+        Output(
+            {'type': 'detailed_models_answers', 'id': ALL},
+            'children',
+            allow_duplicate=True,
+        ),
+        Output(
+            "dummy_output",
+            'children',
+            allow_duplicate=True,
+        ),
+    ],
     [
         Input({"type": 'file_selector', "id": ALL}, 'value'),
         Input({"type": 'text_modes', "id": ALL}, 'value'),
@@ -870,6 +907,7 @@ def change_label(
             {'type': 'detailed_models_answers', 'id': ALL},
             'children',
         ),
+        State("dummy_output", "children"),
     ],
     prevent_initial_call=True,
 )
@@ -884,6 +922,7 @@ def change_file(
     current_page: int,
     page_size: int,
     table_data: List[str],
+    dummy_data: str,
 ) -> List[str]:
     if not idx:
         raise PreventUpdate
@@ -903,14 +942,17 @@ def change_file(
 
         model = models[button_id]
 
-        file_id = 0
-        file_name = (
-            file_names[button_id]['value'] if isinstance(file_names[button_id], Dict) else file_names[button_id]
-        )
-        for i, file_data in enumerate(get_table_data()[question_id][model]):
-            if file_data[FILE_NAME] == file_name:
-                file_id = i
-                break
+        def get_file_id(name_id: str):
+            file_id = 0
+            file_name = file_names[name_id]['value'] if isinstance(file_names[name_id], Dict) else file_names[name_id]
+            for i, file_data in enumerate(get_table_data()[question_id][model]):
+                if file_data[FILE_NAME] == file_name:
+                    file_id = i
+                    break
+            return file_id
+
+        file_id = get_file_id(button_id)
+        base_file_id = get_file_id(0)
 
         question_id = current_page * page_size + idx[0]
         table_data[button_id * len(rows_names) : (button_id + 1) * len(rows_names)] = get_row_detailed_inner_data(
@@ -921,8 +963,9 @@ def change_file(
             files_names=[option['value'] for option in file_options[button_id]],
             col_id=button_id,
             text_modes=text_modes[button_id],
+            compare_to=get_table_data()[question_id][models[0]][base_file_id],
         )
-    return table_data
+    return table_data, dummy_data + '1' if button_id == 0 else dummy_data
 
 
 @app.callback(
