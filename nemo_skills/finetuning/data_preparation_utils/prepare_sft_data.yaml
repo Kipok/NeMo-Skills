@@ -15,8 +15,8 @@ random_seed: 42
 do_shuffle: true
 num_output_samples: null
 
-prompt_config: llama3-instruct/math
-prompt_template: llama3-instruct
+prompt_config: null
+prompt_template: null
 chat_format: null  # null/nemotron/llama
 generation_suffix: ""  # suffix to add to the end of expected response (e.g. <|eot_id|>)
 

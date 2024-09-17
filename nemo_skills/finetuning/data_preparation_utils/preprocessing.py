@@ -250,6 +250,10 @@ class WriteFinalSftManifest(BaseProcessor):
         self.generation_suffix = generation_suffix
         if self.generation_suffix and self.chat_format:
             raise ValueError("generation_suffix can only be used with chat_format=False")
+        if self.prompt_config is None:
+            raise ValueError("`prompt_config` should be provided")
+        if self.prompt_template is None:
+            raise ValueError("`prompt_template` should be provided")
         if not self.metadata:
             self.metadata = {}
 
