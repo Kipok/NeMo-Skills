@@ -99,7 +99,7 @@ if __name__ == "__main__":
             metrics_calculator = benchmark_module.METRICS_CLASS()
             results[benchmark] = {}
             # TODO: we should just return all available aggregations from compute_metrics directly
-            if metrics_calculator is not MathMetrics:
+            if not isinstance(metrics_calculator, MathMetrics):
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
                     results[benchmark]['greedy'] = compute_metrics(
                         input_files=[f"{benchmark_path}/output-greedy.jsonl"],

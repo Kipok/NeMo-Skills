@@ -133,7 +133,6 @@ class MathMetrics(BaseMetrics):
                     for elem in predictions
                     if elem['predicted_answer'] is not None
                 ]
-
                 if len(valid_answers_and_results) == 0:
                     self.no_answer += 1
                 else:
