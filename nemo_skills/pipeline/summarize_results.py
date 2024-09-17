@@ -77,6 +77,10 @@ if __name__ == "__main__":
         args.results_folder = Path(temp_dir) / Path(args.results_folder).name
 
     # running compute_metrics.py to get greedy, majority and pass @k results for all benchmarks available
+    # Check if there is an eval-results folder inside the results_folder
+    eval_results_folder = Path(args.results_folder) / 'eval-results'
+    if eval_results_folder.exists() and eval_results_folder.is_dir():
+        args.results_folder = eval_results_folder
     benchmarks = glob.glob(f'{args.results_folder}/*')
 
     if args.benchmarks:
