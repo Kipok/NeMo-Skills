@@ -25,7 +25,7 @@ from nemo_skills.utils import unroll_files
 LOG = logging.getLogger(__file__)
 
 
-class BaseEval(abc.ABC):
+class BaseMetrics(abc.ABC):
     @abc.abstractmethod
     def fill_up_missing(self):
         pass
@@ -57,7 +57,7 @@ def is_correct_judgement(judgement):
     return verdict.lower() == 'yes'
 
 
-class MathEval(BaseEval):
+class MathMetrics(BaseMetrics):
     def setup(self, input_files):
         # checking if judgements are ready and fusing them with predictions
         # might get permission errors when running locally, since original file
@@ -202,7 +202,7 @@ class MathEval(BaseEval):
         self.has_judge = False
 
 
-class CodeEval(BaseEval):
+class CodeMetrics(BaseMetrics):
     def __init__(self):
         self.reset()
 
@@ -245,7 +245,7 @@ class CodeEval(BaseEval):
         self.total = 0
 
 
-class IFEval(BaseEval):
+class IFMetrics(BaseMetrics):
     # loosely adapted from
     # https://github.com/google-research/google-research/blob/master/instruction_following_eval/evaluation_main.py
 
@@ -349,7 +349,7 @@ class IFEval(BaseEval):
         }
 
 
-class ArenaEval(BaseEval):
+class ArenaMetrics(BaseMetrics):
     def __init__(self):
         self.reset()
 

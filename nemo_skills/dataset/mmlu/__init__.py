@@ -14,3 +14,13 @@
 
 PROMPT_CONFIG = 'generic/multichoice'
 DATASET_GROUP = 'multichoice'
+from nemo_skills.evaluation.graders import math_grader
+from nemo_skills.evaluation.metrics import MathMetrics
+
+# settings that define how evaluation should be done by default (all can be changed from cmdline)
+PROMPT_CONFIG = 'generic/multichoice'
+DATASET_GROUP = 'multichoice'
+METRICS_CLASS = MathMetrics  # TODO: update this?
+GRADER_CLASS = math_grader
+DEFAULT_EVAL_ARGS = '++eval_config.extract_from_boxed=False ++eval_config.extract_regex="The best answer is (.+)$"'
+DEFAULT_GENERATION_ARGS = ""

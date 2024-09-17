@@ -30,7 +30,7 @@ sys.path.append(str(Path(__file__).absolute().parents[0]))
 
 from compute_metrics import EVALUATOR_MAP, compute_metrics
 
-from nemo_skills.evaluation.metrics import MathEval
+from nemo_skills.evaluation.metrics import MathMetrics
 from nemo_skills.pipeline import check_if_mounted, cluster_download, get_cluster_config, get_tunnel, get_unmounted_path
 from nemo_skills.utils import setup_logging
 
@@ -91,10 +91,10 @@ if __name__ == "__main__":
         if not Path(benchmark_path).is_dir():
             continue
         try:
-            evaluator = EVALUATOR_MAP.get(benchmark, MathEval)()
+            evaluator = EVALUATOR_MAP.get(benchmark, MathMetrics)()
             results[benchmark] = {}
             # TODO: we should just return all available aggregations from compute_metrics directly
-            if evaluator is not MathEval:
+            if evaluator is not MathMetrics:
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
                     results[benchmark]['greedy'] = compute_metrics(
                         input_files=[f"{benchmark_path}/output-greedy.jsonl"],

@@ -20,7 +20,6 @@ from typing import Any
 import hydra
 from omegaconf import MISSING
 
-from nemo_skills.code_execution.sandbox import sandbox_params
 from nemo_skills.evaluation.settings import GRADING_MAP
 from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging
 
@@ -34,15 +33,14 @@ class EvaluateResultsConfig:
     # list of files to evaluate. Can specify multiple patterns separated by space
     # e.g. "path/to/file1.jsonl path/to/file2.jsonl" or with regex
     # "test_folder/output-rs*.jsonl"
-    input_files: Any = MISSING
+    input_files: Any
 
-    eval_type: str = "math"
+    eval_type: str
     # the supported parameters are different depending on the eval configuration
     # check graders.py for the supported eval types and their parameters
     eval_config: dict = field(default_factory=dict)
 
     def __post_init__(self):
-        """Building data_file from dataset/split_name if not provided directly."""
         if isinstance(self.input_files, str):
             self.input_files = self.input_files.split(" ")
 

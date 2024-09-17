@@ -23,7 +23,7 @@ import hydra
 from omegaconf import MISSING
 from tqdm import tqdm
 
-from nemo_skills.evaluation.metrics import MathEval, read_predictions
+from nemo_skills.evaluation.metrics import MathMetrics, read_predictions
 from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging, unroll_files
 
 LOG = logging.getLogger(__file__)
@@ -77,7 +77,7 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
         cfg.min_votes = len(file_handles) // 2
 
     # currently majority is only defined for math evals
-    evaluator = MathEval()
+    evaluator = MathMetrics()
 
     majority_answers = []
     all_predictions = []

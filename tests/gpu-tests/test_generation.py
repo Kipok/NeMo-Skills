@@ -73,7 +73,7 @@ python pipeline/run_eval.py \
 def test_vllm_run_eval():
     # this test expects llama3-instruct to properly check accuracy
     # will run a bunch of benchmarks, but is still pretty fast
-    # mmlu/ifeval will be cut to 400 samples to save time
+    # mmlu/IFMetrics will be cut to 400 samples to save time
     # could cut everything, but human-eval/mbpp don't work with partial gens
     model_path = os.getenv('LLAMA3_8B_INSTRUCT_HF')
     if not model_path:
@@ -85,7 +85,7 @@ python pipeline/run_eval.py \
     --model_path {model_path} \
     --server_type vllm \
     --output_dir {output_path} \
-    --benchmarks algebra222:0 human-eval:0 mbpp:0 ifeval:0 mmlu:0 \
+    --benchmarks algebra222:0 human-eval:0 mbpp:0 IFMetrics:0 mmlu:0 \
     --prompt_folder llama3 --model_version instruct \
     --num_gpus 1 \
     --num_nodes 1 \
@@ -116,7 +116,7 @@ python pipeline/run_eval.py \
     assert round(metrics['passing_plus_tests'], 2) == 57.41
     assert metrics['num_entries'] == 378
 
-    metrics = compute_metrics([f"{output_path}/ifeval/output-greedy.jsonl"], EVALUATOR_MAP['ifeval']())
+    metrics = compute_metrics([f"{output_path}/IFMetrics/output-greedy.jsonl"], EVALUATOR_MAP['IFMetrics']())
     assert abs(metrics['prompt_strict_accuracy'] - 66.50) <= 1.0  # TODO: some randomness in this benchmark
     assert abs(metrics['instruction_strict_accuracy'] - 74.88) <= 1.0
     assert abs(metrics['prompt_loose_accuracy'] - 72.75) <= 1.0
