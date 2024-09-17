@@ -95,20 +95,21 @@ def convert(
     """
     Convert NeMo weights to HF weights
     """
+    input_nemo_path = os.path.abspath(input_nemo_path)
+    output_hf_path = os.path.abspath(output_hf_path)
+    dummy_trainer = Trainer(devices=1, accelerator='cpu', strategy=NLPDDPStrategy())
+    model_config = MegatronGPTModel.restore_from(input_nemo_path, trainer=dummy_trainer, return_config=True)
+    model_config.tensor_model_parallel_size = 1
+    model_config.pipeline_model_parallel_size = 1
+    if cpu_only:
+        map_location = torch.device('cpu')
+        model_config.use_cpu_initialization = True
+    else:
+        map_location = None
+
     checkpoint_in_memory = False
     if tmp_out_path is None or not Path(tmp_out_path).exists():
         checkpoint_in_memory = True
-        input_nemo_path = os.path.abspath(input_nemo_path)
-        output_hf_path = os.path.abspath(output_hf_path)
-        dummy_trainer = Trainer(devices=1, accelerator='cpu', strategy=NLPDDPStrategy())
-        model_config = MegatronGPTModel.restore_from(input_nemo_path, trainer=dummy_trainer, return_config=True)
-        model_config.tensor_model_parallel_size = 1
-        model_config.pipeline_model_parallel_size = 1
-        if cpu_only:
-            map_location = torch.device('cpu')
-            model_config.use_cpu_initialization = True
-        else:
-            map_location = None
 
         if cpu_only:
             logging.info("******** Loading model on CPU. This will take a significant amount of time.")
@@ -228,7 +229,7 @@ def convert(
     if not checkpoint_in_memory:
         checkpoint = torch.load(tmp_out_path)
 
-    hf_config = create_hf_config(hf_model_name, model.cfg)
+    hf_config = create_hf_config(hf_model_name, model_config)
     model = AutoModelForCausalLM.from_config(hf_config)
     model.load_state_dict(checkpoint)
     model.to(dtype)
@@ -244,6 +245,7 @@ if __name__ == '__main__':
         args.in_path,
         args.out_path,
         args.hf_model_name,
+        tmp_out_path=args.tmp_out_path,
         max_shard_size=args.max_shard_size,
         precision=args.precision,
         cpu_only=args.cpu_only,
