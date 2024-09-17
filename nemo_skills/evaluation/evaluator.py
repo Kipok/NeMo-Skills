@@ -26,7 +26,7 @@ LOG = logging.getLogger(__file__)
 
 
 @nested_dataclass(kw_only=True)
-class MathGraderConfig:
+class MathEvaluatorConfig:
     # Sandbox configuration {sandbox_params}
     sandbox: dict = field(default_factory=lambda: {'sandbox_type': 'local'})
     num_parallel_requests: int = 100
@@ -41,8 +41,8 @@ class MathGraderConfig:
     extract_regex: str = r"The final answer is (.+)$"
 
 
-def math_grader(cfg):
-    eval_config = MathGraderConfig(**cfg.eval_config)
+def eval_math(cfg):
+    eval_config = MathEvaluatorConfig(**cfg.eval_config)
     from nemo_skills.code_execution.sandbox import get_sandbox
 
     sandbox = get_sandbox(**eval_config.sandbox)
@@ -54,7 +54,7 @@ def math_grader(cfg):
     )
 
 
-def code_grader(cfg):
+def eval_code(cfg):
     # TODO: need to move it to a separate docker (either our sandbox or separate srun)
     from evalplus.evaluate import evaluate
     from omegaconf import OmegaConf
@@ -98,7 +98,7 @@ def code_grader(cfg):
         shutil.move(jsonl_file[:-6] + '_eval_results.json', jsonl_file[:-6] + '_eval_results-saved.json')
 
 
-def if_grader(cfg):
+def eval_if(cfg):
     for jsonl_file in unroll_files(cfg.input_files):
         parent_dir = Path(jsonl_file).absolute().parent
         cmd = (
@@ -132,7 +132,7 @@ def if_grader(cfg):
 
 
 @nested_dataclass(kw_only=True)
-class LlmGraderConfig:
+class LlmEvaluatorConfig:
     batch_size: int = 100  # lower if running into rate limits
     tokens_to_generate: int = 4096  # will auto-lower to max possible for NGC models
     use_batch_api: bool = True  # only supported for OpenAI models!
@@ -143,13 +143,13 @@ class LlmGraderConfig:
 
 
 # TODO: this needs to be moved into a separate job as we might need to host the server
-def arena_grader(cfg):
+def eval_arena(cfg):
     from tqdm import tqdm
 
     from nemo_skills.inference.server.model import get_model
     from nemo_skills.prompt.utils import Prompt, get_prompt_config
 
-    eval_config = LlmGraderConfig(**cfg.eval_config)
+    eval_config = LlmEvaluatorConfig(**cfg.eval_config)
     assert eval_config.batch_size % 2 == 0  # required due to how everything is implement, can fix later
 
     if eval_config.use_batch_api and eval_config.base_url:
@@ -258,3 +258,15 @@ def arena_grader(cfg):
 
             # removing judgement file
             Path(output_file).unlink()
+
+
+EVALUATOR_MAP = {
+    'math': eval_math,
+    'code': eval_code,
+    'if': eval_if,
+    'arena': eval_arena,
+}
+
+
+def evaluate(cfg):
+    return EVALUATOR_MAP[cfg.eval_type](cfg)

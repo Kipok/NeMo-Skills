@@ -14,7 +14,7 @@
 
 PROMPT_CONFIG = 'generic/multichoice'
 DATASET_GROUP = 'multichoice'
-from nemo_skills.evaluation.graders import math_grader
+from nemo_skills.evaluation.evaluator import math_grader
 from nemo_skills.evaluation.metrics import MathMetrics
 
 # settings that define how evaluation should be done by default (all can be changed from cmdline)

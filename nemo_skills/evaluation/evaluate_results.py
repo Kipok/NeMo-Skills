@@ -18,9 +18,8 @@ from dataclasses import field
 from typing import Any
 
 import hydra
-from omegaconf import MISSING
 
-from nemo_skills.evaluation.settings import GRADING_MAP
+from nemo_skills.evaluation.evaluator import evaluate
 from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging
 
 LOG = logging.getLogger(__file__)
@@ -53,11 +52,7 @@ cs.store(name="base_evaluate_results_config", node=EvaluateResultsConfig)
 def evaluate_results(cfg: EvaluateResultsConfig):
     cfg = EvaluateResultsConfig(_init_nested=True, **cfg)
     LOG.info("Config used: %s", cfg)
-
-    if cfg.eval_type not in GRADING_MAP:
-        raise ValueError(f"Unknown eval_type: {cfg.eval_type}")
-
-    GRADING_MAP[cfg.eval_type](cfg)
+    evaluate(cfg)
 
 
 HELP_MESSAGE = get_help_message(

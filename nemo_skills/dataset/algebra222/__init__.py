@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from nemo_skills.evaluation.graders import math_grader
+from nemo_skills.evaluation.evaluator import math_grader
 from nemo_skills.evaluation.metrics import MathMetrics
 
 # settings that define how evaluation should be done by default (all can be changed from cmdline)
