@@ -20,19 +20,26 @@ from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config,
 from nemo_skills.utils import setup_logging
 
 
-def get_cmd(random_seed, output_dir, extra_arguments, extra_eval_args):
-    cmd = (
-        f"python -m nemo_skills.inference.generate "
-        f"    skip_filled=True "
-        f"    inference.random_seed={random_seed} "
-        f"    inference.temperature=1.0 "
-        f"    inference.top_k=0 "
-        f"    inference.top_p=0.95 "
-        f"    output_file={output_dir}/generation/output-rs{random_seed}.jsonl "
-        f"    {extra_arguments} && "
-        f"python -m nemo_skills.evaluation.evaluate_results "
-        f"    input_files={output_dir}/generation/output-rs{random_seed}.jsonl {extra_eval_args}"
-    )
+def get_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
+    if random_seed is not None:
+        output_file = f"{output_dir}/generation/output-rs{random_seed}.jsonl"
+    else:
+        output_file = f"{output_dir}/generation/output.jsonl"
+    cmd = f"python -m nemo_skills.inference.generate " f"    ++skip_filled=True " f"    ++output_file={output_file} "
+    if random_seed is not None:
+        cmd += (
+            f"    ++inference.random_seed={random_seed} "
+            f"    ++inference.temperature=1.0 "
+            f"    ++inference.top_k=0 "
+            f"    ++inference.top_p=0.95 "
+        )
+    cmd += f" {extra_arguments} "
+    if eval_args:
+        cmd += (
+            f" && python -m nemo_skills.evaluation.evaluate_results "
+            f"    ++input_files={output_file} "
+            f"    {eval_args} "
+        )
     return cmd
 
 
@@ -50,7 +57,6 @@ if __name__ == "__main__":
         required=False,
         help="Use ip:port for self-hosted models or the API url if using model providers.",
     )
-    # TODO: let's make it not needed - we just need to unify our api calls
     parser.add_argument(
         "--server_type",
         choices=('nemo', 'tensorrt_llm', 'vllm', 'openai'),
@@ -64,13 +70,18 @@ if __name__ == "__main__":
         default=1,
         help="Number of nodes required for hosting LLM server.",
     )
-    parser.add_argument("--num_runs", type=int, default=1)
     parser.add_argument(
         "--dependent_jobs",
         type=int,
         default=0,
         help="Specify this to launch that number of dependent jobs. Useful for large datasets, "
         "where you're not able to process everything before slurm timeout.",
+    )
+    parser.add_argument(
+        "--num_random_seeds",
+        type=int,
+        required=False,
+        help="Specify if want to run many generations with high temperature for the same input.",
     )
     parser.add_argument("--starting_seed", type=int, default=0)
     parser.add_argument(
@@ -79,9 +90,9 @@ if __name__ == "__main__":
         help="Can specify if need interactive jobs or a specific non-default partition",
     )
     parser.add_argument(
-        "--extra_eval_args",
-        default="",
-        help="Any extra arguments to pass to nemo_skills/evaluation/evaluate_results.py",
+        "--eval_args",
+        required=False,
+        help="Specify if need to run nemo_skills/evaluation/evaluate_results.py on the generation outputs.",
     )
     parser.add_argument(
         "--run_after",
@@ -91,9 +102,6 @@ if __name__ == "__main__":
     args, unknown = parser.parse_known_args()
 
     extra_arguments = f'{" ".join(unknown)}'
-
-    if not args.output_dir.startswith("/"):
-        raise ValueError("output_dir must be referenced in a mounted location (mounts section in the config file)")
 
     cluster_config = get_cluster_config(args.cluster, args.config_folder)
     check_if_mounted(cluster_config, args.output_dir)
@@ -118,19 +126,41 @@ if __name__ == "__main__":
         )
 
     with run.Experiment(args.expname) as exp:
-        for seed in range(args.starting_seed, args.starting_seed + args.num_runs):
+        if args.num_random_seeds:
+            for seed in range(args.starting_seed, args.starting_seed + args.num_random_seeds):
+                # TODO: needs support on nemorun side
+                assert args.dependent_jobs == 0
+                cmd = get_cmd(
+                    random_seed=seed,
+                    output_dir=args.output_dir,
+                    extra_arguments=extra_arguments,
+                    eval_args=args.eval_args,
+                )
+                add_task(
+                    exp,
+                    cmd=get_generation_command(server_address=args.server_address, generation_commands=cmd),
+                    task_name=f'generate-rs{seed}',
+                    log_folder=f"{args.output_dir}/generation-logs",
+                    container=cluster_config["containers"]["nemo-skills"],
+                    cluster_config=cluster_config,
+                    partition=args.partition,
+                    server_config=server_config,
+                    with_sandbox=True,
+                    run_after=args.run_after,
+                )
+        else:
             # TODO: needs support on nemorun side
             assert args.dependent_jobs == 0
             cmd = get_cmd(
-                random_seed=seed,
+                random_seed=None,
                 output_dir=args.output_dir,
                 extra_arguments=extra_arguments,
-                extra_eval_args=args.extra_eval_args,
+                eval_args=args.eval_args,
             )
             add_task(
                 exp,
                 cmd=get_generation_command(server_address=args.server_address, generation_commands=cmd),
-                task_name=f'generate-rs{seed}',
+                task_name="generate",
                 log_folder=f"{args.output_dir}/generation-logs",
                 container=cluster_config["containers"]["nemo-skills"],
                 cluster_config=cluster_config,
@@ -140,4 +170,3 @@ if __name__ == "__main__":
                 run_after=args.run_after,
             )
         run_exp(exp, cluster_config)
-        # exp.dryrun()
