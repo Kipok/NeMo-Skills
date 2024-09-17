@@ -132,7 +132,7 @@ def get_question_or_solution(url, choice):
         exact_answer = find_exact_answer(solution)
         return solution, exact_answer
     elif choice == 'question':
-        
+
         question = ' '.join(elements)
         return question
 
