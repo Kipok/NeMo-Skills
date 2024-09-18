@@ -10,8 +10,8 @@
 
 text_begin: "<|begin_of_text|>"
 
-system_begin: "<|start_header_id|>system<|end_header_id|>\n\n"
-system_end: "<|eot_id|>"
+system_begin: ""
+system_end: ""
 
 user_begin: "<|start_header_id|>user<|end_header_id|>\n\n"
 user_end: "<|eot_id|>"
