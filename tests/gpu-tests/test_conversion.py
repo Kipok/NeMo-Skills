@@ -48,25 +48,20 @@ def test_hf_nemo_conversion():
     model_path = os.getenv('NEMO_SKILLS_TEST_HF_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_HF_MODEL to run this test")
-    output_path = os.getenv('NEMO_SKILLS_TEST_OUTPUT', '/tmp')
 
-    cmd = f"""cd /code && \
-HF_TOKEN={os.environ['HF_TOKEN']} python nemo_skills/conversion/hf_to_nemo.py \
-    --in-path /model \
-    --out-path /output/model.nemo \
-    --hf-model-name meta-llama/Meta-Llama-3-8B \
-    --precision 16
-"""
-
-    launch_job(
-        cmd,
-        num_nodes=1,
-        tasks_per_node=1,
-        gpus_per_node=2,
-        job_name='test',
-        container=CLUSTER_CONFIG["containers"]['nemo'],
-        mounts=f"{model_path}:/model,{output_path}:/output,{NEMO_SKILLS_CODE}:/code",
+    cmd = (
+        f"python -m nemo_skills.pipeline.convert "
+        f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
+        f"    --input_model {model_path} "
+        f"    --output_model /tmp/nemo-skills-tests/conversion/hf-to-nemo/model "
+        f"    --convert_from hf "
+        f"    --convert_to nemo "
+        f"    --num_gpus 1 "
+        f"    --hf_model_name meta-llama/Meta-Llama-3.1-8B "
     )
+
+    subprocess.run(cmd, shell=True, check=True)
+    assert Path("/tmp/nemo-skills-tests/conversion/hf-to-nemo/model").exists()
 
 
 @pytest.mark.gpu
