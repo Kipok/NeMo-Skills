@@ -45,6 +45,7 @@ from settings.constants import (
     FILE_NAME,
     FILES_FILTERING,
     GENERAL_STATS,
+    INLINE_STATS,
     LABEL,
     LABEL_SELECTOR_ID,
     MODEL_SELECTOR_ID,
@@ -61,6 +62,7 @@ from utils.common import (
     get_excluded_row,
     get_filtered_files,
     get_general_custom_stats,
+    get_stats_raw,
 )
 
 
@@ -331,16 +333,36 @@ def apply_new_stat(
             get_general_custom_stats().pop(namespace['delete_stats'], None)
         else:
             get_general_custom_stats().update(namespace['new_stats'])
+            get_stats_raw()[GENERAL_STATS][' '.join(namespace['new_stats'].keys())] = code_raw
     else:
         if stats_modes and DELETE in stats_modes:
             get_custom_stats().pop(namespace['delete_stats'], None)
             get_deleted_stats().update(namespace['delete_stats'])
         else:
             get_custom_stats().update(namespace['new_stats'])
+            get_stats_raw()[INLINE_STATS][' '.join(namespace['new_stats'].keys())] = code_raw
     if base_model == CHOOSE_MODEL:
         return []
     calculate_metrics_for_whole_data(get_table_data(), base_model)
     return get_model_answers_table_layout(base_model=base_model, use_current=True)
+
+
+@app.callback(
+    [
+        Output("stats_input", "value", allow_duplicate=True),
+        Output("js_container", "children", allow_duplicate=True),
+        Output("js_trigger", "children", allow_duplicate=True),
+    ],
+    Input("stats_extractor", "value"),
+    [
+        State("stats_modes", "value"),
+        State("js_trigger", "children"),
+    ],
+    prevent_initial_call=True,
+)
+def apply_new_stat(stat: str, stats_modes: List[str], js_trigger: str) -> List:
+    mode = GENERAL_STATS if GENERAL_STATS in stats_modes else INLINE_STATS
+    return get_stats_raw()[mode][stat], " ", js_trigger + " "
 
 
 @app.callback(

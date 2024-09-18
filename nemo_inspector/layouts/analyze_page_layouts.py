@@ -20,8 +20,8 @@ from dash import dcc, html
 from flask import current_app
 from layouts.base_layouts import get_selector_layout, get_switch_layout
 from layouts.table_layouts import get_change_label_layout, get_filter_layout, get_sorting_layout
-from settings.constants import CHOOSE_MODEL, DELETE, GENERAL_STATS
-from utils.common import get_available_models, get_custom_stats, get_general_custom_stats
+from settings.constants import CHOOSE_MODEL, CUSTOM, DELETE, GENERAL_STATS, INLINE_STATS
+from utils.common import get_available_models, get_custom_stats, get_general_custom_stats, get_stats_raw
 
 
 def get_models_options_layout() -> dbc.Accordion:
@@ -287,20 +287,25 @@ def get_stats_text(general_stats: bool = False, delete: bool = False):
 
 
 def get_stats_input(modes: List[str] = []) -> List:
-    options = list(get_general_custom_stats().keys() if GENERAL_STATS in modes else get_custom_stats().keys())
-    stats_input = (
-        dbc.Textarea(id="stats_input")
-        if not DELETE in modes
-        else get_selector_layout(
-            options,
-            "stats_input",
-            options[0] if options else "",
+    body = []
+    if DELETE in modes:
+        delete_options = list(
+            get_general_custom_stats().keys() if GENERAL_STATS in modes else get_custom_stats().keys()
         )
-    )
+        body += [
+            get_selector_layout(
+                delete_options,
+                "stats_input",
+                delete_options[0] if delete_options else "",
+            )
+        ]
+    else:
+        mode = GENERAL_STATS if GENERAL_STATS in modes else INLINE_STATS
+        extractor_options = list(get_stats_raw()[mode].keys())
+        body += [get_selector_layout(extractor_options, "stats_extractor", CUSTOM), dbc.Textarea(id="stats_input")]
     return [
         html.Pre(get_stats_text(GENERAL_STATS in modes, DELETE in modes), id="stats_text"),
-        stats_input,
-    ]
+    ] + body
 
 
 def get_add_stats_layout() -> html.Div:

@@ -29,8 +29,11 @@ from flask import current_app
 from joblib import Parallel, delayed
 from settings.constants import (
     ANSWER_FIELD,
+    CUSTOM,
     ERROR_MESSAGE_TEMPLATE,
     FILE_NAME,
+    GENERAL_STATS,
+    INLINE_STATS,
     OUTPUT,
     PARAMETERS_FILE_NAME,
     PARAMS_TO_REMOVE,
@@ -54,6 +57,7 @@ deleted_stats = set()
 excluded_rows = set()
 editable_rows = set()
 compared_rows = set()
+stats_raw = {INLINE_STATS: {CUSTOM: ""}, GENERAL_STATS: {CUSTOM: ""}}
 
 
 def get_editable_rows() -> Set:
@@ -82,6 +86,10 @@ def get_general_custom_stats() -> Dict:
 
 def get_examples() -> Dict:
     return examples_map
+
+
+def get_stats_raw() -> Dict:
+    return stats_raw
 
 
 def parse_model_answer(answer: str) -> List[Dict]:
