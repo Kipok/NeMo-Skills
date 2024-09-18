@@ -47,6 +47,8 @@ def test_trtllm_run_eval():
         f"    --server_nodes 1 "
         f"    ++prompt_template=llama3-instruct "
         f"    ++split_name=test "
+        f"    ++batch_size=8 "
+        f"    ++max_samples=20 "
     )
     subprocess.run(cmd, shell=True)
 
