@@ -149,6 +149,9 @@ def generate(cfg: GenerateSolutionsConfig):
     if cfg.max_samples < 0:
         cfg.max_samples = len(data)
 
+    if len(data) == 0:  # we might not have any examples if skip_filled=True
+        return
+
     if cfg.prompt_template:
         LOG.info("Example prompt:\nData dictionary: %s\nPrompt string: %s", data[0], prompt.build_string(data[0]))
     else:
