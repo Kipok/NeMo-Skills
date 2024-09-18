@@ -169,4 +169,5 @@ if __name__ == "__main__":
                 with_sandbox=True,
                 run_after=args.run_after,
             )
+            break
         run_exp(exp, cluster_config)
