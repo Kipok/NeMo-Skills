@@ -16,9 +16,7 @@ import json
 import logging
 import os
 import re
-import warnings
 from itertools import chain
-from math import isclose
 from typing import List
 
 import tqdm
@@ -30,7 +28,7 @@ from nemo_skills.code_execution import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS
 LOG = logging.getLogger(__file__)
 
 PATTERN_ANS = re.compile(r"\\boxed\{([^}]*)\}")
-PATTERN_CODE = re.compile(CODE_SEPARATORS[0])
+PATTERN_CODE = re.compile(re.escape(CODE_SEPARATORS[0]))
 
 PATTERN_PYTHON_CODE = re.compile("```[pP]ython")
 
@@ -92,10 +90,14 @@ class DropBrokenCode(BaseFilter):
 
     def process_dataset_entry(self, data_entry) -> List:
         generation = data_entry[self.solution_key]
-        code_start_indices = [match.start() for match in re.finditer(CODE_SEPARATORS[0], generation)]
-        code_end_indices = [match.start() for match in re.finditer(CODE_SEPARATORS[1], generation)]
-        code_out_start_indices = [match.start() for match in re.finditer(CODE_OUTPUT_SEPARATORS[0], generation)]
-        code_out_end_indices = [match.start() for match in re.finditer(CODE_OUTPUT_SEPARATORS[1], generation)]
+        code_start_indices = [match.start() for match in re.finditer(re.escape(CODE_SEPARATORS[0]), generation)]
+        code_end_indices = [match.start() for match in re.finditer(re.escape(CODE_SEPARATORS[1]), generation)]
+        code_out_start_indices = [
+            match.start() for match in re.finditer(re.escape(CODE_OUTPUT_SEPARATORS[0]), generation)
+        ]
+        code_out_end_indices = [
+            match.start() for match in re.finditer(re.escape(CODE_OUTPUT_SEPARATORS[1]), generation)
+        ]
 
         num_code_occs = set(
             [len(code_start_indices), len(code_end_indices), len(code_out_start_indices), len(code_out_end_indices)]

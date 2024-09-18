@@ -44,13 +44,13 @@ processors:
 
   - _target_: sdp.processors.RenameFields
     rename_fields:
-      input: question  # we need to match llama3/codegen_sft format which uses 'question' as input key
+      input: problem  # we need to match llama3/codegen_sft format which uses 'problem' as input key
 
   - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.WriteFinalSftManifest
     output_manifest_file: ${output_path}
     prompt_config: ${prompt_config}
     prompt_template: ${prompt_template}
-    input_key: question
+    input_key: problem
     output_key: ${output_key}
     chat_format: ${chat_format}
     generation_suffix: ${generation_suffix}

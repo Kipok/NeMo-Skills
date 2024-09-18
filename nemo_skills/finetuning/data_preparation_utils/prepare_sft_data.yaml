@@ -20,7 +20,7 @@ prompt_template: null
 chat_format: null  # null/nemotron/llama
 generation_suffix: ""  # suffix to add to the end of expected response (e.g. <|eot_id|>)
 
-input_key: question
+input_key: problem
 output_key: generation
 
 majority_filter:

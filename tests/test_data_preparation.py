@@ -18,7 +18,7 @@ def test_multiple_files():
             "nemo_skills/finetuning/prepare_sft_data.py",
             "input_files='tests/data/output-rs*.test'",
             f"output_path={output_file}",
-            "prompt_config=generic/default",
+            "prompt_config=llama3-instruct/math",
             "prompt_template=llama3-instruct",
             "exclude_optional_keys=false",
             "filters.drop_multi_boxed=true",
@@ -32,7 +32,7 @@ def test_multiple_files():
         check=True,
     )
 
-    expected_md5 = "28273cba6ac92eb0aa8f57fd4e981969"
+    expected_md5 = "063633c0d2b4c69f3926127edf845fa7"
     output_md5 = compute_md5(output_file)
 
     assert (
@@ -48,7 +48,7 @@ def test_exclude_keys():
             "nemo_skills/finetuning/prepare_sft_data.py",
             "input_files='tests/data/output-rs*.test'",
             f"output_path={output_file}",
-            "prompt_config=generic/default",
+            "prompt_config=llama3-instruct/math",
             "prompt_template=llama3-instruct",
             "exclude_optional_keys=true",
             "filters.drop_multi_boxed=true",
@@ -62,7 +62,7 @@ def test_exclude_keys():
         check=True,
     )
 
-    expected_md5 = "a273ed53a8e2334327bbefa9396460be"
+    expected_md5 = "d4726dddf111fc1712b4248f43425837"
     output_md5 = compute_md5(output_file)
 
     assert (
@@ -79,7 +79,7 @@ def test_openmathinstruct():
             "nemo_skills/finetuning/prepare_sft_data.py",
             "preprocessed_dataset_files='tests/data/openmathinstruct.test'",
             f"output_path={output_file}",
-            "prompt_config=generic/default",
+            "prompt_config=llama3-instruct/math",
             "prompt_template=llama3-instruct",
             "exclude_optional_keys=false",
             "filters.drop_multi_boxed=true",
@@ -93,7 +93,7 @@ def test_openmathinstruct():
         check=True,
     )
 
-    expected_md5 = "2eb2b856c39260566b8786edf75e5b00"
+    expected_md5 = "3f22c685ec4deac09346656c14e6e946"
     output_md5 = compute_md5(output_file)
 
     assert (
@@ -110,7 +110,7 @@ def test_code_sft_data():
             "--config-name=prepare_code_sft_data",
             "preprocessed_dataset_files='tests/data/code-output.test'",
             f"output_path={output_file}",
-            "prompt_config=generic/default",
+            "prompt_config=llama3-instruct/math",
             "prompt_template=llama3-instruct",
             "exclude_optional_keys=false",
             "filters.drop_incorrect_code_blocks=false",
@@ -119,7 +119,7 @@ def test_code_sft_data():
         check=True,
     )
 
-    expected_md5 = "b09d2ffae636f0edf2a0bcad345e4347"
+    expected_md5 = "c7d2859c6f17031f6b2256481b588336"
     output_md5 = compute_md5(output_file)
 
     assert (
