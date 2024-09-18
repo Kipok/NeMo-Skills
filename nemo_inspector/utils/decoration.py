@@ -17,6 +17,7 @@ import re
 import string
 from difflib import SequenceMatcher
 from html import escape
+from io import StringIO
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from ansi2html import Ansi2HTMLConverter
@@ -339,8 +340,6 @@ def highlight_code(codes: List[Tuple[str, Dict[str, str]]], **kwargs) -> html.If
     font-family: monospace;
 }
 """
-
-    from io import StringIO
 
     output = StringIO()
     formatter.format(lexer.get_tokens(full_code), output)
