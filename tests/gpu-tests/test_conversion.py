@@ -40,6 +40,7 @@ def test_hf_trtllm_conversion():
     )
 
     subprocess.run(cmd, shell=True, check=True)
+    assert Path("/tmp/nemo-skills-tests/conversion/hf-to-trtllm/model").exists()
 
 
 @pytest.mark.gpu
