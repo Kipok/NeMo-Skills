@@ -267,7 +267,7 @@ def get_executor(
         mem=0,
         job_details=CustomJobDetails(
             job_name=cluster_config.get("job_name_prefix", "") + job_name,
-            dir=get_unmounted_path(cluster_config, log_dir),
+            folder=get_unmounted_path(cluster_config, log_dir),
             log_prefix=log_prefix,
         ),
         wait_time_for_group_job=0.01,
