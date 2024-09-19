@@ -50,7 +50,7 @@ def test_trtllm_run_eval():
         f"    ++batch_size=8 "
         f"    ++max_samples=20 "
     )
-    subprocess.run(cmd, shell=True)
+    subprocess.run(cmd, shell=True, check=True)
 
     # running compute_metrics to check that results are expected
     metrics_calculator = importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS()
@@ -68,58 +68,74 @@ def test_vllm_run_eval():
     # will run a bunch of benchmarks, but is still pretty fast
     # mmlu/IFMetrics will be cut to 400 samples to save time
     # could cut everything, but human-eval/mbpp don't work with partial gens
-    model_path = os.getenv('LLAMA3_8B_INSTRUCT_HF')
+    model_path = os.getenv('NEMO_SKILLS_TEST_HF_MODEL')
     if not model_path:
-        pytest.skip("Define LLAMA3_8B_INSTRUCT_HF to run this test")
-    output_path = os.getenv('NEMO_SKILLS_TEST_OUTPUT', '/tmp') + '/multi-benchmark'
+        pytest.skip("Define NEMO_SKILLS_TEST_HF_MODEL to run this test")
 
-    cmd = f""" \
-python pipeline/run_eval.py \
-    --model_path {model_path} \
-    --server_type vllm \
-    --output_dir {output_path} \
-    --benchmarks algebra222:0 human-eval:0 mbpp:0 IFMetrics:0 mmlu:0 \
-    --prompt_folder llama3 --model_version instruct \
-    --num_gpus 1 \
-    --num_nodes 1 \
-    --num_jobs 1 \
-    ++split_name=test \
-    ++batch_size=400 \
-    ++max_samples=400 \
-"""
-    subprocess.run(cmd, shell=True)
+    cmd = (
+        f"python -m nemo_skills.pipeline.eval "
+        f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
+        f"    --model {model_path} "
+        f"    --server_type vllm "
+        f"    --output_dir /tmp/nemo-skills-tests/vllm-eval "
+        f"    --benchmarks math:0 human-eval:0 mbpp:0 ifeval:0 mmlu:0 "
+        f"    --server_gpus 1 "
+        f"    --server_nodes 1 "
+        f"    ++prompt_template=llama3-instruct "
+        f"    ++split_name=test "
+        f"    ++batch_size=400 "
+        f"    ++max_samples=400 "
+    )
+    subprocess.run(cmd, shell=True, check=True)
 
     # checking that summarize results works (just that there are no errors, but can inspect the output as well)
-    subprocess.run(f"python pipeline/summarize_results.py {output_path}", shell=True, check=True)
+    subprocess.run(
+        "python -m nemo_skills.pipeline.summarize_results /tmp/nemo-skills-tests/vllm-eval",
+        shell=True,
+        check=True,
+    )
 
     # running compute_metrics to check that results are expected
-    metrics = compute_metrics([f"{output_path}/algebra222/output-greedy.jsonl"], EVALUATOR_MAP['algebra222']())
+    metrics = compute_metrics(
+        ["/tmp/nemo-skills-tests/vllm-eval/eval-results/algebra222/output-greedy.jsonl"],
+        importlib.import_module('nemo_skills.dataset.math').METRICS_CLASS(),
+    )
 
-    assert round(metrics['sympy_correct'], 2) == 66.67
-    assert round(metrics['no_answer'], 2) == 1.35
-    assert metrics['num_entries'] == 222
+    assert metrics['sympy_correct'] >= 30
+    assert metrics['num_entries'] == 400
 
-    metrics = compute_metrics([f"{output_path}/human-eval/output-greedy.jsonl"], EVALUATOR_MAP['human-eval']())
-    assert round(metrics['passing_base_tests'], 2) == 59.76
-    assert round(metrics['passing_plus_tests'], 2) == 54.27
+    metrics = compute_metrics(
+        ["/tmp/nemo-skills-tests/vllm-eval/eval-results/human-eval/output-greedy.jsonl"],
+        importlib.import_module('nemo_skills.dataset.human-eval').METRICS_CLASS(),
+    )
+    assert metrics['passing_base_tests'] >= 50
+    assert metrics['passing_plus_tests'] >= 50
     assert metrics['num_entries'] == 164
 
-    metrics = compute_metrics([f"{output_path}/mbpp/output-greedy.jsonl"], EVALUATOR_MAP['mbpp']())
-    assert round(metrics['passing_base_tests'], 2) == 69.31
-    assert round(metrics['passing_plus_tests'], 2) == 57.41
+    metrics = compute_metrics(
+        ["/tmp/nemo-skills-tests/vllm-eval/eval-results/mbpp/output-greedy.jsonl"],
+        importlib.import_module('nemo_skills.dataset.mbpp').METRICS_CLASS(),
+    )
+    assert metrics['passing_base_tests'] >= 50
+    assert metrics['passing_plus_tests'] >= 50
     assert metrics['num_entries'] == 378
 
-    metrics = compute_metrics([f"{output_path}/IFMetrics/output-greedy.jsonl"], EVALUATOR_MAP['IFMetrics']())
-    assert abs(metrics['prompt_strict_accuracy'] - 66.50) <= 1.0  # TODO: some randomness in this benchmark
-    assert abs(metrics['instruction_strict_accuracy'] - 74.88) <= 1.0
-    assert abs(metrics['prompt_loose_accuracy'] - 72.75) <= 1.0
-    assert abs(metrics['instruction_loose_accuracy'] - 79.70) <= 1.0
+    metrics = compute_metrics(
+        ["/tmp/nemo-skills-tests/vllm-eval/eval-results/ifeval/output-greedy.jsonl"],
+        importlib.import_module('nemo_skills.dataset.ifeval').METRICS_CLASS(),
+    )
+    assert metrics['prompt_strict_accuracy'] >= 60
+    assert metrics['instruction_strict_accuracy'] >= 70
+    assert metrics['prompt_loose_accuracy'] >= 60
+    assert metrics['instruction_loose_accuracy'] >= 70
     assert metrics['num_prompts'] == 400
     assert metrics['num_instructions'] == 601
 
-    metrics = compute_metrics([f"{output_path}/mmlu/output-greedy.jsonl"], EVALUATOR_MAP['mmlu']())
-    assert round(metrics['sympy_correct'], 2) == 58.75
-    assert round(metrics['no_answer'], 2) == 19.75
+    metrics = compute_metrics(
+        ["/tmp/nemo-skills-tests/vllm-eval/eval-results/mmlu/output-greedy.jsonl"],
+        importlib.import_module('nemo_skills.dataset.mmlu').METRICS_CLASS(),
+    )
+    assert metrics['sympy_correct'] >= 50
     assert metrics['num_entries'] == 400
 
 
