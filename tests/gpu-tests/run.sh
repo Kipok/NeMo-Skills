@@ -5,11 +5,6 @@
 # example: HF_TOKEN=<> ./tests/gpu-tests/run.sh
 set -e
 
-if [ $# -eq 0 ] ; then
-    echo 'Provide llama3-base HF model folder as the first argument'
-    exit 1
-fi
-
 export NEMO_SKILLS_TEST_HF_MODEL=/mnt/datadrive/nemo-skills-test-data/Meta-Llama-3.1-8B-Instruct
 
 # first running the conversion tests
