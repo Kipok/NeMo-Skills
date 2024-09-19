@@ -29,11 +29,46 @@ from nemo_skills.evaluation.metrics import MathMetrics, compute_metrics
 
 
 @pytest.mark.gpu
-def test_sft_pipeline():
+def test_sft():
     model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
-    output_path = os.getenv('NEMO_SKILLS_TEST_OUTPUT', '/tmp')
+
+    cmd = (
+        f"python -m nemo_skills.pipeline.train "
+        f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
+        f"    --expname test-train "
+        f"    --output_dir /tmp/nemo-skills-tests/train-sft "
+        f"    --nemo_model {model_path} "
+        f"    --num_nodes 1 "
+        f"    --num_gpus 1 "
+        f"    --num_training_jobs 1 "
+        f"    --training_data /nemo_run/code/nemo_skills/dataset/math/test.jsonl "
+    )
+
+    """
+    python nemo_skills/pipeline/train.py \
+        --cluster local \
+        --expname test \
+        --output_dir /exps/checkpoints/test \
+        --nemo_model /nemo_models/llama3-tiny \
+        --num_nodes 1 \
+        --num_gpus 1 \
+        --num_training_jobs 1 \
+        --training_data /data/data.jsonl \
+        ++model.data.train_ds.add_eos=False \
+        ++model.data.train_ds.global_batch_size=10 \
+        ++model.data.train_ds.micro_batch_size=1 \
+        ++trainer.sft.val_check_interval=1 \
+        ++trainer.sft.save_interval=1 \
+        ++trainer.sft.limit_val_batches=1 \
+        ++trainer.sft.max_steps=3 \
+        ++trainer.sft.max_epochs=10 \
+        ++model.optim.lr=5e-6 \
+        ++model.optim.sched.warmup_steps=0 \
+        ++model.tensor_model_parallel_size=1 \
+        ++model.pipeline_model_parallel_size=1
+    """
 
     cmd = f""" \
 python {Path(__file__).absolute().parents[2]}/datasets/gsm8k/prepare.py --split validation && \
@@ -64,7 +99,7 @@ python pipeline/run_pipeline.py \
 
 
 @pytest.mark.gpu
-def test_dpo_pipeline():
+def test_dpo():
     model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
