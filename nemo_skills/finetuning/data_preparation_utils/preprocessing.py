@@ -22,7 +22,7 @@ from typing import Dict, Optional
 from sdp.processors.base_processor import BaseProcessor
 from tqdm.contrib.concurrent import process_map
 
-from nemo_skills.prompt.utils import Prompt, get_prompt
+from nemo_skills.prompt.utils import get_prompt
 from nemo_skills.utils import unroll_files
 
 LOG = logging.getLogger(__file__)

@@ -16,7 +16,9 @@ import json
 import logging
 import os
 import re
+import warnings
 from itertools import chain
+from math import isclose
 from typing import List
 
 import tqdm
@@ -24,6 +26,11 @@ from sdp.processors.base_processor import BaseParallelProcessor, DataEntry
 from tqdm.contrib.concurrent import process_map
 
 from nemo_skills.code_execution import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS
+from nemo_skills.finetuning.data_preparation_utils.arithmetic_utils import (
+    extract_expressions,
+    merge_solution_steps,
+    solve_expression,
+)
 
 LOG = logging.getLogger(__file__)
 
@@ -179,6 +186,93 @@ class TrimSolutions(BaseFilter):
         trimmed_output = "\n".join(output_lines[: stop_idx + 1])
         is_modified = trimmed_output != data_entry[self.solution_key]
         data_entry[self.solution_key] = trimmed_output
+
+        return [DataEntry(data=data_entry, metrics=dict(num_modified=int(is_modified)))]
+
+
+class DropIncorrectArithmetic(BaseFilter):
+
+    def __init__(self, solution_key: str = "generation", tolerance=1e-4, **kwargs):
+        super().__init__(**kwargs)
+        self.solution_key = solution_key
+        self.tolerance = tolerance
+
+    def process_dataset_entry(self, data_entry: str) -> str:
+        for expression, _ in extract_expressions(data_entry[self.solution_key]):
+            parts = expression.split("=")
+            if len(parts) < 2:
+                continue
+
+            expr, ans = parts[0], parts[-1]
+
+            try:
+                solution_steps = solve_expression(expr)
+                # ignore eval warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=SyntaxWarning)
+                    if not isclose(eval(solution_steps[-1]), eval(ans), rel_tol=self.tolerance):
+                        return [DataEntry(data=None, metrics=dict(num_removed=1))]
+            except KeyboardInterrupt:
+                raise
+            except:
+                pass
+
+        return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
+
+
+class SplitArithmetic(BaseFilter):
+
+    def __init__(self, solution_key: str = "generation", **kwargs):
+        super().__init__(**kwargs)
+        self.solution_key = solution_key
+
+    def process_dataset_entry(self, data_entry: str) -> str:
+        """
+        Extends short arithmetic expressions solutions to step-by-step ones
+        For example `1 + 2 + 3 + 4 = 10` -> `1 + 2 + 3 + 4 = 3 + 3 + 4 = 6 + 4 = 10`.
+        """
+        text = data_entry[self.solution_key]
+        new_text = []
+        last_end = 0
+
+        for expression, start in extract_expressions(text):
+            end = start + len(expression)
+            parts = expression.split("=")
+
+            if len(parts) != 2:
+                new_text.append(text[last_end:end])
+                last_end = end
+                continue
+            expr, ans = parts
+
+            try:
+                solution_steps = solve_expression(expr)
+            except:
+                new_text.append(text[last_end:end])
+                last_end = end
+                continue
+
+            solution = merge_solution_steps(solution_steps)
+
+            try:
+                # ignore eval warnings
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=SyntaxWarning)
+                    if eval(solution_steps[-1]) == eval(ans):
+                        new_text.append(text[last_end:start] + solution)
+                    else:
+                        new_text.append(text[last_end:end])
+
+                last_end = end
+            except KeyboardInterrupt:
+                raise
+            except:
+                new_text.append(text[last_end:end])
+                last_end = end
+
+        new_text.append(text[last_end:])
+        data_entry[self.solution_key] = "".join(new_text)
+        is_modified = text != data_entry[self.solution_key]
 
         return [DataEntry(data=data_entry, metrics=dict(num_modified=int(is_modified)))]
 
