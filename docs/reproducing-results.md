@@ -59,7 +59,7 @@ documentation to learn how to make inference more efficient.
    ```
    python pipeline/run_eval.py \
      --model_path `pwd`/openmath-mistral-7b-trtllm \
-     --server_type tensorrt_llm \
+     --server_type trtllm \
      --output_dir `pwd`/openmath-mistral-7b-eval-results \
      --benchmarks gsm8k:0 asdiv:0 gsm-hard:0 mawps:0 svamp:0 tabmwp:0 algebra222:0 math:0 \
      --num_gpus 8 \
@@ -77,7 +77,7 @@ documentation to learn how to make inference more efficient.
    ```
    python pipeline/run_eval.py \
      --model_path `pwd`/openmath-mistral-7b-trtllm \
-     --server_type tensorrt_llm \
+     --server_type trtllm \
      --output_dir `pwd`/openmath-mistral-7b-eval-results \
      --benchmarks gsm8k:50 math:50 \
      --num_gpus 8 \
@@ -125,7 +125,7 @@ you can run the following:
    ```
    python pipeline/run_labeling.py \
      --model_path <path to trtllm model> \
-     --server_type tensorrt_llm \
+     --server_type trtllm \
      --output_dir ./synthetic-solutions/gsm8k/ \
      --num_gpus 8 \
      --num_runs 128 \
@@ -140,7 +140,7 @@ you can run the following:
    ```
    python pipeline/run_labeling.py \
      --model_path <path to trtllm model> \
-     --server_type tensorrt_llm \
+     --server_type trtllm \
      --output_dir ./synthetic-solutions/gsm8k-masked/ \
      --num_gpus 8 \
      --num_runs 128 \
@@ -212,14 +212,14 @@ you can run the following:
 
    For other models modify the above command according to the following table
 
-   |                    | **Epochs** | **LR** | **# of GPUs** | **TP** | **PP** |
-   |--------------------|------------|--------|---------------|--------|--------|
-   | **Mistral-7B**     | 4          | 1e-6   | 64            | 4      | 1      |
-   | **CodeLlama-7B**   | 4          | 2e-5   | 64            | 4      | 1      |
-   | **CodeLlama-13B**  | 4          | 2e-5   | 64            | 4      | 1      |
-   | **CodeLlama-34B**  | 4          | 1e-5   | 128           | 8      | 1      |
-   | **Llama2-70B**     | 2          | 1e-5   | 256           | 8      | 2      |
-   | **CodeLlama-70B**  | 3          | 1e-5   | 256           | 8      | 2      |
+   |                   | **Epochs** | **LR** | **# of GPUs** | **TP** | **PP** |
+   | ----------------- | ---------- | ------ | ------------- | ------ | ------ |
+   | **Mistral-7B**    | 4          | 1e-6   | 64            | 4      | 1      |
+   | **CodeLlama-7B**  | 4          | 2e-5   | 64            | 4      | 1      |
+   | **CodeLlama-13B** | 4          | 2e-5   | 64            | 4      | 1      |
+   | **CodeLlama-34B** | 4          | 1e-5   | 128           | 8      | 1      |
+   | **Llama2-70B**    | 2          | 1e-5   | 256           | 8      | 2      |
+   | **CodeLlama-70B** | 3          | 1e-5   | 256           | 8      | 2      |
 
 Note that the above configuration is not the most efficient way to train these models,
 but this is what we used in our project. We refer you to the

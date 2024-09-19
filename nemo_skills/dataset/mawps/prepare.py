@@ -25,13 +25,13 @@ URL = "https://raw.githubusercontent.com/microsoft/ToRA/main/src/data/mawps/{sub
 subsets = ["addsub", "singleeq", "singleop", "multiarith"]
 
 if __name__ == "__main__":
-    data_folder = Path(__file__).absolute().parent
-    data_folder.mkdir(exist_ok=True)
-    output_file = str(data_folder / f"test.jsonl")
+    data_dir = Path(__file__).absolute().parent
+    data_dir.mkdir(exist_ok=True)
+    output_file = str(data_dir / f"test.jsonl")
 
     data = []
     for subset in subsets:
-        original_file = str(data_folder / f"original_{subset}.jsonl")
+        original_file = str(data_dir / f"original_{subset}.jsonl")
 
         if not os.path.exists(original_file):
             urllib.request.urlretrieve(URL.format(subset=subset), original_file)

@@ -41,10 +41,10 @@ fixes = {
 
 def save_data(split_name, random_seed, validation_size):
     actual_split_name = "test" if split_name == "test" else "train"
-    data_folder = Path(__file__).absolute().parent
-    original_file = str(data_folder / f"original_{actual_split_name}.jsonl")
-    data_folder.mkdir(exist_ok=True)
-    output_file = str(data_folder / f"{split_name}.jsonl")
+    data_dir = Path(__file__).absolute().parent
+    original_file = str(data_dir / f"original_{actual_split_name}.jsonl")
+    data_dir.mkdir(exist_ok=True)
+    output_file = str(data_dir / f"{split_name}.jsonl")
 
     if not os.path.exists(original_file):
         urllib.request.urlretrieve(

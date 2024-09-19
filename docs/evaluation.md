@@ -4,7 +4,7 @@
 
 TODO: clean this up. Some example commands
 
-python nemo_skills/pipeline/eval.py --cluster local --model /trt_models/llama3.1-8b-instruct --server_type tensorrt_llm --output_dir /exps/test-eval --benchmarks gsm8k:0 --server_gpus 1 --server_nodes 1 ++prompt_template=llama3-instruct ++split_name=test ++max_samples=10
+python nemo_skills/pipeline/eval.py --cluster local --model /trt_models/llama3.1-8b-instruct --server_type trtllm --output_dir /exps/test-eval --benchmarks gsm8k:0 --server_gpus 1 --server_nodes 1 ++prompt_template=llama3-instruct ++split_name=test ++max_samples=10
 
 python nemo_skills/pipeline/eval.py --cluster local --model meta/llama-3.1-8b-instruct --server_type openai --server_address https://integrate.api.nvidia.com/v1  --benchmarks gsm8k:0 --output_dir /exps/test-eval2 ++split_name=test ++max_samples=10
 
@@ -142,7 +142,7 @@ After this you would typically follow up with the same command to compute metric
 ## Typical customizations
 
 To customize the prompt template for the model, create a new .yaml file inside
-[nemo_skills/inference/prompt](/nemo_skills/inference/prompt) folder. Have a look
+[nemo_skills/inference/prompt](/nemo_skills/inference/prompt). Have a look
 at the existing templates there for an example.
 
 You can run `python nemo_skills/inference/generate_solutions.py --help`

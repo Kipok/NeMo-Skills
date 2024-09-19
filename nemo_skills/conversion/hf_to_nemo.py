@@ -47,7 +47,7 @@ def get_args():
     parser.add_argument("--out-path", type=str, default=None, required=True, help="Path to output .nemo file.")
     parser.add_argument("--precision", type=str, default="16", help="Model precision")
     parser.add_argument(
-        # this is required for Llama3 tokenizer loading as it's not in the checkpoint folder
+        # this is required for Llama3 tokenizer loading as it's not in the checkpoint dir
         '--hf-model-name',
         required=False,
         help="Name of HF model we are converting to (e.g. mistralai/Mistral-7B-v0.1)",
@@ -91,12 +91,13 @@ def load_config(llama_config):
         nemo_config.tokenizer = tokenizer_dict
 
     if llama_config['rope_scaling'] is not None:
-        if llama_config['rope_scaling']['type'] == 'linear':
+        rope_type = llama_config['rope_scaling'].get('rope_type')
+        if rope_type is None:
+            rope_type = llama_config['rope_scaling'].get('type')
+        if rope_type in ('linear', 'llama3'):
             nemo_config['seq_len_interpolation_factor'] = llama_config['rope_scaling']['factor']
         else:
             raise ValueError("Only linear rope scaling type is supported now")
-    if llama_config['rope_theta'] is not None:
-        nemo_config['rotary_base'] = llama_config['rope_theta']
 
     base = 128
     while llama_config['vocab_size'] % base != 0:

@@ -162,13 +162,13 @@ class hashabledict(dict):
         return hash(frozenset(self))
 
 
-def get_cluster_config(cluster, config_folder=None):
-    if config_folder is None:
-        config_folder = Path(__file__).parents[2] / 'cluster_configs'
+def get_cluster_config(cluster, config_dir=None):
+    if config_dir is None:
+        config_dir = Path(__file__).parents[2] / 'cluster_configs'
     else:
-        config_folder = Path(config_folder)
+        config_dir = Path(config_dir)
 
-    with open(config_folder / f'{cluster}.yaml', "rt", encoding="utf-8") as fin:
+    with open(config_dir / f'{cluster}.yaml', "rt", encoding="utf-8") as fin:
         cluster_config = yaml.safe_load(fin)
 
     return hashabledict(cluster_config)
@@ -213,7 +213,7 @@ def get_executor(
     tasks_per_node,
     gpus_per_node,
     job_name,
-    log_folder,
+    log_dir,
     log_prefix: str = "main",
     mounts=None,
     partition=None,
@@ -267,8 +267,8 @@ def get_executor(
         mem=0,
         job_details=CustomJobDetails(
             job_name=cluster_config.get("job_name_prefix", "") + job_name,
-            folder=get_unmounted_path(cluster_config, log_folder),
-            log_prefix=log_prefix,
+            folder=get_unmounted_path(cluster_config, log_dir),
+            log_prefix=log_prefix + '_' + job_name,
         ),
         wait_time_for_group_job=0.01,
         monitor_group_job_wait_time=20,
@@ -286,7 +286,7 @@ def add_task(
     num_tasks=1,
     num_gpus=1,
     num_nodes=1,
-    log_folder=None,
+    log_dir=None,
     partition=None,
     with_sandbox=False,
     server_config=None,
@@ -312,7 +312,7 @@ def add_task(
             partition=partition,
             dependencies=dependencies,
             job_name=task_name,
-            log_folder=log_folder,
+            log_dir=log_dir,
             log_prefix="server",
         )
         if cluster_config["executor"] == "local" and num_server_tasks > 1:
@@ -335,7 +335,7 @@ def add_task(
                 partition=partition,
                 dependencies=dependencies,
                 job_name=task_name,
-                log_folder=log_folder,
+                log_dir=log_dir,
                 log_prefix="main",
             )
         )
@@ -352,7 +352,7 @@ def add_task(
             mounts=tuple(),  # we don't want to mount anything
             dependencies=dependencies,
             job_name=task_name,
-            log_folder=log_folder,
+            log_dir=log_dir,
             log_prefix="sandbox",
         )
         commands.append(get_sandox_command())

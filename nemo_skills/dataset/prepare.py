@@ -45,7 +45,7 @@ if __name__ == '__main__':
                 target_datasets.append(dataset)
         args.datasets = target_datasets
 
-    datasets_folder = Path(__file__).absolute().parents[0]
+    datasets_dir = Path(__file__).absolute().parents[0]
     for dataset in args.datasets:
         print(f"Preparing {dataset}")
-        subprocess.run(f"{sys.executable} {datasets_folder / dataset / 'prepare.py'}", shell=True, check=True)
+        subprocess.run(f"{sys.executable} {datasets_dir / dataset / 'prepare.py'}", shell=True, check=True)

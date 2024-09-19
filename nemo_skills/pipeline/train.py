@@ -115,7 +115,7 @@ def get_avg_checkpoints_cmd(nemo_model, output_dir, final_nemo_path, average_ste
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"cd /nemo_run/code && "
         f"python -m nemo_skills.finetuning.average_checkpoints "
-        f"    --untarred_nemo_folder {nemo_model} "
+        f"    --untarred_nemo_dir {nemo_model} "
         f"    --name_prefix=model "
         f"    --checkpoint_dir={output_dir}/training/checkpoints {average_steps} && "
         f"mkdir -p {os.path.dirname(final_nemo_path)} && "
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser()
     # by default we are using a shared project
-    parser.add_argument("--config_folder", default=None, help="Path to the cluster_configs folder")
+    parser.add_argument("--config_dir", default=None, help="Path to the cluster_configs dir")
     parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     # TODO: maybe not required and reuse expname in that case?
     parser.add_argument("--output_dir", required=True, help="Where to put results")
@@ -182,7 +182,7 @@ if __name__ == "__main__":
     if not args.output_dir.startswith("/"):
         raise ValueError("output_dir must be referenced in a mounted location (mounts section in the config file)")
 
-    cluster_config = get_cluster_config(args.cluster, args.config_folder)
+    cluster_config = get_cluster_config(args.cluster, args.config_dir)
     check_if_mounted(cluster_config, args.output_dir)
     check_if_mounted(cluster_config, args.nemo_model)
     if args.num_training_jobs > 0:
@@ -219,7 +219,7 @@ if __name__ == "__main__":
                 exp,
                 cmd=train_cmd,
                 task_name=f'{args.training_algo}-{job_id}',
-                log_folder=f"{args.output_dir}/training-logs",
+                log_dir=f"{args.output_dir}/training-logs",
                 container=cluster_config["containers"]["nemo"],
                 num_gpus=args.num_gpus,
                 num_nodes=args.num_nodes,
@@ -240,7 +240,7 @@ if __name__ == "__main__":
             exp,
             cmd=cmd,
             task_name="prepare-eval",
-            log_folder=f"{args.output_dir}/prepare-eval-logs",
+            log_dir=f"{args.output_dir}/prepare-eval-logs",
             container=cluster_config["containers"]['nemo'],
             cluster_config=cluster_config,
             partition=args.partition,

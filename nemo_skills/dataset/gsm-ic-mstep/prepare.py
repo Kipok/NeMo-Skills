@@ -46,10 +46,10 @@ if __name__ == "__main__":
         ],
     )
     args = vars(parser.parse_args())
-    data_folder = Path(__file__).absolute().parent
-    data_folder.mkdir(exist_ok=True)
-    original_file = str(data_folder / "original_test.json")
-    output_file_ic = str(data_folder / "test.jsonl")
+    data_dir = Path(__file__).absolute().parent
+    data_dir.mkdir(exist_ok=True)
+    original_file = str(data_dir / "original_test.json")
+    output_file_ic = str(data_dir / "test.jsonl")
 
     if not os.path.exists(original_file):
         urllib.request.urlretrieve(URL, original_file)

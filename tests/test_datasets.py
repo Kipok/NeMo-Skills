@@ -18,7 +18,8 @@ from pathlib import Path
 
 # tuple of dataset name, available splits and prepared sft files
 DATASETS = [
-    ('aime-2024', ['test']),
+    ('aime24', ['test']),
+    ('amc23', ['test']),
     ('algebra222', ['test']),
     ('arena-hard', ['test']),
     ('asdiv', ['test']),
@@ -28,7 +29,7 @@ DATASETS = [
     ('gsm-plus', ['test', 'test_rounded']),
     ('gsm8k', ['train', 'train_full', 'validation', 'test']),
     ('human-eval', ['test']),
-    ('ifeval', ['test']),
+    ('IFMetrics', ['test']),
     ('math', ['train', 'train_full', 'validation', 'test']),
     ('math-odyssey', ['test']),
     ('mawps', ['test']),
