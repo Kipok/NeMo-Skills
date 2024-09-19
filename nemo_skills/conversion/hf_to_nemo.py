@@ -16,6 +16,7 @@
 
 
 import os
+import shutil
 from argparse import ArgumentParser
 from collections import OrderedDict
 
@@ -52,6 +53,7 @@ def get_args():
         required=False,
         help="Name of HF model we are converting to (e.g. mistralai/Mistral-7B-v0.1)",
     )
+    parser.add_argument("--override", action="store_true", help="Override existing output directory if it exists.")
     args = parser.parse_args()
     return args
 
@@ -325,7 +327,14 @@ def convert(args):
     model = model.to(dtype=dtype)
     model.cfg.use_cpu_initialization = False
     model._save_restore_connector.pack_nemo_file = False
-    model.save_to(args.out_path)
+    # removing out_path if it exists to avoid error
+    if args.override:
+        try:
+            shutil.rmtree(args.out_path)
+        except FileNotFoundError:
+            pass
+    # Adding a dummy model filename here conforms with SaveRestoreConnector's convention
+    model.save_to(os.path.join(args.out_path, 'model.nemo'))
     logging.info(f'NeMo model saved to: {args.out_path}')
 
 

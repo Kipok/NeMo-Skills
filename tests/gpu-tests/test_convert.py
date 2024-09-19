@@ -16,6 +16,7 @@
 # you'd also need 2+ GPUs to run this test
 
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -58,6 +59,7 @@ def test_hf_nemo_conversion():
         f"    --convert_to nemo "
         f"    --num_gpus 1 "
         f"    --hf_model_name meta-llama/Meta-Llama-3.1-8B "
+        f"    --override "
     )
 
     subprocess.run(cmd, shell=True, check=True)
