@@ -25,7 +25,7 @@ from nemo_skills.utils import unroll_files
 LOG = logging.getLogger(__file__)
 
 
-class BaseEval(abc.ABC):
+class BaseMetrics(abc.ABC):
     @abc.abstractmethod
     def fill_up_missing(self):
         pass
@@ -57,7 +57,7 @@ def is_correct_judgement(judgement):
     return verdict.lower() == 'yes'
 
 
-class MathEval(BaseEval):
+class MathMetrics(BaseMetrics):
     def setup(self, input_files):
         # checking if judgements are ready and fusing them with predictions
         # might get permission errors when running locally, since original file
@@ -133,7 +133,6 @@ class MathEval(BaseEval):
                     for elem in predictions
                     if elem['predicted_answer'] is not None
                 ]
-
                 if len(valid_answers_and_results) == 0:
                     self.no_answer += 1
                 else:
@@ -202,7 +201,7 @@ class MathEval(BaseEval):
         self.has_judge = False
 
 
-class CodeEval(BaseEval):
+class CodeMetrics(BaseMetrics):
     def __init__(self):
         self.reset()
 
@@ -245,7 +244,7 @@ class CodeEval(BaseEval):
         self.total = 0
 
 
-class IFEval(BaseEval):
+class IFMetrics(BaseMetrics):
     # loosely adapted from
     # https://github.com/google-research/google-research/blob/master/instruction_following_eval/evaluation_main.py
 
@@ -349,7 +348,7 @@ class IFEval(BaseEval):
         }
 
 
-class ArenaEval(BaseEval):
+class ArenaMetrics(BaseMetrics):
     def __init__(self):
         self.reset()
 
@@ -496,22 +495,22 @@ def read_predictions(predictions, evaluator, allow_incomplete=False):
 
 def compute_metrics(
     input_files,
-    evaluator,
+    metrics_calculator,
     allow_incomplete=False,
     max_samples=-1,
     aggregation_mode='first',
 ):
-    evaluator.reset()
-    evaluator.setup(input_files)
+    metrics_calculator.reset()
+    metrics_calculator.setup(input_files)
 
     file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(input_files)]
     for idx, predictions in enumerate(zip_longest(*file_handles)):
         if idx == max_samples:
             break
-        data = read_predictions(predictions, evaluator, allow_incomplete)
-        evaluator.update(data, aggregation_mode)
+        data = read_predictions(predictions, metrics_calculator, allow_incomplete)
+        metrics_calculator.update(data, aggregation_mode)
 
     for file_handle in file_handles:
         file_handle.close()
 
-    return evaluator.get_metrics()
+    return metrics_calculator.get_metrics()

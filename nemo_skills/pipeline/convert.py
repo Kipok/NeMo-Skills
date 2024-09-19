@@ -88,13 +88,13 @@ def get_hf_to_nemo_cmd(input_model, output_model, hf_model_name, dtype, num_gpus
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
     parser = ArgumentParser()
-    parser.add_argument("--config_folder", default=None, help="Path to the cluster_configs folder")
+    parser.add_argument("--config_dir", default=None, help="Path to the cluster_configs dir")
     parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     parser.add_argument("--input_model", required=True)
     parser.add_argument("--output_model", required=True, help="Where to put the final model")
     parser.add_argument("--convert_from", default="nemo", help="Format of the input model", choices=["nemo", "hf"])
     parser.add_argument(
-        "--convert_to", required=True, help="Format of the output model", choices=["nemo", "hf", "tensorrt_llm"]
+        "--convert_to", required=True, help="Format of the output model", choices=["nemo", "hf", "trtllm"]
     )
     parser.add_argument(
         "--hf_model_name", required=False, help="Name of the model on Hugging Face Hub to convert to/from"
@@ -118,25 +118,25 @@ if __name__ == "__main__":
     extra_arguments = f'{" ".join(unknown)}'
 
     # TODO: add support for conversion from NeMo to trtllm using nemo.export (need to test thoroughly)
-    if args.convert_from == "nemo" and args.convert_to == "tensorrt_llm":
+    if args.convert_from == "nemo" and args.convert_to == "trtllm":
         raise ValueError("Conversion from NeMo to TensorRT LLM is not supported directly. Convert to HF first.")
 
-    if args.convert_to != "tensorrt_llm" and args.hf_model_name is None:
+    if args.convert_to != "trtllm" and args.hf_model_name is None:
         raise ValueError("--hf_model_name is required")
 
-    cluster_config = get_cluster_config(args.cluster, args.config_folder)
+    cluster_config = get_cluster_config(args.cluster, args.config_dir)
     check_if_mounted(cluster_config, args.input_model)
     check_if_mounted(cluster_config, args.output_model)
 
     conversion_cmd_map = {
         ("nemo", "hf"): get_nemo_to_hf_cmd,
         ("hf", "nemo"): get_hf_to_nemo_cmd,
-        ("hf", "tensorrt_llm"): get_hf_to_trtllm_cmd,
+        ("hf", "trtllm"): get_hf_to_trtllm_cmd,
     }
     container_map = {
         ("nemo", "hf"): cluster_config["containers"]["nemo"],
         ("hf", "nemo"): cluster_config["containers"]["nemo"],
-        ("hf", "tensorrt_llm"): cluster_config["containers"]["tensorrt_llm"],
+        ("hf", "trtllm"): cluster_config["containers"]["trtllm"],
     }
     conversion_cmd = conversion_cmd_map[(args.convert_from, args.convert_to)](
         input_model=args.input_model,
@@ -153,9 +153,7 @@ if __name__ == "__main__":
             exp,
             cmd=conversion_cmd,
             task_name=f'conversion-{args.convert_from}-{args.convert_to}',
-            log_folder=str(
-                Path(args.output_model).parent / "conversion-logs" / f"{args.convert_from}-{args.convert_to}"
-            ),
+            log_dir=str(Path(args.output_model).parent / "conversion-logs" / f"{args.convert_from}-{args.convert_to}"),
             container=container_map[(args.convert_from, args.convert_to)],
             num_gpus=args.num_gpus,
             num_nodes=args.num_nodes,

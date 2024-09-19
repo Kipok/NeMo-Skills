@@ -25,7 +25,7 @@ from pathlib import Path
 import pytest
 
 sys.path.append(str(Path(__file__).absolute().parents[1]))
-from nemo_skills.evaluation.metrics import MathEval, compute_metrics
+from nemo_skills.evaluation.metrics import MathMetrics, compute_metrics
 
 
 @pytest.mark.gpu
@@ -59,7 +59,7 @@ python pipeline/run_pipeline.py \
 
     # only checking the total, since model is tiny
     for gen_file in ['gsm8k/output-greedy.jsonl', 'gsm8k/output-rs0.jsonl', 'math/output-greedy.jsonl']:
-        metrics = compute_metrics([f"{output_path}/nemo-skills-exps/results/test-sft/{gen_file}"], MathEval())
+        metrics = compute_metrics([f"{output_path}/nemo-skills-exps/results/test-sft/{gen_file}"], MathMetrics())
         assert metrics['num_entries'] == 4
 
 
@@ -98,6 +98,6 @@ python pipeline/run_pipeline.py \
 
     # only checking the total, since model is tiny
     metrics = compute_metrics(
-        [f"{output_path}/nemo-skills-exps/results/test-dpo/gsm8k/output-greedy.jsonl"], MathEval()
+        [f"{output_path}/nemo-skills-exps/results/test-dpo/gsm8k/output-greedy.jsonl"], MathMetrics()
     )
     assert metrics['num_entries'] == 4

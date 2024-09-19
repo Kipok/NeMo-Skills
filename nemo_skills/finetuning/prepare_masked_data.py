@@ -114,19 +114,19 @@ def prepare_masked_data(cfg: PrepareMaskedDataConfig):
     cfg = PrepareMaskedDataConfig(_init_nested=True, **cfg)
     LOG.info("Config used: %s", cfg)
 
-    original_data_folder = Path(__file__).parents[2] / "datasets" / cfg.dataset
-    masked_data_folder = Path(__file__).parents[2] / "datasets" / (cfg.dataset + "_masked")
+    original_data_dir = Path(__file__).parents[2] / "datasets" / cfg.dataset
+    masked_data_dir = Path(__file__).parents[2] / "datasets" / (cfg.dataset + "_masked")
 
     # Input file
-    train_file = original_data_folder / (cfg.split_name + ".jsonl")
+    train_file = original_data_dir / (cfg.split_name + ".jsonl")
     # Output file
-    output_file = masked_data_folder / (cfg.split_name + ".jsonl")
+    output_file = masked_data_dir / (cfg.split_name + ".jsonl")
 
     masked_solns, masked_corr_solns = load_masked_solns(cfg.masked_soln_jsonl_files)
 
     problematic_instances = 0
     answer_not_masked_instance = 0
-    os.makedirs(masked_data_folder, exist_ok=True)
+    os.makedirs(masked_data_dir, exist_ok=True)
     with open(train_file, mode="r") as input_f, open(output_file, mode="w") as output_f:
         for idx, train_line in enumerate(input_f):
             train_instance = json.loads(train_line.strip())

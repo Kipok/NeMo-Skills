@@ -17,6 +17,7 @@
 # you'd also need 2+ GPUs to run this test
 # the metrics are assuming llama3-8b-base as the model and will fail for other models
 
+import importlib
 import json
 import os
 import subprocess
@@ -27,45 +28,37 @@ import pytest
 
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 from nemo_skills.evaluation.metrics import compute_metrics
-from nemo_skills.evaluation.settings import EVALUATOR_MAP
 
 
 @pytest.mark.gpu
 def test_trtllm_run_eval():
-    model_path = os.getenv('LLAMA3_8B_BASE_TRTLLM')
+    model_path = os.getenv('NEMO_SKILLS_TEST_TRTLLM_MODEL')
     if not model_path:
-        pytest.skip("Define LLAMA3_8B_BASE_TRTLLM') to run this test")
-    output_path = os.getenv('NEMO_SKILLS_TEST_OUTPUT', '/tmp')
+        pytest.skip("Define NEMO_SKILLS_TEST_TRTLLM_MODEL to run this test")
 
-    cmd = f""" \
-python pipeline/run_eval.py \
-    --model_path {model_path} \
-    --server_type tensorrt_llm \
-    --output_dir {output_path} \
-    --benchmarks gsm8k:0 \
-    --num_gpus 1 \
-    --num_nodes 1 \
-    +prompt=openmathinstruct/base \
-    ++prompt.few_shot_examples.examples_type=gsm8k_only_code \
-    ++prompt.few_shot_examples.num_few_shots=5 \
-    ++split_name=test \
-    ++server.code_execution.stop_on_code_error=False \
-    ++batch_size=8 \
-    ++max_samples=20 \
-"""
+    cmd = (
+        f"python -m nemo_skills.pipeline.eval "
+        f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
+        f"    --model {model_path} "
+        f"    --server_type trtllm "
+        f"    --output_dir /tmp/nemo-skills-tests/trtllm-eval "
+        f"    --benchmarks gsm8k:0 "
+        f"    --server_gpus 1 "
+        f"    --server_nodes 1 "
+        f"    ++prompt_template=llama3-instruct "
+        f"    ++split_name=test "
+        f"    ++batch_size=8 "
+        f"    ++max_samples=20 "
+    )
     subprocess.run(cmd, shell=True)
 
-    # double checking that code was actually executed
-    with open(f"{output_path}/gsm8k/output-greedy.jsonl") as fin:
-        data = [json.loads(line) for line in fin]
-
-    for elem in data:
-        assert '<llm-code>' in elem['generation']
-        assert elem['error_message'] != '<not_executed>'
-
     # running compute_metrics to check that results are expected
-    metrics = compute_metrics([f"{output_path}/gsm8k/output-greedy.jsonl"], EVALUATOR_MAP['gsm8k']())
-    assert (int(metrics['sympy_correct']), int(metrics['no_answer'])) == (40, 5)
+    metrics_calculator = importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS()
+    metrics = compute_metrics(
+        [f"/tmp/nemo-skills-tests/trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
+    )
+    # rough check, since exact accuracy varies depending on gpu type
+    assert int(metrics['sympy_correct']) >= 50
     assert metrics['num_entries'] == 20
 
 
@@ -73,7 +66,7 @@ python pipeline/run_eval.py \
 def test_vllm_run_eval():
     # this test expects llama3-instruct to properly check accuracy
     # will run a bunch of benchmarks, but is still pretty fast
-    # mmlu/ifeval will be cut to 400 samples to save time
+    # mmlu/IFMetrics will be cut to 400 samples to save time
     # could cut everything, but human-eval/mbpp don't work with partial gens
     model_path = os.getenv('LLAMA3_8B_INSTRUCT_HF')
     if not model_path:
@@ -85,7 +78,7 @@ python pipeline/run_eval.py \
     --model_path {model_path} \
     --server_type vllm \
     --output_dir {output_path} \
-    --benchmarks algebra222:0 human-eval:0 mbpp:0 ifeval:0 mmlu:0 \
+    --benchmarks algebra222:0 human-eval:0 mbpp:0 IFMetrics:0 mmlu:0 \
     --prompt_folder llama3 --model_version instruct \
     --num_gpus 1 \
     --num_nodes 1 \
@@ -116,7 +109,7 @@ python pipeline/run_eval.py \
     assert round(metrics['passing_plus_tests'], 2) == 57.41
     assert metrics['num_entries'] == 378
 
-    metrics = compute_metrics([f"{output_path}/ifeval/output-greedy.jsonl"], EVALUATOR_MAP['ifeval']())
+    metrics = compute_metrics([f"{output_path}/IFMetrics/output-greedy.jsonl"], EVALUATOR_MAP['IFMetrics']())
     assert abs(metrics['prompt_strict_accuracy'] - 66.50) <= 1.0  # TODO: some randomness in this benchmark
     assert abs(metrics['instruction_strict_accuracy'] - 74.88) <= 1.0
     assert abs(metrics['prompt_loose_accuracy'] - 72.75) <= 1.0
@@ -140,7 +133,7 @@ def test_trtllm_run_eval_retrieval():
     cmd = f""" \
 python pipeline/run_eval.py \
     --model_path {model_path} \
-    --server_type tensorrt_llm \
+    --server_type trtllm \
     --output_dir {output_path} \
     --benchmarks math:0 \
     --num_gpus 1 \
@@ -179,7 +172,7 @@ def test_trtllm_run_labeling():
     cmd = f""" \
 python pipeline/run_labeling.py \
     --model_path {model_path} \
-    --server_type tensorrt_llm \
+    --server_type trtllm \
     --output_dir {output_path} \
     --num_gpus 1 \
     --num_nodes 1 \

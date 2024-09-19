@@ -16,6 +16,7 @@
 
 import argparse
 import glob
+import importlib
 import json
 import logging
 import os
@@ -28,18 +29,17 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 sys.path.append(str(Path(__file__).absolute().parents[0]))
 
-from compute_metrics import EVALUATOR_MAP, compute_metrics
-
-from nemo_skills.evaluation.metrics import MathEval
+from nemo_skills.evaluation.metrics import MathMetrics
 from nemo_skills.pipeline import check_if_mounted, cluster_download, get_cluster_config, get_tunnel, get_unmounted_path
+from nemo_skills.pipeline.compute_metrics import compute_metrics
 from nemo_skills.utils import setup_logging
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        'results_folder',
+        'results_dir',
         help=(
-            "Path to the folder with results. Needs to contain <benchmark> folders inside. "
+            "Path to the dir with results. Needs to contain <benchmark> dirs inside. "
             "If cluster is specified, will fetch the results from there."
         ),
     )
@@ -47,14 +47,14 @@ if __name__ == "__main__":
         '--cluster',
         required=False,
         help="Cluster configuration to take results from. If 'local' is explicitly specified, "
-        "we assume the location is relative to one of the mounted folders.",
+        "we assume the location is relative to one of the mounted dirs.",
     )
-    parser.add_argument('--config_folder', default=None, help="Path to the cluster_configs folder.")
+    parser.add_argument('--config_dir', default=None, help="Path to the cluster_configs dir.")
     parser.add_argument(
         '--benchmarks',
         nargs="+",
         default=[],
-        help="Specify benchmarks to run. If not specified, all benchmarks in the results_folder will be used.",
+        help="Specify benchmarks to run. If not specified, all benchmarks in the results_dir will be used.",
     )
     parser.add_argument("--debug", action="store_true", help="Print debug information")
     args = parser.parse_args()
@@ -62,68 +62,73 @@ if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not args.debug else logging.DEBUG)
 
     # copying results from the cluster
-    cluster_config = get_cluster_config(args.cluster, args.config_folder)
+    cluster_config = get_cluster_config(args.cluster, args.config_dir)
     if args.cluster is not None:
-        check_if_mounted(cluster_config, args.results_folder)
+        check_if_mounted(cluster_config, args.results_dir)
     if args.cluster == "local":
-        args.results_folder = get_unmounted_path(cluster_config, args.results_folder)
+        args.results_dir = get_unmounted_path(cluster_config, args.results_dir)
     else:
         tunnel = get_tunnel(cluster_config)
         temp_dir = tempfile.mkdtemp()
-        print(f"Copying results from {args.results_folder} on cluster {args.cluster} to {temp_dir}")
+        print(f"Copying results from {args.results_dir} on cluster {args.cluster} to {temp_dir}")
         os.makedirs(temp_dir, exist_ok=True)
-        cluster_download(tunnel, get_unmounted_path(cluster_config, args.results_folder), temp_dir)
+        cluster_download(tunnel, get_unmounted_path(cluster_config, args.results_dir), temp_dir)
         tunnel.cleanup()
-        args.results_folder = Path(temp_dir) / Path(args.results_folder).name
+        args.results_dir = Path(temp_dir) / Path(args.results_dir).name
 
     # running compute_metrics.py to get greedy, majority and pass @k results for all benchmarks available
-    benchmarks = glob.glob(f'{args.results_folder}/*')
+    # Check if there is an eval-results dir inside the results_dir
+    eval_results_dir = Path(args.results_dir) / 'eval-results'
+    if eval_results_dir.exists() and eval_results_dir.is_dir():
+        args.results_dir = eval_results_dir
+    benchmarks = glob.glob(f'{args.results_dir}/*')
 
     if args.benchmarks:
         for benchmark in benchmarks.copy():
             if Path(benchmark).name not in args.benchmarks:
                 benchmarks.remove(benchmark)
 
-    current_folder = Path(__file__).absolute().parent
+    current_dir = Path(__file__).absolute().parent
     results = defaultdict(dict)
     for benchmark_path in benchmarks:
         benchmark = str(Path(benchmark_path).name)
         if not Path(benchmark_path).is_dir():
             continue
         try:
-            evaluator = EVALUATOR_MAP.get(benchmark, MathEval)()
+            benchmark_module = importlib.import_module(f"nemo_skills.dataset.{benchmark}")
+            metrics_calculator = benchmark_module.METRICS_CLASS()
             results[benchmark] = {}
             # TODO: we should just return all available aggregations from compute_metrics directly
-            if evaluator is not MathEval:
+            if not isinstance(metrics_calculator, MathMetrics):
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
                     results[benchmark]['greedy'] = compute_metrics(
                         input_files=[f"{benchmark_path}/output-greedy.jsonl"],
-                        evaluator=evaluator,
+                        metrics_calculator=metrics_calculator,
                     )
                 sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
                 if len(sampling_outputs) > 0:
                     results[benchmark][f'pass@{len(sampling_outputs)}'] = compute_metrics(
                         input_files=sampling_outputs,
-                        evaluator=evaluator,
+                        metrics_calculator=metrics_calculator,
                         aggregation_mode="best",
                     )
             else:
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
                     results[benchmark]['greedy'] = compute_metrics(
                         input_files=[f"{benchmark_path}/output-greedy.jsonl"],
-                        evaluator=evaluator,
+                        metrics_calculator=metrics_calculator,
                     )
 
                 sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
                 if len(sampling_outputs) > 0:
                     results[benchmark][f'majority@{len(sampling_outputs)}'] = compute_metrics(
                         input_files=sampling_outputs,
-                        evaluator=evaluator,
+                        metrics_calculator=metrics_calculator,
                         aggregation_mode="majority",
                     )
                     results[benchmark][f'pass@{len(sampling_outputs)}'] = compute_metrics(
                         input_files=sampling_outputs,
-                        evaluator=evaluator,
+                        metrics_calculator=metrics_calculator,
                         aggregation_mode="best",
                     )
         except Exception as e:
@@ -157,9 +162,3 @@ if __name__ == "__main__":
             print(' | '.join(values))
 
         print('\n')
-
-    # summarizing results in a .json file
-    results = dict(results)
-    with open(f'{args.results_folder}/results.json', 'wt', encoding="utf-8") as fout:
-        json.dump(results, fout, indent=4)
-    print(f"Summarized results are available in {args.results_folder}/results.json")

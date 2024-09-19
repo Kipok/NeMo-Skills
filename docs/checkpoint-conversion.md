@@ -14,7 +14,7 @@ Make sure to run the commands inside TensorRT-LLM docker container, e.g. you can
 
 ```
 python nemo_skills/conversion/hf_to_trtllm.py \
-    --model_dir <path to the HF folder> \
+    --model_dir <path to the HF dir> \
     --output_dir <tmp file for trtllm checkpoint> \
     --dtype bfloat16 \
     --tp_size <number of GPUs>
@@ -29,7 +29,7 @@ trtllm-build \
     --max_num_tokens 4096 \
     --max_batch_size 128
 
-cp <path to the HF folder>/tokenizer* <final path for the trtllm checkpoint>
+cp <path to the HF dir>/tokenizer* <final path for the trtllm checkpoint>
 ```
 
 Please note that these are just example parameters and we refer you to the
@@ -67,7 +67,7 @@ Make sure to run it inside NeMo docker container, e.g. you can use `igitman/nemo
 
 ```
 python nemo_skills/conversion/hf_to_nemo.py \
-    --in-path <HF folder path> \
+    --in-path <HF dir path> \
     --out-path <where-to-save.nemo> \
     --hf-model-name <HF name of the reference model, e.g. codellama/CodeLlama-7b-Python-hf> \
     --precision bf16

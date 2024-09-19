@@ -142,7 +142,7 @@ def save_data(split_name, random_seed, validation_size):
                         parsed_answer = parsed_answer.split("=")[1]
                 content["expected_answer"] = parsed_answer
 
-                # Sanity check that content type matches the parent folder
+                # Sanity check that content type matches the parent dir
                 content_type = content["type"].lower()
                 content_type = content_type.replace(" ", "_")
                 content_type = content_type.replace("&", "and")

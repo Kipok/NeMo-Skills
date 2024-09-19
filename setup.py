@@ -21,7 +21,7 @@ def parse_requirements(filename):
 
 
 # Read the requirements from the requirements.txt file
-requirements = parse_requirements('requirements.txt')
+requirements = parse_requirements('requirements/main.txt')
 
 setup(
     name="nemo_skills",

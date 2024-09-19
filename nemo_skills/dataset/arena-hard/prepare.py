@@ -23,11 +23,11 @@ URL_BASELINE = (
 
 
 if __name__ == "__main__":
-    data_folder = Path(__file__).absolute().parent
-    data_folder.mkdir(exist_ok=True)
-    questions = str(data_folder / "question.jsonl")
-    baseline = str(data_folder / "gpt-4-0314.jsonl")
-    output_file = str(data_folder / "test.jsonl")
+    data_dir = Path(__file__).absolute().parent
+    data_dir.mkdir(exist_ok=True)
+    questions = str(data_dir / "question.jsonl")
+    baseline = str(data_dir / "gpt-4-0314.jsonl")
+    output_file = str(data_dir / "test.jsonl")
     urllib.request.urlretrieve(URL_QUESTIONS, questions)
     urllib.request.urlretrieve(URL_BASELINE, baseline)
 

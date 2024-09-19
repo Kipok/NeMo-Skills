@@ -29,7 +29,7 @@ code interpreter to execute parts of the output.
    ```
    python pipeline/start_server.py \
        --model_path <path to the model in the right format> \
-       --server_type <nemo or tensorrt_llm> \
+       --server_type <nemo or trtllm> \
        --num_gpus <number of GPUs you want to use>
    ```
 
@@ -96,7 +96,7 @@ the following simpler workflow.
    ```
    python pipeline/start_server.py \
        --model_path <path to the model in the right format> \
-       --server_type <nemo or tensorrt_llm> \
+       --server_type <nemo or trtllm> \
        --num_gpus <number of GPUs you want to use> \
        --no_sandbox
    ```
