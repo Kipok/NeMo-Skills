@@ -51,7 +51,7 @@ def set_config(cfg: InspectorConfig) -> None:
             prompt_type = name
             break
 
-    if not cfg.data_file and not cfg.dataset and not cfg.split_name:
+    if not cfg.data_file and not cfg.dataset and not cfg.split:
         cfg.data_file = UNDEFINED
 
     cfg.output_file = UNDEFINED

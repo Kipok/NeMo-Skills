@@ -46,7 +46,7 @@ def test_trtllm_eval():
         f"    --server_gpus 1 "
         f"    --server_nodes 1 "
         f"    ++prompt_template=llama3-instruct "
-        f"    ++split_name=test "
+        f"    ++split=test "
         f"    ++batch_size=8 "
         f"    ++max_samples=20 "
     )
@@ -83,7 +83,7 @@ def test_vllm_eval():
         f"    --server_nodes 1 "
         f"    --num_jobs 1 "
         f"    ++prompt_template=llama3-instruct "
-        f"    ++split_name=test "
+        f"    ++split=test "
         f"    ++batch_size=400 "
         f"    ++max_samples=400 "
     )
@@ -102,8 +102,8 @@ def test_vllm_eval():
         importlib.import_module('nemo_skills.dataset.math').METRICS_CLASS(),
     )
 
-    assert metrics['sympy_correct'] >= 30
-    assert metrics['num_entries'] == 400
+    assert metrics['sympy_correct'] >= 80
+    assert metrics['num_entries'] == 222
 
     metrics = compute_metrics(
         ["/tmp/nemo-skills-tests/vllm-eval/eval-results/human-eval/output-greedy.jsonl"],
@@ -156,7 +156,7 @@ def test_nemo_eval():
         f"    --server_gpus 1 "
         f"    --server_nodes 1 "
         f"    ++prompt_template=llama3-instruct "
-        f"    ++split_name=test "
+        f"    ++split=test "
         f"    ++batch_size=8 "
         f"    ++max_samples=20 "
     )

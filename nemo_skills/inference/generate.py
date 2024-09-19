@@ -62,7 +62,7 @@ class GenerateSolutionsConfig:
 
     # Can specify one of the existing datasets.
     dataset: str | None = None
-    split_name: str | None = None  # Can be train, validation, test or train_full (train + validation)
+    split: str | None = None  # Can be train, validation, test or train_full (train + validation)
     input_file: str | None = None  # Can directly specify an input file, if using a custom dataset
 
     batch_size: int = 128
@@ -84,12 +84,12 @@ class GenerateSolutionsConfig:
 
     def __post_init__(self):
         if self.input_file is not None:
-            if self.dataset is not None or self.split_name is not None:
-                raise ValueError("Either `input_file` or `dataset` and `split_name` should be provided, but not both")
+            if self.dataset is not None or self.split is not None:
+                raise ValueError("Either `input_file` or `dataset` and `split` should be provided, but not both")
         else:
-            if self.dataset is None or self.split_name is None:
-                raise ValueError("Either `input_file` or `dataset` and `split_name` should be provided")
-            self.input_file = Path(__file__).parents[1] / "dataset" / self.dataset / f"{self.split_name}.jsonl"
+            if self.dataset is None or self.split is None:
+                raise ValueError("Either `input_file` or `dataset` and `split` should be provided")
+            self.input_file = Path(__file__).parents[1] / "dataset" / self.dataset / f"{self.split}.jsonl"
 
         if self.dataset is None and self.prompt_config is None:
             raise ValueError("If `dataset` is not provided, `prompt_config` is required")

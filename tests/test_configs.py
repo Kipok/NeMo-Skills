@@ -25,7 +25,7 @@ def test_error_on_extra_params():
         +prompt=openmathinstruct/sft \
         ++prompt.few_shot_examples.examples_type=null \
         ++dataset=gsm8k \
-        ++split_name=test \
+        ++split=test \
         ++server.server_type=nemo \
         ++server.host=1 \
         ++test=1"""
@@ -42,7 +42,7 @@ def test_error_on_extra_params():
         ++prompt.few_shot_examples.examples_type=null \
         ++prompt.num_few_shots=0 \
         ++dataset=gsm8k \
-        ++split_name=test \
+        ++split=test \
         ++server.server_type=nemo \
         ++server.host=1 \
         ++sandbox.host=1"""

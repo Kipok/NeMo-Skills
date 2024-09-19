@@ -39,16 +39,16 @@ fixes = {
 }
 
 
-def save_data(split_name, random_seed, validation_size):
-    actual_split_name = "test" if split_name == "test" else "train"
+def save_data(split, random_seed, validation_size):
+    actual_split = "test" if split == "test" else "train"
     data_dir = Path(__file__).absolute().parent
-    original_file = str(data_dir / f"original_{actual_split_name}.jsonl")
+    original_file = str(data_dir / f"original_{actual_split}.jsonl")
     data_dir.mkdir(exist_ok=True)
-    output_file = str(data_dir / f"{split_name}.jsonl")
+    output_file = str(data_dir / f"{split}.jsonl")
 
     if not os.path.exists(original_file):
         urllib.request.urlretrieve(
-            URL.format(actual_split_name),
+            URL.format(actual_split),
             original_file,
         )
 
@@ -72,12 +72,12 @@ def save_data(split_name, random_seed, validation_size):
             data.append(new_entry)
 
     # always shuffling to make it easier to get validation/train out of train_full
-    if split_name != "test":
+    if split != "test":
         random.seed(random_seed)
         random.shuffle(data)
-    if split_name == "validation":
+    if split == "validation":
         data = data[:validation_size]
-    elif split_name == "train":
+    elif split == "train":
         data = data[validation_size:]
 
     with open(output_file, "wt", encoding="utf-8") as fout:
@@ -88,7 +88,7 @@ def save_data(split_name, random_seed, validation_size):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--split_name",
+        "--split",
         default="all",
         choices=("all", "test", "validation", "train", "train_full"),
     )
@@ -96,8 +96,8 @@ if __name__ == "__main__":
     parser.add_argument("--validation_size", type=int, default=1000)
     args = parser.parse_args()
 
-    if args.split_name == "all":
-        for split_name in ["test", "validation", "train", "train_full"]:
-            save_data(split_name, args.random_seed, args.validation_size)
+    if args.split == "all":
+        for split in ["test", "validation", "train", "train_full"]:
+            save_data(split, args.random_seed, args.validation_size)
     else:
-        save_data(args.split_name, args.random_seed, args.validation_size)
+        save_data(args.split, args.random_seed, args.validation_size)

@@ -4,11 +4,11 @@
 
 TODO: clean this up. Some example commands
 
-python nemo_skills/pipeline/eval.py --cluster local --model /trt_models/llama3.1-8b-instruct --server_type trtllm --output_dir /exps/test-eval --benchmarks gsm8k:0 --server_gpus 1 --server_nodes 1 ++prompt_template=llama3-instruct ++split_name=test ++max_samples=10
+python nemo_skills/pipeline/eval.py --cluster local --model /trt_models/llama3.1-8b-instruct --server_type trtllm --output_dir /exps/test-eval --benchmarks gsm8k:0 --server_gpus 1 --server_nodes 1 ++prompt_template=llama3-instruct ++split=test ++max_samples=10
 
-python nemo_skills/pipeline/eval.py --cluster local --model meta/llama-3.1-8b-instruct --server_type openai --server_address https://integrate.api.nvidia.com/v1  --benchmarks gsm8k:0 --output_dir /exps/test-eval2 ++split_name=test ++max_samples=10
+python nemo_skills/pipeline/eval.py --cluster local --model meta/llama-3.1-8b-instruct --server_type openai --server_address https://integrate.api.nvidia.com/v1  --benchmarks gsm8k:0 --output_dir /exps/test-eval2 ++split=test ++max_samples=10
 
-python nemo_skills/pipeline/eval.py --cluster local --model gpt-4o-mini --server_type openai --server_address https://api.openai.com/v1  --benchmarks gsm8k:0 --output_dir /exps/test-eval3 ++split_name=test ++max_samples=10
+python nemo_skills/pipeline/eval.py --cluster local --model gpt-4o-mini --server_type openai --server_address https://api.openai.com/v1  --benchmarks gsm8k:0 --output_dir /exps/test-eval3 ++split=test ++max_samples=10
 
 
 
@@ -32,7 +32,7 @@ different GPU types or with different inference frameworks.
      --num_jobs 1 \
      +prompt=openmathinstruct/sft \
      ++prompt.few_shot_examples.num_few_shots=0 \
-     ++split_name=test
+     ++split=test
    ```
 
    If you want to evaluate a model that was not finetuned through our pipeline, but still
@@ -122,7 +122,7 @@ the [quick start](#quick-start) section.
      output_file=./test-results/gsm8k/output-greedy.jsonl \
      +prompt=openmathinstruct/sft \
      ++dataset=gsm8k \
-     ++split_name=test \
+     ++split=test \
      ++server.server_type=nemo \
      ++server.host=<IP from the step above> \
      ++sandbox.host=<Sandbox IP from the sandbox launch step>

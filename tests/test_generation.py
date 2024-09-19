@@ -25,15 +25,15 @@ for prompt_template in ['default-base', 'llama3-base', 'llama3-instruct', 'nemot
             DATA_TO_TEST.append((dataset, split, prompt_template))
 
 
-@pytest.mark.parametrize("dataset,split_name,prompt_template", DATA_TO_TEST)
-def test_generation_dryrun_default(dataset, split_name, prompt_template):
+@pytest.mark.parametrize("dataset,split,prompt_template", DATA_TO_TEST)
+def test_generation_dryrun_default(dataset, split, prompt_template):
     """Testing the default prompts for each dataset."""
     cmd = (
         "python nemo_skills/inference/generate.py "
         f"    ++output_file=./test.jsonl "
         f"    ++prompt_template={prompt_template} "
         f"    ++dataset={dataset} "
-        f"    ++split_name={split_name} "
+        f"    ++split={split} "
         f"    ++server.server_type=nemo "
         f"    ++dry_run=True "
     )
@@ -41,10 +41,10 @@ def test_generation_dryrun_default(dataset, split_name, prompt_template):
 
 
 # @pytest.mark.parametrize(
-#     "dataset,split_name,prompt_template,prompt_config",
+#     "dataset,split,prompt_template,prompt_config",
 #     ['local', 'piston'],
 # )
-# def test_generation_dryrun_specific(dataset, split_name, prompt_template):
+# def test_generation_dryrun_specific(dataset, split, prompt_template):
 #     """Testing a couple of specific prompts."""
 #     cmd = (
 #         "python nemo_skills/inference/generate.py "
@@ -52,7 +52,7 @@ def test_generation_dryrun_default(dataset, split_name, prompt_template):
 #         f"    ++prompt_config={prompt_config} "
 #         f"    ++prompt_template={prompt_template} "
 #         f"    ++dataset={dataset} "
-#         f"    ++split_name={split_name} "
+#         f"    ++split={split} "
 #         f"    ++server.server_type=nemo "
 #         f"    ++dry_run=True "
 #     )

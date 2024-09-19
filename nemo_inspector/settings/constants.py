@@ -45,7 +45,7 @@ PARAMS_FOR_WHOLE_DATASET_ONLY = [
 PARAMS_TO_REMOVE = [
     'output_file',
     'dataset',
-    'split_name',
+    'split',
     'example_dicts',
     'retriever',
     '_context_template',

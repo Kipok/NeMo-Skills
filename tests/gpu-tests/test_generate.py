@@ -48,15 +48,63 @@ def test_vllm_generate_greedy():
         f"    --server_nodes 1 "
         f"    ++input_file=/nemo_run/code/nemo_skills/dataset/math/test.jsonl "
         f"    ++prompt_template=llama3-instruct "
-        f"    ++split_name=test "
+        f"    ++split=test "
         f"    ++batch_size=8 "
         f"    ++max_samples=10 "
     )
     subprocess.run(cmd, shell=True, check=True)
 
+    # no evaluation by default - checking just the number of lines and that there is no is_correct key
+    with open(f"/tmp/nemo-skills-tests/vllm-generate-greedy/output.jsonl") as fin:
+        lines = fin.readlines()
+    assert len(lines) == 10
+    for line in lines:
+        data = json.loads(line)
+        assert 'is_correct' not in data
+        assert 'generation' in data
+
+
+@pytest.mark.gpu
+def test_vllm_generate_seeds():
+    model_path = os.getenv('NEMO_SKILLS_TEST_HF_MODEL')
+    if not model_path:
+        pytest.skip("Define NEMO_SKILLS_TEST_HF_MODEL to run this test")
+
+    cmd = (
+        f"python -m nemo_skills.pipeline.generate "
+        f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
+        f"    --model {model_path} "
+        f"    --server_type vllm "
+        f"    --output_dir /tmp/nemo-skills-tests/vllm-generate-greedy "
+        f"    --server_gpus 1 "
+        f"    --server_nodes 1 "
+        f"    --num_random_seeds 3 "
+        f"    --eval_args='++eval_type=math' "
+        f"    ++dataset=math "
+        f"    ++split=test "
+        f"    ++prompt_template=llama3-instruct "
+        f"    ++split=test "
+        f"    ++batch_size=8 "
+        f"    ++max_samples=10 "
+    )
+    subprocess.run(cmd, shell=True, check=True)
+
+    # checking that all 3 files are created
+    for seed in range(3):
+        with open(f"/tmp/nemo-skills-tests/vllm-generate-greedy/output-rs{seed}.jsonl") as fin:
+            lines = fin.readlines()
+        assert len(lines) == 10
+        for line in lines:
+            data = json.loads(line)
+            assert 'is_correct' in data
+            assert 'generation' in data
+
     # running compute_metrics to check that results are expected
-    metrics_calculator = importlib.import_module('nemo_skills.dataset.math').METRICS_CLASS()
-    metrics = compute_metrics([f"/tmp/nemo-skills-tests/vllm-generate-greedy/output.jsonl"], metrics_calculator)
+    metrics = compute_metrics(
+        [f"/tmp/nemo-skills-tests/vllm-generate-greedy/output-rs*.jsonl"],
+        importlib.import_module('nemo_skills.dataset.math').METRICS_CLASS(),
+        aggregation_mode="majority",
+    )
     # rough check, since exact accuracy varies depending on gpu type
     assert int(metrics['sympy_correct']) >= 50
     assert metrics['num_entries'] == 10

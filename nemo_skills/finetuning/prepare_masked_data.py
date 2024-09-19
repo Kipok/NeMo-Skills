@@ -34,11 +34,11 @@ class PrepareMaskedDataConfig:
 
     dataset: str = MISSING
     masked_soln_jsonl_files: str = MISSING
-    split_name: str = "train_full"
+    split: str = "train_full"
 
     def __post_init__(self):
-        if self.split_name not in ["train", "train_full"]:
-            raise ValueError("`split_name` must be one of the following: `train`, `train_full`")
+        if self.split not in ["train", "train_full"]:
+            raise ValueError("`split` must be one of the following: `train`, `train_full`")
         if isinstance(self.masked_soln_jsonl_files, str):
             self.masked_soln_jsonl_files = self.masked_soln_jsonl_files.split(" ")
 
@@ -118,9 +118,9 @@ def prepare_masked_data(cfg: PrepareMaskedDataConfig):
     masked_data_dir = Path(__file__).parents[2] / "datasets" / (cfg.dataset + "_masked")
 
     # Input file
-    train_file = original_data_dir / (cfg.split_name + ".jsonl")
+    train_file = original_data_dir / (cfg.split + ".jsonl")
     # Output file
-    output_file = masked_data_dir / (cfg.split_name + ".jsonl")
+    output_file = masked_data_dir / (cfg.split + ".jsonl")
 
     masked_solns, masked_corr_solns = load_masked_solns(cfg.masked_soln_jsonl_files)
 
