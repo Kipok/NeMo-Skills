@@ -146,7 +146,7 @@ def generate(cfg: GenerateSolutionsConfig):
     prompt = get_prompt(cfg.prompt_config, cfg.prompt_template, examples_type=cfg.examples_type)
     LOG.info("Prompt used: %s", prompt)
 
-    if cfg.max_samples < 0:
+    if cfg.max_samples < 0 or cfg.max_samples > len(data):
         cfg.max_samples = len(data)
 
     if len(data) == 0:  # we might not have any examples if skip_filled=True
