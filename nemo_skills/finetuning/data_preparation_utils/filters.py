@@ -140,15 +140,11 @@ class MajorityFilter(BaseFilter):
         self,
         min_majority_votes: int = 0,
         min_majority_percentage: int = 0.0,
-        drop_negative_answers: bool = False,
-        drop_noninteger_answers: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.min_majority_votes = min_majority_votes
         self.min_majority_percentage = min_majority_percentage
-        self.drop_negative_answers = drop_negative_answers
-        self.drop_noninteger_answers = drop_noninteger_answers
 
     def process_dataset_entry(self, data_entry) -> List:
         majority_votes = data_entry.get("majority_votes", None)

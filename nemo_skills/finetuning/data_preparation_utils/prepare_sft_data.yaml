@@ -72,8 +72,6 @@ processors:
     should_run: ${filters.majority_filter}
     min_majority_votes: ${majority_filter.min_majority_votes}
     min_majority_portion: ${majority_filter.min_majority_portion}
-    drop_negative_answers: ${majority_filter.drop_negative_majority_answers}
-    drop_noninteger_answers: ${majority_filter.drop_noninteger_majority_answers}
 
   - _target_: nemo_skills.finetuning.data_preparation_utils.filters.TrimSolutions
     should_run: ${filters.trim_solutions}
