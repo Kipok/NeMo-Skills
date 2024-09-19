@@ -92,6 +92,7 @@ def load_config(llama_config):
             'type': args.hf_model_name,
             'use_fast': True,
         }
+        print(tokenizer_dict)
         nemo_config.tokenizer = tokenizer_dict
 
     if llama_config['rope_scaling'] is not None:
@@ -318,15 +319,6 @@ def convert(args):
     model = load_state_dict_helper(MegatronGPTModel, nemo_config, trainer, checkpoint['state_dict'])
 
     model._save_restore_connector = NLPSaveRestoreConnector()
-
-    # We make sure that the tokenizer can be instantiated later regardless of args.input_name_or_path
-    if 'tokenizer_model' not in hf_config:
-        if hf_config['num_hidden_layers'] == 32:
-            model.cfg.tokenizer.update(type='meta-llama/Meta-Llama-3-8B')
-        elif hf_config['num_hidden_layers'] == 80:
-            model.cfg.tokenizer.update(type='meta-llama/Meta-Llama-3-70B')
-        else:
-            logging.warning("Unexpected model config for Llama3. Tokenizer config has not been modified.")
 
     # cast to target precision and disable cpu init
     dtype = torch_dtype_from_precision(precision)
