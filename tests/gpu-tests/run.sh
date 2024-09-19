@@ -31,9 +31,5 @@ docker run --rm \
 # converting the model through test
 export NEMO_SKILLS_TEST_HF_MODEL=/tmp/nemo-skills-tests/tiny-llama-hf
 pytest tests/gpu-tests/test_conversion.py -k test_hf_nemo_conversion -s -x
-# untarring model which is required for checkpoint averaging
-mkdir -p /mnt/datadrive/nemo-skills-test-data/tiny-llama-nemo
-tar xvf /mnt/datadrive/nemo-skills-test-data/model.nemo -C /mnt/datadrive/nemo-skills-test-data/untarred_nemo
-export NEMO_SKILLS_TEST_NEMO_MODEL=/mnt/datadrive/nemo-skills-test-data/untarred_nemo
 # training tests
 pytest tests/gpu-tests/test_train.py -s -x

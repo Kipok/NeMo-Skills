@@ -45,7 +45,9 @@ def get_args():
         required=True,
         help="Path to Huggingface LLaMA checkpoints",
     )
-    parser.add_argument("--out-path", type=str, default=None, required=True, help="Path to output .nemo file.")
+    parser.add_argument(
+        "--out-path", type=str, default=None, required=True, help="Path to output nemo folder (untarred)."
+    )
     parser.add_argument("--precision", type=str, default="16", help="Model precision")
     parser.add_argument(
         # this is required for Llama3 tokenizer loading as it's not in the checkpoint dir
@@ -98,8 +100,12 @@ def load_config(llama_config):
             rope_type = llama_config['rope_scaling'].get('type')
         if rope_type in ('linear', 'llama3'):
             nemo_config['seq_len_interpolation_factor'] = llama_config['rope_scaling']['factor']
+            if rope_type == 'llama3':
+                nemo_config.scale_positional_embedding = True
         else:
             raise ValueError("Only linear rope scaling type is supported now")
+    if llama_config['rope_theta'] is not None:
+        nemo_config['rotary_base'] = llama_config['rope_theta']
 
     base = 128
     while llama_config['vocab_size'] % base != 0:

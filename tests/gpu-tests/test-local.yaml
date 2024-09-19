@@ -15,10 +15,10 @@
 executor: local
 
 containers:
-  trtllm: igitman/nemo-skills-trtllm:0.4.0
-  vllm: igitman/nemo-skills-vllm:0.4.0
-  nemo: igitman/nemo-skills-nemo:0.4.0
-  sandbox: igitman/nemo-skills-sandbox:0.3.2
+  trtllm: igitman/nemo-skills-trtllm:0.4.1
+  vllm: igitman/nemo-skills-vllm:0.4.1
+  nemo: gitlab-master.nvidia.com/igitman/nemo_containers:llama3.1
+  sandbox: igitman/nemo-skills-sandbox:0.4.0
   nemo-skills: igitman/nemo-skills:0.4.0
 
 mounts:

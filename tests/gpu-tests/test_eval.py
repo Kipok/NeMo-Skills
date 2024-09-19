@@ -58,7 +58,7 @@ def test_trtllm_eval():
         [f"/tmp/nemo-skills-tests/trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
     )
     # rough check, since exact accuracy varies depending on gpu type
-    assert int(metrics['sympy_correct']) >= 50
+    assert metrics['sympy_correct'] >= 50
     assert metrics['num_entries'] == 20
 
 
@@ -168,5 +168,5 @@ def test_nemo_eval():
         [f"/tmp/nemo-skills-tests/nemo-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
     )
     # rough check, since exact accuracy varies depending on gpu type
-    assert int(metrics['sympy_correct']) >= 50
+    assert metrics['sympy_correct'] >= 50
     assert metrics['num_entries'] == 20
