@@ -136,7 +136,7 @@ def test_vllm_eval():
         ["/tmp/nemo-skills-tests/vllm-eval/eval-results/mmlu/output-greedy.jsonl"],
         importlib.import_module('nemo_skills.dataset.mmlu').METRICS_CLASS(),
     )
-    assert metrics['sympy_correct'] >= 50
+    assert metrics['sympy_correct'] >= 60
     assert metrics['num_entries'] == 400
 
 
