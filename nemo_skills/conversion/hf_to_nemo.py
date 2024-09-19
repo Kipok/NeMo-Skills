@@ -324,7 +324,7 @@ def convert(args):
     dtype = torch_dtype_from_precision(precision)
     model = model.to(dtype=dtype)
     model.cfg.use_cpu_initialization = False
-
+    model._save_restore_connector.pack_nemo_file = False
     model.save_to(args.out_path)
     logging.info(f'NeMo model saved to: {args.out_path}')
 
