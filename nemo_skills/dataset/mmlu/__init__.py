@@ -18,8 +18,6 @@ PROMPT_CONFIG = 'generic/multichoice'
 DATASET_GROUP = 'multichoice'
 METRICS_CLASS = MathMetrics  # TODO: update this?
 DEFAULT_EVAL_ARGS = (
-    "++eval_type=math "
-    "++eval_config.extract_from_boxed=False "
-    "'++eval_config.extract_regex=\"The best answer is (.+)$\"'"
+    "++eval_type=math " "++eval_config.extract_from_boxed=False " "'++eval_config.extract_regex=\"Answer: (.+)$\"'"
 )
 DEFAULT_GENERATION_ARGS = ""
