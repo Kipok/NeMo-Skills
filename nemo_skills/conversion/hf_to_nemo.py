@@ -92,7 +92,6 @@ def load_config(llama_config):
             'type': args.hf_model_name,
             'use_fast': True,
         }
-        print(tokenizer_dict)
         nemo_config.tokenizer = tokenizer_dict
 
     if llama_config['rope_scaling'] is not None:
