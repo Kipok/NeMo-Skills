@@ -3,9 +3,10 @@
 processors_to_run: all
 
 preprocessed_dataset_files: null  # can specify multiple patters separated by space
-prediction_jsonl_files: null  # can specify datasets from HF instead of prediction_jsonl_files
+input_files: null  # can specify datasets from HF instead of prediction_jsonl_files
 output_path: ???
 
+exclude_optional_keys: true # exclude keys other than input, output and expected_answer from the final manifest
 metadata: null  # can provide additional metadata to store (e.g. dataset or generation_type)
 skip_first: 0  # useful for skipping validation set from train_full generation (it's always first)
 
@@ -14,7 +15,8 @@ random_seed: 42
 do_shuffle: true
 num_output_samples: null
 
-prompt_type: llama3/codegen_sft
+prompt_config: null
+prompt_template: null
 chat_format: null  # null/nemotron/llama
 generation_suffix: ""  # suffix to add to the end of expected response (e.g. <|eot_id|>)
 
@@ -27,7 +29,7 @@ filters:
 processors:
   - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.ReadData
     preprocessed_dataset_files: ${preprocessed_dataset_files}
-    prediction_jsonl_files: ${prediction_jsonl_files}
+    input_files: ${input_files}
     input_key: ${input_key}
     output_key: ${output_key}
     skip_first: ${skip_first}
@@ -46,7 +48,8 @@ processors:
 
   - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.WriteFinalSftManifest
     output_manifest_file: ${output_path}
-    prompt_type: ${prompt_type}
+    prompt_config: ${prompt_config}
+    prompt_template: ${prompt_template}
     input_key: question
     output_key: ${output_key}
     chat_format: ${chat_format}

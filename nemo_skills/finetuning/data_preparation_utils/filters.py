@@ -26,13 +26,16 @@ from sdp.processors.base_processor import BaseParallelProcessor, DataEntry
 from tqdm.contrib.concurrent import process_map
 
 from nemo_skills.code_execution import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS
-from nemo_skills.synthetic_arithmetic.solve_expression import merge_solution_steps, solve_expression
-from nemo_skills.synthetic_arithmetic.utils import extract_expressions
+from nemo_skills.finetuning.data_preparation_utils.arithmetic_utils import (
+    extract_expressions,
+    merge_solution_steps,
+    solve_expression,
+)
 
 LOG = logging.getLogger(__file__)
 
 PATTERN_ANS = re.compile(r"\\boxed\{([^}]*)\}")
-PATTERN_CODE = re.compile(CODE_SEPARATORS[0])
+PATTERN_CODE = re.compile(re.escape(CODE_SEPARATORS[0]))
 
 PATTERN_PYTHON_CODE = re.compile("```[pP]ython")
 
@@ -94,10 +97,14 @@ class DropBrokenCode(BaseFilter):
 
     def process_dataset_entry(self, data_entry) -> List:
         generation = data_entry[self.solution_key]
-        code_start_indices = [match.start() for match in re.finditer(CODE_SEPARATORS[0], generation)]
-        code_end_indices = [match.start() for match in re.finditer(CODE_SEPARATORS[1], generation)]
-        code_out_start_indices = [match.start() for match in re.finditer(CODE_OUTPUT_SEPARATORS[0], generation)]
-        code_out_end_indices = [match.start() for match in re.finditer(CODE_OUTPUT_SEPARATORS[1], generation)]
+        code_start_indices = [match.start() for match in re.finditer(re.escape(CODE_SEPARATORS[0]), generation)]
+        code_end_indices = [match.start() for match in re.finditer(re.escape(CODE_SEPARATORS[1]), generation)]
+        code_out_start_indices = [
+            match.start() for match in re.finditer(re.escape(CODE_OUTPUT_SEPARATORS[0]), generation)
+        ]
+        code_out_end_indices = [
+            match.start() for match in re.finditer(re.escape(CODE_OUTPUT_SEPARATORS[1]), generation)
+        ]
 
         num_code_occs = set(
             [len(code_start_indices), len(code_end_indices), len(code_out_start_indices), len(code_out_end_indices)]
@@ -125,6 +132,28 @@ class DropIncorrectCodeBlocks(BaseFilter):
     def process_dataset_entry(self, data_entry) -> List:
         if len(PATTERN_PYTHON_CODE.findall(data_entry[self.solution_key])) != 1:
             return [DataEntry(data=None, metrics=dict(num_removed=1))]
+        return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
+
+
+class MajorityFilter(BaseFilter):
+    def __init__(
+        self,
+        min_majority_votes: int = 0,
+        min_majority_percentage: int = 0.0,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.min_majority_votes = min_majority_votes
+        self.min_majority_percentage = min_majority_percentage
+
+    def process_dataset_entry(self, data_entry) -> List:
+        majority_votes = data_entry.get("majority_votes", None)
+        total_votes = data_entry.get("total_votes", None)
+        if majority_votes is None or total_votes is None:
+            return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
+        if majority_votes < self.min_majority_votes or majority_votes < total_votes * self.min_majority_percentage:
+            return [DataEntry(data=None, metrics=dict(num_removed=1))]
+
         return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
 
