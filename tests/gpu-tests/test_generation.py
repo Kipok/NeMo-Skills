@@ -57,7 +57,8 @@ def test_trtllm_run_eval():
     metrics = compute_metrics(
         [f"/tmp/nemo-skills-tests/trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
     )
-    assert (int(metrics['sympy_correct']), int(metrics['no_answer'])) == (40, 5)
+    # rough check, since exact accuracy varies depending on gpu type
+    assert int(metrics['sympy_correct']) >= 50
     assert metrics['num_entries'] == 20
 
 
