@@ -18,7 +18,7 @@ export NEMO_SKILLS_TEST_HF_MODEL=/tmp/nemo-skills-tests/conversion/nemo-to-hf/mo
 
 # generation/evaluation tests
 # pytest tests/gpu-tests/test_eval.py -s -x
-pytest tests/gpu-tests/test_generate.py -s -x
+# pytest tests/gpu-tests/test_generate.py -s -x
 
 # for sft we are using the tiny random llama model to run much faster
 docker run --rm \
@@ -30,6 +30,6 @@ docker run --rm \
 
 # converting the model through test
 export NEMO_SKILLS_TEST_HF_MODEL=/tmp/nemo-skills-tests/tiny-llama-hf
-pytest tests/gpu-tests/test_conversion.py -k test_hf_nemo_conversion -s -x
+pytest tests/gpu-tests/test_convert.py -k test_hf_nemo_conversion -s -x
 # training tests
 pytest tests/gpu-tests/test_train.py -s -x

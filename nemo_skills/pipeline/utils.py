@@ -34,7 +34,7 @@ LOG = logging.getLogger(__file__)
 
 def check_if_mounted(cluster_config, path_to_check):
     """Will check that path_to_check is referenced inside one of the mounts."""
-    for mount in cluster_config.get('mounts', []):
+    for mount in cluster_config.get('mounts', []) + ['/nemo_run/code:/nemo_run/code']:
         if path_to_check.startswith(mount.split(":")[1]):
             return
     raise ValueError(f"The path '{path_to_check}' is not mounted. Check cluster config.")
