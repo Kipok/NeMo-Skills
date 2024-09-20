@@ -221,9 +221,7 @@ def get_executor(
 ):
     config_mounts = cluster_config.get('mounts', [])
     mounts = mounts or config_mounts
-    packager = run.GitArchivePackager(
-        include_pattern='nemo_skills/dataset/**/*.jsonl', check_uncommitted_changes=False
-    )
+    packager = run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl', check_uncommitted_changes=True)
     if cluster_config["executor"] == "local":
         if num_nodes > 1:
             raise ValueError("Local executor does not support multi-node execution")
