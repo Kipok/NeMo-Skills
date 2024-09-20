@@ -99,13 +99,12 @@ def load_config(llama_config):
         if rope_type is None:
             rope_type = llama_config['rope_scaling'].get('type')
         if rope_type in ('linear', 'llama3'):
-            nemo_config['seq_len_interpolation_factor'] = llama_config['rope_scaling']['factor']
+            # TODO: some bug with that parameter?
+            # nemo_config['seq_len_interpolation_factor'] = llama_config['rope_scaling']['factor']
             if rope_type == 'llama3':
                 nemo_config.scale_positional_embedding = True
         else:
             raise ValueError("Only linear rope scaling type is supported now")
-    if llama_config['rope_theta'] is not None:
-        nemo_config['rotary_base'] = llama_config['rope_theta']
 
     base = 128
     while llama_config['vocab_size'] % base != 0:
