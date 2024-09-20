@@ -110,7 +110,7 @@ def load_config(llama_config):
     while llama_config['vocab_size'] % base != 0:
         base //= 2
     nemo_config.make_vocab_size_divisible_by = base
-
+    nemo_config.dist_ckpt_format = 'zarr'
     return nemo_config
 
 
