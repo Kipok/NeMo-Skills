@@ -168,7 +168,6 @@ class TRTLLMModel(BaseModel):
                 if result is not None:
                     finished_count += 1
                     outputs[pos] = {'generation': result}
-        print(outputs)
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
         return outputs
