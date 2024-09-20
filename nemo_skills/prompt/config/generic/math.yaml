@@ -15,5 +15,3 @@ user: |-
   Solve the following math problem. Make sure to put the answer (and only answer) inside \boxed{{}}.
 
   {examples}{problem}
-
-  Think step by step before giving the final answer.
