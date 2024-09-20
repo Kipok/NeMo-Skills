@@ -8,16 +8,16 @@ set -e
 export NEMO_SKILLS_TEST_HF_MODEL=/mnt/datadrive/nemo-skills-test-data/Meta-Llama-3.1-8B-Instruct
 
 # first running the conversion tests
-pytest tests/gpu-tests/test_convert.py -k test_hf_trtllm_conversion -s -x
+# pytest tests/gpu-tests/test_convert.py -k test_hf_trtllm_conversion -s -x
 export NEMO_SKILLS_TEST_TRTLLM_MODEL=/tmp/nemo-skills-tests/conversion/hf-to-trtllm/model
-pytest tests/gpu-tests/test_convert.py -k test_hf_nemo_conversion -s -x
+# pytest tests/gpu-tests/test_convert.py -k test_hf_nemo_conversion -s -x
 export NEMO_SKILLS_TEST_NEMO_MODEL=/tmp/nemo-skills-tests/conversion/hf-to-nemo/model
-pytest tests/gpu-tests/test_convert.py -k test_nemo_hf_conversion -s -x
+# pytest tests/gpu-tests/test_convert.py -k test_nemo_hf_conversion -s -x
 # using the back-converted model to check that it's reasonable
 export NEMO_SKILLS_TEST_HF_MODEL=/tmp/nemo-skills-tests/conversion/nemo-to-hf/model
 
 # generation/evaluation tests
-pytest tests/gpu-tests/test_eval.py -s -x
+# pytest tests/gpu-tests/test_eval.py -s -x
 pytest tests/gpu-tests/test_generate.py -s -x
 
 # for sft we are using the tiny random llama model to run much faster

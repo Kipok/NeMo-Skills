@@ -47,15 +47,15 @@ def test_vllm_generate_greedy():
         f"    --server_gpus 1 "
         f"    --server_nodes 1 "
         f"    ++input_file=/nemo_run/code/nemo_skills/dataset/math/test.jsonl "
+        f"    ++prompt_config=generic/math "
         f"    ++prompt_template=llama3-instruct "
-        f"    ++split=test "
         f"    ++batch_size=8 "
         f"    ++max_samples=10 "
     )
     subprocess.run(cmd, shell=True, check=True)
 
     # no evaluation by default - checking just the number of lines and that there is no is_correct key
-    with open(f"/tmp/nemo-skills-tests/vllm-generate-greedy/output.jsonl") as fin:
+    with open(f"/tmp/nemo-skills-tests/vllm-generate-greedy/generation/output.jsonl") as fin:
         lines = fin.readlines()
     assert len(lines) == 10
     for line in lines:
@@ -91,7 +91,7 @@ def test_vllm_generate_seeds():
 
     # checking that all 3 files are created
     for seed in range(3):
-        with open(f"/tmp/nemo-skills-tests/vllm-generate-greedy/output-rs{seed}.jsonl") as fin:
+        with open(f"/tmp/nemo-skills-tests/vllm-generate-greedy/generation/output-rs{seed}.jsonl") as fin:
             lines = fin.readlines()
         assert len(lines) == 10
         for line in lines:
