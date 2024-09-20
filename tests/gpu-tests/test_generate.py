@@ -70,16 +70,16 @@ def test_vllm_generate_seeds():
     model_path = os.getenv('NEMO_SKILLS_TEST_HF_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_HF_MODEL to run this test")
-
+    num_seeds = 1  # TODO: there is a bug in nemo-run that prevents testing with multiple seeds
     cmd = (
         f"python -m nemo_skills.pipeline.generate "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --model {model_path} "
         f"    --server_type vllm "
-        f"    --output_dir /tmp/nemo-skills-tests/vllm-generate-greedy "
+        f"    --output_dir /tmp/nemo-skills-tests/vllm-generate-seeds "
         f"    --server_gpus 1 "
         f"    --server_nodes 1 "
-        f"    --num_random_seeds 3 "
+        f"    --num_random_seeds {num_seeds} "
         f"    --eval_args='++eval_type=math' "
         f"    ++dataset=math "
         f"    ++split=test "
@@ -92,8 +92,8 @@ def test_vllm_generate_seeds():
     subprocess.run(cmd, shell=True, check=True)
 
     # checking that all 3 files are created
-    for seed in range(3):
-        with open(f"/tmp/nemo-skills-tests/vllm-generate-greedy/generation/output-rs{seed}.jsonl") as fin:
+    for seed in range(num_seeds):
+        with open(f"/tmp/nemo-skills-tests/vllm-generate-seeds/generation/output-rs{seed}.jsonl") as fin:
             lines = fin.readlines()
         assert len(lines) == 10
         for line in lines:
@@ -103,7 +103,7 @@ def test_vllm_generate_seeds():
 
     # running compute_metrics to check that results are expected
     metrics = compute_metrics(
-        [f"/tmp/nemo-skills-tests/vllm-generate-greedy/output-rs*.jsonl"],
+        [f"/tmp/nemo-skills-tests/vllm-generate-seeds/generation/output-rs*.jsonl"],
         importlib.import_module('nemo_skills.dataset.math').METRICS_CLASS(),
         aggregation_mode="majority",
     )
