@@ -51,6 +51,7 @@ def test_vllm_generate_greedy():
         f"    ++prompt_template=llama3-instruct "
         f"    ++batch_size=8 "
         f"    ++max_samples=10 "
+        f"    ++skip_filled=False "
     )
     subprocess.run(cmd, shell=True, check=True)
 
@@ -86,6 +87,7 @@ def test_vllm_generate_seeds():
         f"    ++split=test "
         f"    ++batch_size=8 "
         f"    ++max_samples=10 "
+        f"    ++skip_filled=False "
     )
     subprocess.run(cmd, shell=True, check=True)
 
