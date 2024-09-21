@@ -137,10 +137,10 @@ if __name__ == "__main__":
     benchmarks = {k: int(v) for k, v in [b.split(":") for b in args.benchmarks]}
 
     eval_cmds = [
-        get_greedy_cmd(
-            benchmark, args.output_dir, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments
-        )
-        for benchmark in benchmarks.keys()
+        # get_greedy_cmd(
+        #     benchmark, args.output_dir, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments
+        # )
+        # for benchmark in benchmarks.keys()
     ]
     eval_cmds += [
         get_sampling_cmd(
