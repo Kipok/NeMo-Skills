@@ -266,7 +266,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         try:
             output = self._send_request(request, timeout)
         except requests.exceptions.Timeout:
-            output = {'result': False, 'error_message': Sandbox.TIMEOUT_ERROR}
+            output = {'result': False, 'error_message': 'timeout'}
         if output['error_message']:
             # logging the error
             LOG.warning("Error during correctness check: %s", output['error_message'])
