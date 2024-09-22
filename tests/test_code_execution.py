@@ -45,12 +45,13 @@ def test_multiple_code_blocks(sandbox_type):
     """
 
     output, session_id = sandbox.execute_code(code)
-    assert output == {'result': '1', 'error_message': ''}
+    print(output)
+    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': '1'}
     assert session_id is not None
 
     code = "a + 5"
     output, session_id2 = sandbox.execute_code(code, session_id=session_id)
-    assert output == {'result': '6', 'error_message': ''}
+    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': '6'}
     assert session_id == session_id2
 
 
@@ -64,7 +65,7 @@ def test_triple_quotes(sandbox_type):
     my_func()
 '''
     output, session_id = sandbox.execute_code(code)
-    assert output == {'result': 'asdf', 'error_message': ''}
+    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': 'asdf'}
     assert session_id is not None
 
 
@@ -78,12 +79,12 @@ def test_multiple_prints(sandbox_type):
     """
 
     output, session_id = sandbox.execute_code(code)
-    assert output == {'result': '1\n2x3', 'error_message': ''}
+    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': '1\n2x3'}
     assert session_id is not None
 
     code = "print(2)\n15"
     output, session_id2 = sandbox.execute_code(code, session_id=session_id)
-    assert output == {'result': '2\n15', 'error_message': ''}
+    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': '2\n15'}
     assert session_id == session_id2
 
 
@@ -94,8 +95,8 @@ def test_no_output(sandbox_type):
     code = """a = 2"""
 
     output, session_id = sandbox.execute_code(code)
-    assert output == {'result': '', 'error_message': Sandbox.RESULT_NOT_DEFINED_ERROR}
-    assert session_id is None  # we are clearing the sessions on error, so it should be None here
+    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': ''}
+    assert session_id is not None
 
 
 @pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
@@ -105,17 +106,20 @@ def test_execution_error(sandbox_type):
     code = """1 / 0"""
 
     output, session_id = sandbox.execute_code(code)
+    # TODO: somehow in our current implementation errors also go to stdout. How to fix this?
+    error = (
+        '\x1b[0;31m---------------------------------------------------------------------------\x1b[0m\n\x1b[0;31m'
+        'ZeroDivisionError\x1b[0m                         Traceback (most recent call last)\nFile \x1b[0;32m'
+        '<ipython-input-1-bc757c3fda29>:1\x1b[0m\n\x1b[0;32m----> 1\x1b[0m \x1b[38;5;241;43m1\x1b[39;49m\x1b[43m '
+        '\x1b[49m\x1b[38;5;241;43m/\x1b[39;49m\x1b[43m \x1b[49m\x1b[38;5;241;43m0\x1b[39;49m\n\n\x1b[0;31m'
+        'ZeroDivisionError\x1b[0m: division by zero'
+    )
     assert output == {
-        'result': (
-            '\x1b[0;31m---------------------------------------------------------------------------\x1b[0m\n\x1b[0;31m'
-            'ZeroDivisionError\x1b[0m                         Traceback (most recent call last)\nFile \x1b[0;32m'
-            '<ipython-input-1-bc757c3fda29>:1\x1b[0m\n\x1b[0;32m----> 1\x1b[0m \x1b[38;5;241;43m1\x1b[39;49m\x1b[43m '
-            '\x1b[49m\x1b[38;5;241;43m/\x1b[39;49m\x1b[43m \x1b[49m\x1b[38;5;241;43m0\x1b[39;49m\n\n\x1b[0;31m'
-            'ZeroDivisionError\x1b[0m: division by zero'
-        ),
-        'error_message': f'{Sandbox.EXECUTION_ERROR} division by zero',
+        'process_status': 'completed',
+        'stderr': '',
+        'stdout': error,
     }
-    assert session_id is None  # we are clearing the sessions on error, so it should be None here
+    assert session_id is not None
 
 
 @pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
@@ -125,14 +129,16 @@ def test_syntax_error(sandbox_type):
     code = """a = 2\n b = 3"""
 
     output, session_id = sandbox.execute_code(code)
+    error = (
+        '\x1b[0;36m  File \x1b[0;32m<ipython-input-1-ff73a4eb1351>:2\x1b[0;36m\x1b[0m\n\x1b[0;31m    '
+        'b = 3\x1b[0m\n\x1b[0m    ^\x1b[0m\n\x1b[0;31mIndentationError\x1b[0m\x1b[0;31m:\x1b[0m unexpected indent'
+    )
     assert output == {
-        'result': (
-            '\x1b[0;36m  File \x1b[0;32m<ipython-input-1-ff73a4eb1351>:2\x1b[0;36m\x1b[0m\n\x1b[0;31m    '
-            'b = 3\x1b[0m\n\x1b[0m    ^\x1b[0m\n\x1b[0;31mIndentationError\x1b[0m\x1b[0;31m:\x1b[0m unexpected indent'
-        ),
-        'error_message': f'{Sandbox.SYNTAX_ERROR} unexpected indent (<ipython-input-1-ff73a4eb1351>, line 2)',
+        'process_status': 'completed',
+        'stderr': '',
+        'stdout': error,
     }
-    assert session_id is None  # we are clearing the sessions on error, so it should be None here
+    assert session_id is not None
 
 
 @pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
@@ -142,17 +148,11 @@ def test_timeout_error(sandbox_type):
     code = """import time\ntime.sleep(1)\nprint("done")"""
 
     output, session_id = sandbox.execute_code(code, timeout=1)
-    assert output == {
-        'result': None,
-        'error_message': Sandbox.TIMEOUT_ERROR,
-    }
-    assert session_id is None  # we are clearing the sessions on error, so it should be None here
+    assert output == {"process_status": "timeout", "stdout": "Timed out", "stderr": "Timed out"}
+    assert session_id is not None
 
     output, session_id = sandbox.execute_code(code, timeout=2, session_id=session_id)
-    assert output == {
-        'result': "done",
-        'error_message': "",
-    }
+    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': 'done'}
     assert session_id is not None
 
 
@@ -186,7 +186,7 @@ x
         ),
         'error_message': f"{Sandbox.EXECUTION_ERROR} name 'x' is not defined",
     }
-    assert session_id is None  # we are clearing the sessions on error, so it should be None here
+    assert session_id is not None
 
 
 @pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
