@@ -25,7 +25,7 @@ def get_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
         output_file = f"{output_dir}/generation/output-rs{random_seed}.jsonl"
     else:
         output_file = f"{output_dir}/generation/output.jsonl"
-    cmd = f"python -m nemo_skills.inference.generate " f"    ++skip_filled=True " f"    ++output_file={output_file} "
+    cmd = f"python -m nemo_skills.inference.generate ++skip_filled=True ++output_file={output_file} "
     if random_seed is not None:
         cmd += (
             f"    ++inference.random_seed={random_seed} "

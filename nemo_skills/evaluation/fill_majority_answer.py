@@ -46,7 +46,7 @@ class FillMajorityAnswerConfig:
     default_answer: str = "no_answer"
 
     def __post_init__(self):
-        """Building data_file from dataset/split_name if not provided directly."""
+        """Building data_file from dataset/split if not provided directly."""
         if isinstance(self.input_files, str):
             self.input_files = self.input_files.split(" ")
 

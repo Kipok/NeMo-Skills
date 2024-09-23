@@ -78,6 +78,12 @@ if __name__ == "__main__":
             new_entry["label"] = original_entry["label"]
             new_entry["level"] = original_entry["level"]
 
+            # cleaning up problem text
+            new_entry["problem"] = new_entry["problem"].replace("\\underline{\\hspace{2cm}}", "")
+            psplit = new_entry["problem"].split("\\end{problem}")
+            assert len(psplit) == 2, psplit
+            new_entry["problem"] = psplit[0].strip()
+
             data.append(new_entry)
 
     with open(output_file, "wt", encoding="utf-8") as fout:

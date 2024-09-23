@@ -103,6 +103,11 @@ if __name__ == "__main__":
         help="Any extra arguments to pass to nemo_skills/evaluation/evaluate_results.py",
     )
     wrapper_args.add_argument(
+        "--skip_greedy",
+        action="store_true",
+        help="Skip greedy decoding and only run sampling",
+    )
+    wrapper_args.add_argument(
         "--run_after",
         required=False,
         help="Can specify an expname that needs to be completed before this one starts (will use as slurm dependency)",
@@ -136,12 +141,16 @@ if __name__ == "__main__":
 
     benchmarks = {k: int(v) for k, v in [b.split(":") for b in args.benchmarks]}
 
-    eval_cmds = [
-        get_greedy_cmd(
-            benchmark, args.output_dir, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments
-        )
-        for benchmark in benchmarks.keys()
-    ]
+    eval_cmds = (
+        [
+            get_greedy_cmd(
+                benchmark, args.output_dir, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments
+            )
+            for benchmark in benchmarks.keys()
+        ]
+        if not args.skip_greedy
+        else []
+    )
     eval_cmds += [
         get_sampling_cmd(
             benchmark, args.output_dir, rs, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments

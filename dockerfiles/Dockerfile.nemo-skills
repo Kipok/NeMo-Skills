@@ -7,8 +7,9 @@ RUN apt-get update && apt-get -y install curl git
 RUN mkdir /opt/benchmarks
 RUN git clone https://github.com/google-research/google-research.git /opt/benchmarks/google-research --depth=1 && \
     pip install langdetect absl-py immutabledict nltk && \
-    python -c "import nltk; nltk.download('punkt')"
+    python -c "import nltk; nltk.download('punkt'); nltk.download('punkt_tab')"
 
-RUN mkdir /opt/NeMo-Skills
-COPY nemo_skills requirements.txt setup.py README.md /opt/NeMo-Skills/
+RUN mkdir -p /opt/NeMo-Skills/requirements
+COPY nemo_skills setup.py README.md /opt/NeMo-Skills/
+COPY requirements/main.txt /opt/NeMo-Skills/requirements/
 RUN cd /opt/NeMo-Skills && pip install .

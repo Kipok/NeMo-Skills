@@ -28,18 +28,18 @@ if __name__ == "__main__":
     parser.add_argument("--no_rounding_instructions", action='store_true')
     args = parser.parse_args()
 
-    split_name = "test"
+    split = "test"
     data_dir = Path(__file__).absolute().parent
     data_dir.mkdir(exist_ok=True)
-    original_file = str(data_dir / f"original_{split_name}.jsonl")
-    output_file = str(data_dir / f"{split_name}.jsonl")
+    original_file = str(data_dir / f"original_{split}.jsonl")
+    output_file = str(data_dir / f"{split}.jsonl")
 
     if not os.path.exists(original_file):
         urllib.request.urlretrieve(URL, original_file)
 
     file_rounded = None
     if not args.no_rounding_instructions:
-        output_file_rounded = str(data_dir / f"{split_name}_rounded.jsonl")
+        output_file_rounded = str(data_dir / f"{split}_rounded.jsonl")
         file_rounded = open(output_file_rounded, "w")
 
     with open(original_file, "r") as fin, open(output_file, "wt", encoding="utf-8") as fout:

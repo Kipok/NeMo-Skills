@@ -1,4 +1,5 @@
-# Prompt specification for the original Llama3-instruct model
+# Prompt specification for the original Llama3-instruct model, but skipping the system message
+# This apparanetly is quite important to reproduce the math eval numbers
 
 # these tokens are always used to construct a prompt like this
 #
@@ -10,8 +11,8 @@
 
 text_begin: "<|begin_of_text|>"
 
-system_begin: "<|start_header_id|>system<|end_header_id|>\n\n"
-system_end: "<|eot_id|>"
+system_begin: ""
+system_end: ""
 
 user_begin: "<|start_header_id|>user<|end_header_id|>\n\n"
 user_end: "<|eot_id|>"

@@ -11,9 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from nemo_skills.prompt.few_shot_examples.gsm8k import examples_map as examples_gsm8k
-from nemo_skills.prompt.few_shot_examples.math import examples_map as examples_math
+from nemo_skills.evaluation.metrics import MathMetrics
 
-examples_map = examples_gsm8k.copy()
-examples_map.update(examples_math)
-assert len(examples_map) == len(examples_gsm8k) + len(examples_math), "Duplicate keys in examples!"
+# settings that define how evaluation should be done by default (all can be changed from cmdline)
+PROMPT_CONFIG = 'generic/math'
+DATASET_GROUP = 'math'
+METRICS_CLASS = MathMetrics
+DEFAULT_EVAL_ARGS = "++eval_type=math"
+DEFAULT_GENERATION_ARGS = ""

@@ -106,7 +106,7 @@ class BaseModel(abc.ABC):
         pass
 
 
-class TensorRTLLMModel(BaseModel):
+class TRTLLMModel(BaseModel):
     """Note that the current implementation supports inflight-batching so
     to make the most use of it, you should submit a large number of prompts
     at the same time.
@@ -127,7 +127,7 @@ class TensorRTLLMModel(BaseModel):
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
         if isinstance(prompts[0], dict):
-            raise NotImplementedError("TensorRTLLM server does not support OpenAI \"messages\" as prompt.")
+            raise NotImplementedError("trtllm server does not support OpenAI \"messages\" as prompt.")
         if stop_phrases is None:
             stop_phrases = []
         request = {
@@ -546,7 +546,7 @@ class VLLMModel(BaseModel):
 
 
 models = {
-    'trtllm': TensorRTLLMModel,
+    'trtllm': TRTLLMModel,
     'nemo': NemoModel,
     'openai': OpenAIModel,
     'vllm': VLLMModel,

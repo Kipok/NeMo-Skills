@@ -155,7 +155,7 @@ math_text_with_code = [
         "problem": "A parabola with equation $y=x^2+bx+c$ passes through the points $(-1,-11)$ and $(3,17)$. What is $c$?",
         "solution": """
 Let's write down an equation for the parabola and solve for $c$ using sympy.
-{start_code}
+{code_begin}
 import sympy as sp
 
 # define the symbols
@@ -173,9 +173,13 @@ point_2 = parabola_eq.subs({x: 3, y: 17})
 # we will solve for b and c
 solutions = sp.solve((point_1,point_2), (b, c))
 solutions[c]
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 -7
-{end_code_output}
+[/stdout]{code_output_end}
+
 So c is \\boxed{-7}
 """.strip(),
     },
@@ -191,7 +195,7 @@ Thus, $f(f(x))$ is an \\boxed{odd} function.
         "problem": "At the 2007 Math Olympics, Team Canada won $17$ out of a possible $100$ medals. Which one of the following is closest to the fraction of medals that they won? $$\n\\frac{1}{4} \\qquad \\frac{1}{5} \\qquad \\frac{1}{6} \\qquad \\frac{1}{7} \\qquad \\frac{1}{8}\n$$",
         "solution": """
 Let's use sympy to print out the differences between the fraction of medals that Canada won and each of the options.
-{start_code}
+{code_begin}
 from sympy import Rational, Abs
 
 # team Canada won 17 out of 100 medals
@@ -202,11 +206,15 @@ options = [Rational(1, 4), Rational(1, 5), Rational(1, 6), Rational(1, 7), Ratio
 
 # let's print out the differences
 [Abs(medal_frac - frac_option) for frac_option in options]
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 [2/25, 3/100, 1/300, 19/700, 9/200]
-{end_code_output}
+[/stdout]{code_output_end}
+
 Let's now check which difference is the smallest.
-{start_code}
+{code_begin}
 import numpy as np
 
 # Calculate the idx of the closest option
@@ -214,9 +222,13 @@ min_idx = np.argmin([2/25, 3/100, 1/300, 19/700, 9/200])
 
 # Print the closest option
 print(options[min_idx])
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 1/6
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the answer is \\boxed{1/6}.
 """.strip(),
     },
@@ -227,7 +239,7 @@ Let the dimensions of $P$ be $x$, $y$, and $z$.
 The sum of the box's edges is $4(x + y + z)$ and the surface area is $2xy + 2yz + 2xz$.
 The diameter of the sphere is $2r$ and it's equal to the diagonal of the box.
 Let's now write down the equations based on the above information and solve them using sympy.
-{start_code}
+{code_begin}
 from sympy import symbols, Eq, solve
 
 # define the variables
@@ -245,9 +257,13 @@ solutions = solve((eq1, eq2, diagonal_eq), (x, y, z, r))
 
 # let's see which values of r we get
 [solution[-1] for solution in solutions]
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 [-10, -10, 10, 10]
-{end_code_output}
+[/stdout]{code_output_end}
+
 Since the radius of the sphere is positive, we get $r = \\boxed{10}$.
 """.strip(),
     },
@@ -258,7 +274,7 @@ We can represent the rotation action via $\\omega = e^{\\pi i/6}$.
 Let's assume the bee starts at the origin, so $P_{2015}$ is at the point \\[z = 1 + 2 \\omega + 3 \\omega^2 + 4 \\omega^3 + \\dots + 2015 \\omega^{2014}.\\]
 This is an arithmetic-geometric series which we can solve by simplifying the expression.
 Alternatively, we can solve for |z| using sympy using the following code.
-{start_code}
+{code_begin}
 from sympy import I, pi, exp, sqrt
 
 # rotation action of 30 degrees
@@ -274,9 +290,13 @@ real, img = (position.as_real_imag())
 # Distance from origin i.e. starting point
 dist = sqrt(real**2 + img**2)
 print(dist)
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 sqrt(2)*(1008 + 1008*sqrt(3))
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the bee is $\\boxed{1008\\sqrt{2} + 1008\\sqrt{6}}$ far from the starting point.
 """.strip(),
     },
@@ -288,7 +308,7 @@ math_text_with_code_algebra = [
         "problem": "John is 24 years younger than his dad. The sum of their ages is 68 years. How many years old is John?",
         "solution": """
 To compute John's age, we can use Python's sympy library.
-{start_code}
+{code_begin}
 import sympy as sp
 
 # Let's denote John's age by j
@@ -302,9 +322,13 @@ eq = sp.Eq(j + d, 68)
 
 # solving for j we get the John's age
 sp.solve(eq, j)
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 [22]
-{end_code_output}
+[/stdout]{code_output_end}
+
 So John is \\boxed{22} years old.
 """.strip(),
     },
@@ -312,7 +336,7 @@ So John is \\boxed{22} years old.
         "problem": "Simplify the following expression in $x$: \\[2x+8x^2+9-(4-2x-8x^2).\\] Express your answer in the form $ax^2 +bx+c$, where $a$, $b$, and $c$ are numbers.",
         "solution": """
 To simplify the expression, we can use Python's sympy library.
-{start_code}
+{code_begin}
 from sympy import symbols, simplify
 
 x = symbols('x')
@@ -320,9 +344,13 @@ expr = 2*x + 8*x**2 + 9 - (4 - 2*x - 8*x**2)
 
 # Simplify the expression to get the canonical form
 print(simplify(expr))
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 16*x**2 + 4*x + 5
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the simplified expression is $\\boxed{16x^2+4x+5}$
 """.strip(),
     },
@@ -330,7 +358,7 @@ So the simplified expression is $\\boxed{16x^2+4x+5}$
         "problem": "What is the largest value of $x$ such that the expression \\[\\dfrac{x+1}{8x^2-65x+8}\\] is not defined?",
         "solution": """
 To solve this problem, we can use Python's sympy library.
-{start_code}
+{code_begin}
 from sympy import Symbol, simplify, solve
 
 x = Symbol('x')
@@ -346,9 +374,13 @@ solutions = solve(inverse_expr, x)
 # The solution asks for the largest value of $x$
 max_soln = max(solutions)
 max_soln
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 8
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the largest value of $x$ for which the expression is undefined is \\boxed{8}
 """.strip(),
     },
@@ -357,7 +389,7 @@ So the largest value of $x$ for which the expression is undefined is \\boxed{8}
         "solution": """
 To compute t(f(5)), we first need to compute f(5), which in turn requires computing t(5) first.
 To compute this function composition, we use Python's sympy library.
-{start_code}
+{code_begin}
 from sympy import Symbol, sqrt
 
 x = Symbol('x')
@@ -371,9 +403,13 @@ f_5 = f_x.subs(x, 5)
 # Now use f_5 as input to expression for t_x
 t_f_5 = t_x.subs(x, f_5)
 t_f_5
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 2
-{end_code_output}
+[/stdout]{code_output_end}
+
 So $t(f(5))$ is \\boxed{2}
 """.strip(),
     },
@@ -381,7 +417,7 @@ So $t(f(5))$ is \\boxed{2}
         "problem": "How many integers are solutions to the equation $$(x-2)^{(25-x^2)}=1?$$",
         "solution": """
 Let's first solve the equation using sympy.
-{start_code}
+{code_begin}
 from sympy import symbols, Eq, solve
 
 x = symbols('x')
@@ -394,9 +430,13 @@ roots = solve(equation, x)
 # To count the number of integer solutions:
 integer_solns = [isinstance(soln, int) for soln in roots]
 len(integer_solns)
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 4
-{end_code_output}
+[/stdout]{code_output_end}
+
 We have \\boxed{4} integer solutions.
 """.strip(),
     },
@@ -409,7 +449,7 @@ math_text_with_code_probability = [
         "solution": """
 Since landing on the three parts are mutually exclusive events.
 To compute the probability of landing on C, we can simply subtract the probability of landing on A and B.
-{start_code}
+{code_begin}
 from sympy import Rational
 
 # probability of landing on A is 1/3
@@ -422,9 +462,13 @@ prob_B = Rational(5, 12)
 prob_C = 1 - prob_A - prob_B
 
 prob_C
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 1/4
-{end_code_output}
+[/stdout]{code_output_end}
+
 So probability of the event is $\\boxed{\\frac{1}{4}}$.
 """.strip(),
     },
@@ -432,7 +476,7 @@ So probability of the event is $\\boxed{\\frac{1}{4}}$.
         "problem": "A box contains 5 white balls and 6 black balls.  Two balls are drawn out of the box at random.  What is the probability that they both are white?",
         "solution": """
 To solve the problem, we can use Python's sympy library.
-{start_code}
+{code_begin}
 from sympy import Rational, binomial
 
 # Number of white balls is 5
@@ -454,9 +498,13 @@ total_comb = binomial(total_balls, 2)
 prob = comb_two_white_balls/total_comb
 
 prob
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 2/11
-{end_code_output}
+[/stdout]{code_output_end}
+
 So probability of the event is $\\boxed{\\frac{2}{11}}$.
 """.strip(),
     },
@@ -465,7 +513,7 @@ So probability of the event is $\\boxed{\\frac{2}{11}}$.
         "solution": """
 To calculate the expected value of the sum of two marbles, we need to iterate over all possible combinations.
 To facilitate this computation, we will use Python's numerical libraries.
-{start_code}
+{code_begin}
 from itertools import combinations
 from sympy import binomial
 
@@ -484,9 +532,13 @@ for pair in combinations(numbers, 2):
 
 # Expected value is given by
 all_sum_pair/total_pairs
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 6
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the expected value is \\boxed{6}
 """.strip(),
     },
@@ -496,7 +548,7 @@ So the expected value is \\boxed{6}
 Given that the first letter is C, to construct a four-letter word with unique characters, there are three remaining choices.
 Out of these three letters, one of the letter has to be B.
 To calculate the number of possible arrangements, we will use Python's sympy library.
-{start_code}
+{code_begin}
 from sympy import binomial
 
 # Number of ways to make one of the remaining three letters B
@@ -511,9 +563,13 @@ choice_last = 6 - 3
 
 # Total arrangements
 choice_B * choice_first * choice_last
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 36
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the total arrangements are \\boxed{36}
 """.strip(),
     },
@@ -523,7 +579,7 @@ So the total arrangements are \\boxed{36}
 Melinda can never construct 10 and 20 because there's no 0 on a dice.
 To construct numbers between 10 and 20, she needs a 1 on at least one of the dices.
 To calculate these odds we will use Python's sympy library.
-{start_code}
+{code_begin}
 from sympy import Rational
 
 # Probability that a dice gets something other than 1
@@ -534,9 +590,13 @@ prob_both_not_one = prob_not_one * prob_not_one
 
 # Probability that at least one dice gets 1
 1 - prob_both_not_one
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 11/36
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the total arrangements are $\\boxed{\\frac{11}{36}}$.
 """.strip(),
     },
@@ -547,7 +607,7 @@ math_text_with_code_intermediate_algebra = [
         "problem": "What is the value of $\\left(1 - \\frac{1}{2}\\right)\\left(1-\\frac{1}{3}\\right)\\left(1-\\frac{1}{4}\\right)\\left(1-\\frac{1}{5}\\right) \\dotsm \\left(1-\\frac{1}{50}\\right)$? Express your answer as a common fraction.",
         "solution": """
 To solve this problem, we can use Python's sympy library.
-{start_code}
+{code_begin}
 from sympy import Rational
 
 product = 1
@@ -555,9 +615,13 @@ for i in range(2, 51):
     product *= (1 - Rational(1, i))
 
 product
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 1/50
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the answer is $\\boxed{\\frac{1}{50}}$.
 """.strip(),
     },
@@ -569,8 +633,8 @@ $g(x) = \frac{x^3 - 2x^2 + 4x + 3}{x^2 - 4x + 3}$,
 we need to identify the values of $x$ for which the denominator is not equal to zero,
 since division by zero is undefined.
 Let's use sympy to find the values of $x$ that make the denominator zero and then determine the domain:
-{start_code}
-from sympy import solve, S
+{code_begin}
+from sympy import symbols, solve, S
 
 x = symbols('x')
 denom = x**2 - 4*x + 3
@@ -579,9 +643,13 @@ zeros_of_denom = solve(denom, x)
 # The domain of the function is the real numbers excluding the zeros of the denominator
 domain = S.Reals - set(zeros_of_denom)
 domain
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 Union(Interval.open(-oo, 1), Interval.open(1, 3), Interval.open(3, oo))
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the domain is: $\\boxed{ (-\infty, 1) \cup (1, 3) \cup (3, \infty) }$.
 """.strip(),
     },
@@ -589,7 +657,7 @@ So the domain is: $\\boxed{ (-\infty, 1) \cup (1, 3) \cup (3, \infty) }$.
         "problem": "If $2x+7$ is a factor of $6x^3+19x^2+cx+35$, find $c$.",
         "solution": """
 We can solve this problem using sympy library.
-{start_code}
+{code_begin}
 from sympy import symbols, div, solve
 
 # Define the symbols
@@ -606,9 +674,13 @@ quotient, remainder = div(polynomial, factor)
 # We can solve for c by setting the remainder to zero and solving for c
 c_value = solve(remainder, c)
 c_value
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 [3]
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the only possible value of c is $\\boxed{3}$.
 """.strip(),
     },
@@ -620,7 +692,7 @@ To solve this problem we can
 - evaluate the function at critical points
 - find the minimum among the values.
 To do the calculations we'll use sympy.
-{start_code}
+{code_begin}
 from sympy import symbols, diff, solveset, Interval
 
 # Define the symbol
@@ -638,9 +710,13 @@ critical_points = solveset(f_prime, x, domain=Interval.open(8, float('inf')))
 # Evaluate the function at the critical points to find the minimum value
 values = [f.subs(x, cp).evalf() for cp in critical_points if cp.is_real]
 values
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 [32.0000000000000]
-{end_code_output}
+[/stdout]{code_output_end}
+
 Thus the minimum value of the given function for $x > 8$ is $\\boxed{32}$.
 """.strip(),
     },
@@ -651,7 +727,7 @@ To find the third root of the given cubic equation
 $ax^3 + (a + 2b)x^2 + (b - 3a)x + (8 - a) = 0$,
 we first need to determine the values of the coefficients $a$ and $b$.
 Given that two of the roots are -2 and 3, we can substitute these values into the equation:
-{start_code}
+{code_begin}
 from sympy import symbols, Eq, solve
 
 # Define the symbols
@@ -666,9 +742,13 @@ eq2 = eq.subs(x, 3)
 # Solving the equations
 solution = solve((eq1, eq2), (a, b))
 solution
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 {a: 8/9, b: -40/27}
-{end_code_output}
+[/stdout]{code_output_end}
+
 By Vieta's formulas the sum of the roots of a cubic equation
 $ax^3 + bx^2 + cx + d = 0$ is equal to $-\frac{b}{a}$.
 In our case, the equation is
@@ -677,7 +757,7 @@ Hence, the sum of the roots is $-\frac{a + 2b}{a}$.
 Since two of the roots are -2 and 3, let the third root be $r$. Thus, we have:
 $-2 + 3 + r = -\frac{a + 2b}{a}$.
 Let's solve this in sympy:
-{start_code}
+{code_begin}
 r = symbols('r')
 sum_of_roots_eq = Eq(-2 + 3 + r, -(a + 2*b)/a)
 
@@ -687,9 +767,13 @@ sum_of_roots_eq_substituted = sum_of_roots_eq.subs(solution)
 # Solve for r
 third_root = solve(sum_of_roots_eq_substituted, r)
 third_root
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 [4/3]
-{end_code_output}
+[/stdout]{code_output_end}
+
 The third root of the given cubic equation is $\\boxed{\\frac{4}{3}}$.
 """.strip(),
     },
@@ -700,14 +784,18 @@ math_text_with_code_number_theory = [
         "problem": "The integer $m$ is between $30$ and $80$ and is a multiple of $6$. When $m$ is divided by $8,$ the remainder is $2$. Similarly, when $m$ is divided by $5,$ the remainder is $2$. What is the value of $m$?",
         "solution": """
 Since the interval is relatively small, we can check all the values from 30 to 80:
-{start_code}
+{code_begin}
 # Iterate through possible values of m between 30 and 80 (inclusive)
 for m in range(30, 81):
     if m % 6 == 0 and m % 8 == 2 and m % 5 == 2:
         print(m)
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 42
-{end_code_output}
+[/stdout]{code_output_end}
+
 The only number that satisfies the requirements is $\\boxed{42}$.
 """.strip(),
     },
@@ -716,7 +804,7 @@ The only number that satisfies the requirements is $\\boxed{42}$.
         "solution": """
 If $x$ is a number of students in one row, then total number of students is $3x + (x + 1)$.
 This should be greater or equals to 30: $3x + (x + 1) \\ge 30$
-{start_code}
+{code_begin}
 from sympy import symbols, solve
 
 x = symbols('x')
@@ -726,19 +814,27 @@ inequality = 3*x + (x + 1) >= 30
 # Solve the inequality
 solution = solve(inequality, x)
 solution
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 (29/4 <= x) & (x < oo)
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the minimum number of students in a row is $29/4 = 7.25$.
 Since this must be an integer, such minimum number is $8$.
 Thus the total number of students is
-{start_code}
+{code_begin}
 row_students = 8
 total_students = 3 * row_students + (row_students + 1)
 total_students
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 33
-{end_code_output}
+[/stdout]{code_output_end}
+
 The answer is $\\boxed{33}$.
 """.strip(),
     },
@@ -748,7 +844,7 @@ The answer is $\\boxed{33}$.
 We can easily do it in python.
 First, we need to create a function that changes base-10 numbers to other bases.
 Then we get base-3 and base-8 representations and calculate lengths difference.
-{start_code}
+{code_begin}
 def change_base(num, base=10):
     if num == 0:
         return '0'
@@ -765,9 +861,13 @@ base_8_repr = change_base(num=987, base=8)
 # difference in representation length
 repr_diff = len(base_3_repr) - len(base_8_repr)
 repr_diff
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 3
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the answer is $\\boxed{3}$.
 """.strip(),
     },
@@ -775,7 +875,7 @@ So the answer is $\\boxed{3}$.
         "problem": "A two-digit integer $AB$ equals $\\frac{1}{9}$ of the three-digit integer $AAB$, where $A$ and $B$ represent distinct digits from 1 to 9. What is the smallest possible value of the three-digit integer $AAB$?",
         "solution": """
 Let's iterate over all possible values of $a$ and $b$ and check what is the smallest value that satisfies conditions.
-{start_code}
+{code_begin}
 for a in range(1, 10):
     for b in range(1, 10):
         if a == b:
@@ -787,9 +887,13 @@ for a in range(1, 10):
             # We found the smallest AAB which satisfies all the constraints
             print(second_num_val)
             break
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 225
-{end_code_output}
+[/stdout]{code_output_end}
+
 Thus the smallest such number is $\\boxed{225}$
 """,
     },
@@ -798,7 +902,7 @@ Thus the smallest such number is $\\boxed{225}$
         "solution": """
 We can list all divisors of 3240 and filter only multiples of 3.
 Let's use sympy for this:
-{start_code}
+{code_begin}
 from sympy import divisors
 
 # Calculate all the divisors of 3240
@@ -810,9 +914,13 @@ divisors_multiple_of_3 = [d for d in all_divisors if d % 3 == 0]
 # Count the number of divisors that are multiples of 3
 number_of_divisors_multiple_of_3 = len(divisors_multiple_of_3)
 number_of_divisors_multiple_of_3
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 32
-{end_code_output}
+[/stdout]{code_output_end}
+
 So 3240 has $\\boxed{32}$ divisors that are multiples of 3.
 """.strip(),
     },
@@ -827,7 +935,7 @@ Let A and B be these angles.
 We know that the sum of all angles is 180 degrees.
 Thus A + B + C = 180.
 Let's solve this using sympy:
-{start_code}
+{code_begin}
 from sympy import symbols, Eq, solve
 
 A = 40
@@ -838,9 +946,13 @@ eq = Eq(A + B + C, 180)
 C_value = solve(eq)[0]
 
 A, B, C_value
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 (40, 40, 100)
-{end_code_output}
+[/stdout]{code_output_end}
+
 Since we need to find the measure of the largest angle, the answer is $\\boxed{100}$.
 """.strip(),
     },
@@ -849,7 +961,7 @@ Since we need to find the measure of the largest angle, the answer is $\\boxed{1
         "solution": """
 Reflection over the $y$-axis changes $x$ coordinate to $-x$ and keeps $y$ coordinate constant.
 We can calculate the sum of the four coordinate values using sympy library:
-{start_code}
+{code_begin}
 from sympy import symbols
 
 # Define the symbol
@@ -860,9 +972,13 @@ B = (-x, 6)
 
 sum_coordinates = sum(A) + sum(B)
 sum_coordinates
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 12
-{end_code_output}
+[/stdout]{code_output_end}
+
 Thus the answer is $\\boxed{12}$.
 """.strip(),
     },
@@ -872,7 +988,7 @@ Thus the answer is $\\boxed{12}$.
 To calculate the total volume of a snowman we need to sum volumes of three snowballs.
 The volume of a sphere with radius $r$ is $\\frac{4}{3}\\pi r^3$.
 We can use sympy for the calculations:
-{start_code}
+{code_begin}
 from sympy import pi, Rational
 
 # Radii of the snowballs
@@ -888,9 +1004,13 @@ V3 = Rational(4, 3) * pi * r3**3
 # Total volume of the snowman
 total_volume = V1 + V2 + V3
 total_volume
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 640*pi/3
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the total volume is $\\boxed{\\frac{640}{3}\\pi}$.
 """.strip(),
     },
@@ -903,7 +1023,7 @@ Since this triangle is inscribed in a circle and one of its sides is a diameter,
 this triangle is right-angled. So we can apply Pythagorean theorem:
 $x^2 + 80^2 = d^2$.
 We can solve this equation using sympy:
-{start_code}
+{code_begin}
 from sympy import symbols, Eq, solve
 
 # Radius and diameter of the circular room
@@ -919,9 +1039,13 @@ x_value = max(solve(eq))
 # Calculate the total distance traveled as the sum of all three parts
 total_feet = x_value + d + 80
 total_feet
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 280
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the total distance traveled by the fly is $\\boxed{280}$.
 """.strip(),
     },
@@ -937,7 +1061,7 @@ One for the sum of edges, one for the surface area and one for the sphere diamet
 - $x ^ 2 + y ^ 2 + z ^ 2 = r ^ 2$
 
 Let's use sympy to solve them.
-{start_code}
+{code_begin}
 from sympy import symbols, Eq, solve
 
 # Define the variables
@@ -954,9 +1078,28 @@ eq3 = Eq(x**2 + y**2 + z**2, (2*r)**2)
 # Solve the equations
 solutions = solve((eq1, eq2, eq3), (x, y, z, r))
 solutions
-{end_code}{start_code_output}
-[(-z/2 - sqrt(-3*z**2 + 56*z + 16)/2 + 14, -z/2 + sqrt(-3*z**2 + 56*z + 16)/2 + 14, z, -10), (-z/2 + sqrt(-3*z**2 + 56*z + 16)/2 + 14, -z/2 - sqrt(-3*z**2 + 56*z + 16)/2 + 14, z, -10), (-z/2 - sqrt(-3*z**2 + 56*z + 16)/2 + 14, -z/2 + sqrt(-3*z**2 + 56*z + 16)/2 + 14, z, 10), (-z/2 + sqrt(-3*z**2 + 56*z + 16)/2 + 14, -z/2 - sqrt(-3*z**2 + 56*z + 16)/2 + 14, z, 10)]
-{end_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
+[(-z/2 - sqrt(-3*z**2 + 56*z + 16)/2 + 14,
+  -z/2 + sqrt(-3*z**2 + 56*z + 16)/2 + 14,
+  z,
+  -10),
+ (-z/2 + sqrt(-3*z**2 + 56*z + 16)/2 + 14,
+  -z/2 - sqrt(-3*z**2 + 56*z + 16)/2 + 14,
+  z,
+  -10),
+ (-z/2 - sqrt(-3*z**2 + 56*z + 16)/2 + 14,
+  -z/2 + sqrt(-3*z**2 + 56*z + 16)/2 + 14,
+  z,
+  10),
+ (-z/2 + sqrt(-3*z**2 + 56*z + 16)/2 + 14,
+  -z/2 - sqrt(-3*z**2 + 56*z + 16)/2 + 14,
+  z,
+  10)]
+[/stdout]{code_output_end}
+
 We need the solution corresponding to the r: the last value of tuple.
 And we need r to be positive.
 So the radius of the sphere $r$ is $\\boxed{10}$.
@@ -970,16 +1113,20 @@ math_text_with_code_precalculus = [
         "solution": '''
 We know that det(AB) = det(A) * det(B).
 We will use this fact to compute $\\det (\\mathbf{M}^4)$ using Python code.
-{start_code}
+{code_begin}
 det_M = -2
 
 # Determinant of M^4
 det_M_4 = det_M**4
 
 det_M_4
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 16
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the answer is \\boxed{16}.
 '''.strip(),
     },
@@ -998,7 +1145,7 @@ Hence, the answer is $\\boxed{\\frac{3}{10}}$.
         "problem": "Let $\\mathbf{a} = \\begin{pmatrix} 2 \\\\ 1 \\\\ 5 \\end{pmatrix}.$  Find the vector $\\mathbf{b}$ such that $\\mathbf{a} \\cdot \\mathbf{b} = 11$ and\n\\[\\mathbf{a} \\times \\mathbf{b} = \\begin{pmatrix} -13 \\\\ -9 \\\\ 7 \\end{pmatrix}.\\]",
         "solution": '''
 Using the dot product and cross product constraints, we can solve the problem using the sympy library.
-{start_code}
+{code_begin}
 from sympy import symbols, Eq, solve
 from sympy.vector import CoordSys3D
 
@@ -1023,9 +1170,13 @@ third_dim_eq = Eq(cross_product.dot(N.k), 7)
 # Solve the system of equations
 solution = solve([dot_product_eq, first_dim_eq, second_dim_eq, third_dim_eq], [b1, b2, b3])
 print([solution[b1], solution[b2], solution[b3]])
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 [-1, 3, 2]
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the answer is $\\boxed{\\begin{pmatrix} -1 \\\\ 3 \\\\ 2 \\end{pmatrix}}$.
 '''.strip(),
     },
@@ -1033,7 +1184,7 @@ So the answer is $\\boxed{\\begin{pmatrix} -1 \\\\ 3 \\\\ 2 \\end{pmatrix}}$.
         "problem": "Simplify $\\tan \\frac{\\pi}{24} + \\tan \\frac{7 \\pi}{24}.$",
         "solution": '''
 We will use sympy's simplify function to simplify the given trigonometric expression.
-{start_code}
+{code_begin}
 from sympy import tan, pi, simplify
 
 # Define the angles in radians
@@ -1047,9 +1198,13 @@ expression = tan(angle1) + tan(angle2)
 simplified_expression = simplify(expression)
 
 print(simplified_expression)
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 -2*sqrt(3) + 2*sqrt(6)
-{end_code_output}
+[/stdout]{code_output_end}
+
 So the answer is $\\boxed{2 \\sqrt{6} - 2 \\sqrt{3}}$.
 '''.strip(),
     },
@@ -1059,7 +1214,7 @@ So the answer is $\\boxed{2 \\sqrt{6} - 2 \\sqrt{3}}$.
 The key insight to finding the missing vertex is that a regular tetrahedron has all the sides of equal length.
 Using the three provided vertices, we can create three equations constraining the fourth vertex and solve them to get solutions.
 Here' the solution in Python's sympy library.
-{start_code}
+{code_begin}
 from sympy import symbols, Eq, solve
 from sympy.vector import CoordSys3D
 
@@ -1089,9 +1244,13 @@ solutions = solve((eq_AD, eq_BD, eq_CD), (x, y, z))
 # Filtering solutions for integer coordinates
 integer_solutions = [sol for sol in solutions if all(coord.is_Integer for coord in sol)]
 integer_solutions
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 [(3, -2, 2)]
-{end_code_output}
+[/stdout]{code_output_end}
+
 Hence the fourth vertex is \\boxed{(3,-2,2)}.
 '''.strip(),
     },
@@ -1103,7 +1262,7 @@ math_text_with_code_prealgebra = [
         "solution": """
 There are a total of six columns in the graph with values: 2, 3, 6, 4, 3, and 1.
 Since Aaron ate the most apples, and Zeb ate the fewest apples, we can answer the question using the following Python code.
-{start_code}
+{code_begin}
 apple_count = [2, 3, 6, 4, 3, 1]
 
 # Aaron apple count
@@ -1114,9 +1273,13 @@ zeb_apple = min(apple_count)
 
 diff_apple = aaron_apple - zeb_apple
 diff_apple
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 5
-{end_code_output}
+[/stdout]{code_output_end}
+
 So Aaron ate \\boxed{5} more apples than Zeb.
 """.strip(),
     },
@@ -1124,7 +1287,7 @@ So Aaron ate \\boxed{5} more apples than Zeb.
         "problem": "I have a bag with only red, blue, and green marbles.  The ratio of red marbles to blue marbles to green marbles is $1:5:3$.  There are 27 green marbles in the bag.  How many marbles are there  in the bag?",
         "solution": """
 To compute the total number of marbles, we can use Python's sympy library.
-{start_code}
+{code_begin}
 from sympy import Symbol, Eq, solve
 
 # Let the number of red marbles be represented by 'red'
@@ -1141,9 +1304,13 @@ red_count = solve(Eq(green, 27), red)[0]
 # And substitute the
 total_count = total.subs(red, red_count)
 total_count
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 81
-{end_code_output}
+[/stdout]{code_output_end}
+
 Hence, there are a total of \\boxed{81} marbles.
 """.strip(),
     },
@@ -1154,7 +1321,7 @@ To calculate these perfect cubes between 100 and 900, there are a few ways.
 One way is to enumerate cubes, and calculate the ones which satisfy this constraint.
 Another is to just take cube roots of the interval endpoints, with ceil and floor fns applied to start and end of the boundary.
 To solve the problem using the latter strategy, we use the following Python code.
-{start_code}
+{code_begin}
 import math
 
 lower_val = int(math.ceil(100**(1/3)))
@@ -1162,9 +1329,13 @@ higher_val = int(math.floor(900**(1/3)))
 
 num_perfect_cubes = higher_val - lower_val + 1
 print(num_perfect_cubes)
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 5
-{end_code_output}
+[/stdout]{code_output_end}
+
 Hence, there are a total of \\boxed{5} perfect cubes between 100 and 900.
 """.strip(),
     },
@@ -1172,7 +1343,7 @@ Hence, there are a total of \\boxed{5} perfect cubes between 100 and 900.
         "problem": "Find the smallest positive integer $x$ which is greater than $1$ and relatively prime to $120$ (recall that relatively prime means that the GCD of $x$ and $120$ is $1$)",
         "solution": '''
 To compute the smallest positive integer which is relatively prime to 120, we can iterate over all the numbers greater than 1 and less than 120, and break whenever we find a number which has a gcd of 1 with 120.
-{start_code}
+{code_begin}
 from sympy import gcd
 
 answer = None
@@ -1183,9 +1354,13 @@ for number in range(2, 120):
         break
 
 print(answer)
-{end_code}{start_code_output}
+{code_end}{code_output_begin}
+
+completed
+[stdout]
 7
-{end_code_output}
+[/stdout]{code_output_end}
+
 Hence, \\boxed{7} is the smallest number which is relatively prime to 120.
 '''.strip(),
     },
@@ -1196,6 +1371,63 @@ Let each side of the square be 1. So the area of ABCD is 1^2=1.
 The triangle AMN, has base of length AM=1/2, and height of length of 1/2 as well since BN=1/2.
 Hence, area of AMN = (1/2) * base * height = (1/2) * (1/2) * (1/2) = 1/8.
 Hence. ratio of area of AMN to ABCD is $\\boxed{\\frac{1}{8}}$.
+'''.strip(),
+    },
+]
+
+
+math_problem_augmentation = [
+    {
+        'problem': '''
+In the equation
+$$5x^2-kx+1=0$$
+determine $k$ such that the difference of the roots be equal to unity.
+'''.strip(),
+        'augmented_problem': '''
+The roots $x_1$ and $x_2$ of the equation
+$$x^2-3ax+a^2=0$$
+are such that
+$x_1^2+x_2^2=1.75$.
+Determine $a$.
+'''.strip(),
+    },
+    {
+        'problem': '''
+Solve the following equation
+$\\ds\\f{3+x}{3x}=\\sqrt {\\ds\\f{1}{9}+\\ds\\f{1}{x}\\sqrt {\\ds\\f{4}{9}+\\ds\\f{2}{x^2}}}$
+'''.strip(),
+        'augmented_problem': '''
+Solve the following equation
+$\\sqrt {1+x\\sqrt {x^2+24}}=x+1$
+'''.strip(),
+    },
+    {
+        'problem': '''
+In an infinitely decreasing geometric progression the sum
+of all the terms occupying odd places is equal to 36, and that of all
+the terms at even places equals 12.
+Find the progression.
+'''.strip(),
+        'augmented_problem': '''
+The sum of the terms of an infinitely decreasing geometric
+progression is equal to 56, and the sum of the squared terms of the
+same progression is 448.
+Find the first term and the common ratio.
+'''.strip(),
+    },
+    {
+        'problem': '''
+Two railway stations are at a distance of 96 km from each other.
+One train covers this distance 40 minutes faster than does the other.
+The speed of the first train is 12 km/h higher than that of the second.
+Determine the speed of both trains.
+'''.strip(),
+        'augmented_problem': '''
+A student was asked to multiply 78 by a two-digit number
+in which the tens digit was three times as large as the units digit;
+by mistake, he interchanged the digits in the second factor and
+thus obtained a product smaller than the true product by 2808.
+What was the true product?
 '''.strip(),
     },
 ]
@@ -1213,4 +1445,5 @@ examples_map = {
     "math_text_with_code_geometry": math_text_with_code_geometry,
     "math_text_with_code_precalculus": math_text_with_code_precalculus,
     "math_text_with_code_prealgebra": math_text_with_code_prealgebra,
+    "math_problem_augmentation": math_problem_augmentation,
 }

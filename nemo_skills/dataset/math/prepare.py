@@ -96,10 +96,10 @@ def extract_answer_string_2(answer_str):
     return stripped_answer
 
 
-def save_data(split_name, random_seed, validation_size):
+def save_data(split, random_seed, validation_size):
     output_dir = Path(__file__).absolute().parent
     output_dir.mkdir(exist_ok=True)
-    actual_split_name = "test" if split_name == "test" else "train"
+    actual_split = "test" if split == "test" else "train"
 
     with tempfile.TemporaryDirectory() as temp_dir:
         archive_filename = os.path.join(temp_dir, "temp.tar")
@@ -115,7 +115,7 @@ def save_data(split_name, random_seed, validation_size):
 
                 eval_set, problem_type, fileid = extract_attributes_from_name(filename)
                 # TODO: we should just process all at ones, not do duplicate computation
-                if eval_set != actual_split_name:
+                if eval_set != actual_split:
                     continue
 
                 content = json.loads(reader_f.extractfile(tar_member).read())
@@ -155,17 +155,17 @@ def save_data(split_name, random_seed, validation_size):
         assert len(split_instances_dict) == 1
         for split, instances in split_instances_dict.items():
             # always shuffling to make it easier to get validation/train out of train_full
-            if split_name != "test":
+            if split != "test":
                 random.seed(random_seed)
                 random.shuffle(instances)
-            if split_name == "validation":
+            if split == "validation":
                 data = instances[:validation_size]
-            elif split_name == "train":
+            elif split == "train":
                 data = instances[validation_size:]
             else:
                 data = instances
 
-            output_file = os.path.join(output_dir, f"{split_name}.jsonl")
+            output_file = os.path.join(output_dir, f"{split}.jsonl")
             with open(output_file, "wt", encoding="utf-8") as writer_f:
                 for instance in data:
                     writer_f.write(json.dumps(instance) + "\n")
@@ -175,7 +175,7 @@ def process_data():
     """Download tar and condense data into single jsonl file."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--split_name",
+        "--split",
         default="all",
         choices=("all", "test", "validation", "train", "train_full"),
     )
@@ -183,11 +183,11 @@ def process_data():
     parser.add_argument("--validation_size", type=int, default=1000)
     args = parser.parse_args()
 
-    if args.split_name == "all":
-        for split_name in ["test", "validation", "train", "train_full"]:
-            save_data(split_name, args.random_seed, args.validation_size)
+    if args.split == "all":
+        for split in ["test", "validation", "train", "train_full"]:
+            save_data(split, args.random_seed, args.validation_size)
     else:
-        save_data(args.split_name, args.random_seed, args.validation_size)
+        save_data(args.split, args.random_seed, args.validation_size)
 
 
 if __name__ == "__main__":

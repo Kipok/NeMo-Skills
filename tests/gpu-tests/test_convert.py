@@ -16,6 +16,7 @@
 # you'd also need 2+ GPUs to run this test
 
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -36,7 +37,7 @@ def test_hf_trtllm_conversion():
         f"    --convert_from hf "
         f"    --convert_to trtllm "
         f"    --num_gpus 1 "
-        f"    --hf_model_name meta-llama/Meta-Llama-3.1-8B "
+        f"    --hf_model_name meta-llama/Meta-Llama-3.1-8B-Instruct "
     )
 
     subprocess.run(cmd, shell=True, check=True)
@@ -57,7 +58,8 @@ def test_hf_nemo_conversion():
         f"    --convert_from hf "
         f"    --convert_to nemo "
         f"    --num_gpus 1 "
-        f"    --hf_model_name meta-llama/Meta-Llama-3.1-8B "
+        f"    --hf_model_name meta-llama/Meta-Llama-3.1-8B-Instruct "
+        f"    --override "
     )
 
     subprocess.run(cmd, shell=True, check=True)
@@ -78,7 +80,7 @@ def test_nemo_hf_conversion():
         f"    --convert_from nemo "
         f"    --convert_to hf "
         f"    --num_gpus 1 "
-        f"    --hf_model_name meta-llama/Meta-Llama-3.1-8B "
+        f"    --hf_model_name meta-llama/Meta-Llama-3.1-8B-Instruct "
     )
 
     subprocess.run(cmd, shell=True, check=True)

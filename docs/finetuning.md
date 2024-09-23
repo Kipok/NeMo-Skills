@@ -41,7 +41,7 @@ python nemo_skills/pipeline/eval.py \
     --run_after $EXPNAME \
     ++prompt_template=llama3-instruct \
     ++batch_size=128 \
-    ++split_name=test
+    ++split=test
 
 
 or with conversion
@@ -77,7 +77,7 @@ python nemo_skills/pipeline/eval.py \
     --run_after $EXPNAME-to-trtllm \
     ++prompt_template=llama3-instruct \
     ++batch_size=512 \
-    ++split_name=test
+    ++split=test
 
 
 
@@ -120,7 +120,7 @@ Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
    to use 2 evaluation jobs, batch size of 32 and evaluate on the test set use
 
    ```
-   --extra_eval_args="--num_jobs=2 ++split_name=test ++batch_size=32 "
+   --extra_eval_args="--num_jobs=2 ++split=test ++batch_size=32 "
    ```
 
    You can customize any of the SFT parameters by directly providing those

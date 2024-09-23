@@ -66,7 +66,7 @@ documentation to learn how to make inference more efficient.
      --num_jobs 1 \
      +prompt=openmathinstruct/sft \
      ++prompt.few_shot_examples.num_few_shots=0 \
-     ++split_name=test \
+     ++split=test \
      ++server.code_execution.max_code_executions=6 \
      ++server.code_execution.stop_on_code_error=False \
      ++batch_size=64
@@ -85,7 +85,7 @@ documentation to learn how to make inference more efficient.
      +prompt=openmathinstruct/sft \
      ++prompt.few_shot_examples.num_few_shots=0 \
      ++skip_filled=True \
-     ++split_name=test \
+     ++split=test \
      ++server.code_execution.max_code_executions=6 \
      ++server.code_execution.stop_on_code_error=False \
      ++batch_size=64
@@ -132,7 +132,7 @@ you can run the following:
      +prompt=openmathinstruct/base \
      ++prompt.few_shot_examples.examples_type=gsm8k_text_with_code \
      ++dataset=gsm8k \
-     ++split_name=train_full
+     ++split=train_full
    ```
 
    With masked reference solutions:
@@ -147,7 +147,7 @@ you can run the following:
      +prompt=openmathinstruct/masked_solution \
      ++prompt.few_shot_examples.examples_type=gsm8k_text_with_code \
      ++dataset=gsm8k-masked \
-     ++split_name=train_full
+     ++split=train_full
    ```
 
    For the MATH portion of the dataset, change `gsm8k -> math` and use 224 runs.

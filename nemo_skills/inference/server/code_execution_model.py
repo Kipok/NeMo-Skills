@@ -19,16 +19,9 @@ from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import field
 
-from nemo_skills.code_execution import CODE_SEPARATORS, extract_code_to_execute, format_code_output
+from nemo_skills.code_execution import extract_code_to_execute, format_code_output
 from nemo_skills.code_execution.sandbox import Sandbox
-from nemo_skills.inference.server.model import (
-    BaseModel,
-    NemoModel,
-    OpenAIModel,
-    get_model,
-    models,
-    trim_after_stop_phrases,
-)
+from nemo_skills.inference.server.model import BaseModel, OpenAIModel, get_model, models, trim_after_stop_phrases
 from nemo_skills.utils import nested_dataclass, python_doc_to_cmd_help
 
 LOG = logging.getLogger(__name__)
@@ -59,24 +52,6 @@ class CodeExecutionConfig:
     error_recovery: ErrorRecoveryConfig = field(default_factory=ErrorRecoveryConfig)
 
 
-def try_fix_output(output: str):
-    """Sometimes llama models use eot instead of eom.
-
-    Trying to detect that and fix, so that we can still execute code.
-
-    # TODO: this assumes particular CODE_SEPARATORS..
-    """
-
-    if not output.endswith("<|eot_id|>"):
-        return output
-
-    if output.count(CODE_SEPARATORS[0]) == output.count(CODE_SEPARATORS[-1]) + 1:
-        # likely a code block, so we should replace eot with eom
-        output = output[: -len("<|eot_id|>")] + "<|eom_id|>"
-
-    return output
-
-
 class CodeExecutionWrapper:
     def __init__(self, model: BaseModel, sandbox: Sandbox, config: CodeExecutionConfig):
         self.model = model
@@ -86,6 +61,10 @@ class CodeExecutionWrapper:
     def generate(
         self,
         prompts: list[str | dict],
+        code_begin: str,
+        code_end: str,
+        code_output_begin: str,
+        code_output_end: str,
         tokens_to_generate: int = 512,
         temperature: float = 0.0,
         top_p: float = 0.95,
@@ -111,7 +90,7 @@ class CodeExecutionWrapper:
             "top_p": top_p,
             "random_seed": random_seed,
             "repetition_penalty": repetition_penalty,
-            "stop_phrases": stop_phrases + [CODE_SEPARATORS[-1]],
+            "stop_phrases": stop_phrases + [code_end],
             "remove_stop_phrases": False,  # we need to see where the model stopped
         }
 
@@ -134,21 +113,20 @@ class CodeExecutionWrapper:
                 num_executions += 1
                 request["prompts"] = [new_outputs[idx]['prompt'] for idx in remaining_ids]
                 outputs = [self._handle_stop_words(output['generation']) for output in self.model.generate(**request)]
-                outputs = [try_fix_output(output) for output in outputs]
                 new_ids = []
                 # checking if any of the outputs need code execution and submitting requests in parallel
                 futures = [None] * len(prompts)
                 for idx, output in zip(remaining_ids, outputs):
-                    if output.strip().endswith(CODE_SEPARATORS[-1]):
+                    if output.strip().endswith(code_end):
                         futures[idx] = executor.submit(
                             self.sandbox.execute_code,
-                            generated_code=extract_code_to_execute(output),
+                            generated_code=extract_code_to_execute(output, code_begin, code_end),
                             timeout=self.config.code_execution_timeout,
                             max_output_characters=self.config.max_code_output_characters,
                             session_id=new_outputs[idx]['session_id'],
                         )
                 for idx, output in zip(remaining_ids, outputs):
-                    if output.strip().endswith(CODE_SEPARATORS[-1]):
+                    if output.strip().endswith(code_end):
                         execution_dict, new_outputs[idx]['session_id'] = futures[idx].result()
                         if execution_dict['stderr']:
                             # TODO: error recovery should happen here that might change output
@@ -157,7 +135,9 @@ class CodeExecutionWrapper:
                             new_outputs[idx]['prompt'] += output
 
                         # adding code output to the prompt
-                        new_outputs[idx]['prompt'] += format_code_output(execution_dict)
+                        new_outputs[idx]['prompt'] += format_code_output(
+                            execution_dict, code_output_begin, code_output_end
+                        )
                         # setting a limit on max code executions to speed things up
                         # (sometimes keeps repeating the same sequence forever)
                         if num_executions >= self.config.max_code_executions:
@@ -254,10 +234,6 @@ def server_params():
 def get_code_execution_model(server_type, code_execution=None, sandbox=None, **kwargs):
     """A helper function to make it easier to set server through cmd."""
     model = get_model(server_type=server_type, **kwargs)
-    if isinstance(model, NemoModel):  # nemo handles code execution directly
-        if code_execution is not None:
-            raise ValueError("Extra code execution parameters are not supported for Nemo model.")
-        return model
     if code_execution is None:
         code_execution = {}
     code_execution_config = CodeExecutionConfig(**code_execution)

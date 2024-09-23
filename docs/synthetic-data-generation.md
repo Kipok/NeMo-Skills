@@ -25,7 +25,7 @@ any "teacher" model, e.g. [Mixtral-8x7B](https://huggingface.co/mistralai/Mixtra
      +prompt=openmathinstruct/base \
      ++prompt.few_shot_examples.examples_type=gsm8k_text_with_code \
      ++dataset=gsm8k \
-     ++split_name=train_full
+     ++split=train_full
    ```
 
    This will run 128 slurm jobs each generating a solutions with unique random seed. You can customize solution
@@ -60,7 +60,7 @@ Here are the steps to create masked solutions for the different dataset or using
      +prompt=openmathinstruct/text_masked_base \
      ++prompt.few_shot_examples.examples_type=gsm8k_generate_masked \
      ++dataset=gsm8k \
-     ++split_name=train_full
+     ++split=train_full
    ```
 
 This will run 32 slurm jobs with unique random seed, each generating a masked solutions based on reference solutions
@@ -72,10 +72,10 @@ and provided few-shot examples.
    python nemo_skills/finetuning/prepare_masked_data.py \
      ++dataset=<dataset_name from datasets folder> \
      ++masked_soln_jsonl_files=./masked-solutions/output-rs*.jsonl \
-     ++split_name=train_full
+     ++split=train_full
    ```
 
-Prepared dataset will be saved in `datasets/<dataset_name>-masked/<split_name>.jsonl`.
+Prepared dataset will be saved in `datasets/<dataset_name>-masked/<split>.jsonl`.
 
 Now you can go back to step 2 of the previous section and specify `++dataset=<dataset_name>-masked` and
 `+prompt=openmathinstruct/masked_solution`.

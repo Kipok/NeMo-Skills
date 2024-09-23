@@ -15,18 +15,8 @@
 import re
 from typing import Dict, Tuple
 
-CODE_SEPARATORS = (
-    '<|python_tag|>',
-    '<|eom_id|>',
-)  # used to execute code within these tags
-CODE_OUTPUT_SEPARATORS = (
-    '<|start_header_id|>ipython<|end_header_id|>',
-    # we assume that assistant always has more to say after executing the code!
-    '<|eot_id|><|start_header_id|>assistant<|end_header_id|>',
-)  # used to extract the code output
 
-
-def format_code_output(execution_dict: Dict[str, str]):
+def format_code_output(execution_dict: Dict[str, str], code_output_begin: str, code_output_end: str):
     """Formatting code output to be displayed as an llm expects it."""
     output = execution_dict["process_status"]
     if execution_dict['stdout']:
@@ -35,24 +25,25 @@ def format_code_output(execution_dict: Dict[str, str]):
         output += f"\n[stderr]\n{execution_dict['stderr']}\n[/stderr]"
 
     # wrapping with code output separators
-    output = f"{CODE_OUTPUT_SEPARATORS[0]}\n\n{output}{CODE_OUTPUT_SEPARATORS[1]}\n\n"
+    output = f"{code_output_begin}\n\n{output}{code_output_end}\n\n"
     return output
 
 
-def _extract_between_separators(generation, separators: Tuple[str, str], extract_all=False):
+def _extract_between_separators(generation: str, separators: Tuple[str, str], extract_all: bool = False):
     """Extracting all text between last occurrence of separators[0] and [1].
 
     If extract_all is True, returning a list with all occurrences of text between separators.
     """
     if extract_all:
+        separators = [re.escape(sp) for sp in separators]
         pattern = f'{separators[0]}(.*?){separators[1]}'
         return re.findall(pattern, generation, re.DOTALL)
     return generation.split(separators[0])[-1].split(separators[1])[0]
 
 
-def extract_code_to_execute(generation, extract_all=False):
-    return _extract_between_separators(generation, CODE_SEPARATORS, extract_all)
+def extract_code_to_execute(generation: str, code_begin: str, code_end: str, extract_all: bool = False):
+    return _extract_between_separators(generation, [code_begin, code_end], extract_all)
 
 
-def extract_code_output(generation, extract_all=False):
-    return _extract_between_separators(generation, CODE_OUTPUT_SEPARATORS, extract_all)
+def extract_code_output(generation: str, code_output_begin: str, code_output_end: str, extract_all: bool = False):
+    return _extract_between_separators(generation, [code_output_begin, code_output_end], extract_all)
