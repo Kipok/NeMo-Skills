@@ -13,52 +13,10 @@
 # limitations under the License.
 
 
-from nemo_skills.prompt.utils import Prompt, get_prompt_config
+from nemo_skills.prompt.utils import get_prompt
 
 
-def test_question_generation_rephrasing_prompt():
-    config = get_prompt_config('question_generation/rephrasing')
-    config.few_shot_examples.example_dicts = [
-        {
-            'question': 'Are you sure you want to do that?',
-            'rephrased_question': "Is this really what you want to do?",
-        },
-        {'question': 'How are you?', 'rephrased_question': "How is it going?"},
-    ]
-    config.few_shot_examples.num_few_shots = 2
-    prompt = Prompt(config=config)
-
-    expected_prompt = """You are an AI assistant that excels at rephrasing questions. Follow the given examples.
-
-Question:
-Are you sure you want to do that?
-
-Rephrase the above question:
-Is this really what you want to do?
-
-
-
-
-
-Question:
-How are you?
-
-Rephrase the above question:
-How is it going?
-
-
-
-
-
-Question:
-What's the meaning of life?
-
-Rephrase the above question:
-"""
-    assert prompt.build_string({'question': "What's the meaning of life?"}) == expected_prompt
-
-
-def test_question_generation_augmentation_prompt():
+def test_question_augmentation_prompt():
     config = get_prompt_config('question_generation/augmentation')
     config.few_shot_examples.example_dicts = [
         {
