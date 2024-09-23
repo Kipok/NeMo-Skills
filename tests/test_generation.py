@@ -12,15 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 # running most things through subprocess since that's how it's usually used
 import subprocess
+from pathlib import Path
 
 import pytest
 from test_datasets import DATASETS
 
 DATA_TO_TEST = []
-for prompt_template in ['default-base', 'llama3-base', 'llama3-instruct', 'nemotron-instruct']:
-    for dataset, splits, _ in DATASETS:
+template_folder = Path(__file__).parents[1] / 'nemo_skills' / 'prompt' / 'template'
+prompt_templates = [f[:-5] for f in os.listdir(template_folder) if f.endswith('.yaml')]
+
+for prompt_template in prompt_templates:
+    for dataset, splits in DATASETS:
         for split in splits:
             DATA_TO_TEST.append((dataset, split, prompt_template))
 
@@ -38,22 +44,3 @@ def test_generation_dryrun_default(dataset, split, prompt_template):
         f"    ++dry_run=True "
     )
     subprocess.run(cmd, shell=True, check=True)
-
-
-# @pytest.mark.parametrize(
-#     "dataset,split,prompt_template,prompt_config",
-#     ['local', 'piston'],
-# )
-# def test_generation_dryrun_specific(dataset, split, prompt_template):
-#     """Testing a couple of specific prompts."""
-#     cmd = (
-#         "python nemo_skills/inference/generate.py "
-#         f"    ++output_file=./test.jsonl "
-#         f"    ++prompt_config={prompt_config} "
-#         f"    ++prompt_template={prompt_template} "
-#         f"    ++dataset={dataset} "
-#         f"    ++split={split} "
-#         f"    ++server.server_type=nemo "
-#         f"    ++dry_run=True "
-#     )
-#     subprocess.run(cmd, shell=True, check=True)
