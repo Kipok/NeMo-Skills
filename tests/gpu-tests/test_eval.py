@@ -63,6 +63,41 @@ def test_trtllm_eval():
 
 
 @pytest.mark.gpu
+def test_trtllm_code_execution_eval():
+    model_path = os.getenv('NEMO_SKILLS_TEST_TRTLLM_MODEL')
+    if not model_path:
+        pytest.skip("Define NEMO_SKILLS_TEST_TRTLLM_MODEL to run this test")
+
+    cmd = (
+        f"python -m nemo_skills.pipeline.eval "
+        f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
+        f"    --model {model_path} "
+        f"    --server_type trtllm "
+        f"    --output_dir /tmp/nemo-skills-tests/trtllm-eval "
+        f"    --benchmarks gsm8k:0 "
+        f"    --server_gpus 1 "
+        f"    --server_nodes 1 "
+        f"    ++prompt_template=llama3-base "  # we are using the base prompt to make the model follow few-shots
+        f"    ++examples_type=gsm8k_text_with_code "
+        f"    ++split=test "
+        f"    ++batch_size=8 "
+        f"    ++max_samples=20 "
+        f"    ++code_execution=True "
+    )
+    subprocess.run(cmd, shell=True, check=True)
+
+    # running compute_metrics to check that results are expected
+    metrics_calculator = importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS()
+    metrics = compute_metrics(
+        [f"/tmp/nemo-skills-tests/trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
+    )
+    print(metrics)
+    # rough check, since exact accuracy varies depending on gpu type
+    assert metrics['sympy_correct'] >= 50
+    assert metrics['num_entries'] == 20
+
+
+@pytest.mark.gpu
 def test_vllm_eval():
     # this test expects llama3-instruct to properly check accuracy
     # will run a bunch of benchmarks, but is still pretty fast

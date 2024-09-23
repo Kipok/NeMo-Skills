@@ -117,6 +117,7 @@ class CodeExecutionWrapper:
                 # checking if any of the outputs need code execution and submitting requests in parallel
                 futures = [None] * len(prompts)
                 for idx, output in zip(remaining_ids, outputs):
+                    print("****************", output, code_end)
                     if output.strip().endswith(code_end):
                         futures[idx] = executor.submit(
                             self.sandbox.execute_code,
