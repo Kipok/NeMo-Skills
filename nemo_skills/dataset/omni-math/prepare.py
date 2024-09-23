@@ -19,15 +19,6 @@ from pathlib import Path
 
 URL = "https://raw.githubusercontent.com/KbsdJames/Omni-MATH/refs/heads/main/Omni-Math.jsonl"
 
-# Data Format
-#
-# Required:
-#   - question (problem statement)
-#
-# Optional:
-#   - expected_answer (expected answer)
-#   - reference_solution (text-based solution)
-
 
 if __name__ == "__main__":
     data_folder = Path(__file__).absolute().parent
@@ -40,20 +31,11 @@ if __name__ == "__main__":
 
     data = []
 
-    #### For this dataset, it contains 387 examples, but the answers have varying ending formats.
-    #### I manually checked all the different types and extracted only the answers
-
     with open(original_file, "rt", encoding="utf-8") as fin:
         for index, line in enumerate(fin):
-
-            entry = json.loads(line)  # Convert JSON line to dictionary
-
-            answer = entry["answer"]
-            problem = entry['problem']
-            reference_solution = entry['solution']
-            entry["expected_answer"] = answer
-            entry['question'] = problem
-            entry['reference_solution'] = reference_solution
+            entry = json.loads(line)
+            entry["expected_answer"] = entry.pop("answer")
+            entry['reference_solution'] = entry.pop('solution')
             data.append(entry)
 
     with open(output_file, "wt", encoding="utf-8") as fout:

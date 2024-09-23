@@ -20,6 +20,7 @@ from pathlib import Path
 DATASETS = [
     ('aime24', ['test']),
     ('amc23', ['test']),
+    ('omni-math', ['test']),
     ('algebra222', ['test']),
     ('arena-hard', ['test']),
     ('asdiv', ['test']),
