@@ -16,7 +16,7 @@ import os
 
 import pytest
 
-from nemo_skills.code_execution import extract_code_output, extract_code_to_execute
+from nemo_skills.code_execution import extract_code_output, extract_code_to_execute, format_code_output
 from nemo_skills.code_execution.sandbox import Sandbox, get_sandbox
 from nemo_skills.prompt.few_shot_examples import examples_map
 
@@ -169,22 +169,23 @@ height_after_x_days = height_in_inches + 30 * x
 x = (600 - height_in_inches) / 30
 x
 """
-
+    error = (
+        "\x1b[0;31m---------------------------------------------------------------------------\x1b[0m\n\x1b[0;31m"
+        "NameError\x1b[0m                                 Traceback (most recent call last)\nFile \x1b[0;32m"
+        "<ipython-input-1-2d264478936f>:4\x1b[0m\n\x1b[1;32m      2\x1b[0m height_in_inches \x1b[38;5;241m=\x1b"
+        "[39m \x1b[38;5;241m20\x1b[39m \x1b[38;5;241m*\x1b[39m \x1b[38;5;241m12\x1b[39m\n\x1b[1;32m      3\x1b[0m"
+        " \x1b[38;5;66;03m# height of bamboo in inches after x days\x1b[39;00m\n\x1b[0;32m----> 4\x1b[0m "
+        "height_after_x_days \x1b[38;5;241m=\x1b[39m height_in_inches \x1b[38;5;241m+\x1b[39m \x1b[38;5;241m30"
+        "\x1b[39m \x1b[38;5;241m*\x1b[39m \x1b[43mx\x1b[49m\n\x1b[1;32m      5\x1b[0m \x1b[38;5;66;03m"
+        "# solve for x\x1b[39;00m\n\x1b[1;32m      6\x1b[0m x \x1b[38;5;241m=\x1b[39m (\x1b[38;5;241m600\x1b[39m "
+        "\x1b[38;5;241m-\x1b[39m height_in_inches) \x1b[38;5;241m/\x1b[39m \x1b[38;5;241m30\x1b[39m\n\n\x1b[0;31m"
+        "NameError\x1b[0m: name 'x' is not defined"
+    )
     output, session_id = sandbox.execute_code(code)
     assert output == {
-        'result': (
-            "\x1b[0;31m---------------------------------------------------------------------------\x1b[0m\n\x1b[0;31m"
-            "NameError\x1b[0m                                 Traceback (most recent call last)\nFile \x1b[0;32m"
-            "<ipython-input-1-2d264478936f>:4\x1b[0m\n\x1b[1;32m      2\x1b[0m height_in_inches \x1b[38;5;241m=\x1b"
-            "[39m \x1b[38;5;241m20\x1b[39m \x1b[38;5;241m*\x1b[39m \x1b[38;5;241m12\x1b[39m\n\x1b[1;32m      3\x1b[0m"
-            " \x1b[38;5;66;03m# height of bamboo in inches after x days\x1b[39;00m\n\x1b[0;32m----> 4\x1b[0m "
-            "height_after_x_days \x1b[38;5;241m=\x1b[39m height_in_inches \x1b[38;5;241m+\x1b[39m \x1b[38;5;241m30"
-            "\x1b[39m \x1b[38;5;241m*\x1b[39m \x1b[43mx\x1b[49m\n\x1b[1;32m      5\x1b[0m \x1b[38;5;66;03m"
-            "# solve for x\x1b[39;00m\n\x1b[1;32m      6\x1b[0m x \x1b[38;5;241m=\x1b[39m (\x1b[38;5;241m600\x1b[39m "
-            "\x1b[38;5;241m-\x1b[39m height_in_inches) \x1b[38;5;241m/\x1b[39m \x1b[38;5;241m30\x1b[39m\n\n\x1b[0;31m"
-            "NameError\x1b[0m: name 'x' is not defined"
-        ),
-        'error_message': f"{Sandbox.EXECUTION_ERROR} name 'x' is not defined",
+        'process_status': 'completed',
+        'stderr': '',
+        'stdout': error,
     }
     assert session_id is not None
 
@@ -195,12 +196,19 @@ def test_few_shots(sandbox_type):
 
     for example_name, example_list in examples_map.items():
         for example in example_list:
-            if 'generation' not in example:
+            if 'solution' not in example:
                 continue
-            if len(extract_code_to_execute(example['generation'], extract_all=True)) > 1:
-                code_snippets = extract_code_to_execute(example['generation'], extract_all=True)
-                expected_outputs = extract_code_output(example['generation'], extract_all=True)
+            if len(extract_code_to_execute(example['solution'], extract_all=True)) > 0:
+                code_snippets = extract_code_to_execute(example['solution'], extract_all=True)
+                expected_outputs = extract_code_output(example['solution'], extract_all=True)
+                print(code_snippets)
+                print(expected_outputs)
                 session_id = None
                 for code_snippet, expected_output in zip(code_snippets, expected_outputs):
                     output, session_id = sandbox.execute_code(code_snippet, session_id=session_id)
-                    assert output['result'] == expected_output.strip(), f"{example_name} few shots are failing"
+                    print(example['solution'] + '\n\n\n')
+                    print(format_code_output(output) + '\n\n\n')
+                    print(expected_output.strip())
+                    assert (
+                        format_code_output(output) == expected_output.strip()
+                    ), f"{example_name} few shots are failing"

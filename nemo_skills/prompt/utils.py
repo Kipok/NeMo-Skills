@@ -21,11 +21,6 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
-try:
-    from omegaconf import MISSING
-except ImportError:
-    MISSING = "???"
-
 from nemo_skills.prompt.few_shot_examples import examples_map
 from nemo_skills.utils import nested_dataclass
 
@@ -92,13 +87,19 @@ class PromptTemplate:
     assistant_begin: str
     assistant_end: str
 
+    # used to execute code within these tags
+    code_begin: str
+    code_end: str
+    # used to extract the code output
+    code_output_begin: str
+    code_output_end: str
+
     # TODO: should stop phrases not be here?
     stop_phrases: List[str]
 
 
 @nested_dataclass(kw_only=True)
 class PromptConfig:
-    # TODO: is there a better name for this? Too many templates + this contains pieces
     user: str
     system: str = ""
     template: PromptTemplate = None
@@ -107,9 +108,7 @@ class PromptConfig:
 
 class Prompt:
     # TODO: multiturn
-    TEMPLATE = (
-        "{text_begin}{system_begin}{system}{system_end}{user_begin}{user}{user_end}{assistant_begin}{generation}"
-    )
+    FORMAT = "{text_begin}{system_begin}{system}{system_end}{user_begin}{user}{user_end}{assistant_begin}{generation}"
 
     def __init__(self, config):
         # rebuilding prompt config to make sure post init is called again in
@@ -118,6 +117,20 @@ class Prompt:
 
     def build_filled_example(self, example_dict: Dict[str, Any]) -> str:
         """Builds a filled example string based on the example dictionary."""
+
+        # replacing code/code-output separators in the examples if present
+        if 'solution' in example_dict:
+            example_dict["solution"] = example_dict["solution"].replace(
+                "{code_begin}", self.config.template.code_begin
+            )
+            example_dict["solution"] = example_dict["solution"].replace("{code_end}", self.config.template.code_end)
+            example_dict["solution"] = example_dict["solution"].replace(
+                "{code_output_begin}", self.config.template.code_output_begin
+            )
+            example_dict["solution"] = example_dict["solution"].replace(
+                "{code_output_end}", self.config.template.code_output_end
+            )
+
         return self.config.few_shot_examples.template.format(**example_dict, **asdict(self.config.template))
 
     def build_examples_dict(self, input_dict):
@@ -177,7 +190,7 @@ class Prompt:
         else:
             generation = ""
 
-        prompt = Prompt.TEMPLATE.format(
+        prompt = Prompt.FORMAT.format(
             system=self.config.system,
             user=self.build_user_message(input_dict),
             generation=generation,

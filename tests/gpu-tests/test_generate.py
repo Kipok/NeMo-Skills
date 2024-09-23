@@ -70,7 +70,7 @@ def test_vllm_generate_seeds():
     model_path = os.getenv('NEMO_SKILLS_TEST_HF_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_HF_MODEL to run this test")
-    num_seeds = 1  # TODO: there is a bug in nemo-run that prevents testing with multiple seeds
+    num_seeds = 3
     cmd = (
         f"python -m nemo_skills.pipeline.generate "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
