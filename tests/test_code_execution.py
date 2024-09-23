@@ -17,7 +17,7 @@ import os
 import pytest
 
 from nemo_skills.code_execution import extract_code_output, extract_code_to_execute, format_code_output
-from nemo_skills.code_execution.sandbox import Sandbox, get_sandbox
+from nemo_skills.code_execution.sandbox import get_sandbox
 from nemo_skills.prompt.few_shot_examples import examples_map
 
 
@@ -191,24 +191,38 @@ x
 
 
 @pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
-def test_few_shots(sandbox_type):
+@pytest.mark.parametrize(
+    "code_begin,code_end,code_output_begin,code_output_end",
+    [
+        # ('<llm-code>', '</llm-code>', '<llm-code-output>', '</llm-code-output>'),
+        (
+            '<|python_tag|>',
+            '<|eom_id|>',
+            '<|start_header_id|>ipython<|end_header_id|>',
+            '<|eot_id|><|start_header_id|>assistant<|end_header_id|>',
+        ),
+    ],
+)
+def test_few_shots(sandbox_type, code_begin, code_end, code_output_begin, code_output_end):
     sandbox = _get_sandbox(sandbox_type)
 
     for example_name, example_list in examples_map.items():
         for example in example_list:
             if 'solution' not in example:
                 continue
-            if len(extract_code_to_execute(example['solution'], extract_all=True)) > 0:
-                code_snippets = extract_code_to_execute(example['solution'], extract_all=True)
-                expected_outputs = extract_code_output(example['solution'], extract_all=True)
-                print(code_snippets)
-                print(expected_outputs)
+            example["solution"] = example["solution"].replace("{code_begin}", code_begin)
+            example["solution"] = example["solution"].replace("{code_end}", code_end)
+            example["solution"] = example["solution"].replace("{code_output_begin}", code_output_begin)
+            example["solution"] = example["solution"].replace("{code_output_end}", code_output_end)
+            if len(extract_code_to_execute(example['solution'], code_begin, code_end, extract_all=True)) > 0:
+                code_snippets = extract_code_to_execute(example['solution'], code_begin, code_end, extract_all=True)
+                expected_outputs = extract_code_output(
+                    example['solution'], code_output_begin, code_output_end, extract_all=True
+                )
                 session_id = None
                 for code_snippet, expected_output in zip(code_snippets, expected_outputs):
                     output, session_id = sandbox.execute_code(code_snippet, session_id=session_id)
-                    print(example['solution'] + '\n\n\n')
-                    print(format_code_output(output) + '\n\n\n')
-                    print(expected_output.strip())
+                    generated_output = format_code_output(output, code_output_begin, code_output_end)
                     assert (
-                        format_code_output(output) == expected_output.strip()
+                        generated_output == code_output_begin + expected_output + code_output_end + '\n\n'
                     ), f"{example_name} few shots are failing"

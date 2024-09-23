@@ -159,6 +159,17 @@ def generate(cfg: GenerateSolutionsConfig):
     if cfg.dry_run:
         return
 
+    # if using code execution, we need some extra parameters for generate call
+    if cfg.code_execution:
+        extra_generate_params = {
+            "code_begin": prompt.config.template.code_begin,
+            "code_end": prompt.config.template.code_end,
+            "code_output_begin": prompt.config.template.code_output_begin,
+            "code_output_end": prompt.config.template.code_output_end,
+        }
+    else:
+        extra_generate_params = {}
+
     # setting buffering=1 to force to dump the output after every line, so that we can see intermediate generations
     with open(cfg.output_file, "at" if cfg.skip_filled else "wt", encoding="utf-8", buffering=1) as fout:
         data_points = []
@@ -176,7 +187,9 @@ def generate(cfg: GenerateSolutionsConfig):
                     prompts = [prompt.build_messages(dp) for dp in data_points]
                     stop_phrases = None
 
-                outputs = llm.generate(prompts=prompts, stop_phrases=stop_phrases, **asdict(cfg.inference))
+                outputs = llm.generate(
+                    prompts=prompts, stop_phrases=stop_phrases, **asdict(cfg.inference), **extra_generate_params
+                )
 
                 for output, original_data_point in zip(outputs, data_points):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding

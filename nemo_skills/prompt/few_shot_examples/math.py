@@ -174,8 +174,12 @@ point_2 = parabola_eq.subs({x: 3, y: 17})
 solutions = sp.solve((point_1,point_2), (b, c))
 solutions[c]
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 -7
-{code_output_end}
+[/stdout]{code_output_end}
+
 So c is \\boxed{-7}
 """.strip(),
     },
@@ -203,8 +207,12 @@ options = [Rational(1, 4), Rational(1, 5), Rational(1, 6), Rational(1, 7), Ratio
 # let's print out the differences
 [Abs(medal_frac - frac_option) for frac_option in options]
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 [2/25, 3/100, 1/300, 19/700, 9/200]
-{code_output_end}
+[/stdout]{code_output_end}
+
 Let's now check which difference is the smallest.
 {code_begin}
 import numpy as np
@@ -215,8 +223,12 @@ min_idx = np.argmin([2/25, 3/100, 1/300, 19/700, 9/200])
 # Print the closest option
 print(options[min_idx])
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 1/6
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the answer is \\boxed{1/6}.
 """.strip(),
     },
@@ -246,8 +258,12 @@ solutions = solve((eq1, eq2, diagonal_eq), (x, y, z, r))
 # let's see which values of r we get
 [solution[-1] for solution in solutions]
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 [-10, -10, 10, 10]
-{code_output_end}
+[/stdout]{code_output_end}
+
 Since the radius of the sphere is positive, we get $r = \\boxed{10}$.
 """.strip(),
     },
@@ -275,8 +291,12 @@ real, img = (position.as_real_imag())
 dist = sqrt(real**2 + img**2)
 print(dist)
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 sqrt(2)*(1008 + 1008*sqrt(3))
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the bee is $\\boxed{1008\\sqrt{2} + 1008\\sqrt{6}}$ far from the starting point.
 """.strip(),
     },
@@ -303,8 +323,12 @@ eq = sp.Eq(j + d, 68)
 # solving for j we get the John's age
 sp.solve(eq, j)
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 [22]
-{code_output_end}
+[/stdout]{code_output_end}
+
 So John is \\boxed{22} years old.
 """.strip(),
     },
@@ -321,8 +345,12 @@ expr = 2*x + 8*x**2 + 9 - (4 - 2*x - 8*x**2)
 # Simplify the expression to get the canonical form
 print(simplify(expr))
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 16*x**2 + 4*x + 5
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the simplified expression is $\\boxed{16x^2+4x+5}$
 """.strip(),
     },
@@ -347,8 +375,12 @@ solutions = solve(inverse_expr, x)
 max_soln = max(solutions)
 max_soln
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 8
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the largest value of $x$ for which the expression is undefined is \\boxed{8}
 """.strip(),
     },
@@ -372,8 +404,12 @@ f_5 = f_x.subs(x, 5)
 t_f_5 = t_x.subs(x, f_5)
 t_f_5
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 2
-{code_output_end}
+[/stdout]{code_output_end}
+
 So $t(f(5))$ is \\boxed{2}
 """.strip(),
     },
@@ -395,8 +431,12 @@ roots = solve(equation, x)
 integer_solns = [isinstance(soln, int) for soln in roots]
 len(integer_solns)
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 4
-{code_output_end}
+[/stdout]{code_output_end}
+
 We have \\boxed{4} integer solutions.
 """.strip(),
     },
@@ -423,8 +463,12 @@ prob_C = 1 - prob_A - prob_B
 
 prob_C
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 1/4
-{code_output_end}
+[/stdout]{code_output_end}
+
 So probability of the event is $\\boxed{\\frac{1}{4}}$.
 """.strip(),
     },
@@ -455,8 +499,12 @@ prob = comb_two_white_balls/total_comb
 
 prob
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 2/11
-{code_output_end}
+[/stdout]{code_output_end}
+
 So probability of the event is $\\boxed{\\frac{2}{11}}$.
 """.strip(),
     },
@@ -485,8 +533,12 @@ for pair in combinations(numbers, 2):
 # Expected value is given by
 all_sum_pair/total_pairs
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 6
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the expected value is \\boxed{6}
 """.strip(),
     },
@@ -512,8 +564,12 @@ choice_last = 6 - 3
 # Total arrangements
 choice_B * choice_first * choice_last
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 36
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the total arrangements are \\boxed{36}
 """.strip(),
     },
@@ -535,8 +591,12 @@ prob_both_not_one = prob_not_one * prob_not_one
 # Probability that at least one dice gets 1
 1 - prob_both_not_one
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 11/36
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the total arrangements are $\\boxed{\\frac{11}{36}}$.
 """.strip(),
     },
@@ -556,8 +616,12 @@ for i in range(2, 51):
 
 product
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 1/50
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the answer is $\\boxed{\\frac{1}{50}}$.
 """.strip(),
     },
@@ -570,7 +634,7 @@ we need to identify the values of $x$ for which the denominator is not equal to 
 since division by zero is undefined.
 Let's use sympy to find the values of $x$ that make the denominator zero and then determine the domain:
 {code_begin}
-from sympy import solve, S
+from sympy import symbols, solve, S
 
 x = symbols('x')
 denom = x**2 - 4*x + 3
@@ -580,8 +644,12 @@ zeros_of_denom = solve(denom, x)
 domain = S.Reals - set(zeros_of_denom)
 domain
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 Union(Interval.open(-oo, 1), Interval.open(1, 3), Interval.open(3, oo))
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the domain is: $\\boxed{ (-\infty, 1) \cup (1, 3) \cup (3, \infty) }$.
 """.strip(),
     },
@@ -607,8 +675,12 @@ quotient, remainder = div(polynomial, factor)
 c_value = solve(remainder, c)
 c_value
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 [3]
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the only possible value of c is $\\boxed{3}$.
 """.strip(),
     },
@@ -639,8 +711,12 @@ critical_points = solveset(f_prime, x, domain=Interval.open(8, float('inf')))
 values = [f.subs(x, cp).evalf() for cp in critical_points if cp.is_real]
 values
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 [32.0000000000000]
-{code_output_end}
+[/stdout]{code_output_end}
+
 Thus the minimum value of the given function for $x > 8$ is $\\boxed{32}$.
 """.strip(),
     },
@@ -667,8 +743,12 @@ eq2 = eq.subs(x, 3)
 solution = solve((eq1, eq2), (a, b))
 solution
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 {a: 8/9, b: -40/27}
-{code_output_end}
+[/stdout]{code_output_end}
+
 By Vieta's formulas the sum of the roots of a cubic equation
 $ax^3 + bx^2 + cx + d = 0$ is equal to $-\frac{b}{a}$.
 In our case, the equation is
@@ -688,8 +768,12 @@ sum_of_roots_eq_substituted = sum_of_roots_eq.subs(solution)
 third_root = solve(sum_of_roots_eq_substituted, r)
 third_root
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 [4/3]
-{code_output_end}
+[/stdout]{code_output_end}
+
 The third root of the given cubic equation is $\\boxed{\\frac{4}{3}}$.
 """.strip(),
     },
@@ -706,8 +790,12 @@ for m in range(30, 81):
     if m % 6 == 0 and m % 8 == 2 and m % 5 == 2:
         print(m)
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 42
-{code_output_end}
+[/stdout]{code_output_end}
+
 The only number that satisfies the requirements is $\\boxed{42}$.
 """.strip(),
     },
@@ -727,8 +815,12 @@ inequality = 3*x + (x + 1) >= 30
 solution = solve(inequality, x)
 solution
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 (29/4 <= x) & (x < oo)
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the minimum number of students in a row is $29/4 = 7.25$.
 Since this must be an integer, such minimum number is $8$.
 Thus the total number of students is
@@ -737,8 +829,12 @@ row_students = 8
 total_students = 3 * row_students + (row_students + 1)
 total_students
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 33
-{code_output_end}
+[/stdout]{code_output_end}
+
 The answer is $\\boxed{33}$.
 """.strip(),
     },
@@ -766,8 +862,12 @@ base_8_repr = change_base(num=987, base=8)
 repr_diff = len(base_3_repr) - len(base_8_repr)
 repr_diff
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 3
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the answer is $\\boxed{3}$.
 """.strip(),
     },
@@ -788,8 +888,12 @@ for a in range(1, 10):
             print(second_num_val)
             break
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 225
-{code_output_end}
+[/stdout]{code_output_end}
+
 Thus the smallest such number is $\\boxed{225}$
 """,
     },
@@ -811,8 +915,12 @@ divisors_multiple_of_3 = [d for d in all_divisors if d % 3 == 0]
 number_of_divisors_multiple_of_3 = len(divisors_multiple_of_3)
 number_of_divisors_multiple_of_3
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 32
-{code_output_end}
+[/stdout]{code_output_end}
+
 So 3240 has $\\boxed{32}$ divisors that are multiples of 3.
 """.strip(),
     },
@@ -839,8 +947,12 @@ C_value = solve(eq)[0]
 
 A, B, C_value
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 (40, 40, 100)
-{code_output_end}
+[/stdout]{code_output_end}
+
 Since we need to find the measure of the largest angle, the answer is $\\boxed{100}$.
 """.strip(),
     },
@@ -861,8 +973,12 @@ B = (-x, 6)
 sum_coordinates = sum(A) + sum(B)
 sum_coordinates
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 12
-{code_output_end}
+[/stdout]{code_output_end}
+
 Thus the answer is $\\boxed{12}$.
 """.strip(),
     },
@@ -889,8 +1005,12 @@ V3 = Rational(4, 3) * pi * r3**3
 total_volume = V1 + V2 + V3
 total_volume
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 640*pi/3
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the total volume is $\\boxed{\\frac{640}{3}\\pi}$.
 """.strip(),
     },
@@ -920,8 +1040,12 @@ x_value = max(solve(eq))
 total_feet = x_value + d + 80
 total_feet
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 280
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the total distance traveled by the fly is $\\boxed{280}$.
 """.strip(),
     },
@@ -955,8 +1079,27 @@ eq3 = Eq(x**2 + y**2 + z**2, (2*r)**2)
 solutions = solve((eq1, eq2, eq3), (x, y, z, r))
 solutions
 {code_end}{code_output_begin}
-[(-z/2 - sqrt(-3*z**2 + 56*z + 16)/2 + 14, -z/2 + sqrt(-3*z**2 + 56*z + 16)/2 + 14, z, -10), (-z/2 + sqrt(-3*z**2 + 56*z + 16)/2 + 14, -z/2 - sqrt(-3*z**2 + 56*z + 16)/2 + 14, z, -10), (-z/2 - sqrt(-3*z**2 + 56*z + 16)/2 + 14, -z/2 + sqrt(-3*z**2 + 56*z + 16)/2 + 14, z, 10), (-z/2 + sqrt(-3*z**2 + 56*z + 16)/2 + 14, -z/2 - sqrt(-3*z**2 + 56*z + 16)/2 + 14, z, 10)]
-{code_output_end}
+
+completed
+[stdout]
+[(-z/2 - sqrt(-3*z**2 + 56*z + 16)/2 + 14,
+  -z/2 + sqrt(-3*z**2 + 56*z + 16)/2 + 14,
+  z,
+  -10),
+ (-z/2 + sqrt(-3*z**2 + 56*z + 16)/2 + 14,
+  -z/2 - sqrt(-3*z**2 + 56*z + 16)/2 + 14,
+  z,
+  -10),
+ (-z/2 - sqrt(-3*z**2 + 56*z + 16)/2 + 14,
+  -z/2 + sqrt(-3*z**2 + 56*z + 16)/2 + 14,
+  z,
+  10),
+ (-z/2 + sqrt(-3*z**2 + 56*z + 16)/2 + 14,
+  -z/2 - sqrt(-3*z**2 + 56*z + 16)/2 + 14,
+  z,
+  10)]
+[/stdout]{code_output_end}
+
 We need the solution corresponding to the r: the last value of tuple.
 And we need r to be positive.
 So the radius of the sphere $r$ is $\\boxed{10}$.
@@ -978,8 +1121,12 @@ det_M_4 = det_M**4
 
 det_M_4
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 16
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the answer is \\boxed{16}.
 '''.strip(),
     },
@@ -1024,8 +1171,12 @@ third_dim_eq = Eq(cross_product.dot(N.k), 7)
 solution = solve([dot_product_eq, first_dim_eq, second_dim_eq, third_dim_eq], [b1, b2, b3])
 print([solution[b1], solution[b2], solution[b3]])
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 [-1, 3, 2]
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the answer is $\\boxed{\\begin{pmatrix} -1 \\\\ 3 \\\\ 2 \\end{pmatrix}}$.
 '''.strip(),
     },
@@ -1048,8 +1199,12 @@ simplified_expression = simplify(expression)
 
 print(simplified_expression)
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 -2*sqrt(3) + 2*sqrt(6)
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the answer is $\\boxed{2 \\sqrt{6} - 2 \\sqrt{3}}$.
 '''.strip(),
     },
@@ -1090,8 +1245,12 @@ solutions = solve((eq_AD, eq_BD, eq_CD), (x, y, z))
 integer_solutions = [sol for sol in solutions if all(coord.is_Integer for coord in sol)]
 integer_solutions
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 [(3, -2, 2)]
-{code_output_end}
+[/stdout]{code_output_end}
+
 Hence the fourth vertex is \\boxed{(3,-2,2)}.
 '''.strip(),
     },
@@ -1115,8 +1274,12 @@ zeb_apple = min(apple_count)
 diff_apple = aaron_apple - zeb_apple
 diff_apple
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 5
-{code_output_end}
+[/stdout]{code_output_end}
+
 So Aaron ate \\boxed{5} more apples than Zeb.
 """.strip(),
     },
@@ -1142,8 +1305,12 @@ red_count = solve(Eq(green, 27), red)[0]
 total_count = total.subs(red, red_count)
 total_count
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 81
-{code_output_end}
+[/stdout]{code_output_end}
+
 Hence, there are a total of \\boxed{81} marbles.
 """.strip(),
     },
@@ -1163,8 +1330,12 @@ higher_val = int(math.floor(900**(1/3)))
 num_perfect_cubes = higher_val - lower_val + 1
 print(num_perfect_cubes)
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 5
-{code_output_end}
+[/stdout]{code_output_end}
+
 Hence, there are a total of \\boxed{5} perfect cubes between 100 and 900.
 """.strip(),
     },
@@ -1184,8 +1355,12 @@ for number in range(2, 120):
 
 print(answer)
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 7
-{code_output_end}
+[/stdout]{code_output_end}
+
 Hence, \\boxed{7} is the smallest number which is relatively prime to 120.
 '''.strip(),
     },

@@ -104,6 +104,17 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
     prompt = get_prompt(cfg.prompt_config, cfg.prompt_template, examples_type=cfg.examples_type)
     LOG.info("Prompt used: %s", prompt)
 
+    # if using code execution, we need some extra parameters for generate call
+    if cfg.code_execution:
+        extra_generate_params = {
+            "code_begin": prompt.config.template.code_begin,
+            "code_end": prompt.config.template.code_end,
+            "code_output_begin": prompt.config.template.code_output_begin,
+            "code_output_end": prompt.config.template.code_output_end,
+        }
+    else:
+        extra_generate_params = {}
+
     # assuming everything fits in memory for simplicity
     all_files = unroll_files(cfg.input_files)
     if not all_files:
@@ -158,7 +169,12 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
                         prompts = [prompt.build_messages(dp) for dp in data_points]
                         stop_phrases = None
 
-                    outputs = llm.generate(prompts=prompts, stop_phrases=stop_phrases, **asdict(cfg.inference))
+                    outputs = llm.generate(
+                        prompts=prompts,
+                        stop_phrases=stop_phrases,
+                        **asdict(cfg.inference),
+                        **extra_generate_params,
+                    )
 
                     prefilled_idx = 0
                     generated_idx = 0

@@ -67,12 +67,14 @@ fourth_year_money = 2 * third_year_money
 # Solve for first year money given that the combined saving is 450
 result = solve(first_year_money + second_year_money + third_year_money + fourth_year_money - 450, first_year_money)[0]
 result
-{code_end}{code_output_begin}
-[completed]
+{code_end}
+{code_output_begin}
+
+completed
 [stdout]
 30
-[/stdout]
-{code_output_end}
+[/stdout]{code_output_end}
+
 Thus Missy put \\boxed{30} dollars in the bank the first year.
 """.strip(),
     },
@@ -94,8 +96,12 @@ five_times_mark_deposit = 5 * mark_deposit
 bryan_deposit = five_times_mark_deposit - 40
 bryan_deposit
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 400
-{code_output_end}
+[/stdout]{code_output_end}
+
 So Bryan deposited \\boxed{400} dollars in the bank.
 """.strip(),
     },
@@ -111,8 +117,12 @@ discount_amount = price_before_discount * discount_portion
 price_after_discount = price_before_discount - discount_amount
 price_after_discount
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 96.0
-{code_output_end}
+[/stdout]{code_output_end}
+
 So the new price of the lamp is \\boxed{96} dollars.
 """.strip(),
     },
@@ -136,8 +146,12 @@ employees_cost_per_week = number_of_employees * employee_work_hours_per_week * e
 cost_per_week = rent_per_week + utility_per_week + employees_cost_per_week
 cost_per_week
 {code_end}{code_output_begin}
+
+completed
+[stdout]
 3440.0
-{code_output_end}
+[/stdout]{code_output_end}
+
 Thus James's weekly expenses add up to \\boxed{3440} dollars.
 """.strip(),
     },
