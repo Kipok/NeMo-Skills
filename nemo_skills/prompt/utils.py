@@ -119,6 +119,7 @@ class Prompt:
         """Builds a filled example string based on the example dictionary."""
 
         # replacing code/code-output separators in the examples if present
+        example_dict = example_dict.copy()
         if 'solution' in example_dict:
             example_dict["solution"] = example_dict["solution"].replace(
                 "{code_begin}", self.config.template.code_begin

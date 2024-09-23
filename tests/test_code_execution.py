@@ -210,6 +210,7 @@ def test_few_shots(sandbox_type, code_begin, code_end, code_output_begin, code_o
         for example in example_list:
             if 'solution' not in example:
                 continue
+            example = example.copy()
             example["solution"] = example["solution"].replace("{code_begin}", code_begin)
             example["solution"] = example["solution"].replace("{code_end}", code_end)
             example["solution"] = example["solution"].replace("{code_output_begin}", code_output_begin)
