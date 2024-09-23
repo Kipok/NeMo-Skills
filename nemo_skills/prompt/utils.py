@@ -185,6 +185,8 @@ class Prompt:
 
     def build_string(self, input_dict: Dict[str, str], include_generation: bool = False) -> str:
         """Returns the complete prompt string representation."""
+        if self.config.template is None:
+            raise ValueError("Prompt template was not provided, so only build_messages API is available.")
         if include_generation:
             generation = input_dict.get("generation", "")
         else:

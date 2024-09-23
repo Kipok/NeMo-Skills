@@ -216,7 +216,7 @@ Thus James's weekly expenses to run the store add up to \\boxed{3440} dollars.
     },
 ]
 
-gsm8k_data_augmentation = [
+gsm8k_problem_augmentation = [
     {
         'problem': 'Olivia has $23. She bought five bagels for $3 each. How much money does she have left?',
         'augmented_problem': 'Aiden has $35. He purchased eight pencils for $2 each and a notebook for $5. How much money does he have remaining?',
@@ -255,5 +255,5 @@ gsm8k_data_augmentation = [
 examples_map = {
     "gsm8k_standard_few_shot": gsm8k_standard_few_shot,
     "gsm8k_text_with_code": gsm8k_text_with_code,
-    "gsm8k_data_augmentation": gsm8k_data_augmentation,
+    "gsm8k_problem_augmentation": gsm8k_problem_augmentation,
 }

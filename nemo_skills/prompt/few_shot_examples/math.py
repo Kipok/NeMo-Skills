@@ -1376,6 +1376,63 @@ Hence. ratio of area of AMN to ABCD is $\\boxed{\\frac{1}{8}}$.
 ]
 
 
+math_problem_augmentation = [
+    {
+        'problem': '''
+In the equation
+$$5x^2-kx+1=0$$
+determine $k$ such that the difference of the roots be equal to unity.
+'''.strip(),
+        'augmented_problem': '''
+The roots $x_1$ and $x_2$ of the equation
+$$x^2-3ax+a^2=0$$
+are such that
+$x_1^2+x_2^2=1.75$.
+Determine $a$.
+'''.strip(),
+    },
+    {
+        'problem': '''
+Solve the following equation
+$\\ds\\f{3+x}{3x}=\\sqrt {\\ds\\f{1}{9}+\\ds\\f{1}{x}\\sqrt {\\ds\\f{4}{9}+\\ds\\f{2}{x^2}}}$
+'''.strip(),
+        'augmented_problem': '''
+Solve the following equation
+$\\sqrt {1+x\\sqrt {x^2+24}}=x+1$
+'''.strip(),
+    },
+    {
+        'problem': '''
+In an infinitely decreasing geometric progression the sum
+of all the terms occupying odd places is equal to 36, and that of all
+the terms at even places equals 12.
+Find the progression.
+'''.strip(),
+        'augmented_problem': '''
+The sum of the terms of an infinitely decreasing geometric
+progression is equal to 56, and the sum of the squared terms of the
+same progression is 448.
+Find the first term and the common ratio.
+'''.strip(),
+    },
+    {
+        'problem': '''
+Two railway stations are at a distance of 96 km from each other.
+One train covers this distance 40 minutes faster than does the other.
+The speed of the first train is 12 km/h higher than that of the second.
+Determine the speed of both trains.
+'''.strip(),
+        'augmented_problem': '''
+A student was asked to multiply 78 by a two-digit number
+in which the tens digit was three times as large as the units digit;
+by mistake, he interchanged the digits in the second factor and
+thus obtained a product smaller than the true product by 2808.
+What was the true product?
+'''.strip(),
+    },
+]
+
+
 examples_map = {
     "math_standard_few_shot": math_standard_few_shot,
     "math_text_with_code": math_text_with_code,
@@ -1388,4 +1445,5 @@ examples_map = {
     "math_text_with_code_geometry": math_text_with_code_geometry,
     "math_text_with_code_precalculus": math_text_with_code_precalculus,
     "math_text_with_code_prealgebra": math_text_with_code_prealgebra,
+    "math_problem_augmentation": math_problem_augmentation,
 }
