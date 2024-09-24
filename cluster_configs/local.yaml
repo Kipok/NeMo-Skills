@@ -27,4 +27,4 @@ mounts:
   - /mnt/datadrive/models/hf_models:/hf_models
   - /mnt/datadrive/experiments:/exps
   - /mnt/datadrive/data:/data
-  - /home/igitman/workspace:/workspace
+  - /home/wedu/workspace:/workspace
