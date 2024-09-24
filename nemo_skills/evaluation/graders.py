@@ -118,14 +118,17 @@ def math_grader(cfg):
                 data_points.append(to_add)
 
             request_metadata = llm.batch_generate(
-                prompts=[prompt.build_string(data_point) for data_point in data_points],
+                prompts=[prompt.build_string(data_point)
+                         for data_point in data_points],
                 tokens_to_generate=grading_config.tokens_to_generate,
             )
             # saving the request id to be able to retrieve results when they are ready
             with open(jsonl_file + '-batch-request-id', 'wt', encoding='utf-8') as fout:
                 fout.write(json.dumps({'request_id': request_metadata.id}))
-            LOG.info('Submitted batch evaluation request to OpenAI. Please wait for the results to be ready.')
-            LOG.info('The current status and final results can be accessed through summarize_results.py')
+            LOG.info(
+                'Submitted batch evaluation request to OpenAI. Please wait for the results to be ready.')
+            LOG.info(
+                'The current status and final results can be accessed through summarize_results.py')
             LOG.info('Request metadata: %s', str(request_metadata))
         else:
             output_file = jsonl_file + '-judgement'
@@ -135,7 +138,8 @@ def math_grader(cfg):
                     with open(output_file, "rt", encoding="utf-8") as fin:
                         starting_idx = len(fin.readlines())
                 except FileNotFoundError:
-                    LOG.warning(f"File `{output_file}` not found, starting from scratch")
+                    LOG.warning(
+                        f"File `{output_file}` not found, starting from scratch")
             data = data[starting_idx:]
 
             # saving to a tmp file to avoid corrupting original generation in case something goes wrong
@@ -154,21 +158,25 @@ def math_grader(cfg):
 
                     if len(data_points) == grading_config.batch_size:
                         outputs = llm.generate(
-                            prompts=[prompt.build_string(data_point) for data_point in data_points],
+                            prompts=[prompt.build_string(
+                                data_point) for data_point in data_points],
                             tokens_to_generate=grading_config.tokens_to_generate,
                         )
                         for output in outputs:
-                            fout.write(json.dumps({'judgement': output['generation']}) + "\n")
+                            fout.write(json.dumps(
+                                {'judgement': output['generation']}) + "\n")
                         data_points = []
 
                 # collecting the final batch
                 if len(data_points) > 0:
                     outputs = llm.generate(
-                        prompts=[prompt.build_string(data_point) for data_point in data_points],
+                        prompts=[prompt.build_string(
+                            data_point) for data_point in data_points],
                         tokens_to_generate=grading_config.tokens_to_generate,
                     )
                     for output in outputs:
-                        fout.write(json.dumps({'judgement': output['generation']}) + "\n")
+                        fout.write(json.dumps(
+                            {'judgement': output['generation']}) + "\n")
 
             # fusing back into original file
             with open(jsonl_file, 'wt', encoding='utf-8') as fout, open(output_file, 'rt', encoding='utf-8') as fin:
@@ -214,14 +222,30 @@ def code_grader(cfg):
         # adding is_correct key to allow compute_metrics to work
         with open(jsonl_file, "wt", encoding="utf-8") as f:
             for sample in samples:
-                sample['is_correct'] = evalplus_grades['eval'][sample['task_id']][0]['base_status'] == "pass"
+                sample['is_correct'] = evalplus_grades['eval'][sample['task_id']
+                                                               ][0]['base_status'] == "pass"
                 sample['is_correct-plus'] = (
-                    sample['is_correct'] and evalplus_grades['eval'][sample['task_id']][0]['plus_status'] == "pass"
+                    sample['is_correct'] and evalplus_grades['eval'][sample['task_id']
+                                                                     ][0]['plus_status'] == "pass"
                 )
                 f.write(json.dumps(sample) + "\n")
 
         # moving eval file as otherwise evalplus does not want to recompute metrics if it's present..
-        shutil.move(jsonl_file[:-6] + '_eval_results.json', jsonl_file[:-6] + '_eval_results-saved.json')
+        shutil.move(jsonl_file[:-6] + '_eval_results.json',
+                    jsonl_file[:-6] + '_eval_results-saved.json')
+
+
+def humaneval_infill_grader(cfg):
+    from nemo_skills.evaluation.code_utils import postprocess_code_fim
+
+    # processing each generation separately (TODO: evalplus can do it together, but need to figure out the format)
+    for jsonl_file in unroll_files(cfg.prediction_jsonl_files):
+        with open(jsonl_file) as f:
+            samples = [postprocess_code_fim(json.loads(line)) for line in f]
+        # all changes will be done with a new key "completion", so it's ok to write to the same file
+        with open(jsonl_file, "wt", encoding="utf-8") as f:
+            for sample in samples:
+                f.write(json.dumps(sample) + "\n")
 
 
 def if_grader(cfg):
@@ -264,7 +288,8 @@ def arena_grader(cfg):
     from nemo_skills.inference.server.model import get_model
 
     eval_config = LlmGraderConfig(**cfg.eval_config)
-    assert eval_config.batch_size % 2 == 0  # required due to how everything is implement, can fix later
+    # required due to how everything is implement, can fix later
+    assert eval_config.batch_size % 2 == 0
 
     if eval_config.use_batch_api and eval_config.base_url:
         raise ValueError("Batch API is only supported for OpenAI models!")
@@ -302,14 +327,17 @@ def arena_grader(cfg):
                 data_points.append(to_add)
 
             request_metadata = llm.batch_generate(
-                prompts=[prompt.build_string(data_point) for data_point in data_points],
+                prompts=[prompt.build_string(data_point)
+                         for data_point in data_points],
                 tokens_to_generate=eval_config.tokens_to_generate,
             )
             # saving the request id to be able to retrieve results when they are ready
             with open(jsonl_file + '-batch-request-id', 'wt', encoding='utf-8') as fout:
                 fout.write(json.dumps({'request_id': request_metadata.id}))
-            LOG.info('Submitted batch evaluation request to OpenAI. Please wait for the results to be ready.')
-            LOG.info('The current status and final results can be accessed through summarize_results.py')
+            LOG.info(
+                'Submitted batch evaluation request to OpenAI. Please wait for the results to be ready.')
+            LOG.info(
+                'The current status and final results can be accessed through summarize_results.py')
             LOG.info('Request metadata: %s', str(request_metadata))
         else:
             output_file = jsonl_file + '-judgement'
@@ -319,7 +347,8 @@ def arena_grader(cfg):
                     with open(output_file, "rt", encoding="utf-8") as fin:
                         starting_idx = len(fin.readlines())
                 except FileNotFoundError:
-                    LOG.warning(f"File `{output_file}` not found, starting from scratch")
+                    LOG.warning(
+                        f"File `{output_file}` not found, starting from scratch")
             data = data[starting_idx:]
 
             # saving to a tmp file to avoid corrupting original generation in case something goes wrong
@@ -340,7 +369,8 @@ def arena_grader(cfg):
 
                     if len(data_points) == eval_config.batch_size:
                         outputs = llm.generate(
-                            prompts=[prompt.build_string(data_point) for data_point in data_points],
+                            prompts=[prompt.build_string(
+                                data_point) for data_point in data_points],
                             tokens_to_generate=eval_config.tokens_to_generate,
                         )
                         to_write = {}
@@ -354,7 +384,8 @@ def arena_grader(cfg):
                 # collecting the final batch
                 if len(data_points) > 0:
                     outputs = llm.generate(
-                        prompts=[prompt.build_string(data_point) for data_point in data_points],
+                        prompts=[prompt.build_string(
+                            data_point) for data_point in data_points],
                         tokens_to_generate=eval_config.tokens_to_generate,
                     )
                     to_write = {}

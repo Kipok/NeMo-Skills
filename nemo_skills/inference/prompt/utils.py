@@ -32,7 +32,8 @@ from nemo_skills.utils import nested_dataclass
 LOG = logging.getLogger(__file__)
 
 # listing all available configs here
-prompt_types = [str(cfg).split('nemo_skills/inference/prompt/')[1] for cfg in Path(__file__).parent.glob("**/*.yaml")]
+prompt_types = [str(cfg).split('nemo_skills/inference/prompt/')[1]
+                for cfg in Path(__file__).parent.glob("**/*.yaml")]
 # removing .yaml from the end
 prompt_types = [cfg[:-5] for cfg in prompt_types]
 
@@ -67,8 +68,10 @@ class FewShotExamplesConfig:
     examples_type: Optional[str] = None
     example_dicts: Optional[List[Dict[str, Any]]] = None
 
-    retrieval_field: Optional[str] = None  # e.g. question, reference_solution, etc.
-    retrieval_file: Optional[str] = None  # needs to be provided if retrieval_field is not None
+    # e.g. question, reference_solution, etc.
+    retrieval_field: Optional[str] = None
+    # needs to be provided if retrieval_field is not None
+    retrieval_file: Optional[str] = None
     retrieved_entries: int = 0
     randomize_retrieved_entries: bool = False
     max_retrieved_chars: int = 100000000  # no limit by default
@@ -90,26 +93,32 @@ class FewShotExamplesConfig:
             self.retrieved_entries = 2 * self.num_few_shots
 
         if self.example_dicts is not None and self.retriever is not None:
-            raise ValueError("example_dicts and retriever cannot be used together")
+            raise ValueError(
+                "example_dicts and retriever cannot be used together")
 
         if self.retriever is not None:
             return
 
         if self.retrieval_field is not None:  # building retriever
             if self.retrieval_file is None:
-                raise ValueError("retrieval_file must be provided if retrieval_field is not None")
-            self.retriever = BM25Retriever(self.retrieval_file, field=self.retrieval_field)
+                raise ValueError(
+                    "retrieval_file must be provided if retrieval_field is not None")
+            self.retriever = BM25Retriever(
+                self.retrieval_file, field=self.retrieval_field)
         else:
             if self.retrieval_file is not None:
-                raise ValueError("retrieval_field must be provided if retrieval_file is not None")
+                raise ValueError(
+                    "retrieval_field must be provided if retrieval_file is not None")
 
         if self.example_dicts is None and self.retriever is None and self.num_few_shots > 0:
-            raise ValueError("You need to construct either example_dicts or retriever if num_few_shots > 0")
+            raise ValueError(
+                "You need to construct either example_dicts or retriever if num_few_shots > 0")
 
 
 @nested_dataclass
 class PromptConfig:
-    few_shot_examples: FewShotExamplesConfig = field(default_factory=FewShotExamplesConfig)
+    few_shot_examples: FewShotExamplesConfig = field(
+        default_factory=FewShotExamplesConfig)
     prompt_template: str = MISSING
     user: str = MISSING
     system: str = ""
@@ -168,7 +177,8 @@ class Prompt:
         """Builds all examples string concatenated by delimiter."""
         example_dicts = self.build_examples_dict(input_dict)
 
-        filled_examples = [self.build_filled_example(example) for example in example_dicts]
+        filled_examples = [self.build_filled_example(
+            example) for example in example_dicts]
         examples = "".join(filled_examples)
         user = self.config.user.format(examples=examples, **input_dict)
         return user

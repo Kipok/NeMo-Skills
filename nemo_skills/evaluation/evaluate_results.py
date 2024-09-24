@@ -44,7 +44,8 @@ class EvaluateResultsConfig:
     def __post_init__(self):
         """Building data_file from dataset/split_name if not provided directly."""
         if isinstance(self.prediction_jsonl_files, str):
-            self.prediction_jsonl_files = self.prediction_jsonl_files.split(" ")
+            self.prediction_jsonl_files = self.prediction_jsonl_files.split(
+                " ")
 
 
 cs = hydra.core.config_store.ConfigStore.instance()

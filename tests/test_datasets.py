@@ -60,6 +60,9 @@ def test_data_scripts():
         'math-masked/validation-sft.jsonl',
         'math-masked/validation-sft-chat.jsonl',
         'human-eval/test.jsonl',
+        'human-eval-infilling/SingleLineInfilling.jsonl',
+        'human-eval-infilling/MultiLineInfilling.jsonl',
+        'human-eval-infilling/RandomSpanInfilling.jsonl',
         'mbpp/test.jsonl',
         'mmlu/test.jsonl',
         'mmlu/dev.jsonl',
@@ -69,4 +72,5 @@ def test_data_scripts():
         'aime-2024/test.jsonl',
     ]
     for file in expected_files:
-        assert (Path(__file__).absolute().parents[1] / "datasets" / file).exists()
+        assert (Path(__file__).absolute(
+        ).parents[1] / "datasets" / file).exists()

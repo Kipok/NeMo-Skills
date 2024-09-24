@@ -23,13 +23,23 @@ from tqdm import tqdm
 
 from nemo_skills.code_execution import extract_error_message
 from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
-from nemo_skills.inference.prompt.utils import Prompt, PromptConfig, datasets, prompt_types
+from nemo_skills.inference.prompt.utils import (
+    Prompt,
+    PromptConfig,
+    datasets,
+    prompt_types,
+)
 from nemo_skills.inference.server.code_execution_model import (
     ErrorRecoveryConfig,
     get_code_execution_model,
     server_params,
 )
-from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dataclass, setup_logging
+from nemo_skills.utils import (
+    get_fields_docstring,
+    get_help_message,
+    nested_dataclass,
+    setup_logging,
+)
 
 LOG = logging.getLogger(__file__)
 
@@ -56,17 +66,22 @@ class GenerateSolutionsConfig:
     # Prompt configuration.
     # Available pre-configured prompts: {prompt_types}.
     prompt: PromptConfig = field(default_factory=PromptConfig)
-    inference: InferenceConfig = field(default_factory=InferenceConfig)  # LLM call parameters
+    inference: InferenceConfig = field(
+        default_factory=InferenceConfig)  # LLM call parameters
 
     # Can specify one of the existing datasets.
     # Choices: {datasets}.
     dataset: str | None = None
-    split_name: str | None = None  # Can be train, validation, test or train_full (train + validation)
-    data_file: str | None = None  # Can directly specify a data file, if using a custom dataset
+    # Can be train, validation, test or train_full (train + validation)
+    split_name: str | None = None
+    # Can directly specify a data file, if using a custom dataset
+    data_file: str | None = None
 
     batch_size: int = 16
-    max_samples: int = -1  # If > 0, will stop after generating this many samples. Useful for debugging
-    skip_filled: bool = False  # If True, will skip the generations that are already in the output file
+    # If > 0, will stop after generating this many samples. Useful for debugging
+    max_samples: int = -1
+    # If True, will skip the generations that are already in the output file
+    skip_filled: bool = False
 
     # if > 0, will skip this many samples from the beginning of the data file.
     # Useful if need to run multiple slurm jobs on the same data file
@@ -78,11 +93,14 @@ class GenerateSolutionsConfig:
         """Building data_file from dataset/split_name if not provided directly."""
         if self.data_file is not None:
             if self.dataset is not None or self.split_name is not None:
-                raise ValueError("Either `data_file` or `dataset` and `split_name` should be provided, but not both")
+                raise ValueError(
+                    "Either `data_file` or `dataset` and `split_name` should be provided, but not both")
         else:
             if self.dataset is None or self.split_name is None:
-                raise ValueError("Either `data_file` or `dataset` and `split_name` should be provided")
-            self.data_file = Path(__file__).parents[2] / "datasets" / self.dataset / f"{self.split_name}.jsonl"
+                raise ValueError(
+                    "Either `data_file` or `dataset` and `split_name` should be provided")
+            self.data_file = Path(
+                __file__).parents[2] / "datasets" / self.dataset / f"{self.split_name}.jsonl"
 
 
 cs = hydra.core.config_store.ConfigStore.instance()
@@ -107,7 +125,7 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
             data.append(json.loads(line))
 
     # skipping based on the offset first
-    data = data[cfg.offset :]
+    data = data[cfg.offset:]
 
     starting_idx = 0
     if cfg.skip_filled:
@@ -115,7 +133,8 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
             with open(cfg.output_file, "rt", encoding="utf-8") as fin:
                 starting_idx = len(fin.readlines())
         except FileNotFoundError:
-            LOG.warning(f"File `{cfg.output_file}` not found, starting from scratch")
+            LOG.warning(
+                f"File `{cfg.output_file}` not found, starting from scratch")
 
     # additionally, skipping whatever is pre-filled, assuming offset didn't change
     data = data[starting_idx:]
@@ -135,18 +154,22 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
             if len(data_points) == cfg.batch_size:
                 # batch-computing the outputs
+                input_prompts = [prompt.build_string(data_point)
+                                 for data_point in data_points]
                 outputs = llm.generate(
-                    prompts=[prompt.build_string(data_point) for data_point in data_points],
+                    prompts=input_prompts,
                     stop_phrases=list(cfg.prompt.stop_phrases),
                     **asdict(cfg.inference),
                 )
 
-                for output, original_data_point in zip(outputs, data_points):
+                for output, original_data_point, input_prompt in zip(outputs, data_points, input_prompts):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
                     # all of the ground-truth data to the output file alongside the generated solutions
                     output.update(original_data_point)
+                    output["input_prompt"] = input_prompt
                     if 'error_message' not in output:
-                        output['error_message'] = extract_error_message(output['generation'])
+                        output['error_message'] = extract_error_message(
+                            output['generation'])
 
                     if cfg.generation_key != "generation":
                         output[cfg.generation_key] = output.pop("generation")
@@ -156,15 +179,19 @@ def generate_solutions(cfg: GenerateSolutionsConfig):
 
         # collecting the final batch
         if len(data_points) > 0:
+            input_prompts = [prompt.build_string(data_point)
+                             for data_point in data_points]
             outputs = llm.generate(
-                prompts=[prompt.build_string(data_point) for data_point in data_points],
+                prompts=input_prompts,
                 stop_phrases=list(cfg.prompt.stop_phrases),
                 **asdict(cfg.inference),
             )
-            for output, original_data_point in zip(outputs, data_points):
+            for output, original_data_point, input_prompt in zip(outputs, data_points, input_prompts):
                 output.update(original_data_point)
+                output["input_prompt"] = input_prompt
                 if 'error_message' not in output:
-                    output['error_message'] = extract_error_message(output['generation'])
+                    output['error_message'] = extract_error_message(
+                        output['generation'])
                 if cfg.generation_key != "generation":
                     output[cfg.generation_key] = output.pop("generation")
                 fout.write(json.dumps(output) + "\n")
@@ -189,7 +216,8 @@ HELP_MESSAGE = get_help_message(
 
 if __name__ == "__main__":
     if '--help' in sys.argv or '-h' in sys.argv:
-        print(HELP_MESSAGE)
+        pass
+        # print(HELP_MESSAGE)
     else:
         setup_logging()
         generate_solutions()

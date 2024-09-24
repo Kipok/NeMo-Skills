@@ -1,0 +1,29 @@
+# Prompt for code generation with Llama instruct
+
+system: ""
+
+user: |-
+    ### Instruction:
+    You are an exceptionally intelligent coding assistant that consistently delivers accurate and reliable responses to user instructions.
+
+    @@ Instruction
+    Here is the given code to fill-in-the-middle:
+    ```python
+    {question}[FILL_IN_THE_MIDDLE]{suffix}
+    ```
+    
+    Your answer should include the full code with [FILL_IN_THE_MIDDLE] replaced with your code.
+    ```python
+    # Your codes here
+    ```
+
+    @@ Response
+
+prompt_template: |-
+  <|begin_of_text|><|start_header_id|>user<|end_header_id|>
+
+  {user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+  {generation}
+
+stop_phrases: ["<|eot_id|>"]

@@ -27,6 +27,7 @@ EVAL_MAP = {
         # TODO: put proper coding prompts here as well
         'human-eval': 'llama3/codegen',
         'mbpp': 'llama3/codegen',
+        'human-eval-infilling': 'llama3/codefim',
         'mmlu': 'llama3/mmlu',
         'ifeval': 'llama3/sft',
         'arena-hard': 'llama3/sft',
@@ -35,6 +36,7 @@ EVAL_MAP = {
         'default': 'llama3/math_sft',  # Defaulting to math benchmarks
         'human-eval': 'llama3/codegen_sft',
         'mbpp': 'llama3/codegen_sft',
+        'human-eval-infilling': 'llama3/codefim_sft',
         'mmlu': 'llama3/mmlu',
         'ifeval': 'llama3/sft',
         'arena-hard': 'llama3/sft',

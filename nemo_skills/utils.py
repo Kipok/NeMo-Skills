@@ -25,7 +25,6 @@ from dataclasses import MISSING, dataclass, fields, is_dataclass
 
 def nested_dataclass(*args, **kwargs):
     """Decorator that will recursively instantiate all nested dataclasses.
-
     Adapted from https://www.geeksforgeeks.org/creating-nested-dataclass-objects-in-python/.
     """
 
@@ -69,25 +68,30 @@ def setup_logging(disable_hydra_logs: bool = True, log_level: int = logging.INFO
     logger = logging.getLogger()
     logger.setLevel(log_level)
     handler = logging.StreamHandler()
-    formatter = logging.Formatter('%(asctime)s %(levelname)s  %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    formatter = logging.Formatter(
+        '%(asctime)s %(levelname)s  %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
     if disable_hydra_logs:
         # hacking the arguments to always disable hydra's output
         sys.argv.extend(
-            ["hydra.run.dir=.", "hydra.output_subdir=null", "hydra/job_logging=none", "hydra/hydra_logging=none"]
+            ["hydra.run.dir=.", "hydra.output_subdir=null",
+                "hydra/job_logging=none", "hydra/hydra_logging=none"]
         )
 
 
 def extract_comments(code: str):
     """Extract a list of comments from the given Python code."""
     comments = []
-    tokens = tokenize.tokenize(io.BytesIO(code.encode()).readline)
+    try:
+        tokens = tokenize.tokenize(io.BytesIO(code.encode()).readline)
 
-    for token, line, *_ in tokens:
-        if token is tokenize.COMMENT:
-            comments.append(line.lstrip('#').strip())
+        for token, line, *_ in tokens:
+            if token is tokenize.COMMENT:
+                comments.append(line.lstrip('#').strip())
+    except:
+        pass
 
     return comments
 
@@ -112,7 +116,8 @@ def type_to_str(type_hint):
         return f'Callable[[{args_str}], {type_to_str(args[-1])}]'
     elif origin:
         inner_types = ', '.join(type_to_str(arg) for arg in args)
-        origin_name = origin.__name__ if hasattr(origin, '__name__') else str(origin)
+        origin_name = origin.__name__ if hasattr(
+            origin, '__name__') else str(origin)
         return f'{origin_name}[{inner_types}]'
     else:
         return str(type_hint).replace('typing.', '')
@@ -212,7 +217,6 @@ Below are the available configuration options and their default values:
 
 def python_doc_to_cmd_help(doc_class, docs_prefix="", arg_prefix=""):
     """Converts python doc to cmd help format.
-
     Will color the args and change the format to match what we use in cmd help.
     """
     all_args = docs_prefix
@@ -222,9 +226,11 @@ def python_doc_to_cmd_help(doc_class, docs_prefix="", arg_prefix=""):
     for line in all_args.split("\n"):
         if "        " in line and " - " in line:
             # add colors
-            line = line.replace("        ", "        \033[92m").replace(" - ", "\033[0m - ")
+            line = line.replace("        ", "        \033[92m").replace(
+                " - ", "\033[0m - ")
             # fixing arg format
-            line = line.replace('        \033[92m', f'        \033[92m{arg_prefix}')
+            line = line.replace(
+                '        \033[92m', f'        \033[92m{arg_prefix}')
         # fixing indent
         line = line.replace("        ", "    ").replace("    ", "  ")
         colored_args += line + '\n'

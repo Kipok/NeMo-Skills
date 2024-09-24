@@ -1,0 +1,22 @@
+# Prompt for code generation with Llama instruct
+
+system: ""
+
+user: |-
+  You need to complete the following incomplete code where the middle part is missing. You are not allowed to modify the given code and fill in the middle only.
+
+  The solution should be in the following format:
+  ```python
+  {question}<|start_of_middle|><|end_of_middle|>{suffix}
+  ```
+
+prompt_template: |-
+  <|begin_of_text|><|start_header_id|>system<|end_header_id|>
+  
+  {system}<|eot_id|><|start_header_id|>user<|end_header_id|>
+
+  {user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+  {generation}
+
+stop_phrases: ["<|eot_id|>"]

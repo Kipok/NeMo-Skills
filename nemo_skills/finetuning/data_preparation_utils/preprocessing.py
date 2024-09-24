@@ -51,16 +51,20 @@ class ReadData(BaseProcessor):
         self.add_incorrect = add_incorrect
 
         if isinstance(self.prediction_jsonl_files, str):
-            self.prediction_jsonl_files = self.prediction_jsonl_files.split(" ")
+            self.prediction_jsonl_files = self.prediction_jsonl_files.split(
+                " ")
 
         if isinstance(self.preprocessed_dataset_files, str):
-            self.preprocessed_dataset_files = self.preprocessed_dataset_files.split(" ")
+            self.preprocessed_dataset_files = self.preprocessed_dataset_files.split(
+                " ")
 
         if self.prediction_jsonl_files is None and self.preprocessed_dataset_files is None:
-            raise ValueError("Either `prediction_jsonl_files` or `preprocessed_dataset_files` should be provided")
+            raise ValueError(
+                "Either `prediction_jsonl_files` or `preprocessed_dataset_files` should be provided")
 
         if not self.add_correct and not self.add_incorrect:
-            raise ValueError("At least one of `add_correct` and `add_incorrect` should be True")
+            raise ValueError(
+                "At least one of `add_correct` and `add_incorrect` should be True")
 
     def _read_preprocessed_data(self, file_handle) -> int:
         samples = []
@@ -99,7 +103,8 @@ class ReadData(BaseProcessor):
 
             # skipping any incomplete generations
             if "is_correct" not in line_dict:
-                LOG.warning("Found incomplete generations (is_correct field is missing) - skipping")
+                LOG.warning(
+                    "Found incomplete generations (is_correct field is missing) - skipping")
                 continue
 
             if not self.add_correct and line_dict["is_correct"]:
@@ -110,7 +115,8 @@ class ReadData(BaseProcessor):
 
             # for backward compatibility
             if self.output_key not in line_dict and "generated_solution" in line_dict:
-                line_dict[self.output_key] = line_dict.pop("generated_solution")
+                line_dict[self.output_key] = line_dict.pop(
+                    "generated_solution")
 
             line_dict['filename'] = file_handle.name
             samples.append(line_dict)
@@ -130,12 +136,16 @@ class ReadData(BaseProcessor):
     def process(self):
         samples = []
         if self.prediction_jsonl_files:
-            args = [(file, self._read_raw_data) for file in unroll_files(self.prediction_jsonl_files)]
-            results = process_map(self._parallel_read_file, args, max_workers=4, chunksize=1)
+            args = [(file, self._read_raw_data)
+                    for file in unroll_files(self.prediction_jsonl_files)]
+            results = process_map(self._parallel_read_file,
+                                  args, max_workers=4, chunksize=1)
             samples.extend(list(chain(*results)))
         if self.preprocessed_dataset_files:
-            args = [(file, self._read_preprocessed_data) for file in unroll_files(self.preprocessed_dataset_files)]
-            results = process_map(self._parallel_read_file, args, max_workers=None, chunksize=1)
+            args = [(file, self._read_preprocessed_data)
+                    for file in unroll_files(self.preprocessed_dataset_files)]
+            results = process_map(self._parallel_read_file,
+                                  args, max_workers=None, chunksize=1)
             samples.extend(list(chain(*results)))
         LOG.info("Total samples before deduplication: %d", len(samples))
         samples_count = 0
@@ -184,10 +194,12 @@ class ShuffleAndDownsampleData(BaseProcessor):
             )
 
         if self.sampling_method is None and self.num_samples is not None:
-            raise ValueError("Number of samples can be specified only when sampling method is `random` or `fair`")
+            raise ValueError(
+                "Number of samples can be specified only when sampling method is `random` or `fair`")
 
         if self.sampling_method is not None and self.num_samples is None:
-            raise ValueError("Number of samples should be specified when sampling method is `random` or `fair`")
+            raise ValueError(
+                "Number of samples should be specified when sampling method is `random` or `fair`")
 
     def process(self):
         groupped_samples = []
@@ -209,7 +221,8 @@ class ShuffleAndDownsampleData(BaseProcessor):
         elif self.sampling_method == "fair":
             soln_counter = 0
             output_instances = []
-            num_input_samples = sum(len(samples) for samples in groupped_samples)
+            num_input_samples = sum(len(samples)
+                                    for samples in groupped_samples)
             if num_input_samples < self.num_samples:
                 LOG.warning(
                     "Total SFT entries %d is not less than `num_output_samples` %d, skipping downsampling.",
@@ -223,7 +236,8 @@ class ShuffleAndDownsampleData(BaseProcessor):
                     if len(output_instances) == self.num_samples:
                         break
                     if len(groupped_samples[quesn_idx]) > soln_counter:
-                        output_instances.append(groupped_samples[quesn_idx][soln_counter])
+                        output_instances.append(
+                            groupped_samples[quesn_idx][soln_counter])
                 soln_counter += 1
             if self.do_shuffle:
                 random.shuffle(output_instances)
@@ -252,7 +266,8 @@ class WriteFinalSftManifest(BaseProcessor):
         self.metadata = metadata
         self.generation_suffix = generation_suffix
         if self.generation_suffix and self.chat_format:
-            raise ValueError("generation_suffix can only be used with chat_format=False")
+            raise ValueError(
+                "generation_suffix can only be used with chat_format=False")
         if not self.metadata:
             self.metadata = {}
 
@@ -280,8 +295,10 @@ class WriteFinalSftManifest(BaseProcessor):
                     elem["output"] = generation + self.generation_suffix
                 elif self.chat_format.lower() == "nemotron":
                     elem['conversations'] = [
-                        {'value': prompt_config.user.format(**elem), 'from': 'User', 'canonical_form': ''},
-                        {'value': elem.pop(self.output_key), 'from': 'Assistant', 'canonical_form': ''},
+                        {'value': prompt_config.user.format(
+                            **elem), 'from': 'User', 'canonical_form': ''},
+                        {'value': elem.pop(
+                            self.output_key), 'from': 'Assistant', 'canonical_form': ''},
                     ]
                     elem['system'] = prompt_config.system
                     elem['mask'] = 'User'
@@ -301,7 +318,8 @@ class WriteFinalSftManifest(BaseProcessor):
                     elem['system'] = prompt_config.system
                     elem['mask'] = '<|start_header_id|>user<|end_header_id|>'
                 else:
-                    raise ValueError(f"Chat format {self.chat_format} is not supported")
+                    raise ValueError(
+                        f"Chat format {self.chat_format} is not supported")
                 elem.update(self.metadata)
                 fout.write(json.dumps(elem) + "\n")
                 samples_count += 1

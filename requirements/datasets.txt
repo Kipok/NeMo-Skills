@@ -16,3 +16,4 @@ bs4
 evalplus @ git+https://github.com/evalplus/evalplus@c91370f
 pyyaml
 requests
+humaneval_infilling @ git+https://github.com/openai/human-eval-infilling
