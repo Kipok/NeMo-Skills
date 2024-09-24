@@ -26,5 +26,5 @@ mounts:
   - /mnt/datadrive/models/nemo_models:/nemo_models
   - /mnt/datadrive/models/hf_models:/hf_models
   - /mnt/datadrive/experiments:/exps
-  - /mnt/datadrive/data:/data
+  - /home/wedu/workspace/data:/data
   - /home/wedu/workspace:/workspace
