@@ -87,7 +87,9 @@ def get_generation_command(server_address, generation_commands):
     return cmd
 
 
-def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_path: str, cluster_config: dict):
+def get_server_command(
+    server_type: str, num_gpus: int, num_nodes: int, model_path: str, cluster_config: dict, server_args: str = ""
+):
     num_tasks = num_gpus
     if server_type == 'nemo':
         server_start_cmd = (
@@ -97,20 +99,20 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_pa
             f"    trainer.num_nodes={num_nodes} "
             f"    tensor_model_parallel_size={num_gpus} "
             f"    pipeline_model_parallel_size={num_nodes} "
+            f"    {server_args} "
         )
         # somehow on slurm nemo needs multiple tasks, but locally only 1
         if cluster_config["executor"] == "local":
             num_tasks = 1
-
     elif server_type == 'vllm':
+        if num_nodes > 1:
+            raise ValueError("VLLM server does not support multi-node execution")
         server_start_cmd = (
-            f"NUM_GPUS={num_gpus} bash nemo_skills/inference/server/serve_vllm.sh "
-            f"{model_path} self-hosted-model 0 openai 5000"
+            f"python -m nemo_skills.inference.server.serve_vllm "
+            f"    --model_path {model_path} "
+            f"    --num_gpus {num_gpus} "
+            f"    {server_args} "
         )
-
-        if os.environ.get("MAX_SEQ_LEN", None) is not None:
-            server_start_cmd = f"export MAX_SEQ_LEN={os.environ['MAX_SEQ_LEN']} && {server_start_cmd}"
-
         num_tasks = 1
     else:
         # adding sleep to ensure the logs file exists
@@ -118,6 +120,7 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_pa
         server_start_cmd = (
             f"FORCE_NCCL_ALL_REDUCE_STRATEGY=1 python -m nemo_skills.inference.server.serve_trt "
             f"    --model_path {model_path}"
+            f"    {server_args} "
         )
         num_tasks = num_gpus
 

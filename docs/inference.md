@@ -1,17 +1,69 @@
 # Inference
 
-Here are the instructions on how to run inference with our models.
+Here are the instructions on how to run inference with our repo.
 
 Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
 
-1. Get the model you want to use. You can use one of our
-   [pretrained models](https://huggingface.co/collections/nvidia/openmath-65c5619de2ba059be0775014)
-   in a zero-shot setting or any other model with few-shot examples of code usage in the prompt.
+1. Get the model you want to use. You can use any model that's supported by VLLM, TensorRT-LLM or NeMo.
+   You can also use [Nvidia NIM API](https://www.nvidia.com/en-us/ai/) for models that are hosted there.
 
-2. [Convert the model](/docs/checkpoint-conversion.md) if it's not in the right format.
-   You do not need any conversion if using one of our NeMo models and can refer to
-   the exact steps on how to convert HF version of the models to TensorRT-LLM format
-   [here](/docs/reproducing-results.md#evaluation).
+2. [Convert the model](/docs/checkpoint-conversion.md) if it's not in the format you want to use.
+   You do not need any conversion if using VLLM inference with HF models.
+   For fastest inference we recommend to convert the model to TensorRT-LLM format.
+
+3. Start the server hosting your model. Here is an example (make sure the `/hf_models` mount is defined in your cluster config).
+
+   ```
+   python nemo_skills/pipeline/start_server.py \
+       --cluster local \
+       --model /hf_models/Meta-Llama-3.1-8B-Instruct \
+       --server_type vllm \
+       --server_gpus 1 \
+       --server_nodes 1
+   ```
+
+4. Run inference
+
+   ```
+   from nemo_skills.inference.server import get_model
+   from nemo_skills.prompt.utils import Prompt, get_prompt
+   import os
+   import json
+   with open('our-70b-eval-results/aime24/output-greedy.jsonl') as fin:
+       data = [json.loads(elem) for elem in fin.readlines()]
+
+   os.environ['NEMO_SKILLS_SSH_KEY_PATH'] = '~/.ssh/clusters/draco-ord'
+   # os.environ['NEMO_SKILLS_SSH_SERVER'] = 'igitman@draco-oci-login-01.draco-oci-iad.nvidia.com'
+   os.environ['NEMO_SKILLS_SSH_SERVER'] = 'igitman@cs-oci-ord-login-01.nvidia.com'
+
+   sandbox = get_sandbox(
+       sandbox_type="local",
+       host='batch-block1-2034',
+   )
+
+   llm = get_code_execution_model(
+       server_type='trtllm',
+       host='batch-block1-2034',
+       sandbox=sandbox,
+   )
+
+   prompt = get_prompt('generic/math', 'llama3-instruct')
+
+   prompts = [prompt.build_string({
+       'problem': 'There are 3 cats worth 21 dollars in total. What\'s the price of a dog?',
+   })]
+   print(prompts[0])
+   outputs = llm.generate(
+       prompts=prompts,
+       stop_phrases=list(prompt.config.template.stop_phrases),
+       tokens_to_generate=4096,
+       temperature=0.0,
+       random_seed=1,
+   )
+   print(outputs[0]["generation"])
+   ```
+
+
 
 ## With code execution
 

@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# adapted from https://github.com/NVIDIA/TensorRT-LLM/blob/v0.7.1/examples/run.py
-
-
 import copy
 import json
 import logging
