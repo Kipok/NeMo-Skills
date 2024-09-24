@@ -13,10 +13,8 @@
 # limitations under the License.
 
 from argparse import ArgumentParser
-from pathlib import Path
 
 import nemo_run as run
-import yaml
 
 from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config
 from nemo_skills.utils import setup_logging

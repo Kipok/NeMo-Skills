@@ -31,6 +31,7 @@ def main():
     cmd = (
         f'python -m vllm.entrypoints.openai.api_server '
         f'    --model="{args.model_path}" '
+        f'    --served-model-name="self-hosted-model"'
         f'    --trust-remote-code '
         f'    --host="0.0.0.0" '
         f'    --port={args.port} '
