@@ -233,11 +233,14 @@ def get_packager():
             include_pattern = str(Path(__file__).absolute().parents[1] / '*')
         else:
             # picking up local dataset files if we are in the right repo
-            # TODO: should we not do this since we are downloading on the fly anyway?
-            include_pattern = "nemo_skills/dataset/**/*.jsonl"
+            include_pattern = str(Path(__file__).absolute().parents[1] / "dataset/**/*.jsonl")
+        include_pattern_relative_path = str(Path(__file__).absolute().parents[2])
 
-        # TODO: this doesn't work from a subdirectory of the repo
-        return run.GitArchivePackager(include_pattern=include_pattern, check_uncommitted_changes=True)
+        return run.GitArchivePackager(
+            include_pattern=include_pattern,
+            include_pattern_relative_path=include_pattern_relative_path,
+            check_uncommitted_changes=True,
+        )
     except subprocess.CalledProcessError:
         logging.warning(
             "Not running from a git repo, trying to upload installed package. Make sure there are no extra files in %s",
