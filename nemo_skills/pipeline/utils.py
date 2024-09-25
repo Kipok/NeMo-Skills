@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import shlex
+import subprocess
 import tarfile
 from dataclasses import dataclass
 from functools import lru_cache
@@ -208,6 +209,23 @@ def cluster_download(tunnel, remote_dir, local_dir):
     os.remove(local_tar)
 
 
+def get_packager():
+    """Will check if we are running from a git repo and use git packager or default packager otherwise."""
+    try:
+        subprocess.check_call(["git", "rev-parse"])
+        # TODO: does this work always? what if we are in a subdirectory?
+        return run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl', check_uncommitted_changes=True)
+    except subprocess.CalledProcessError:
+        logging.warning(
+            "Not running from a git repo, trying to upload installed package. Make sure there are no extra files in here %s",
+            str(Path(__file__).absolute().parents[1] / '*'),
+        )
+        return run.PatternPackager(
+            include_pattern=str(Path(__file__).absolute().parents[1] / '*'),
+            relative_path=str(Path(__file__).absolute().parents[2]),
+        )
+
+
 @lru_cache
 def get_executor(
     cluster_config,
@@ -224,7 +242,7 @@ def get_executor(
 ):
     config_mounts = cluster_config.get('mounts', [])
     mounts = mounts or config_mounts
-    packager = run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl', check_uncommitted_changes=True)
+    packager = get_packager()
     if cluster_config["executor"] == "local":
         if num_nodes > 1:
             raise ValueError("Local executor does not support multi-node execution")
