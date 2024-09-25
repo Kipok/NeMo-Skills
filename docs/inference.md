@@ -26,195 +26,78 @@ Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
 
    ```
    from nemo_skills.inference.server import get_model
-   from nemo_skills.prompt.utils import Prompt, get_prompt
-   import os
-   import json
-   with open('our-70b-eval-results/aime24/output-greedy.jsonl') as fin:
-       data = [json.loads(elem) for elem in fin.readlines()]
+   from nemo_skills.prompt.utils import get_prompt
 
-   os.environ['NEMO_SKILLS_SSH_KEY_PATH'] = '~/.ssh/clusters/draco-ord'
-   # os.environ['NEMO_SKILLS_SSH_SERVER'] = 'igitman@draco-oci-login-01.draco-oci-iad.nvidia.com'
-   os.environ['NEMO_SKILLS_SSH_SERVER'] = 'igitman@cs-oci-ord-login-01.nvidia.com'
+   llm = get_model(server_type="vllm")  # localhost by default
 
-   sandbox = get_sandbox(
-       sandbox_type="local",
-       host='batch-block1-2034',
-   )
+   # generic/default prompt doesn't add any instructions
+   # see nemo_skills/prompt/config for other available options for prompt config
+   # llama3-instruct is the template for llama3 instruct models
+   # see nemo_skills/prompt/template for prompt templates
+   prompt = get_prompt('generic/default', 'llama3-instruct')
 
-   llm = get_code_execution_model(
-       server_type='trtllm',
-       host='batch-block1-2034',
-       sandbox=sandbox,
-   )
+   prompts = [prompt.build_string({'question': "What's 2 + 2?"})]
 
-   prompt = get_prompt('generic/math', 'llama3-instruct')
-
-   prompts = [prompt.build_string({
-       'problem': 'There are 3 cats worth 21 dollars in total. What\'s the price of a dog?',
-   })]
+   # you can see exactly what we send to the model including all special tokens
+   # if you don't want to use our prompt format, just create this string yourself
    print(prompts[0])
-   outputs = llm.generate(
-       prompts=prompts,
-       stop_phrases=list(prompt.config.template.stop_phrases),
-       tokens_to_generate=4096,
-       temperature=0.0,
-       random_seed=1,
-   )
+   outputs = llm.generate(prompts=prompts)
    print(outputs[0]["generation"])
    ```
 
-
-
-## With code execution
-
-Note that you cannot use a simple LLM call for models that rely on Python
-code interpreter to execute parts of the output.
-
-3. Start model server and local [sandbox](/docs/sandbox.md) for code execution.
-   We recommend using TensorRT-LLM for fastest inference,
-   but NeMo or vLLM might be easier to setup (works on more GPU types and does **not** require
-   conversion for pretrained models).
-
-   You can also run this command on a slurm cluster and then submit requests from a local workstation by setting up
-   `NEMO_SKILLS_SSH_SERVER` and `NEMO_SKILLS_SSH_KEY_PATH` environment variables (if you have ssh access there).
-
+   This should print
    ```
-   python pipeline/start_server.py \
-       --model_path <path to the model in the right format> \
-       --server_type <nemo or trtllm> \
-       --num_gpus <number of GPUs you want to use>
+   >>> <|begin_of_text|><|start_header_id|>system<|end_header_id|>
+
+       <|eot_id|><|start_header_id|>user<|end_header_id|>
+
+       What's 2 + 2?<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+   >>> 2 + 2 = 4.
    ```
 
-   Make sure to provide the path to the `nemo_model` subfolder if using NeMo models.
+   Note that we are explicitly adding all the special tokens before sending prompt to an LLM.
+   This is necessary to retain flexibility. E.g. this way we can use base model format with
+   instruct models that we found to work better with few-shot examples.
 
-4. Wait until you see "Server is running on" message, then send requests to the server through Python API or by using our [visualization tool](/visualization/Readme.md).
+   You can learn more about how our prompt formatting works in [prompt format docs](/docs/prompt-format.md).
 
-    ```python
-    from nemo_skills.inference.server.code_execution_model import get_code_execution_model
-    from nemo_skills.code_execution.sandbox import get_sandbox
-    from nemo_skills.prompt.utils import Prompt, get_prompt_config
+## Using API models
 
-    sandbox = get_sandbox(
-        sandbox_type="local",
-        host=<IP address of sandbox printed on previous step>,
-    )
+We support using models from [Nvidia NIM API](https://www.nvidia.com/en-us/ai/) as well as OpenAI models.
+You need to define `NVIDIA_API_KEY` for this to work.
 
-    llm = get_code_execution_model(
-        server_type=<server type from previous step>,
-        host=<IP address of server printed on previous step>,
-        sandbox=sandbox,
-    )
-
-    # replace with "openmathinstruct/base" if model that was not pretrained with our pipeline
-    # check out other yaml files inside nemo_skills/inference/prompt
-    # or write your own to customize further
-    prompt_config = get_prompt_config("openmathinstruct/sft")
-    prompt_config.few_shot_examples.num_few_shots = 0
-    # replace with the following if model that was not pretrained with our pipeline
-    # you can pick different few shot examples based on your needs
-    # prompt_config.few_shot_examples.num_few_shots = 5
-    # prompt_config.few_shot_examples.examples_type = "gsm8k_text_with_code"
-
-    question = (
-        "In a dance class of 20 students, 20% enrolled in contemporary dance, "
-        "25% of the remaining enrolled in jazz dance, and the rest enrolled in "
-        "hip-hop dance. What percentage of the entire students enrolled in hip-hop dance?"
-    )
-    prompt_template = Prompt(config=prompt_config)
-    # can provide multiple requests
-    prompts = [prompt_template.build_string({'question': question})]
-
-    outputs = llm.generate(
-        prompts=prompts,
-        stop_phrases=list(prompt_config.stop_phrases),
-    )
-    print(outputs[0]["generation"])
-    ```
-
-## Without code execution
-
-All of the released OpenMath models require code execution, so if you want to
-use one of them, please refer to the previous section. If you want to try
-some other model (e.g. llama3) and don't want to execute code, you can use
-the following simpler workflow.
-
-3. Start model server.  We recommend using TensorRT-LLM for fastest inference,
-   but NeMo or vLLM might be easier to setup (works on more GPU types and does not require
-   conversion for pretrained models).
-
-   You can also run this command on a slurm cluster and then submit requests from a local workstation by setting up
-   `NEMO_SKILLS_SSH_SERVER` and `NEMO_SKILLS_SSH_KEY_PATH` environment variables (if you have ssh access there).
-
-   ```
-   python pipeline/start_server.py \
-       --model_path <path to the model in the right format> \
-       --server_type <nemo or trtllm> \
-       --num_gpus <number of GPUs you want to use> \
-       --no_sandbox
-   ```
-
-   Make sure to provide the path to the `nemo_model` subfolder if using NeMo models.
-
-4. Wait until you see "Server is running on" message, then send requests to the server through Python API or by using our [visualization tool](/visualization/Readme.md).
-
-    ```python
-    from nemo_skills.inference.server.model import get_model
-    from nemo_skills.prompt.utils import Prompt, get_prompt_config
-
-    llm = get_model(
-        server_type=<server type from previous step>,
-        host=<IP address of server printed on previous step>,
-    )
-
-    # check out other yaml files inside nemo_skills/inference/prompt
-    # or write your own to customize further
-    prompt_config = get_prompt_config("llama3/instruct")
-    prompt_config.few_shot_examples.num_few_shots = 5
-    prompt_config.few_shot_examples.examples_type = "gsm8k_only_text"
-
-    question = (
-        "In a dance class of 20 students, 20% enrolled in contemporary dance, "
-        "25% of the remaining enrolled in jazz dance, and the rest enrolled in "
-        "hip-hop dance. What percentage of the entire students enrolled in hip-hop dance?"
-    )
-    prompt_template = Prompt(config=prompt_config)
-    # can provide multiple requests
-    prompts = [prompt_template.build_string({'question': question})]
-
-    outputs = llm.generate(
-        prompts=prompts,
-        stop_phrases=list(prompt_config.stop_phrases),
-    )
-    print(outputs[0]["generation"])
-    ```
-
-## Without prompt format
-
-If you just want to use our server hosting code and have another way to prepare
-model prompts in the correct format, you can leverage the following minimal api.
-
-```python
-from nemo_skills.inference.server.model import get_model
+```
+from nemo_skills.inference.server import get_model
+from nemo_skills.prompt.utils import get_prompt
 
 llm = get_model(
-    server_type=<server type from previous step>,
-    host=<IP address of server printed on previous step>,
+    server_type="openai",  # NIM models are using OpenAI API
+    base_url="https://integrate.api.nvidia.com/v1",
+    model="meta/llama-3.1-8b-instruct",
 )
 
-prompts = [  # can provide multiple requests
-    "In a dance class of 20 students, 20% enrolled in contemporary dance, "
-    "25% of the remaining enrolled in jazz dance, and the rest enrolled in "
-    "hip-hop dance. What percentage of the entire students enrolled in hip-hop dance?"
-]
+# generic/default prompt doesn't add any instructions
+# see nemo_skills/prompt/config for other available options for prompt config
+# note that with API models we can't add special tokens, so prompt template is unused here
+prompt = get_prompt('generic/default')
+
+# not using build_string, but build_messages instead
+prompts = [prompt.build_messages({'question': "What's 2 + 2?"})]
+
+# again, you can prepare this yourself if you don't like our prompt utils
+print(prompts[0])
 outputs = llm.generate(prompts=prompts)
 print(outputs[0]["generation"])
 ```
 
+This should print
+```
+>>> [{'role': 'system', 'content': ''}, {'role': 'user', 'content': "What's 2 + 2?"}]
+>>> 2 + 2 = 4.
+```
 
-If running locally, the server might sometimes hang around
-after `start_server.py` is already killed. In that case you should manually stop it,
-e.g. by running docker stop with the id of the running container.
+To use OpenAI models, it's all the same but with `OPENAI_API_KEY` and without base_url parameter.
 
-If for some reason you do not want to use [pipeline/start_server.py](/pipeline/start_server.py) helper script,
-you can always start sandbox and LLM server manually. We describe this process in
-[evaluation/details](/docs/evaluation.md#details) section.
+## Using models that execute code
+
+TBD
