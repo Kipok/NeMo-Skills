@@ -13,14 +13,25 @@
 # limitations under the License.
 
 import os
+import re
 import sys
 from argparse import ArgumentParser
 from pathlib import Path
 
+from launcher import (
+    CLUSTER_CONFIG,
+    NEMO_SKILLS_CODE,
+    WRAPPER_HELP,
+    get_server_command,
+    launch_job,
+)
+
+from nemo_skills.evaluation.settings import EXTRA_EVAL_ARGS, EXTRA_GENERATION_ARGS
+from nemo_skills.utils import setup_logging
+
 # adding nemo_skills to python path to avoid requiring installation
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 
-from launcher import CLUSTER_CONFIG, NEMO_SKILLS_CODE, WRAPPER_HELP, get_server_command, launch_job
 
 try:
     from nemo_skills.inference.generate_solutions import HELP_MESSAGE
@@ -29,8 +40,6 @@ except (ImportError, TypeError):
 To see all supported agruments, nemo_skills package needs to be installed.
 Please note that it is not recommended to install Python packages on a slurm cluster login node.
 """
-from nemo_skills.evaluation.settings import EXTRA_EVAL_ARGS, EXTRA_GENERATION_ARGS
-from nemo_skills.utils import setup_logging
 
 SCRIPT_HELP = """
 This script can be used to run evaluation of a model on a set of benchmarks.
@@ -43,6 +52,17 @@ in the Hydra format.
 """
 
 
+def extract_field_value(text, field_name):
+    # Construct a regex pattern to match the field_name and extract its value
+    pattern = rf"\+\+{re.escape(field_name)}=([^ ]+)"
+    match = re.search(pattern, text)
+
+    if match:
+        return match.group(1)
+    else:
+        return None
+
+
 def get_greedy_cmd(
     benchmark, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments="", eval_map=None
 ):
@@ -50,14 +70,18 @@ def get_greedy_cmd(
     extra_arguments = f"{EXTRA_GENERATION_ARGS.get(benchmark, '')} {extra_arguments}"
     if eval_map:
         extra_arguments = f"+prompt={eval_map.get(benchmark, eval_map['default'])} {extra_arguments}"
+
+    benchmark_split = extract_field_value(extra_arguments, "split_name")
+    benchmark_output_dir = f"{benchmark}/{benchmark_split}" if benchmark_split else benchmark
+
     return f"""echo "Evaluating benchmark {benchmark}" && \
 python nemo_skills/inference/generate_solutions.py \
     server.server_type={{server_type}} \
     +dataset={benchmark} \
-    output_file=/results/{benchmark}/{output_name} \
+    output_file=/results/{benchmark_output_dir}/{output_name} \
     {extra_arguments} && \
 python nemo_skills/evaluation/evaluate_results.py \
-    prediction_jsonl_files=/results/{benchmark}/{output_name} {extra_eval_args} && \
+    prediction_jsonl_files=/results/{benchmark_output_dir}/{output_name} {extra_eval_args} && \
 """
 
 
@@ -97,10 +121,12 @@ JOB_NAME = "eval-{model_name}"
 
 if __name__ == "__main__":
     setup_logging(disable_hydra_logs=False)
-    parser = ArgumentParser(usage=WRAPPER_HELP + '\n\n' + SCRIPT_HELP + '\n\nscript arguments:\n\n' + HELP_MESSAGE)
+    parser = ArgumentParser(usage=WRAPPER_HELP + '\n\n' +
+                            SCRIPT_HELP + '\n\nscript arguments:\n\n' + HELP_MESSAGE)
     wrapper_args = parser.add_argument_group('wrapper arguments')
     wrapper_args.add_argument("--model_path", required=True)
-    wrapper_args.add_argument("--server_type", choices=('nemo', 'tensorrt_llm', 'vllm'), default='tensorrt_llm')
+    wrapper_args.add_argument(
+        "--server_type", choices=('nemo', 'tensorrt_llm', 'vllm'), default='tensorrt_llm')
     wrapper_args.add_argument("--output_dir", required=True)
     wrapper_args.add_argument("--num_gpus", type=int, required=True)
     wrapper_args.add_argument("--starting_seed", type=int, default=0)
@@ -158,14 +184,17 @@ if __name__ == "__main__":
     eval_map = None
     if any([args.prompt_folder, args.model_version]):
         if not all([args.prompt_folder, args.model_version]):
-            raise ValueError("Both prompt_folder and model_version need to be specified if one of them is specified.")
+            raise ValueError(
+                "Both prompt_folder and model_version need to be specified if one of them is specified.")
         sys.path.append(
-            str(Path(__file__).absolute().parents[1] / 'nemo_skills' / 'inference' / 'prompt' / args.prompt_folder)
+            str(Path(__file__).absolute(
+            ).parents[1] / 'nemo_skills' / 'inference' / 'prompt' / args.prompt_folder)
         )
         from eval_map import EVAL_MAP
 
         if args.model_version not in EVAL_MAP:
-            raise ValueError(f"Model version {args.model_version} is not in the eval map.")
+            raise ValueError(
+                f"Model version {args.model_version} is not in the eval map.")
         eval_map = EVAL_MAP[args.model_version]
 
     format_dict = {
@@ -186,7 +215,8 @@ if __name__ == "__main__":
     Path(args.output_dir).mkdir(exist_ok=True, parents=True)
 
     # if benchmarks are specified, only run those
-    BENCHMARKS = {k: int(v) for k, v in [b.split(":") for b in args.benchmarks]}
+    BENCHMARKS = {k: int(v)
+                  for k, v in [b.split(":") for b in args.benchmarks]}
 
     eval_cmds = [
         get_greedy_cmd(
@@ -205,12 +235,15 @@ if __name__ == "__main__":
         args.num_jobs = len(eval_cmds)
 
     # splitting eval cmds equally across num_jobs nodes
-    eval_cmds = [" ".join(eval_cmds[i :: args.num_jobs]) for i in range(args.num_jobs)]
+    eval_cmds = [" ".join(eval_cmds[i:: args.num_jobs])
+                 for i in range(args.num_jobs)]
 
     for idx, eval_cmd in enumerate(eval_cmds):
-        extra_sbatch_args = ["--parsable", f"--output={args.output_dir}/slurm_logs_eval{idx}.log"]
+        extra_sbatch_args = [
+            "--parsable", f"--output={args.output_dir}/slurm_logs_eval{idx}.log"]
         launch_job(
-            cmd=SLURM_CMD.format(**format_dict, eval_cmds=eval_cmd.format(**format_dict)),
+            cmd=SLURM_CMD.format(
+                **format_dict, eval_cmds=eval_cmd.format(**format_dict)),
             num_nodes=args.num_nodes,
             tasks_per_node=num_tasks,
             gpus_per_node=format_dict["num_gpus"],
