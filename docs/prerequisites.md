@@ -1,17 +1,29 @@
 # Prerequisites
 
-To get started run the following commands
+To get started first install the repo (python 3.10+). Either clone and run `pip install -e .` or install directly with
 
 ```
-pip install -e .
-python nemo_skills/dataset/prepare.py
+pip install git+https://github.com/NVIDIA/NeMo-Run.git
 ```
 
-The first command installs the repo and all dependencies (python 3.10+) and the second prepares
-all the datasets we support.
+Then prepare the data.
+
+```
+python -m nemo_skills.dataset.prepare
+```
+
 If you're only interested in a subset of datasets (e.g. only math-related or code-related), run with
 `--dataset_groups ...` and if you only need a couple of specific datasets, list them directly e.g.
-`prepare.py gsm8k human-eval mmlu ifeval`.
+
+```
+python -m nemo_skills.dataset.prepare gsm8k human-eval mmlu ifeval
+```
+
+If you have the repo cloned locally, the data files will be available inside `nemo_skills/dataset/<benchmark>/<split>.jsonl`
+and if you installed from pip, they will be downloaded to wherever the repo is installed, which you can figure out by running
+```
+python -c "import nemo_skills; from pathlib import Path; print(Path(nemo_skills.__file__).parent)"
+```
 
 You might also need define the following environment variables in your `~/.bashrc`
 
@@ -26,8 +38,8 @@ your jobs and what to mount in the containers. Please read on to learn more abou
 ## General information
 
 All of the scripts inside [nemo_skills/pipeline](/nemo_skills/pipeline) accept `--cluster` argument which you can use
-to control where the job gets executed. That argument picks up one of the configs inside [cluster_configs](/cluster_configs/)
-folder by default, but you can specify another location with `--config_dir`.
+to control where the job gets executed. That argument picks up one of the configs inside your local [cluster_configs](/cluster_configs/)
+folder by default, but you can specify another location with `--config_dir` or set it in `NEMO_SKILLS_CONFIGS` env variable.
 The cluster config defines an executor (local or slurm), mounts for data/model access and (slurm-only) various parameters
 such as account, partition, ssh-tunnel arguments and so on.
 
