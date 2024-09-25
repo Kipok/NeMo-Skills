@@ -11,20 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-executor: local
-
-containers:
-  trtllm: igitman/nemo-skills-trtllm:0.4.1
-  vllm: igitman/nemo-skills-vllm:0.4.1
-  nemo: igitman/nemo-skills-nemo:0.4.0
-  sandbox: igitman/nemo-skills-sandbox:0.4.0
-  nemo-skills: igitman/nemo-skills:0.4.0
-
-mounts:
-  - /mnt/datadrive/models/trt_models:/trt_models
-  - /mnt/datadrive/models/nemo_models:/nemo_models
-  - /mnt/datadrive/models/hf_models:/hf_models
-  - /mnt/datadrive/experiments:/exps
-  - /mnt/datadrive/data:/data
-  - /home/igitman/workspace:/workspace

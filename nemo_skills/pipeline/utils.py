@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import shlex
+import subprocess
 import tarfile
 from dataclasses import dataclass
 from functools import lru_cache
@@ -87,7 +88,9 @@ def get_generation_command(server_address, generation_commands):
     return cmd
 
 
-def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_path: str, cluster_config: dict):
+def get_server_command(
+    server_type: str, num_gpus: int, num_nodes: int, model_path: str, cluster_config: dict, server_args: str = ""
+):
     num_tasks = num_gpus
     if server_type == 'nemo':
         server_start_cmd = (
@@ -97,20 +100,20 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_pa
             f"    trainer.num_nodes={num_nodes} "
             f"    tensor_model_parallel_size={num_gpus} "
             f"    pipeline_model_parallel_size={num_nodes} "
+            f"    {server_args} "
         )
         # somehow on slurm nemo needs multiple tasks, but locally only 1
         if cluster_config["executor"] == "local":
             num_tasks = 1
-
     elif server_type == 'vllm':
+        if num_nodes > 1:
+            raise ValueError("VLLM server does not support multi-node execution")
         server_start_cmd = (
-            f"NUM_GPUS={num_gpus} bash nemo_skills/inference/server/serve_vllm.sh "
-            f"{model_path} self-hosted-model 0 openai 5000"
+            f"python -m nemo_skills.inference.server.serve_vllm "
+            f"    --model_path {model_path} "
+            f"    --num_gpus {num_gpus} "
+            f"    {server_args} "
         )
-
-        if os.environ.get("MAX_SEQ_LEN", None) is not None:
-            server_start_cmd = f"export MAX_SEQ_LEN={os.environ['MAX_SEQ_LEN']} && {server_start_cmd}"
-
         num_tasks = 1
     else:
         # adding sleep to ensure the logs file exists
@@ -118,6 +121,7 @@ def get_server_command(server_type: str, num_gpus: int, num_nodes: int, model_pa
         server_start_cmd = (
             f"FORCE_NCCL_ALL_REDUCE_STRATEGY=1 python -m nemo_skills.inference.server.serve_trt "
             f"    --model_path {model_path}"
+            f"    {server_args} "
         )
         num_tasks = num_gpus
 
@@ -163,10 +167,23 @@ class hashabledict(dict):
 
 
 def get_cluster_config(cluster, config_dir=None):
-    if config_dir is None:
-        config_dir = Path(__file__).parents[2] / 'cluster_configs'
-    else:
+    """Trying to find an appropriate cluster config.
+
+    Will search in the following order:
+    1. NEMO_SKILLS_CONFIGS environment variable
+    2. config_dir parameter
+    3. Current folder / cluster_configs
+    4. This file folder / ../../cluster_configs
+    """
+    if 'NEMO_SKILLS_CONFIGS' in os.environ:
+        config_dir = Path(os.environ['NEMO_SKILLS_CONFIGS'])
+    elif config_dir is not None:
         config_dir = Path(config_dir)
+    else:
+        if (Path.cwd() / 'cluster_configs').is_dir():
+            config_dir = Path.cwd() / 'cluster_configs'
+        else:
+            config_dir = Path(__file__).parents[2] / 'cluster_configs'
 
     with open(config_dir / f'{cluster}.yaml', "rt", encoding="utf-8") as fin:
         cluster_config = yaml.safe_load(fin)
@@ -205,6 +222,49 @@ def cluster_download(tunnel, remote_dir, local_dir):
     os.remove(local_tar)
 
 
+def get_packager():
+    """Will check if we are running from a git repo and use git packager or default packager otherwise."""
+    try:
+        # are we in a git repo? If yes, we are uploading the current code
+        repo_path = (
+            subprocess.run(
+                ["git", "rev-parse", "--show-toplevel"],
+                capture_output=True,
+                check=True,
+            )
+            .stdout.decode()
+            .strip()
+        )
+
+        # Do we have nemo_skills package in this repo? If no, we need to pick it up from installed location
+        if not (Path(repo_path) / 'nemo_skills').is_dir():
+            logging.warning(
+                "Not running from NeMo-Skills repo, trying to upload installed package. "
+                "Make sure there are no extra files in %s",
+                str(Path(__file__).absolute().parents[1] / '*'),
+            )
+            include_pattern = str(Path(__file__).absolute().parents[1] / '*')
+        else:
+            # picking up local dataset files if we are in the right repo
+            include_pattern = str(Path(__file__).absolute().parents[1] / "dataset/**/*.jsonl")
+        include_pattern_relative_path = str(Path(__file__).absolute().parents[2])
+
+        return run.GitArchivePackager(
+            include_pattern=include_pattern,
+            include_pattern_relative_path=include_pattern_relative_path,
+            check_uncommitted_changes=True,
+        )
+    except subprocess.CalledProcessError:
+        logging.warning(
+            "Not running from a git repo, trying to upload installed package. Make sure there are no extra files in %s",
+            str(Path(__file__).absolute().parents[1] / '*'),
+        )
+        return run.PatternPackager(
+            include_pattern=str(Path(__file__).absolute().parents[1] / '*'),
+            relative_path=str(Path(__file__).absolute().parents[2]),
+        )
+
+
 @lru_cache
 def get_executor(
     cluster_config,
@@ -221,7 +281,7 @@ def get_executor(
 ):
     config_mounts = cluster_config.get('mounts', [])
     mounts = mounts or config_mounts
-    packager = run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl', check_uncommitted_changes=True)
+    packager = get_packager()
     if cluster_config["executor"] == "local":
         if num_nodes > 1:
             raise ValueError("Local executor does not support multi-node execution")
