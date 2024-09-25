@@ -212,12 +212,35 @@ def cluster_download(tunnel, remote_dir, local_dir):
 def get_packager():
     """Will check if we are running from a git repo and use git packager or default packager otherwise."""
     try:
-        subprocess.check_call(["git", "rev-parse"])
-        # TODO: does this work always? what if we are in a subdirectory?
-        return run.GitArchivePackager(include_pattern='nemo_skills/dataset/**/*.jsonl', check_uncommitted_changes=True)
+        # are we in a git repo? If yes, we are uploading the current code
+        repo_path = (
+            subprocess.run(
+                ["git", "rev-parse", "--show-toplevel"],
+                capture_output=True,
+                check=True,
+            )
+            .stdout.decode()
+            .strip()
+        )
+
+        # Do we have nemo_skills package in this repo? If no, we need to pick it up from installed location
+        if not (Path(repo_path) / 'nemo_skills').is_dir():
+            logging.warning(
+                "Not running from NeMo-Skills repo, trying to upload installed package. "
+                "Make sure there are no extra files in %s",
+                str(Path(__file__).absolute().parents[1] / '*'),
+            )
+            include_pattern = str(Path(__file__).absolute().parents[1] / '*')
+        else:
+            # picking up local dataset files if we are in the right repo
+            # TODO: should we not do this since we are downloading on the fly anyway?
+            include_pattern = "nemo_skills/dataset/**/*.jsonl"
+
+        # TODO: this doesn't work from a subdirectory of the repo
+        return run.GitArchivePackager(include_pattern=include_pattern, check_uncommitted_changes=True)
     except subprocess.CalledProcessError:
         logging.warning(
-            "Not running from a git repo, trying to upload installed package. Make sure there are no extra files in here %s",
+            "Not running from a git repo, trying to upload installed package. Make sure there are no extra files in %s",
             str(Path(__file__).absolute().parents[1] / '*'),
         )
         return run.PatternPackager(
