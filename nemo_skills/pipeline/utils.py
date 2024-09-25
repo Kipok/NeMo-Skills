@@ -167,10 +167,23 @@ class hashabledict(dict):
 
 
 def get_cluster_config(cluster, config_dir=None):
-    if config_dir is None:
-        config_dir = Path(__file__).parents[2] / 'cluster_configs'
-    else:
+    """Trying to find an appropriate cluster config.
+
+    Will search in the following order:
+    1. NEMO_SKILLS_CONFIGS environment variable
+    2. config_dir parameter
+    3. Current folder / cluster_configs
+    4. This file folder / ../../cluster_configs
+    """
+    if 'NEMO_SKILLS_CONFIGS' in os.environ:
+        config_dir = Path(os.environ['NEMO_SKILLS_CONFIGS'])
+    elif config_dir is not None:
         config_dir = Path(config_dir)
+    else:
+        if (Path.cwd() / 'cluster_configs').is_dir():
+            config_dir = Path.cwd() / 'cluster_configs'
+        else:
+            config_dir = Path(__file__).parents[2] / 'cluster_configs'
 
     with open(config_dir / f'{cluster}.yaml', "rt", encoding="utf-8") as fin:
         cluster_config = yaml.safe_load(fin)
