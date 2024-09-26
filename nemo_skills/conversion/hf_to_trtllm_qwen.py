@@ -15,7 +15,6 @@
 # copied from https://github.com/NVIDIA/TensorRT-LLM/blob/main/examples/qwen/convert_checkpoint.py
 
 import argparse
-import json
 import os
 import time
 import traceback
@@ -292,13 +291,6 @@ def main():
 
     assert args.model_dir is not None
     convert_and_save_hf(args)
-
-    # fixing the config to add missing 'qwen_type': 'qwen2'
-    with open(f'{args.output_dir}/config.json', 'r') as f:
-        config = json.load(f)
-    config['qwen_type'] = 'qwen2'
-    with open(f'{args.output_dir}/config.json', 'w') as f:
-        json.dump(config, f, indent=4)
 
     tok = time.time()
     t = time.strftime('%H:%M:%S', time.gmtime(tok - tik))
