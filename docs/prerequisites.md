@@ -22,7 +22,7 @@ python -m nemo_skills.dataset.prepare gsm8k human-eval mmlu ifeval
 If you have the repo cloned locally, the data files will be available inside `nemo_skills/dataset/<benchmark>/<split>.jsonl`
 and if you installed from pip, they will be downloaded to wherever the repo is installed, which you can figure out by running
 ```
-python -c "import nemo_skills; from pathlib import Path; print(Path(nemo_skills.__file__).parent)"
+python -c "import nemo_skills; print(nemo_skills.__path__)"
 ```
 
 You might also need define the following environment variables in your `~/.bashrc`
