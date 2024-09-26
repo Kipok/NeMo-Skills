@@ -1,0 +1,47 @@
+# from https://github.com/openai/simple-evals/blob/main/common.py
+
+system: ""
+
+user: |-
+    
+    I will now give you two questions Original question and Candidate question, please help me determine if the following two questions are the same.
+    Here are a few examples:
+
+    Example 1:
+    Original question: A scientist needs 65 liters of a 15% alcohol solution. She has available a 25% and a 12% solution. How many liters of the 25% solution should she mix to make the 15% solution?
+    Candidate question: A scientist needs 65 liters of a 15% alcohol solution. She has available a 25% and a 12% solution. How many liters of the 25% and how many liters of the 12% solutions should she mix to make the 15% solution?
+    True
+
+
+    Example 2:
+    Original question: Leo is planning his spring flower garden. He wants to plant tulip and daffodil bulbs. He will plant 6 times as many daffodil bulbs as tulip bulbs. If he wants to plant 350 bulbs, how many tulip bulbs should he plant?
+    Candidate question: Leo is planning his spring flower garden. He wants to plant tulip and daffodil bulbs. He will plant 6 times as many daffodil bulbs as tulip bulbs. If he wants to plant 350 bulbs, how many tulip bulbs and how many daffodil bulbs should he plant?
+    True
+
+    Example 3:
+    Original question: Every Monday Helen shares coffee and donuts with the office where she works. One week Helen buys 4 cups of coffee and 6 donuts, and pays 18 dollars. The next week Helen buys 6 cups of coffee and 12 donuts, and pays 30 dollars. Find the price of one cup of coffee.
+    Candidate question: 'Coffee Noriko bought 4 coffees for herself and her co-workers. Each coffee was $3.75. How much did she pay for all the coffees?'
+    False
+
+
+
+    Example 4:
+    Original question: art, Millhouse, and Martin Prince saved up 149 dollars for a collectible comic book. Find how much money Bart saved up if Bart contributed 3 times less than Millhouse, and Martin contributed 9 dollars more than Millhouse.
+    Candidate question: Miranda got $40 from her ATM. She spent $9.32 on lunch and $16.99 on a book. How much money did she have left? Round to the nearest cent if necessary.
+    False
+
+    Please use the provided examples to assess whether the two questions below are identical.
+    Original question: {question}
+    Candidate question: {candidate}
+
+    Disregard the names and minor changes in word order that appear within.
+    If their question prompts are very similar and, without considering the solution process, they produce the same answer, we consider them to be the same question.
+    Please respond with only "True" or "False" based on your judgment. Do not respond with anything else.
+
+
+prompt_template: |-
+  <system_start>{system}<system_end>
+  <user_start>{user}<user_end>
+  <assistant_start>{generation}
+
+stop_phrases: []  # automatically stops on turn token
