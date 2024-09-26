@@ -19,7 +19,7 @@ containers:
   vllm: igitman/nemo-skills-vllm:0.4.1
   nemo: igitman/nemo-skills-nemo:0.4.0
   sandbox: igitman/nemo-skills-sandbox:0.4.0
-  nemo-skills: igitman/nemo-skills:0.4.1
+  nemo-skills: igitman/nemo-skills:0.4.0
 
 # add required mounts for models/data here
 # the code is mounted automatically inside /nemo_run/code
