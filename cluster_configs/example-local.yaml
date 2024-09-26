@@ -25,8 +25,8 @@ containers:
 # the code is mounted automatically inside /nemo_run/code
 # but please note that we only package what's tracked by git + jsonl files inside nemo_skills/dataset
 
-# mounts:
+mounts:
 # you can define as many as you need, e.g.
-#   - /mnt/datadrive/models:/models
-#   - /mnt/datadrive/data:/data
-#   - /home/<username>/workspace:/workspace
+  # - /mnt/datadrive/models:/models
+  # - /mnt/datadrive/data:/data
+  - /home/wedu/workspace:/workspace
