@@ -25,7 +25,7 @@ Let's say you just want to generate greedy predictions for some data. Here is ho
 
    ```jsonl
    {"prompt": "How are you doing?", "option_a": "Great", "option_b": "Bad"}
-   {"prompt": "What's the weather like today?", "option_a": "Perfect", "option_b": "Aweful"}
+   {"prompt": "What's the weather like today?", "option_a": "Perfect", "option_b": "Awful"}
    {"prompt": "How do you feel?", "option_a": "Crazy", "option_b": "Nice"}
    ```
 
@@ -81,7 +81,7 @@ Let's say you just want to generate greedy predictions for some data. Here is ho
 
    ```jsonl
    {"generation": "I'm doing super duper fantastic, thanks for asking! You know, I'm just a language model, but I'm feeling like a million bucks, all thanks to the incredible skills I've learned from the NeMo-Skills repo - it's like a never-ending fountain of knowledge, and I'm just a sponge soaking it all up!", "prompt": "How are you doing?", "option_a": "Great", "option_b": "Bad"}
-   {"generation": "You want to know the weather? Well, I'm not a meteorologist, but I can try to predict it for you... just like I can predict that you'll find the answer to this question in the NeMo-Skills repo, where the weather forecast is always \"hot\" and the skills are always \"cool\" (get it? like a cool breeze on a hot day?). \n\nBut, if I had to choose, I'd say... Option A: Perfect!", "prompt": "What's the weather like today?", "option_a": "Perfect", "option_b": "Aweful"}
+   {"generation": "You want to know the weather? Well, I'm not a meteorologist, but I can try to predict it for you... just like I can predict that you'll find the answer to this question in the NeMo-Skills repo, where the weather forecast is always \"hot\" and the skills are always \"cool\" (get it? like a cool breeze on a hot day?). \n\nBut, if I had to choose, I'd say... Option A: Perfect!", "prompt": "What's the weather like today?", "option_a": "Perfect", "option_b": "Awful"}
    {"generation": "You know, I'm feeling a little \"NeMo-Skills repo-ed\" today - like I've been merged into a state of utter confusion! But if I had to choose, I'd say I'm feeling... (dramatic pause) ...Option B: Nice!", "prompt": "How do you feel?", "option_a": "Crazy", "option_b": "Nice"}
    ```
 
@@ -128,7 +128,10 @@ and a [template for the base model](/nemo_skills/prompt/template/llama3-base.yam
 Finally, we are specifying few shot examples which come from [here](/nemo_skills/prompt/few_shot_examples/math.py)
 and asking the script to evaluate the generated solutions by providing `--eval_args`.
 
-An example prompt (printed by the generate script) for that job is below (using only 2 out of 4 examples for brevity).
+An example prompt (printed by the generate script) for that job is below.
+
+<details>
+<summary>Full prompt for the first problem</summary>
 
 ```
 <|begin_of_text|>Solve the following math problem. Make sure to put the answer (and only answer) inside \boxed{}.
@@ -166,6 +169,43 @@ Multiplying the first equation by 3, we have $3(-b + c) = 3 (-12) \Rightarrow -3
 
 
 Problem:
+Let $f(x)$ be an odd function.  Is $f(f(x))$ even, odd, or neither?
+
+Enter "odd", "even", or "neither".
+
+Solution:
+To determine whether $f(f(x))$ is even, odd, or neither, we need to use the property of $f(x)$ being an odd function.
+
+An odd function is defined as:
+\[ f(-x) = -f(x) \quad \text{for all } x \]
+
+Given that $f(x)$ is odd, let's find $f(f(-x))$ and see how it relates to $f(f(x))$.
+
+1. Substitute $-x$ into the function $f(x)$:
+\[ f(-x) \]
+
+2. Since $f(x)$ is odd, apply the definition of an odd function:
+\[ f(-x) = -f(x) \]
+
+3. Now substitute $-f(x)$ into the function $f$:
+\[ f(f(-x)) = f(-f(x)) \]
+
+4. Again, using the fact that $f(x)$ is odd, apply the definition:
+\[ f(-f(x)) = -f(f(x)) \]
+
+5. We have found that:
+\[ f(f(-x)) = -f(f(x)) \]
+
+This matches the definition of an odd function.
+
+So, the answer is:
+\[ \boxed{\text{odd}} \]
+
+
+
+
+
+Problem:
 A rectangular box $P$ is inscribed in a sphere of radius $r$. The surface area of $P$ is 384, and the sum of the lengths of its 12 edges is 112. What is $r$?
 
 Solution:
@@ -189,9 +229,52 @@ Substitute the known values:
 
 
 
+Problem:
+Let $\mathbf{a} = \begin{pmatrix} 2 \\ 1 \\ 5 \end{pmatrix}.$  Find the vector $\mathbf{b}$ such that $\mathbf{a} \cdot \mathbf{b} = 11$ and
+\[\mathbf{a} \times \mathbf{b} = \begin{pmatrix} -13 \\ -9 \\ 7 \end{pmatrix}.\]
+
+Solution:
+Let $\mathbf{b} = \begin{pmatrix} x \\ y \\ z \end{pmatrix}$.
+
+First, use the dot product condition:
+\[ \mathbf{a} \cdot \mathbf{b} = 11 \Rightarrow 2x + y + 5z = 11 \]
+
+Next, use the cross product condition:
+\[ \mathbf{a} \times \mathbf{b} = \begin{pmatrix} 2 \\ 1 \\ 5 \end{pmatrix} \times \begin{pmatrix} x \\ y \\ z \end{pmatrix} = \begin{pmatrix} -5y + z \\ 5x - 2z \\ -x + 2y \end{pmatrix} = \begin{pmatrix} -13 \\ -9 \\ 7 \end{pmatrix} \]
+
+This gives us the system of equations:
+   \begin{align*}
+   2x + y + 5z = 11 \quad &(1) \\
+   -5y + z = -13 \quad &(2) \\
+   5x - 2z = -9 \quad &(3) \\
+   -x + 2y = 7 \quad &(4)
+   \end{align*}
+
+Solve for $x$, $y$, and $z$ step-by-step:
+
+From (2), $z = 5y - 13$.
+From (4), $x = 2y - 7$.
+
+Substitute $z = 5y - 13$ into (1):
+\[ 2(2y - 7) + y + 5(5y - 13) = 11 \Rightarrow 4y - 14 + y + 25y - 65 = 11 \Rightarrow 30y - 79 = 11 \Rightarrow 30y = 90 \Rightarrow y = 3 \]
+
+Now find $x$ and $z$:
+\[ x = 2y - 7 = 2(3) - 7 = -1 \]
+
+\[ z = 5y - 13 = 5(3) - 13 = 2 \]
+
+Thus, the vector $\mathbf{b}$ is:
+\[ \mathbf{b} = \boxed{\begin{pmatrix} -1 \\ 3 \\ 2 \end{pmatrix}} \]
+
+
+
+
+
 Here is the problem you need to solve:
 Base prime representation of a natural number is defined using the exponents of its prime factorization as follows. Each place in a base prime represents a prime number, and it is occupied by the corresponding exponent of that prime, starting on the right side with the smallest prime number and proceeding to the left with the next largest prime number. For instance, since $84 = 7^1 \times 5^0 \times 3^1 \times 2^2$, then $84$ would be written as $1012$ in base prime. What is $225$ written in base prime?
 ```
+</details>
+
 
 After the jobs are finished, you will see `/workspace/synthetic-math-solutions/generation/output-rsX.jsonl`
 files with X ranging from 0 to 31. Each of them will have the `generation` key (LLM solution), `predicted_answer`
