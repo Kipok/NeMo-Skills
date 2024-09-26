@@ -11,6 +11,9 @@ for more details on how to create new prompts.
 Check out [common parameters documentation](/docs/common-parameters.md) to learn about some of the
 common parameters accepted by all generation scripts.
 
+> **_NOTE:_** Before running the generation we always print the first prompt that we are about to send to an LLM.
+> It's a good idea to inspect that and make sure it's formatted properly.
+
 Here are a few typical use-cases of the generation pipeline.
 
 ## Greedy inference
@@ -69,7 +72,7 @@ Let's say you just want to generate greedy predictions for some data. Here is ho
        ++skip_filled=False
    ```
 
-   Note the `skip_filled=False` which you need to add if you're rerunning some generation and don't want
+   Note the `++skip_filled=False` which you need to add if you're rerunning some generation and don't want
    to reuse existing output. And since we are hosting the model ourselves, we need to specify the template
    to use ([llama3-instruct](/nemo_skills/prompt/template/llama3-instruct.yaml) in this case). You can have
    a custom template as well if you need to (just reference a full path to it same as we do with config above).
@@ -84,3 +87,27 @@ Let's say you just want to generate greedy predictions for some data. Here is ho
 
    You can customize batch size, temperature, number of generation tokens and many more things.
    See [here](/nemo_skills/inferece/generate.py) for all supported parameters.
+
+
+## Sampling multiple generations
+
+We commonly need to sample multiple outputs to the same prompt and then pick the best outputs.
+E.g. when synthetically generating solutions to math problems, we would run the same inference
+many times with high temperature and then pick all solutions that lead to the right answer.
+
+Here is how you can do this with our generation pipeline.
+
+```
+python -m nemo_skills.pipeline.generate \
+       --cluster local \
+       --server_type trtllm \
+       --model /trt_models/llama-3.1-8b-instruct \
+       --server_gpus 1 \
+       --num_random_seeds 32 \
+       --output_dir /workspace/synthetic-math-solutions \
+       ++dataset=math \
+       ++split=train_full \
+       ++prompt_config=generic/math \
+       ++examples_type=math_text_detailed \
+       ++prompt_template=llama3-base
+```
