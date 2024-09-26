@@ -21,7 +21,9 @@ from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config,
 from nemo_skills.utils import setup_logging
 
 
-def get_greedy_cmd(benchmark, output_dir, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments=""):
+def get_greedy_cmd(
+    benchmark, split, output_dir, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments=""
+):
     benchmark_module = importlib.import_module(f"nemo_skills.dataset.{benchmark}")
 
     extra_eval_args = f"{benchmark_module.DEFAULT_EVAL_ARGS} {extra_eval_args}"
@@ -30,6 +32,7 @@ def get_greedy_cmd(benchmark, output_dir, output_name='output-greedy.jsonl', ext
         f'echo "Evaluating benchmark {benchmark}" && '
         f'python -m nemo_skills.inference.generate '
         f'    ++dataset={benchmark} '
+        f'    ++split={split} '
         f'    ++output_file={output_dir}/eval-results/{benchmark}/{output_name} '
         f'    {extra_arguments} && '
         f'python -m nemo_skills.evaluation.evaluate_results '
@@ -38,10 +41,11 @@ def get_greedy_cmd(benchmark, output_dir, output_name='output-greedy.jsonl', ext
     return cmd
 
 
-def get_sampling_cmd(benchmark, output_dir, random_seed, extra_eval_args="", extra_arguments=""):
+def get_sampling_cmd(benchmark, split, output_dir, random_seed, extra_eval_args="", extra_arguments=""):
     extra_arguments = f" inference.random_seed={random_seed} inference.temperature=0.7 {extra_arguments}"
     return get_greedy_cmd(
-        benchmark,
+        benchmark=benchmark,
+        split=split,
         output_dir=output_dir,
         output_name=f"output-rs{random_seed}.jsonl",
         extra_eval_args=extra_eval_args,
@@ -86,6 +90,7 @@ if __name__ == "__main__":
         help="Need to be in a format <benchmark>:<num samples for majority voting>. "
         "Use <benchmark>:0 to only run greedy decoding.",
     )
+    wrapper_args.add_argument('--split', default='test', help='Which split to evaluate on')
     wrapper_args.add_argument(
         "--num_jobs",
         type=int,
@@ -146,7 +151,11 @@ if __name__ == "__main__":
     eval_cmds = (
         [
             get_greedy_cmd(
-                benchmark, args.output_dir, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments
+                benchmark,
+                args.split,
+                args.output_dir,
+                extra_eval_args=args.extra_eval_args,
+                extra_arguments=extra_arguments,
             )
             for benchmark in benchmarks.keys()
         ]
@@ -155,7 +164,12 @@ if __name__ == "__main__":
     )
     eval_cmds += [
         get_sampling_cmd(
-            benchmark, args.output_dir, rs, extra_eval_args=args.extra_eval_args, extra_arguments=extra_arguments
+            benchmark,
+            args.split,
+            args.output_dir,
+            rs,
+            extra_eval_args=args.extra_eval_args,
+            extra_arguments=extra_arguments,
         )
         for benchmark, rs_num in benchmarks.items()
         for rs in range(args.starting_seed, args.starting_seed + rs_num)

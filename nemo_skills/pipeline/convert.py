@@ -170,7 +170,7 @@ if __name__ == "__main__":
             log_dir=str(Path(args.output_model).parent / "conversion-logs" / f"{args.convert_from}-{args.convert_to}"),
             container=container_map[(args.convert_from, args.convert_to)],
             num_gpus=args.num_gpus,
-            num_nodes=args.num_nodes,
+            num_nodes=1,  # always running on a single node, might need to change that in the future
             num_tasks=1,
             cluster_config=cluster_config,
             partition=args.partition,

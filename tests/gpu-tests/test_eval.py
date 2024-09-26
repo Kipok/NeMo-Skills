@@ -58,7 +58,7 @@ def test_trtllm_eval():
         [f"/tmp/nemo-skills-tests/trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
     )
     # rough check, since exact accuracy varies depending on gpu type
-    assert metrics['sympy_correct'] >= 50
+    assert metrics['symbolic_correct'] >= 50
     assert metrics['num_entries'] == 20
 
 
@@ -92,7 +92,7 @@ def test_trtllm_code_execution_eval():
         [f"/tmp/nemo-skills-tests/trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
     )
     # rough check, since exact accuracy varies depending on gpu type
-    assert metrics['sympy_correct'] >= 60
+    assert metrics['symbolic_correct'] >= 60
     assert metrics['num_entries'] == 20
 
 
@@ -136,7 +136,7 @@ def test_vllm_eval():
         importlib.import_module('nemo_skills.dataset.math').METRICS_CLASS(),
     )
 
-    assert metrics['sympy_correct'] >= 80
+    assert metrics['symbolic_correct'] >= 80
     assert metrics['num_entries'] == 222
 
     metrics = compute_metrics(
@@ -170,7 +170,7 @@ def test_vllm_eval():
         ["/tmp/nemo-skills-tests/vllm-eval/eval-results/mmlu/output-greedy.jsonl"],
         importlib.import_module('nemo_skills.dataset.mmlu').METRICS_CLASS(),
     )
-    assert metrics['sympy_correct'] >= 60
+    assert metrics['symbolic_correct'] >= 60
     assert metrics['num_entries'] == 400
 
 
@@ -202,5 +202,5 @@ def test_nemo_eval():
         [f"/tmp/nemo-skills-tests/nemo-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
     )
     # rough check, since exact accuracy varies depending on gpu type
-    assert metrics['sympy_correct'] >= 50
+    assert metrics['symbolic_correct'] >= 50
     assert metrics['num_entries'] == 20
