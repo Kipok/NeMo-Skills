@@ -61,7 +61,7 @@ if __name__ == "__main__":
         "--server_type",
         choices=('nemo', 'trtllm', 'vllm', 'openai'),
         default='trtllm',
-        help="Type of the server to start. This parameter is ignored if server_address is specified.",
+        help="Type of the server to start.",
     )
     parser.add_argument("--server_gpus", type=int, required=False)
     parser.add_argument(

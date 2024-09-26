@@ -1,4 +1,8 @@
-# Supervised finetuning
+# Training an LLM
+
+## Preparing the data
+
+## Running training
 
 instead of run_pipeline.py
 

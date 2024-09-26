@@ -222,6 +222,7 @@ def cluster_download(tunnel, remote_dir, local_dir):
     os.remove(local_tar)
 
 
+@lru_cache
 def get_packager():
     """Will check if we are running from a git repo and use git packager or default packager otherwise."""
     try:
