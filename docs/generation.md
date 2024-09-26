@@ -48,11 +48,11 @@ Let's say you just want to generate greedy predictions for some data. Here is ho
 
    ```
    python -m nemo_skills.pipeline.generate \
-       --cluster local \
-       --server_type openai \
-       --model meta/llama-3.1-8b-instruct \
-       --server_address https://integrate.api.nvidia.com/v1 \
-       --output_dir /workspace/test-generate \
+       --cluster=local \
+       --server_type=openai \
+       --model=meta/llama-3.1-8b-instruct \
+       --server_address=https://integrate.api.nvidia.com/v1 \
+       --output_dir=/workspace/test-generate \
        ++input_file=/workspace/input.jsonl \
        ++prompt_config=/workspace/prompt.yaml
    ```
@@ -61,11 +61,11 @@ Let's say you just want to generate greedy predictions for some data. Here is ho
 
    ```
    python -m nemo_skills.pipeline.generate \
-       --cluster local \
-       --server_type vllm \
-       --model /hf_models/Meta-Llama-3.1-8B-Instruct \
-       --server_gpus 1 \
-       --output_dir /workspace/test-generate \
+       --cluster=local \
+       --server_type=vllm \
+       --model=/hf_models/Meta-Llama-3.1-8B-Instruct \
+       --server_gpus=1 \
+       --output_dir=/workspace/test-generate \
        ++input_file=/workspace/input.jsonl \
        ++prompt_config=/workspace/prompt.yaml \
        ++prompt_template=llama3-instruct \
@@ -99,15 +99,106 @@ Here is how you can do this with our generation pipeline.
 
 ```
 python -m nemo_skills.pipeline.generate \
-       --cluster local \
-       --server_type trtllm \
-       --model /trt_models/llama-3.1-8b-instruct \
-       --server_gpus 1 \
-       --num_random_seeds 32 \
-       --output_dir /workspace/synthetic-math-solutions \
+       --cluster=slurm \
+       --server_type=trtllm \
+       --model=/trt_models/llama-3.1-405b-instruct \
+       --server_gpus=8 \
+       --server_nodes=2 \
+       --num_random_seeds=32 \
+       --output_dir=/workspace/synthetic-math-solutions \
+       --eval_args="++eval_type=math"
        ++dataset=math \
        ++split=train_full \
        ++prompt_config=generic/math \
        ++examples_type=math_text_detailed \
        ++prompt_template=llama3-base
 ```
+
+In this case we are assuming you're running on a slurm cluster and have prepared Llama 3.1 405B
+in the TensorRT-LLM format (highly recommended for large-scale inference).
+See [checkpoint conversion](/docs/checkpoint-conversion.md) to learn more about how to convert
+models to different formats.
+
+Note that in this case we do not pass an input file, but instead specify a dataset and
+a split, which will pick a prepared input from `nemo_skills/dataset/math/train_full.jsonl`
+(you need to run `python -m nemo_skills.dataset.prepare math` to get that file).
+We are using a [generic/math](/nemo_skills/prompt/config/generic/math.yaml) config
+and a [template for the base model](/nemo_skills/prompt/template/llama3-base.yaml)
+(we found Llama 3.1 follows few-shots much better without chat tokens).
+Finally, we are specifying few shot examples which come from [here](/nemo_skills/prompt/few_shot_examples/math.py)
+and asking the script to evaluate the generated solutions by providing `--eval_args`.
+
+An example prompt (printed by the generate script) for that job is below (using only 2 out of 4 examples for brevity).
+
+```
+<|begin_of_text|>Solve the following math problem. Make sure to put the answer (and only answer) inside \boxed{}.
+
+Here are some examples of problems and solutions you can refer to.
+
+Problem:
+A parabola with equation $y=x^2+bx+c$ passes through the points $(-1,-11)$ and $(3,17)$. What is $c$?
+
+Solution:
+From the question we know that points $(-1, -11)$ and $(3, 17)$ lie on the parabola. This means that when we substitute $x$ and $y$ from these points into the equation $y = x^2 + bx + c$, the equation must hold true. We substitute these two points into the given equation to solve for $c$.
+
+For the point $(-1, -11)$:
+
+Substitute $x = -1$ and $ y = -11 $ into the equation:
+\[ -11 = (-1)^2 + b(-1) + c \Rightarrow -11 = 1 - b + c \Rightarrow -b + c = -12 \]
+
+For the point $(3, 17)$:
+
+Substitute $x = 3$ and $y = 17$ into the equation:
+\[ 17 = (3)^2 + b(3) + c \Rightarrow 17 = 9 + 3b + c \Rightarrow 3b + c = 8 \]
+
+In summary, we have the two equations
+\begin{align*}
+-b + c &= -12\\
+3b + c &= 8
+\end{align*}
+
+To solve for $c$ we can eliminate $b$ by multiplying the first equation by 3 and adding equations together.
+Multiplying the first equation by 3, we have $3(-b + c) = 3 (-12) \Rightarrow -3b + 3c = -36$. Adding equations together gives us
+\[ (-3b + 3c) + (3b + c) = -36 + 8 \Rightarrow -3b + 3b + 3c + c = -28 \Rightarrow 4c = -28 \Rightarrow c = -28 : 4 \Rightarrow c = \boxed{-7} \]
+
+
+
+
+
+Problem:
+A rectangular box $P$ is inscribed in a sphere of radius $r$. The surface area of $P$ is 384, and the sum of the lengths of its 12 edges is 112. What is $r$?
+
+Solution:
+Let the dimensions of the rectangular box $P$ be $x$, $y$, and $z$. We know the following:
+
+1. The sum of the lengths of the edges of $P$ is
+\[ 4(x + y + z) = 112 \Rightarrow x + y + z = 112 : 4 \Rightarrow x + y + z = 28 \]
+
+2. The surface area of $P$ is
+\[ 2xy + 2yz + 2xz = 384 \Rightarrow xy + yz + xz = 384 : 2 \Rightarrow xy + yz + xz = 192 \]
+
+Since the box is inscribed in the sphere, the diagonal of the box is the diameter of the sphere. The length of the diagonal is $\sqrt{x^2 + y^2 + z^2}$
+
+The diameter of the sphere is $2r$, so:
+\[ 2r = \sqrt{x^2 + y^2 + z^2} \Rightarrow (2r)^2 = x^2 + y^2 + z^2 = (x + y + z)^2 - (2xy + 2yz + 2xz) \]
+
+Substitute the known values:
+\[ 4r^2 = 28^2 - 384 = 784 - 384 = 400 \Rightarrow r^2 = 100 \Rightarrow r = \boxed{10} \]
+
+
+
+
+
+Here is the problem you need to solve:
+Base prime representation of a natural number is defined using the exponents of its prime factorization as follows. Each place in a base prime represents a prime number, and it is occupied by the corresponding exponent of that prime, starting on the right side with the smallest prime number and proceeding to the left with the next largest prime number. For instance, since $84 = 7^1 \times 5^0 \times 3^1 \times 2^2$, then $84$ would be written as $1012$ in base prime. What is $225$ written in base prime?
+```
+
+After the jobs are finished, you will see `/workspace/synthetic-math-solutions/generation/output-rsX.jsonl`
+files with X ranging from 0 to 31. Each of them will have the `generation` key (LLM solution), `predicted_answer`
+key (extracted answer from `\boxed{}` field) and `is_correct` key which is a True/False evaluation of whether
+the `predicted_answer` is matching the `expected_answer` done via a
+[symbolic comparison](/nemo_skills/code_execution/math_grader.py).
+
+To get a more robust assessment of whether the solutions are correct you can follow up with an
+[LLM-as-a-judge evaluation](/docs/llm-as-a-judge.md) and then
+[prepare the data for training](/docs/finetuning.md#preparing-the-data).
