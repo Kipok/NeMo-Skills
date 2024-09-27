@@ -216,8 +216,7 @@ HELP_MESSAGE = get_help_message(
 
 if __name__ == "__main__":
     if '--help' in sys.argv or '-h' in sys.argv:
-        pass
-        # print(HELP_MESSAGE)
+        print(HELP_MESSAGE)
     else:
         setup_logging()
         generate_solutions()
