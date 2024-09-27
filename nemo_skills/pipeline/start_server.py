@@ -25,7 +25,7 @@ if __name__ == "__main__":
     parser.add_argument("--config_dir", default=None, help="Path to the cluster_configs dir")
     parser.add_argument("--log_dir", required=False, help="Can specify a custom location for slurm logs")
     parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
-    parser.add_argument("--model", required=False, default=None, help="Path to the model.")
+    parser.add_argument("--model", required=True, help="Path to the model.")
     parser.add_argument(
         "--server_type",
         choices=('nemo', 'trtllm', 'vllm'),
