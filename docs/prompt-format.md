@@ -83,7 +83,7 @@ user: |-
 Note that we use `{problem}`, `{solution}` and `{examples}` format strings here. The `{examples}` is a special
 key that will be used to include few shot examples you specify above (it's empty unless you add `++examples_type` or
 specify it in the config like e.g. in [llama3-gsm8k prompt](/nemo_skills/prompt/config/llama3-instruct/gsm8k.yaml)).
-All other keys will need to be specified when you call `prompt.build_string` or `prompt.build_messages`
+All other keys will need to be specified when you call `prompt.fill_prompt`
 (more on that in the [prompt-api section](#prompt-api)) so that we can replace placeholders with actual input.
 
 The input for few shot examples always comes from one of the available example types in
@@ -108,7 +108,7 @@ If you're implementing a new script, you can use the following code to create a 
 from nemo_skills.prompt.utils import get_prompt
 
 prompt = get_prompt('generic/math', 'llama3-instruct')
-print(prompt.build_string({'problem': "What's 2 + 2?"}))
+print(prompt.fill_prompt({'problem': "What's 2 + 2?"}))
 ```
 ```
 >>> <|begin_of_text|><|start_header_id|>system<|end_header_id|>
@@ -127,7 +127,7 @@ Or if you want to skip the template and use OpenAI API
 from nemo_skills.prompt.utils import get_prompt
 
 prompt = get_prompt('generic/math')
-print(prompt.build_messages({'problem': "What's 2 + 2?"}))
+print(prompt.fill_prompt({'problem': "What's 2 + 2?"}))
 ```
 ```
 >>> [{'role': 'system', 'content': ''}, {'role': 'user', 'content': "Solve the following math problem. Make sure to put the answer (and only answer) inside \\boxed{}.\n\nWhat's 2 + 2?"}]
