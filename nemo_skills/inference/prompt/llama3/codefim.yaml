@@ -9,7 +9,7 @@ user: |-
     @@ Instruction
     Here is the given code to fill-in-the-middle:
     ```python
-    {question}[FILL_IN_THE_MIDDLE]{suffix}
+    {question}<|start_of_middle|>[FILL_IN_THE_MIDDLE]<|end_of_middle|>{suffix}
     ```
     
     Your answer should include the full code with [FILL_IN_THE_MIDDLE] replaced with your code. Retain the <|start_of_middle|> and <|end_of_middle|> symbols in their place to identify the code you generated to fill in.
