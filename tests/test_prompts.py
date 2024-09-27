@@ -221,9 +221,7 @@ The solution should be in the following format:
 ```'''.strip(),
         },
     ]
-    assert (
-        prompt.fill_prompt({'question': 'def 2_plus_2():\n    """Write code to solve 2 + 2"""'}) == expected_prompt
-    )
+    assert prompt.fill_prompt({'question': 'def 2_plus_2():\n    """Write code to solve 2 + 2"""'}) == expected_prompt
 
 
 def test_generic_default_prompt():
