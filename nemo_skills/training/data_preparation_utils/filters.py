@@ -83,6 +83,28 @@ class DropIncorrectCodeBlocks(BaseFilter):
         return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
 
+class MajorityFilter(BaseFilter):
+    def __init__(
+        self,
+        min_majority_votes: int = 0,
+        min_majority_percentage: int = 0.0,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.min_majority_votes = min_majority_votes
+        self.min_majority_percentage = min_majority_percentage
+
+    def process_dataset_entry(self, data_entry) -> List:
+        majority_votes = data_entry.get("majority_votes", None)
+        total_votes = data_entry.get("total_votes", None)
+        if majority_votes is None or total_votes is None:
+            return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
+        if majority_votes < self.min_majority_votes or majority_votes < total_votes * self.min_majority_percentage:
+            return [DataEntry(data=None, metrics=dict(num_removed=1))]
+
+        return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
+
+
 class RemoveLenOutlierSolutions(BaseFilter):
     def __init__(
         self,

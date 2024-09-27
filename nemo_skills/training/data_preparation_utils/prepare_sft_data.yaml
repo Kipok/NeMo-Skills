@@ -123,3 +123,4 @@ processors:
     chat_format: ${chat_format}
     generation_suffix: ${generation_suffix}
     metadata: ${metadata}
+    exclude_optional_keys: ${exclude_optional_keys}
