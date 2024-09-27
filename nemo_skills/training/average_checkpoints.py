@@ -60,15 +60,16 @@ def main():
 
     checkpoint_paths = []
     for ckpt_dir in os.listdir(args.checkpoint_dir):
-        logging.info("Processing %s", ckpt_dir)
         if not os.path.isdir(os.path.join(args.checkpoint_dir, ckpt_dir)) or ckpt_dir.endswith("-last"):
             continue
         if args.steps is None:
+            logging.info("Processing %s", ckpt_dir)
             checkpoint_paths.append(ckpt_dir)
         else:
             for step in args.steps:
-                key = f"-step={step}-"
+                key = f"step={step}"
                 if key in ckpt_dir:
+                    logging.info("Processing %s", ckpt_dir)
                     checkpoint_paths.append(ckpt_dir)
 
     n = len(checkpoint_paths)
@@ -76,12 +77,14 @@ def main():
     avg_weights = {}
     chunk_info = {}
 
-    logging.info(f"Averaging {n} checkpoints ... {'at steps:' + str(args.steps) if args.steps is not None else ''}")
+    logging.info(f"Averaging {n} checkpoints {'at steps: ' + str(args.steps) if args.steps is not None else ''}")
 
     # item that needs to be copied to the new checkpoint dir
     copy_items = []
     for ix, path in enumerate(checkpoint_paths):
         full_path = os.path.join(args.checkpoint_dir, path)
+        if 'model_weights' in os.listdir(full_path):
+            full_path = os.path.join(full_path, 'model_weights')
 
         for item in os.listdir(full_path):
             # if item is not a directory, skip it
