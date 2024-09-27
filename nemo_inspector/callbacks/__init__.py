@@ -64,7 +64,7 @@ def get_specific_fields(dict_cfg: Dict, fields: List[Dict]) -> Dict:
 @hydra.main(version_base=None, config_path=config_path, config_name="inspector_config")
 def set_config(cfg: InspectorConfig) -> None:
     global config
-    if not cfg.input_file and not cfg.dataset and not cfg.split_name:
+    if not cfg.input_file and not cfg.dataset and not cfg.split:
         cfg.input_file = UNDEFINED
 
     cfg.output_file = UNDEFINED
