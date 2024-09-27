@@ -84,6 +84,7 @@ def test_code_sft_data():
     output_file = "tests/data/code_processed_output.jsonl"
     subprocess.run(
         "python -m nemo_skills.training.prepare_sft_data "
+        f"    --config-name=prepare_code_sft_data "
         f"    ++preprocessed_dataset_files='tests/data/code-output.test' "
         f"    ++output_path={output_file} "
         f"    ++prompt_config=generic/codegen "
