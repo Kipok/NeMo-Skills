@@ -337,7 +337,9 @@ def get_mounts_from_config(cluster_config: dict, env_vars: dict = None):
             mount_source = mount_source[1:-1]
 
         if mount_source not in env_vars:
-            raise ValueError(f"Required environment variable {mount_source} not found in env variables passed in cluster configs.")
+            raise ValueError(
+                f"Required environment variable {mount_source} not found in env variables passed in cluster configs."
+            )
 
         # add the mount to the list of mounts
         mounts.append(f"{env_vars[mount_source]}:{mount_target}")
