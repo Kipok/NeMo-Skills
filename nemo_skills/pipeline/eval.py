@@ -16,9 +16,12 @@ import importlib
 from argparse import ArgumentParser
 
 import nemo_run as run
+import typer
 
 from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, get_generation_command, run_exp
 from nemo_skills.utils import setup_logging
+
+app = typer.Typer()
 
 
 def get_greedy_cmd(
@@ -53,145 +56,129 @@ def get_sampling_cmd(benchmark, split, output_dir, random_seed, extra_eval_args=
     )
 
 
-if __name__ == "__main__":
+@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+def eval(
+    ctx: typer.Context,
+    cluster: str = typer.Option(),
+    output_dir: str = typer.Option(),
+    benchmarks: list[str] = typer.Option(),
+    config_dir: str | None = None,
+    expname: str = "eval",
+    model: str | None = None,
+    server_address: str | None = None,
+    server_type: str = 'trtllm',
+    server_gpus: int | None = None,
+    server_nodes: int = 1,
+    server_args: str = "",
+    starting_seed: int = 0,
+    split: str = 'test',
+    num_jobs: int = -1,
+    partition: str | None = None,
+    extra_eval_args: str = "",
+    skip_greedy: bool = False,
+    run_after: str | None = None,
+):
+    """
+    Evaluate a model using specified benchmarks and configurations.
+
+    Args:
+        ctx (typer.Context): Context for passing extra options to the underlying script.
+        cluster (str): Cluster configuration name.
+        output_dir (str): Directory to store evaluation outputs.
+        benchmarks (list[str]): List of benchmarks in the format "benchmark_name:num_repeats".
+        config_dir (str | None, optional): Directory containing cluster configuration files. Defaults to None.
+        expname (str, optional): Name of the experiment. Defaults to "eval".
+        model (str | None, optional): Path to the model to be evaluated. Defaults to None.
+        server_address (str | None, optional): Address of the server hosting the model. Defaults to None.
+        server_type (str, optional): Type of server to use. Defaults to 'trtllm'.
+        server_gpus (int | None, optional): Number of GPUs to use if hosting the model. Defaults to None.
+        server_nodes (int, optional): Number of nodes to use if hosting the model. Defaults to 1.
+        server_args (str, optional): Additional arguments for the server. Defaults to "".
+        starting_seed (int, optional): Starting seed for random sampling. Defaults to 0.
+        split (str, optional): Data split to use for evaluation. Defaults to 'test'.
+        num_jobs (int, optional): Number of jobs to split the evaluation into. Defaults to -1.
+        partition (str | None, optional): Cluster partition to use. Defaults to None.
+        extra_eval_args (str, optional): Additional arguments for evaluation. Defaults to "".
+        skip_greedy (bool, optional): Whether to skip greedy evaluation. Defaults to False.
+        run_after (str | None, optional): Task to run after the evaluation. Defaults to None.
+    """
+
     setup_logging(disable_hydra_logs=False)
-    parser = ArgumentParser(usage="TODO")
-    wrapper_args = parser.add_argument_group('wrapper arguments')
-    wrapper_args.add_argument("--config_dir", default=None, help="Path to the cluster_configs directory")
-    wrapper_args.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
-    wrapper_args.add_argument("--output_dir", required=True, help="Where to put results")
-    wrapper_args.add_argument("--expname", default="eval", help="Nemo run experiment name")
-    wrapper_args.add_argument("--model", required=False, help="Path to the model or model name in API.")
-    # TODO: should all this be inside a single dictionary config?
-    wrapper_args.add_argument(
-        "--server_address",
-        required=False,
-        help="Use ip:port for self-hosted models or the API url if using model providers.",
-    )
-    # TODO: let's make it not needed - we just need to unify our api calls
-    wrapper_args.add_argument(
-        "--server_type",
-        choices=('nemo', 'trtllm', 'vllm', 'openai'),
-        default='trtllm',
-        help="Type of the server to start. This parameter is ignored if server_address is specified.",
-    )
-    wrapper_args.add_argument("--server_gpus", type=int, required=False)
-    wrapper_args.add_argument(
-        "--server_nodes",
-        type=int,
-        default=1,
-        help="Number of nodes required for hosting LLM server.",
-    )
-    wrapper_args.add_argument("--server_args", default="", help="Any extra arguments to pass to the server.")
-    wrapper_args.add_argument("--starting_seed", type=int, default=0)
-    wrapper_args.add_argument(
-        "--benchmarks",
-        nargs="+",
-        help="Need to be in a format <benchmark>:<num samples for majority voting>. "
-        "Use <benchmark>:0 to only run greedy decoding.",
-    )
-    wrapper_args.add_argument('--split', default='test', help='Which split to evaluate on')
-    wrapper_args.add_argument(
-        "--num_jobs",
-        type=int,
-        default=-1,
-        help="Will launch this many separate jobs and split the benchmarks across them. "
-        "Set -1 to run each benchmark / random seed as a separate job.",
-    )
-    wrapper_args.add_argument(
-        "--partition",
-        required=False,
-        help="Can specify if need interactive jobs or a specific non-default partition",
-    )
-    wrapper_args.add_argument(
-        "--extra_eval_args",
-        default="",
-        help="Any extra arguments to pass to nemo_skills/evaluation/evaluate_results.py",
-    )
-    wrapper_args.add_argument(
-        "--skip_greedy",
-        action="store_true",
-        help="Skip greedy decoding and only run sampling",
-    )
-    wrapper_args.add_argument(
-        "--run_after",
-        required=False,
-        help="Can specify an expname that needs to be completed before this one starts (will use as slurm dependency)",
-    )
 
-    args, unknown = parser.parse_known_args()
+    extra_arguments = f'{" ".join(ctx.args)}'
 
-    extra_arguments = f'{" ".join(unknown)}'
+    cluster_config = get_cluster_config(cluster, config_dir)
+    check_if_mounted(cluster_config, output_dir)
 
-    cluster_config = get_cluster_config(args.cluster, args.config_dir)
-    check_if_mounted(cluster_config, args.output_dir)
-
-    if args.server_address is None:  # we need to host the model
-        assert args.server_gpus is not None, "Need to specify server_gpus if hosting the model"
-        args.server_address = "localhost:5000"
+    if server_address is None:  # we need to host the model
+        assert server_gpus is not None, "Need to specify server_gpus if hosting the model"
+        server_address = "localhost:5000"
 
         server_config = {
-            "model_path": args.model,
-            "server_type": args.server_type,
-            "num_gpus": args.server_gpus,
-            "num_nodes": args.server_nodes,
-            "server_args": args.server_args,
+            "model_path": model,
+            "server_type": server_type,
+            "num_gpus": server_gpus,
+            "num_nodes": server_nodes,
+            "server_args": server_args,
         }
-        extra_arguments += f" ++server.server_type={args.server_type} "
+        extra_arguments += f" ++server.server_type={server_type} "
     else:  # model is hosted elsewhere
         server_config = None
         extra_arguments += (
-            f" ++server.server_type={args.server_type} "
-            f" ++server.base_url={args.server_address} "
-            f" ++server.model={args.model} "
+            f" ++server.server_type={server_type} " f" ++server.base_url={server_address} " f" ++server.model={model} "
         )
 
-    benchmarks = {k: int(v) for k, v in [b.split(":") for b in args.benchmarks]}
+    benchmarks = {k: int(v) for k, v in [b.split(":") for b in benchmarks]}
 
     eval_cmds = (
         [
             get_greedy_cmd(
                 benchmark,
-                args.split,
-                args.output_dir,
-                extra_eval_args=args.extra_eval_args,
+                split,
+                output_dir,
+                extra_eval_args=extra_eval_args,
                 extra_arguments=extra_arguments,
             )
             for benchmark in benchmarks.keys()
         ]
-        if not args.skip_greedy
+        if not skip_greedy
         else []
     )
     eval_cmds += [
         get_sampling_cmd(
             benchmark,
-            args.split,
-            args.output_dir,
+            split,
+            output_dir,
             rs,
-            extra_eval_args=args.extra_eval_args,
+            extra_eval_args=extra_eval_args,
             extra_arguments=extra_arguments,
         )
         for benchmark, rs_num in benchmarks.items()
-        for rs in range(args.starting_seed, args.starting_seed + rs_num)
+        for rs in range(starting_seed, starting_seed + rs_num)
     ]
-    if args.num_jobs == -1:
-        args.num_jobs = len(eval_cmds)
+    if num_jobs == -1:
+        num_jobs = len(eval_cmds)
 
     # splitting eval cmds equally across num_jobs nodes
-    eval_cmds = [" && ".join(eval_cmds[i :: args.num_jobs]) for i in range(args.num_jobs)]
+    eval_cmds = [" && ".join(eval_cmds[i::num_jobs]) for i in range(num_jobs)]
 
-    with run.Experiment(args.expname) as exp:
+    with run.Experiment(expname) as exp:
         for idx, eval_cmd in enumerate(eval_cmds):
             add_task(
                 exp,
-                cmd=get_generation_command(server_address=args.server_address, generation_commands=eval_cmd),
+                cmd=get_generation_command(server_address=server_address, generation_commands=eval_cmd),
                 task_name=f'eval-{idx}',
-                log_dir=f"{args.output_dir}/eval-logs",
+                log_dir=f"{output_dir}/eval-logs",
                 container=cluster_config["containers"]["nemo-skills"],
                 cluster_config=cluster_config,
-                partition=args.partition,
+                partition=partition,
                 server_config=server_config,
                 with_sandbox=True,
-                run_after=args.run_after,
+                run_after=run_after,
             )
         run_exp(exp, cluster_config)
+
+
+if __name__ == "__main__":
+    typer.main.get_command_name = lambda name: name
+    app()
