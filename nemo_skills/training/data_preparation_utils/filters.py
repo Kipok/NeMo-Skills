@@ -25,8 +25,7 @@ import tqdm
 from sdp.processors.base_processor import BaseParallelProcessor, DataEntry
 from tqdm.contrib.concurrent import process_map
 
-from nemo_skills.code_execution import CODE_OUTPUT_SEPARATORS, CODE_SEPARATORS
-from nemo_skills.finetuning.data_preparation_utils.arithmetic_utils import (
+from nemo_skills.training.data_preparation_utils.arithmetic_utils import (
     extract_expressions,
     merge_solution_steps,
     solve_expression,
@@ -35,8 +34,6 @@ from nemo_skills.finetuning.data_preparation_utils.arithmetic_utils import (
 LOG = logging.getLogger(__file__)
 
 PATTERN_ANS = re.compile(r"\\boxed\{([^}]*)\}")
-PATTERN_CODE = re.compile(re.escape(CODE_SEPARATORS[0]))
-
 PATTERN_PYTHON_CODE = re.compile("```[pP]ython")
 
 
@@ -72,55 +69,6 @@ class DropMultiBoxed(BaseFilter):
     def process_dataset_entry(self, data_entry) -> List:
         if len(PATTERN_ANS.findall(data_entry[self.solution_key])) > 1:
             return [DataEntry(data=None, metrics=dict(num_removed=1))]
-        return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
-
-
-class DropUselessCode(BaseFilter):
-
-    def __init__(self, solution_key: str = "generation", **kwargs):
-        super().__init__(**kwargs)
-        self.solution_key = solution_key
-
-    def process_dataset_entry(self, data_entry) -> List:
-        ans_match = PATTERN_ANS.search(data_entry[self.solution_key])
-        code_match = PATTERN_CODE.search(data_entry[self.solution_key])
-        if not ans_match or not code_match or ans_match.start() > code_match.start():
-            return [DataEntry(data=None, metrics=dict(num_removed=1))]
-
-        return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
-
-
-class DropBrokenCode(BaseFilter):
-    def __init__(self, solution_key: str = "generation", **kwargs):
-        super().__init__(**kwargs)
-        self.solution_key = solution_key
-
-    def process_dataset_entry(self, data_entry) -> List:
-        generation = data_entry[self.solution_key]
-        code_start_indices = [match.start() for match in re.finditer(re.escape(CODE_SEPARATORS[0]), generation)]
-        code_end_indices = [match.start() for match in re.finditer(re.escape(CODE_SEPARATORS[1]), generation)]
-        code_out_start_indices = [
-            match.start() for match in re.finditer(re.escape(CODE_OUTPUT_SEPARATORS[0]), generation)
-        ]
-        code_out_end_indices = [
-            match.start() for match in re.finditer(re.escape(CODE_OUTPUT_SEPARATORS[1]), generation)
-        ]
-
-        num_code_occs = set(
-            [len(code_start_indices), len(code_end_indices), len(code_out_start_indices), len(code_out_end_indices)]
-        )
-        if len(num_code_occs) != 1:
-            return [DataEntry(data=None, metrics=dict(num_removed=1))]
-
-        if not len(code_end_indices):
-            return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
-
-        for code_start_idx, code_end_idx, code_out_start_idx, code_out_end_idx in zip(
-            code_start_indices, code_end_indices, code_out_start_indices, code_out_end_indices
-        ):
-            if not (code_start_idx < code_end_idx < code_out_start_idx < code_out_end_idx):
-                return [DataEntry(data=None, metrics=dict(num_removed=1))]
-
         return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
 

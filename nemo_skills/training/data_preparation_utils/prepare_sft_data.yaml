@@ -1,8 +1,11 @@
 processors_to_run: all
 
+output_path: ???
+prompt_config: ???
+prompt_template: ???
+
 preprocessed_dataset_files: null  # can specify multiple patters separated by space
 input_files: null  # can specify datasets from HF instead of prediction_jsonl_files
-output_path: ???
 
 exclude_optional_keys: true # exclude keys other than input, output and expected_answer from the final manifest
 metadata: null  # can provide additional metadata to store (e.g. dataset or generation_type)
@@ -20,7 +23,6 @@ min_solution_length: 0
 max_solution_length: 2048
 hf_model_name: "meta-llama/Meta-Llama-3.1-8B"
 
-prompt_type: openmathinstruct/sft
 chat_format: null  # null/nemotron/llama
 generation_suffix: ""  # suffix to add to the end of expected response (e.g. <|eot_id|>)
 
@@ -35,8 +37,6 @@ majority_filter:
 
 filters:
   drop_multi_boxed: true
-  drop_useless_code: false
-  drop_broken_code: true
   majority_filter: false
   trim_solutions: true
   drop_incorrect_arithmetic: true
@@ -46,7 +46,7 @@ filters:
 
 
 processors:
-  - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.ReadData
+  - _target_: nemo_skills.training.data_preparation_utils.preprocessing.ReadData
     preprocessed_dataset_files: ${preprocessed_dataset_files}
     input_files: ${input_files}
     input_key: ${input_key}
@@ -55,7 +55,7 @@ processors:
     add_correct: ${add_correct}
     add_incorrect: ${add_incorrect}
 
-  - _target_: nemo_skills.finetuning.data_preparation_utils.filters.DropMultiBoxed
+  - _target_: nemo_skills.training.data_preparation_utils.filters.DropMultiBoxed
     should_run: ${filters.drop_multi_boxed}
     solution_key: ${output_key}
     test_cases:
@@ -63,23 +63,19 @@ processors:
       - {input: {generation: "She had \\boxed{6} 4090s"}, output: {generation: "She had \\boxed{6} 4090s"}}
       - {input: {generation: "boxed boxed 42"}, output: {generation: "boxed boxed 42"}}
 
-  - _target_: nemo_skills.finetuning.data_preparation_utils.filters.DropBrokenCode
-    should_run: ${filters.drop_broken_code}
-    solution_key: ${output_key}
-
-  - _target_: nemo_skills.finetuning.data_preparation_utils.filters.MajorityFiler
+  - _target_: nemo_skills.training.data_preparation_utils.filters.MajorityFiler
     should_run: ${filters.majority_filter}
     min_majority_votes: ${majority_filter.min_majority_votes}
     min_majority_portion: ${majority_filter.min_majority_portion}
 
-  - _target_: nemo_skills.finetuning.data_preparation_utils.filters.TrimSolutions
+  - _target_: nemo_skills.training.data_preparation_utils.filters.TrimSolutions
     should_run: ${filters.trim_solutions}
     solution_key: ${output_key}
     test_cases:
       - {input: {generation: "Solution ends at \\boxed{0}\nThis line is useless."}, output: {generation: "Solution ends at \\boxed{0}"}}
       - {input: {generation: "Solution continues \\boxed{7} after boxed"}, output: {generation: "Solution continues \\boxed{7} after boxed"}}
 
-  - _target_: nemo_skills.finetuning.data_preparation_utils.filters.DropIncorrectArithmetic
+  - _target_: nemo_skills.training.data_preparation_utils.filters.DropIncorrectArithmetic
     should_run: ${filters.drop_incorrect_arithmetic}
     solution_key: ${output_key}
     test_cases:
@@ -89,7 +85,7 @@ processors:
       # - {input: {generation: "1 / 3 = 0.3334"}, output: null}
       - {input: {generation: "3 * (1 + 7) / 4 = 3 * 8 / 4 = 100"}, output: null}
 
-  - _target_: nemo_skills.finetuning.data_preparation_utils.filters.SplitArithmetic
+  - _target_: nemo_skills.training.data_preparation_utils.filters.SplitArithmetic
     should_run: ${filters.split_arithmetic}
     solution_key: ${output_key}
     test_cases:
@@ -97,28 +93,28 @@ processors:
       - {input: {generation: "1 + 7 * 19 = 134"}, output: {generation: "1 + 7 * 19 = 1 + 133 = 134"}}
       - {input: {generation: "3 * (1 + 7) / 4 = 6"}, output: {generation: "3 * (1 + 7) / 4 = 3 * 8 / 4 = 24 / 4 = 6"}}
 
-  - _target_: nemo_skills.finetuning.data_preparation_utils.filters.RemoveLenOutlierSolutions
+  - _target_: nemo_skills.training.data_preparation_utils.filters.RemoveLenOutlierSolutions
     should_run: ${filters.remove_len_outlier_solutions}
     solution_key: ${output_key}
     min_length: ${min_solution_length}
     max_length: ${max_solution_length}
     hf_model_name: ${hf_model_name}
 
-  - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.GroupSamples
+  - _target_: nemo_skills.training.data_preparation_utils.preprocessing.GroupSamples
     group_key: ${input_key}
 
-  - _target_: nemo_skills.finetuning.data_preparation_utils.filters.CodeTextFilter
+  - _target_: nemo_skills.training.data_preparation_utils.filters.CodeTextFilter
     should_run: ${filters.code_text_filter}
     filter_type: ${filters.code_text_filter}
     solution_key: ${output_key}
 
-  - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.ShuffleAndDownsampleData
+  - _target_: nemo_skills.training.data_preparation_utils.preprocessing.ShuffleAndDownsampleData
     num_samples: ${num_output_samples}
     sampling_method: ${downsampling_method}
     random_seed: ${random_seed}
     do_shuffle: ${do_shuffle}
 
-  - _target_: nemo_skills.finetuning.data_preparation_utils.preprocessing.WriteFinalSftManifest
+  - _target_: nemo_skills.training.data_preparation_utils.preprocessing.WriteFinalSftManifest
     output_manifest_file: ${output_path}
     prompt_config: ${prompt_config}
     prompt_template: ${prompt_template}

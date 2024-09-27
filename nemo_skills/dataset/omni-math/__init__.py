@@ -11,20 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from nemo_skills.evaluation.metrics import MathMetrics
 
-executor: local
-
-containers:
-  trtllm: igitman/nemo-skills-trtllm:0.4.0
-  vllm: igitman/nemo-skills-vllm:0.4.0
-  nemo: igitman/nemo-skills-nemo:0.4.0
-  sandbox: igitman/nemo-skills-sandbox:0.3.2
-  nemo-skills: igitman/nemo-skills:0.4.0
-
-mounts:
-  - /mnt/datadrive/models/trt_models:/trt_models
-  - /mnt/datadrive/models/nemo_models:/nemo_models
-  - /mnt/datadrive/models/hf_models:/hf_models
-  - /mnt/datadrive/experiments:/exps
-  - /mnt/datadrive/data:/data
-  - /home/igitman/workspace:/workspace
+# settings that define how evaluation should be done by default (all can be changed from cmdline)
+PROMPT_CONFIG = 'generic/math'
+DATASET_GROUP = 'math'
+METRICS_CLASS = MathMetrics
+DEFAULT_EVAL_ARGS = "++eval_type=math"
+DEFAULT_GENERATION_ARGS = ""

@@ -20,6 +20,7 @@ from pathlib import Path
 DATASETS = [
     ('aime24', ['test']),
     ('amc23', ['test']),
+    ('omni-math', ['test']),
     ('algebra222', ['test']),
     ('arena-hard', ['test']),
     ('asdiv', ['test']),
@@ -29,7 +30,7 @@ DATASETS = [
     ('gsm-plus', ['test', 'test_rounded']),
     ('gsm8k', ['train', 'train_full', 'validation', 'test']),
     ('human-eval', ['test']),
-    ('IFMetrics', ['test']),
+    ('ifeval', ['test']),
     ('math', ['train', 'train_full', 'validation', 'test']),
     ('math-odyssey', ['test']),
     ('mawps', ['test']),

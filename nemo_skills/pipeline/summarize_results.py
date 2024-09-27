@@ -61,13 +61,13 @@ if __name__ == "__main__":
 
     setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not args.debug else logging.DEBUG)
 
-    # copying results from the cluster
-    cluster_config = get_cluster_config(args.cluster, args.config_dir)
+    # copying results from the cluster if necessary
     if args.cluster is not None:
+        cluster_config = get_cluster_config(args.cluster, args.config_dir)
         check_if_mounted(cluster_config, args.results_dir)
     if args.cluster == "local":
         args.results_dir = get_unmounted_path(cluster_config, args.results_dir)
-    else:
+    elif args.cluster is not None:
         tunnel = get_tunnel(cluster_config)
         temp_dir = tempfile.mkdtemp()
         print(f"Copying results from {args.results_dir} on cluster {args.cluster} to {temp_dir}")

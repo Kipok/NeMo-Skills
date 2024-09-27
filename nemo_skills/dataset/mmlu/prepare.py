@@ -24,7 +24,7 @@ from pathlib import Path
 URL = "https://people.eecs.berkeley.edu/~hendrycks/data.tar"
 
 
-def read_csv_files_from_tar(tar_file_path, split_name):
+def read_csv_files_from_tar(tar_file_path, split):
     result = {}
 
     # Define the column names
@@ -36,9 +36,7 @@ def read_csv_files_from_tar(tar_file_path, split_name):
 
         # Filter for CSV files in the 'data/test' directory
         csv_files = [
-            member
-            for member in members
-            if member.name.startswith(f'data/{split_name}/') and member.name.endswith('.csv')
+            member for member in members if member.name.startswith(f'data/{split}/') and member.name.endswith('.csv')
         ]
 
         for csv_file in csv_files:
@@ -68,16 +66,16 @@ def read_csv_files_from_tar(tar_file_path, split_name):
     return result
 
 
-def save_data(split_name):
+def save_data(split):
     data_dir = Path(__file__).absolute().parent
     data_file = str(data_dir / f"data.tar")
     data_dir.mkdir(exist_ok=True)
-    output_file = str(data_dir / f"{split_name}.jsonl")
+    output_file = str(data_dir / f"{split}.jsonl")
 
     if not os.path.exists(data_file):
         urllib.request.urlretrieve(URL, data_file)
 
-    original_data = read_csv_files_from_tar(data_file, split_name)
+    original_data = read_csv_files_from_tar(data_file, split)
     data = []
     for subject, questions in original_data.items():
         for question in questions:
@@ -93,14 +91,14 @@ def save_data(split_name):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--split_name",
+        "--split",
         default="all",
         choices=("dev", "test", "val"),
     )
     args = parser.parse_args()
 
-    if args.split_name == "all":
-        for split_name in ["dev", "test", "val"]:
-            save_data(split_name)
+    if args.split == "all":
+        for split in ["dev", "test", "val"]:
+            save_data(split)
     else:
-        save_data(args.split_name)
+        save_data(args.split)

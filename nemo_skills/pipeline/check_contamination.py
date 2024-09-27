@@ -62,6 +62,7 @@ if __name__ == "__main__":
         help="Type of the server to start. This parameter is ignored if server_address is specified.",
     )
     wrapper_args.add_argument("--server_gpus", type=int, required=False)
+    wrapper_args.add_argument("--server_args", default="", help="Any extra arguments to pass to the server.")
     wrapper_args.add_argument(
         "--server_nodes",
         type=int,
@@ -100,12 +101,13 @@ if __name__ == "__main__":
     if args.server_address is None:  # we need to host the model
         assert args.server_gpus is not None, "Need to specify server_gpus if hosting the model"
         args.server_address = "localhost:5000"
-        check_if_mounted(cluster_config, args.model)
+
         server_config = {
             "model_path": args.model,
             "server_type": args.server_type,
             "num_gpus": args.server_gpus,
             "num_nodes": args.server_nodes,
+            "server_args": args.server_args,
         }
         extra_arguments += f" ++server.server_type={args.server_type} "
     else:  # model is hosted elsewhere

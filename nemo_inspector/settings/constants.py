@@ -42,7 +42,7 @@ OUTPUT_PATH = "{}-{}.jsonl"
 PARAMS_TO_REMOVE = [
     'output_file',
     'dataset',
-    'split_name',
+    'split',
     'example_dicts',
     'retriever',
     '_context_template',

@@ -22,7 +22,9 @@ from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config,
 from nemo_skills.utils import setup_logging
 
 
-def get_nemo_to_hf_cmd(input_model, output_model, hf_model_name, dtype, num_gpus, num_nodes, extra_arguments):
+def get_nemo_to_hf_cmd(
+    input_model, output_model, model_type, hf_model_name, dtype, num_gpus, num_nodes, extra_arguments
+):
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"export HF_TOKEN={get_token()} && "
@@ -38,17 +40,20 @@ def get_nemo_to_hf_cmd(input_model, output_model, hf_model_name, dtype, num_gpus
     return cmd
 
 
-def get_hf_to_trtllm_cmd(input_model, output_model, hf_model_name, dtype, num_gpus, num_nodes, extra_arguments):
+def get_hf_to_trtllm_cmd(
+    input_model, output_model, model_type, hf_model_name, dtype, num_gpus, num_nodes, extra_arguments
+):
     dtype = {
         "bf16": "bfloat16",
         "fp16": "float16",
         "fp32": "float32",
     }[dtype]
+    script = "hf_to_trtllm" if model_type == "llama" else "hf_to_trtllm_qwen"
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"export HF_TOKEN={get_token()} && "
         f"cd /nemo_run/code && "
-        f"python -m nemo_skills.conversion.hf_to_trtllm "
+        f"python -m nemo_skills.conversion.{script} "
         f"    --model_dir {input_model} "
         f"    --output_dir {output_model}-tmp "
         f"    --dtype {dtype} "
@@ -70,7 +75,9 @@ def get_hf_to_trtllm_cmd(input_model, output_model, hf_model_name, dtype, num_gp
     return cmd
 
 
-def get_hf_to_nemo_cmd(input_model, output_model, hf_model_name, dtype, num_gpus, num_nodes, extra_arguments):
+def get_hf_to_nemo_cmd(
+    input_model, output_model, model_type, hf_model_name, dtype, num_gpus, num_nodes, extra_arguments
+):
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"export HF_TOKEN={get_token()} && "
@@ -91,8 +98,9 @@ if __name__ == "__main__":
     parser.add_argument("--config_dir", default=None, help="Path to the cluster_configs dir")
     parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
     parser.add_argument("--input_model", required=True)
+    parser.add_argument("--model_type", default="llama", choices=("llama", "qwen"))
     parser.add_argument("--output_model", required=True, help="Where to put the final model")
-    parser.add_argument("--convert_from", default="nemo", help="Format of the input model", choices=["nemo", "hf"])
+    parser.add_argument("--convert_from", required=True, help="Format of the input model", choices=["nemo", "hf"])
     parser.add_argument(
         "--convert_to", required=True, help="Format of the output model", choices=["nemo", "hf", "trtllm"]
     )
@@ -116,6 +124,11 @@ if __name__ == "__main__":
 
     args, unknown = parser.parse_known_args()
     extra_arguments = f'{" ".join(unknown)}'
+
+    # TODO: add support for qwen nemo conversion
+    if args.model_type == "qwen":
+        if args.convert_from == "nemo" or args.convert_to == "nemo":
+            raise ValueError("NeMo conversion for Qwen models is not supported yet")
 
     # TODO: add support for conversion from NeMo to trtllm using nemo.export (need to test thoroughly)
     if args.convert_from == "nemo" and args.convert_to == "trtllm":
@@ -141,6 +154,7 @@ if __name__ == "__main__":
     conversion_cmd = conversion_cmd_map[(args.convert_from, args.convert_to)](
         input_model=args.input_model,
         output_model=args.output_model,
+        model_type=args.model_type,
         hf_model_name=args.hf_model_name,
         dtype=args.dtype,
         num_gpus=args.num_gpus,
@@ -156,7 +170,7 @@ if __name__ == "__main__":
             log_dir=str(Path(args.output_model).parent / "conversion-logs" / f"{args.convert_from}-{args.convert_to}"),
             container=container_map[(args.convert_from, args.convert_to)],
             num_gpus=args.num_gpus,
-            num_nodes=args.num_nodes,
+            num_nodes=1,  # always running on a single node, might need to change that in the future
             num_tasks=1,
             cluster_config=cluster_config,
             partition=args.partition,

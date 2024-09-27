@@ -106,7 +106,7 @@ class BaseModel(abc.ABC):
         pass
 
 
-class TensorRTLLMModel(BaseModel):
+class TRTLLMModel(BaseModel):
     """Note that the current implementation supports inflight-batching so
     to make the most use of it, you should submit a large number of prompts
     at the same time.
@@ -127,7 +127,7 @@ class TensorRTLLMModel(BaseModel):
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
         if isinstance(prompts[0], dict):
-            raise NotImplementedError("TensorRTLLM server does not support OpenAI \"messages\" as prompt.")
+            raise NotImplementedError("trtllm server does not support OpenAI \"messages\" as prompt.")
         if stop_phrases is None:
             stop_phrases = []
         request = {
@@ -155,6 +155,7 @@ class TensorRTLLMModel(BaseModel):
 
         outputs = [None] * len(generation_ids)
         finished_count = 0
+        last_time = time.time()
         while finished_count < len(generation_ids):
             time.sleep(0.1)
             for pos, generation_id in enumerate(generation_ids):
@@ -168,6 +169,11 @@ class TensorRTLLMModel(BaseModel):
                 if result is not None:
                     finished_count += 1
                     outputs[pos] = {'generation': result}
+                    last_time = time.time()
+            # a hack to make sure we never hang indefinitely and
+            # always abort the job if something is stuck in trt engine
+            if time.time() - last_time > 300:
+                raise RuntimeError("TRTLLM server is stuck, aborting the job. Please report this!")
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
         return outputs
@@ -439,6 +445,9 @@ class VLLMModel(BaseModel):
             api_key="EMPTY", base_url=f"http://{self.server_host}:{self.server_port}/v1", timeout=None
         )
 
+        self.model_name_server = self.get_model_name_from_server()
+        self.model = self.model_name_server
+
     def generate(
         self,
         prompts: list[str | dict],
@@ -507,7 +516,7 @@ class VLLMModel(BaseModel):
             }
         }
         response = self.oai_client.completions.create(
-            model='self-hosted-model',
+            model=self.model,
             prompt=prompt,
             max_tokens=max_tokens,
             temperature=temperature,
@@ -544,9 +553,14 @@ class VLLMModel(BaseModel):
                 responses.append(output)
         return responses
 
+    def get_model_name_from_server(self):
+        model_list = self.oai_client.models.list()
+        model_name = model_list.data[0].id
+        return model_name
+
 
 models = {
-    'trtllm': TensorRTLLMModel,
+    'trtllm': TRTLLMModel,
     'nemo': NemoModel,
     'openai': OpenAIModel,
     'vllm': VLLMModel,

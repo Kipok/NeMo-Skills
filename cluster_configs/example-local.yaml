@@ -12,25 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cluster: slurm
-account: ???
-partition: ???
-job_name_prefix: "nemo_skills"
-extra_sbatch_args:
-  - --exclusive
-  - --mem=0
-extra_sandbox_args:
-  - --overlap
+executor: local
 
 containers:
-  trtllm: igitman/nemo-skills-trtllm:0.3.2
-  vllm: igitman/nemo-skills-vllm:0.3.1
-  nemo: igitman/nemo-skills-sft:0.3.0
-  sandbox: igitman/nemo-skills-sandbox:0.3.0
+  trtllm: igitman/nemo-skills-trtllm:0.4.1
+  vllm: igitman/nemo-skills-vllm:0.4.1
+  nemo: igitman/nemo-skills-nemo:0.4.0
+  sandbox: igitman/nemo-skills-sandbox:0.4.0
+  nemo-skills: igitman/nemo-skills:0.4.1
 
-# can use this section to set timeouts for different partitions
-# this will be used as a slurm parameter + to signal SFT job to finish
-# before the timeout to have time to save the last checkpoint
-# timeouts:
-#   partition_name1: 06:00:00
-#   partition_name2: 01:30:00
+# add required mounts for models/data here
+# the code is mounted automatically inside /nemo_run/code
+# but please note that we only package what's tracked by git + jsonl files inside nemo_skills/dataset
+
+# mounts:
+# you can define as many as you need, e.g.
+#   - /mnt/datadrive/models:/models
+#   - /mnt/datadrive/data:/data
+#   - /home/<username>/workspace:/workspace

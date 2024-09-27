@@ -25,7 +25,7 @@ def get_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
         output_file = f"{output_dir}/generation/output-rs{random_seed}.jsonl"
     else:
         output_file = f"{output_dir}/generation/output.jsonl"
-    cmd = f"python -m nemo_skills.inference.generate " f"    ++skip_filled=True " f"    ++output_file={output_file} "
+    cmd = f"python -m nemo_skills.inference.generate ++skip_filled=True ++output_file={output_file} "
     if random_seed is not None:
         cmd += (
             f"    ++inference.random_seed={random_seed} "
@@ -61,7 +61,7 @@ if __name__ == "__main__":
         "--server_type",
         choices=('nemo', 'trtllm', 'vllm', 'openai'),
         default='trtllm',
-        help="Type of the server to start. This parameter is ignored if server_address is specified.",
+        help="Type of the server to start.",
     )
     parser.add_argument("--server_gpus", type=int, required=False)
     parser.add_argument(
@@ -70,6 +70,7 @@ if __name__ == "__main__":
         default=1,
         help="Number of nodes required for hosting LLM server.",
     )
+    parser.add_argument("--server_args", default="", help="Any extra arguments to pass to the server.")
     parser.add_argument(
         "--dependent_jobs",
         type=int,
@@ -109,12 +110,13 @@ if __name__ == "__main__":
     if args.server_address is None:  # we need to host the model
         assert args.server_gpus is not None, "Need to specify server_gpus if hosting the model"
         args.server_address = "localhost:5000"
-        check_if_mounted(cluster_config, args.model)
+
         server_config = {
             "model_path": args.model,
             "server_type": args.server_type,
             "num_gpus": args.server_gpus,
             "num_nodes": args.server_nodes,
+            "server_args": args.server_args,
         }
         extra_arguments += f" ++server.server_type={args.server_type} "
     else:  # model is hosted elsewhere

@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# adapted from https://github.com/NVIDIA/TensorRT-LLM/blob/v0.7.1/examples/run.py
-
-
 import copy
 import json
 import logging
@@ -33,7 +30,7 @@ import torch
 from flask import Flask, jsonify, request
 from flask_restful import Api, Resource
 from mpi4py import MPI
-from tensorrt_llm.runtime.model_runner_cpp import GptJsonConfig, ModelRunnerCpp, WorldConfig, profiler
+from tensorrt_llm.runtime.model_runner_cpp import ModelRunnerCpp
 from transformers import AutoTokenizer, T5Tokenizer
 
 

@@ -27,13 +27,13 @@ requirements.append("sdp @ git+https://github.com/NVIDIA/NeMo-speech-data-proces
 
 setup(
     name="nemo_skills",
-    version="0.3.0",
+    version="0.4.1",
     description="NeMo Skills - a project to improve skills of LLMs",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     license="Apache License, Version 2.0",
     url="https://github.com/Kipok/NeMo-Skills",
-    packages=find_packages(include=["nemo_skills*"]),
+    packages=find_packages(),
     python_requires=">=3.10",
     install_requires=requirements,
     include_package_data=True,

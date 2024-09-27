@@ -11,12 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from argparse import ArgumentParser
-from pathlib import Path
 
 import nemo_run as run
-import yaml
 
 from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config
 from nemo_skills.utils import setup_logging
@@ -41,7 +38,7 @@ if __name__ == "__main__":
         default=1,
         help="Number of nodes required for hosting LLM server.",
     )
-
+    parser.add_argument("--server_args", default="", help="Any extra arguments to pass to the server.")
     parser.add_argument(
         "--partition",
         required=False,
@@ -53,7 +50,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     cluster_config = get_cluster_config(args.cluster, args.config_dir)
-    check_if_mounted(cluster_config, args.model)
+
     if args.log_dir:
         check_if_mounted(cluster_config, args.log_dir)
 
@@ -62,6 +59,7 @@ if __name__ == "__main__":
         "server_type": args.server_type,
         "num_gpus": args.server_gpus,
         "num_nodes": args.server_nodes,
+        "server_args": args.server_args,
     }
 
     with run.Experiment("server") as exp:

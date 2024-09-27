@@ -129,7 +129,7 @@ model:
       # Example of how each dataset is formatted
       # {'input': 'John von Neumann\nVon Neumann made fundamental contributions .... Q: What did the math of artificial viscosity do?', 'output': 'smoothed the shock transition without sacrificing basic physics'}
       file_path: ??? # Path to a JSONL file corresponding to the source data. Data format is identical to validation_ds.
-      global_batch_size: 256
+      global_batch_size: 512
       micro_batch_size: 1
       shuffle: True
       memmap_workers: 2
@@ -168,7 +168,7 @@ model:
 
   optim:
     name: distributed_fused_adam # Supports distributed optimizer for memory savings. To enable, set to 'distributed_fused_adam'. Needs Apex to be built with specific args to work.
-    lr: 1e-6
+    lr: 5e-6
     weight_decay: 0.01
     betas:
     - 0.9
