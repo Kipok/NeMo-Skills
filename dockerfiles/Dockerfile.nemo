@@ -95,10 +95,8 @@ RUN git clone https://github.com/NVIDIA/NeMo-Aligner.git && \
     fi && \
     pip install --no-deps -e .
 
-# Git LFS
-RUN curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && \
-    apt-get install git-lfs && \
-    git lfs install
+COPY requirements/main.txt /opt/requirements.txt
+RUN pip install -r /opt/requirements.txt
 
 # TRTLLM
 RUN git clone https://github.com/NVIDIA/TensorRT-LLM.git && \
