@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import os.path
 from argparse import ArgumentParser
 
 import nemo_run as run
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     parser.add_argument("--config_dir", default=None, help="Path to the cluster_configs dir")
     parser.add_argument("--log_dir", required=False, help="Can specify a custom location for slurm logs")
     parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
-    parser.add_argument("--model", required=True, help="Path to the model.")
+    parser.add_argument("--model", required=False, default=None, help="Path to the model.")
     parser.add_argument(
         "--server_type",
         choices=('nemo', 'trtllm', 'vllm'),
@@ -51,7 +51,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     cluster_config = get_cluster_config(args.cluster, args.config_dir)
-    check_if_mounted(cluster_config, args.model)
+
+    if args.server_type != "vllm":
+        check_if_mounted(cluster_config, args.model)
+    elif args.server_type == "vllm" and os.path.exists(args.model):
+        check_if_mounted(cluster_config, args.model)
+
     if args.log_dir:
         check_if_mounted(cluster_config, args.log_dir)
 

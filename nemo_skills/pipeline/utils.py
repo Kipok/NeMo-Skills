@@ -108,6 +108,7 @@ def get_server_command(
     elif server_type == 'vllm':
         if num_nodes > 1:
             raise ValueError("VLLM server does not support multi-node execution")
+
         server_start_cmd = (
             f"python -m nemo_skills.inference.server.serve_vllm "
             f"    --model_path {model_path} "
@@ -266,6 +267,39 @@ def get_packager():
         )
 
 
+def get_env_variables(cluster_config):
+    """
+    Will get the environment variables from the cluster config and the user environment.
+
+    The following items in the cluster config are supported:
+    - `required_env_vars` - list of required environment variables
+    - `env_vars` - list of optional environment variables
+
+    Args:
+        cluster_config: cluster config dictionary
+
+    Returns:
+        dict: dictionary of environment
+    """
+    env_vars = {}
+    # Check for user requested env variables
+    required_env_vars = cluster_config.get("required_env_vars", [])
+    for env_var in required_env_vars:
+        if env_var not in os.environ:
+            raise ValueError(f"Required environment variable {env_var} not found.")
+        env_vars[env_var] = os.environ[env_var]
+
+    # Add optional env variables
+    optional_env_vars = cluster_config.get("env_vars", [])
+    for env_var in optional_env_vars:
+        if env_var in os.environ:
+            logging.info(f"Adding optional environment variable {env_var} (value={os.environ[env_var]})")
+            env_vars[env_var] = os.environ[env_var]
+        else:
+            logging.info(f"Optional environment variable {env_var} not found in user environment; skipping.")
+
+    return env_vars
+
 @lru_cache
 def get_executor(
     cluster_config,
@@ -281,11 +315,16 @@ def get_executor(
     dependencies=None,
 ):
     config_mounts = cluster_config.get('mounts', [])
+    env_vars = get_env_variables(cluster_config)
+
     mounts = mounts or config_mounts
     packager = get_packager()
     if cluster_config["executor"] == "local":
         if num_nodes > 1:
             raise ValueError("Local executor does not support multi-node execution")
+
+        env_vars["PYTHONUNBUFFERED"] = "1"  # this makes sure logs are streamed right away]
+
         return DockerExecutor(
             container_image=container,
             packager=packager,
@@ -294,7 +333,7 @@ def get_executor(
             ntasks_per_node=1,
             num_gpus=gpus_per_node,
             network="host",
-            env_vars={"PYTHONUNBUFFERED": "1"},  # this makes sure logs are streamed right away
+            env_vars=env_vars,
         )
 
     partition = partition or cluster_config.get("partition")
@@ -335,6 +374,7 @@ def get_executor(
         monitor_group_job_wait_time=20,
         dependencies=dependencies,
         dependency_type="afterany",
+        env_vars=env_vars,
     )
 
 
