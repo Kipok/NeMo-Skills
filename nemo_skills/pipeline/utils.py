@@ -334,6 +334,7 @@ def get_mounts_from_config(cluster_config: dict, env_vars: dict = None):
         mount_source, mount_target = env_mount.split(":")
 
         if mount_source[0] == "{" and mount_source[-1] == "}":
+            # Resolve the environment variable for the mount source
             mount_source = mount_source[1:-1]
 
             if mount_source not in env_vars:
@@ -344,6 +345,7 @@ def get_mounts_from_config(cluster_config: dict, env_vars: dict = None):
             mount_source = env_vars[mount_source]
 
         if mount_target[0] == "{" and mount_target[-1] == "}":
+            # Resolve the environment variable for the mount target
             mount_target = mount_target[1:-1]
 
             if mount_target not in env_vars:
