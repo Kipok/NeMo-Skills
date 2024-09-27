@@ -35,7 +35,7 @@ LOG = logging.getLogger(__file__)
 
 def check_if_mounted(cluster_config, path_to_check):
     """Will check that path_to_check is referenced inside one of the mounts."""
-    for mount in cluster_config.get('mounts', []) + ['/nemo_run/code:/nemo_run/code']:
+    for mount in get_mounts_from_config(cluster_config) + ['/nemo_run/code:/nemo_run/code']:
         if path_to_check.startswith(mount.split(":")[1]):
             return
     raise ValueError(f"The path '{path_to_check}' is not mounted. Check cluster config.")
@@ -45,7 +45,7 @@ def get_unmounted_path(cluster_config, path):
     """Will return the path on the filesystem before it's mounted."""
     if path is None:
         return None
-    for mount in cluster_config.get('mounts', []):
+    for mount in get_mounts_from_config(cluster_config):
         if path.startswith(mount.split(":")[1]):
             return mount.split(":")[0] + path[len(mount.split(":")[1]) :]
     raise ValueError(f"The path '{path}' is not mounted. Check cluster config.")
@@ -300,6 +300,51 @@ def get_env_variables(cluster_config):
 
     return env_vars
 
+
+def get_mounts_from_config(cluster_config: dict, env_vars: dict = None):
+    """
+    Determines if there are mount paths that are being passed via environment variables.
+    Selects the special key in the cluster config called `env_mounts` which is a list of strings.
+    Each string is in the format of `env_var:mount_path` where `env_var` is the name of the environment variable
+    and `mount_path` is the path where the environment variable is mounted.
+
+    Args:
+        cluster_config (dict): cluster config dictionary
+        env_vars (dict): dictionary of environment variables
+
+    Returns:
+        list: updated list of mounts
+    """
+    mounts = cluster_config.get('mounts', [])
+
+    # if env_vars is None, we will get the env_vars from the cluster config
+    if env_vars is None:
+        env_vars = get_env_variables(cluster_config)
+
+    # if there are no env_mounts, we will return the mounts as is
+    if 'env_mounts' not in cluster_config:
+        return mounts
+
+    # if there are env_mounts, we will add the mounts from the env_mounts
+    env_mounts = cluster_config['env_mounts']
+    for env_mount in env_mounts:
+        if ":" not in env_mount:
+            raise ValueError(f"Invalid env_mount format: {env_mount}. The mount path must be separated by a colon.")
+
+        mount_source, mount_target = env_mount.split(":")
+
+        if mount_source[0] == "{" and mount_source[-1] == "}":
+            mount_source = mount_source[1:-1]
+
+        if mount_source not in env_vars:
+            raise ValueError(f"Required environment variable {mount_source} not found in env variables passed in cluster configs.")
+
+        # add the mount to the list of mounts
+        mounts.append(f"{env_vars[mount_source]}:{mount_target}")
+
+    return mounts
+
+
 @lru_cache
 def get_executor(
     cluster_config,
@@ -314,8 +359,8 @@ def get_executor(
     partition=None,
     dependencies=None,
 ):
-    config_mounts = cluster_config.get('mounts', [])
     env_vars = get_env_variables(cluster_config)
+    config_mounts = get_mounts_from_config(cluster_config, env_vars)
 
     mounts = mounts or config_mounts
     packager = get_packager()
