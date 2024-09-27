@@ -94,7 +94,7 @@ def get_training_cmd(
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"cd /nemo_run/code && "
         f"echo 'Starting training' && "
-        f"python -m nemo_skills.finetuning.start_{training_algo} "
+        f"python -m nemo_skills.training.start_{training_algo} "
         f"    --config-name={config_name} --config-path={config_path} "
         f"    ++model.tensor_model_parallel_size={num_gpus} "
         f"    trainer.devices={num_gpus} "
@@ -114,7 +114,7 @@ def get_avg_checkpoints_cmd(nemo_model, output_dir, final_nemo_path, average_ste
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"cd /nemo_run/code && "
-        f"python -m nemo_skills.finetuning.average_checkpoints "
+        f"python -m nemo_skills.training.average_checkpoints "
         f"    --untarred_nemo_dir {nemo_model} "
         f"    --name_prefix=model "
         f"    --checkpoint_dir={output_dir}/training/checkpoints {average_steps} && "
@@ -152,7 +152,7 @@ if __name__ == "__main__":
     parser.add_argument("--training_algo", default="sft", choices=["sft", "dpo"])
     # have to be handled explicitly since hydra requires these to be first arguments
     parser.add_argument("--config-name", "-cn", required=False, help="If not specified will use (sft/dpo)_config")
-    parser.add_argument("--config-path", "-cp", default='/nemo_run/code/nemo_skills/finetuning/')
+    parser.add_argument("--config-path", "-cp", default='/nemo_run/code/nemo_skills/training/')
     parser.add_argument("--wandb_project", default="nemo-skills")
     parser.add_argument(
         "--disable_wandb", action="store_true", help="Disable wandb logging and use tensorboard instead"

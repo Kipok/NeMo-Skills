@@ -32,7 +32,7 @@ trainer:
 
     inference_metrics:
       code_generation_accuracy:
-        _target_: nemo_skills.finetuning.code_generation_accuracy.CodeGenerationAccuracyMetric
+        _target_: nemo_skills.training.code_generation_accuracy.CodeGenerationAccuracyMetric
         sandbox_cfg:
           sandbox_type: local
 

@@ -155,6 +155,7 @@ class TRTLLMModel(BaseModel):
 
         outputs = [None] * len(generation_ids)
         finished_count = 0
+        last_time = time.time()
         while finished_count < len(generation_ids):
             time.sleep(0.1)
             for pos, generation_id in enumerate(generation_ids):
@@ -168,6 +169,11 @@ class TRTLLMModel(BaseModel):
                 if result is not None:
                     finished_count += 1
                     outputs[pos] = {'generation': result}
+                    last_time = time.time()
+            # a hack to make sure we never hang indefinitely and
+            # always abort the job if something is stuck in trt engine
+            if time.time() - last_time > 300:
+                raise RuntimeError("TRTLLM server is stuck, aborting the job. Please report this!")
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
         return outputs

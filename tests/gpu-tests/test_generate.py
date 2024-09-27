@@ -108,5 +108,5 @@ def test_vllm_generate_seeds():
         aggregation_mode="majority",
     )
     # rough check, since exact accuracy varies depending on gpu type
-    assert metrics['sympy_correct'] >= 20
+    assert metrics['symbolic_correct'] >= 20
     assert metrics['num_entries'] == 10
