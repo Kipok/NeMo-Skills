@@ -152,7 +152,7 @@ def generate(cfg: GenerateSolutionsConfig):
     if len(data) == 0:  # we might not have any examples if skip_filled=True
         return
 
-    LOG.info("Example prompt:\nData dictionary: %s\nPrompt string: %s", data[0], prompt.fill_prompt(data[0]))
+    LOG.info("Example prompt:\nData dictionary: %s\nPrompt: %s", data[0], prompt.fill_prompt(data[0]))
 
     if cfg.dry_run:
         return

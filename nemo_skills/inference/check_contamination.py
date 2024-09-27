@@ -87,7 +87,7 @@ def check_contamination(cfg: CheckContaminationConfig):
         f'{cfg.retrieve_key}2': data[0]['similar_items'][0],
     }
     LOG.info(
-        "Example prompt:\nData dictionary: %s\nPrompt string: %s",
+        "Example prompt:\nData dictionary: %s\nPrompt: %s",
         first_element,
         prompt.fill_prompt(first_element),
     )
