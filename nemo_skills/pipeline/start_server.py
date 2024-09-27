@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import os
 from argparse import ArgumentParser
 
 import nemo_run as run
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     cluster_config = get_cluster_config(args.cluster, args.config_dir)
-    check_if_mounted(cluster_config, args.model)
+
     if args.log_dir:
         check_if_mounted(cluster_config, args.log_dir)
 
