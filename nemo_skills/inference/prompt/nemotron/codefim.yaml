@@ -9,7 +9,7 @@ user: |-
     @@ Instruction
     Here is the given code to fill-in-the-middle:
     ```python
-    {question}[FILL_IN_THE_MIDDLE]{suffix}
+    {question}<|start_of_middle|>[FILL_IN_THE_MIDDLE]<|end_of_middle|>{suffix}
     ```
     
     Your answer should include the full code with [FILL_IN_THE_MIDDLE] replaced with your code. Retain the <|start_of_middle|> and <|end_of_middle|> symbols in their place to identify the code you generated to fill in.
@@ -20,10 +20,11 @@ user: |-
     @@ Response
 
 prompt_template: |-
-  <|begin_of_text|><|start_header_id|>user<|end_header_id|>
-
-  {user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
-
+  <extra_id_0>System
+  {system}
+  <extra_id_1>User
+  {user}
+  <extra_id_1>Assistant
   {generation}
 
-stop_phrases: ["<|eot_id|>"]
+stop_phrases: ["<extra_id_1>"]
