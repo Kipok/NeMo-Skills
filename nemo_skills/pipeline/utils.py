@@ -121,7 +121,7 @@ def get_server_command(
 
         server_start_cmd = (
             f"python -m nemo_skills.inference.server.serve_vllm "
-            f"    --model_path {model_path} "
+            f"    --model {model_path} "
             f"    --num_gpus {num_gpus} "
             f"    {server_args} "
         )

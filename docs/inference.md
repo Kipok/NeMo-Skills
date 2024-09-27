@@ -96,7 +96,7 @@ This should print
 >>> 2 + 2 = 4.
 ```
 
-To use OpenAI models, it's all the same but with `OPENAI_API_KEY` and without `base_url` parameter.
+To use OpenAI models, it's all the same but with `OPENAI_API_KEY` and set `base_url=https://api.openai.com/v1`.
 
 ## Using models that execute code
 
