@@ -29,7 +29,6 @@ class BaseInspectorConfig:
     code_separators: Tuple[str, str] = CODE_SEPARATORS
     code_output_separators: Tuple[str, str] = CODE_OUTPUT_SEPARATORS
     save_generations_path: str = "nemo_inspector/results/saved_generations"
-    results_path: str = "nemo_inspector/results/"
 
     def __post_init__(self):
         self.model_prediction = {
