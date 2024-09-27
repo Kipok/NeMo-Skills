@@ -336,13 +336,25 @@ def get_mounts_from_config(cluster_config: dict, env_vars: dict = None):
         if mount_source[0] == "{" and mount_source[-1] == "}":
             mount_source = mount_source[1:-1]
 
-        if mount_source not in env_vars:
-            raise ValueError(
-                f"Required environment variable {mount_source} not found in env variables passed in cluster configs."
-            )
+            if mount_source not in env_vars:
+                raise ValueError(
+                    f"Required environment variable {mount_source} not found in env variables passed in cluster configs."
+                )
+
+            mount_source = env_vars[mount_source]
+
+        if mount_target[0] == "{" and mount_target[-1] == "}":
+            mount_target = mount_target[1:-1]
+
+            if mount_target not in env_vars:
+                raise ValueError(
+                    f"Required environment variable {mount_target} not found in env variables passed in cluster configs."
+                )
+
+            mount_target = env_vars[mount_target]
 
         # add the mount to the list of mounts
-        mounts.append(f"{env_vars[mount_source]}:{mount_target}")
+        mounts.append(f"{mount_source}:{mount_target}")
 
     return mounts
 
