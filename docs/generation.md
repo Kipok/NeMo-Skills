@@ -1,6 +1,6 @@
 # Generation
 
-Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
+Make sure to complete [prerequisites](/docs/prerequisites.md).
 
 Please refer to the following docs if you have questions about:
 - [Prompt format](/docs/prompt-format.md)
@@ -285,4 +285,4 @@ the `predicted_answer` is matching the `expected_answer` done via a
 
 To get a more robust assessment of whether the solutions are correct you can follow up with an
 [LLM-as-a-judge evaluation](/docs/llm-as-a-judge.md) and then
-[prepare the data for training](/docs/finetuning.md#preparing-the-data).
+[prepare the data for training](/docs/training.md#preparing-the-data).

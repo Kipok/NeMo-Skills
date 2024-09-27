@@ -100,7 +100,7 @@ if __name__ == "__main__":
     parser.add_argument("--input_model", required=True)
     parser.add_argument("--model_type", default="llama", choices=("llama", "qwen"))
     parser.add_argument("--output_model", required=True, help="Where to put the final model")
-    parser.add_argument("--convert_from", default="nemo", help="Format of the input model", choices=["nemo", "hf"])
+    parser.add_argument("--convert_from", required=True, help="Format of the input model", choices=["nemo", "hf"])
     parser.add_argument(
         "--convert_to", required=True, help="Format of the output model", choices=["nemo", "hf", "trtllm"]
     )

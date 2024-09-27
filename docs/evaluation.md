@@ -1,6 +1,6 @@
 # Model evaluation
 
-Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
+Make sure to complete [prerequisites](/docs/prerequisites.md).
 
 Please refer to the following docs if you have questions about:
 - [Prompt format](/docs/prompt-format.md)
@@ -68,12 +68,12 @@ that can be used for majority voting or estimating pass@k. E.g. if we run with
 
 ```
 python -m nemo_skills.pipeline.eval \
-    --cluster local \
-    --server_type openai \
-    --model meta/llama-3.1-8b-instruct \
-    --server_address https://integrate.api.nvidia.com/v1 \
+    --cluster=local \
+    --server_type=openai \
+    --model=meta/llama-3.1-8b-instruct \
+    --server_address=https://integrate.api.nvidia.com/v1 \
     --benchmarks gsm8k:4 human-eval:4 \
-    --output_dir /workspace/test-eval
+    --output_dir=/workspace/test-eval
 ```
 
 you will see the following output after summarizing results

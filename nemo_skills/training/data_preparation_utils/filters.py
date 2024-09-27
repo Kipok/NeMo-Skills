@@ -25,7 +25,7 @@ import tqdm
 from sdp.processors.base_processor import BaseParallelProcessor, DataEntry
 from tqdm.contrib.concurrent import process_map
 
-from nemo_skills.finetuning.data_preparation_utils.arithmetic_utils import (
+from nemo_skills.training.data_preparation_utils.arithmetic_utils import (
     extract_expressions,
     merge_solution_steps,
     solve_expression,

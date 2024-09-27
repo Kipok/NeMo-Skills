@@ -2,7 +2,7 @@
 
 Here are the instructions on how to run inference with our repo.
 
-Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
+Make sure to complete [prerequisites](/docs/prerequisites.md).
 
 1. Get the model you want to use. You can use any model that's supported by VLLM, TensorRT-LLM or NeMo.
    You can also use [Nvidia NIM API](https://www.nvidia.com/en-us/ai/) for models that are hosted there.

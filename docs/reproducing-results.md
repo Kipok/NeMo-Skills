@@ -1,6 +1,6 @@
 # How to reproduce our results
 
-Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
+Make sure to complete [prerequisites](/docs/prerequisites.md).
 
 Please note that unless you have an access to a large GPU cluster, it might take a long time
 for some of the commands to complete!
@@ -161,7 +161,7 @@ you can run the following:
 
    Make sure to use different output folder for each generation to not override results.
 
-## Model finetuning
+## Model training
 
 1. Download [OpenMathInstruct-1](https://huggingface.co/datasets/nvidia/OpenMathInstruct-1) dataset from HuggingFace, e.g.
 
@@ -176,7 +176,7 @@ you can run the following:
    (see [prerequisites](/docs/prerequisites.md) for more information).
 
    ```
-   python nemo_skills/finetuning/prepare_sft_data.py \
+   python nemo_skills/training/prepare_sft_data.py \
        ++preprocessed_dataset_files="open-math-instruct-1/train.jsonl open-math-instruct-1/validation.jsonl" \
        ++output_path=$NEMO_SKILLS_DATA/sft-data.jsonl \
        ++downsampling_method=fair \
@@ -188,7 +188,7 @@ you can run the following:
 3. Get the model you want to finetune, e.g. https://huggingface.co/mistralai/Mistral-7B-v0.1. Convert the model
    to nemo format by running steps from [checkpoint conversion](/docs/checkpoint-conversion.md#huggingface-to-nemo) docs.
 
-4. Run finetuning. The commands below are assumed to be run on a Slurm cluster, but you can modify them to run
+4. Run training. The commands below are assumed to be run on a Slurm cluster, but you can modify them to run
    locally for small enough models. Here is an example command for Mistral-7b
 
    ```

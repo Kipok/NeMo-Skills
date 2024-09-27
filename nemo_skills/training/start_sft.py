@@ -46,7 +46,7 @@ mp.set_start_method("spawn", force=True)
 
 def _modify_config(gpt_cfg, cfg, add_cfg_to_tree=False):
     """
-    This function modifies the original gpt pre-training config (gpt_cfg) with attributes from the finetuning config (cfg).
+    This function modifies the original gpt pre-training config (gpt_cfg) with attributes from the training config (cfg).
     The `add_cfg_to_tree` arg adds `cfg` to the top of the yaml tree which is needed for all `hparams.yaml` files when passed as an arg to `load_from_checkpoint()`.
     """
     OmegaConf.set_struct(gpt_cfg, True)

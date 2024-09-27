@@ -1,6 +1,6 @@
 # Checkpoint conversion
 
-Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
+Make sure to complete [prerequisites](/docs/prerequisites.md).
 
 We support 3 common model formats. Here are some recommendations on when each format should be used.
 - [HuggingFace (via vLLM)](https://github.com/vllm-project/vllm)
@@ -12,7 +12,7 @@ We support 3 common model formats. Here are some recommendations on when each fo
 
   If you want to run a large-scale generation, it's highly recommended to use TensoRT-LLM format.
   The time it takes to convert the checkpoint will be more than offset by a much faster generation
-  that either vLLM or NeMo.
+  than either vLLM or NeMo.
 
 - [NeMo](https://github.com/NVIDIA/NeMo)
 
@@ -24,13 +24,13 @@ To convert the checkpoint from one format to another use a command like this
 
 ```
 python -m nemo_skills.pipeline.convert \
-    --cluster slurm \
-    --input_model /hf_models/Meta-Llama-3.1-70B-Instruct \
-    --output_model /trt_models/llama3.1-70b-instruct \
-    --convert_from hf \
-    --convert_to trtllm \
-    --num_gpus 8 \
-    --hf_model_name meta-llama/Meta-Llama-3.1-70B-Instruct
+    --cluster=slurm \
+    --input_model=/hf_models/Meta-Llama-3.1-70B-Instruct \
+    --output_model=/trt_models/llama3.1-70b-instruct \
+    --convert_from=hf \
+    --convert_to=trtllm \
+    --num_gpus=8 \
+    --hf_model_name=meta-llama/Meta-Llama-3.1-70B-Instruct
 ```
 
 You can provide any extra arguments that will be passed directly to the underlying conversion scripts.
