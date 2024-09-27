@@ -181,7 +181,7 @@ class MathMetrics(BaseMetrics):
     def get_metrics(self):
         metrics = {"num_entries": self.total}
         if self.has_sympy:
-            metrics["sympy_correct"] = self.correct_sympy / self.total * 100.0
+            metrics["symbolic_correct"] = self.correct_sympy / self.total * 100.0
         if self.has_judge:
             metrics["judge_correct"] = self.correct_judge / self.total * 100.0
         if self.has_sympy and self.has_judge:

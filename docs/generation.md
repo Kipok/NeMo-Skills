@@ -1,15 +1,16 @@
 # Generation
 
-Make sure to complete [prerequisites](/docs/prerequisites.md) before proceeding.
+Make sure to complete [prerequisites](/docs/prerequisites.md).
+
+Please refer to the following docs if you have questions about:
+- [Prompt format](/docs/prompt-format.md)
+- [Generation parameters](/docs/common-parameters.md)
 
 [nemo_skills/pipeline/generate.py](/nemo_skills/pipeline/generate.py) can be used for large-scale data generation
 using LLMs. You provide an input jsonl file as well as the prompt config/template and we run LLM for each line
 of the input using the dictionary there to format the prompt. You input file keys need to match the prompt config
 but otherwise there is no restrictions on what data you use for input. See [prompt format](/docs/prompt-format.md)
 for more details on how to create new prompts.
-
-Check out [common parameters documentation](/docs/common-parameters.md) to learn about some of the
-common parameters accepted by all generation scripts.
 
 > **_NOTE:_** Before running the generation we always print the first prompt that we are about to send to an LLM.
 > It's a good idea to inspect that and make sure it's formatted properly.
@@ -284,4 +285,4 @@ the `predicted_answer` is matching the `expected_answer` done via a
 
 To get a more robust assessment of whether the solutions are correct you can follow up with an
 [LLM-as-a-judge evaluation](/docs/llm-as-a-judge.md) and then
-[prepare the data for training](/docs/finetuning.md#preparing-the-data).
+[prepare the data for training](/docs/training.md#preparing-the-data).
