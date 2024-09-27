@@ -52,11 +52,6 @@ if __name__ == "__main__":
 
     cluster_config = get_cluster_config(args.cluster, args.config_dir)
 
-    if args.server_type != "vllm":
-        check_if_mounted(cluster_config, args.model)
-    elif args.server_type == "vllm" and os.path.exists(args.model):
-        check_if_mounted(cluster_config, args.model)
-
     if args.log_dir:
         check_if_mounted(cluster_config, args.log_dir)
 
