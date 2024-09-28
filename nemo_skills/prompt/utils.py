@@ -87,15 +87,15 @@ class PromptTemplate:
     assistant_begin: str
     assistant_end: str
 
-    # used to execute code within these tags
-    code_begin: str
-    code_end: str
-    # used to extract the code output
-    code_output_begin: str
-    code_output_end: str
-
     # TODO: should stop phrases not be here?
     stop_phrases: List[str]
+
+    # used to execute code within these tags
+    code_begin: str = '<llm-code>'
+    code_end: str = '</llm-code>'
+    # used to extract the code output
+    code_output_begin: str = '<llm-code-output>'
+    code_output_end: str = '</llm-code-output>'
 
 
 @nested_dataclass(kw_only=True)
