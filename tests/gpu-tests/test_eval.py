@@ -112,7 +112,7 @@ def test_vllm_eval():
         f"    --model {model_path} "
         f"    --server_type vllm "
         f"    --output_dir /tmp/nemo-skills-tests/vllm-eval "
-        f"    --benchmarks algebra222:0 human-eval:0 mbpp:0 ifeval:0 mmlu:0 "
+        f"    --benchmarks algebra222:0,human-eval:0,mbpp:0,ifeval:0,mmlu:0 "
         f"    --server_gpus 1 "
         f"    --server_nodes 1 "
         f"    --num_jobs 1 "

@@ -88,7 +88,7 @@ python -m nemo_skills.pipeline.eval \
     --model=/workspace/my-training-job/checkpoints/model-averaged-nemo \
     --server_type=nemo \
     --output_dir=/workspace/my-training-job/results/ \
-    --benchmarks gsm8k:0 math:0 \
+    --benchmarks gsm8k:0,math:0 \
     --server_gpus=8 \
     --run_after=my-training-job \
     ++prompt_template=llama3-instruct \
@@ -126,7 +126,7 @@ python -m nemo_skills.pipeline.eval \
     --model=/workspace/my-training-job/checkpoints/model-averaged-nemo \
     --server_type=nemo \
     --output_dir=/workspace/my-training-job/results/ \
-    --benchmarks gsm8k:0 math:0 \
+    --benchmarks gsm8k:0,math:0 \
     --server_gpus=8 \
     --run_after=my-training-job-to-trtllm \
     ++prompt_template=llama3-instruct \
