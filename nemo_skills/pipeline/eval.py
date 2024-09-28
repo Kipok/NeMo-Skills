@@ -98,7 +98,8 @@ def eval(
     """
     setup_logging(disable_hydra_logs=False)
     extra_arguments = f'{" ".join(ctx.args)}'
-    LOG.info(f"Extra arguments that will be passed to the underlying script: {extra_arguments}")
+    LOG.info("Starting evaluation job")
+    LOG.info("Extra arguments that will be passed to the underlying script: %s", extra_arguments)
 
     cluster_config = get_cluster_config(cluster, config_dir)
     check_if_mounted(cluster_config, output_dir)
@@ -157,6 +158,7 @@ def eval(
 
     with run.Experiment(expname) as exp:
         for idx, eval_cmd in enumerate(eval_cmds):
+            LOG.info("Launching task with command %s", eval_cmd)
             add_task(
                 exp,
                 cmd=get_generation_command(server_address=server_address, generation_commands=eval_cmd),

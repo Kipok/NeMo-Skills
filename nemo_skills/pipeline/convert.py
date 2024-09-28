@@ -62,7 +62,7 @@ def get_hf_to_trtllm_cmd(
         f"    --output_dir {output_model}-tmp "
         f"    --dtype {dtype} "
         f"    --tp_size {num_gpus} "
-        f"    --pp_size {num_nodes} &&"
+        f"    --pp_size {num_nodes} && "
         f"trtllm-build "
         f"    --checkpoint_dir {output_model}-tmp "
         f"    --output_dir {output_model} "
@@ -145,7 +145,8 @@ def convert(
     """Convert a checkpoint from one format to another."""
     setup_logging(disable_hydra_logs=False)
     extra_arguments = f'{" ".join(ctx.args)}'
-    LOG.info(f"Extra arguments that will be passed to the underlying script: {extra_arguments}")
+    LOG.info("Starting conversion job")
+    LOG.info("Extra arguments that will be passed to the underlying script: %s", extra_arguments)
 
     model_type = model_type.value
     convert_from = convert_from.value
@@ -189,6 +190,7 @@ def convert(
         extra_arguments=extra_arguments,
     )
     with run.Experiment(expname) as exp:
+        LOG.info("Launching task with command %s", conversion_cmd)
         add_task(
             exp,
             cmd=conversion_cmd,
