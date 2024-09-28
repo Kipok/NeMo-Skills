@@ -179,10 +179,7 @@ def generate(cfg: GenerateSolutionsConfig):
 
             if len(data_points) == cfg.batch_size or idx == cfg.max_samples - 1:
                 prompts = [prompt.fill_prompt(dp) for dp in data_points]
-                if cfg.prompt_template:
-                    stop_phrases = list(prompt.config.template.stop_phrases)
-                else:
-                    stop_phrases = None
+                stop_phrases = prompt.stop_phrases
 
                 outputs = llm.generate(
                     prompts=prompts, stop_phrases=stop_phrases, **asdict(cfg.inference), **extra_generate_params

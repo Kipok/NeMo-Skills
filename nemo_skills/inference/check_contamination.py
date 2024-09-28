@@ -139,11 +139,7 @@ def check_contamination(cfg: CheckContaminationConfig):
                             )
 
                 prompts = [prompt.fill_prompt(dp) for dp in all_data]
-
-                if cfg.prompt_template:
-                    stop_phrases = list(prompt.config.template.stop_phrases)
-                else:
-                    stop_phrases = None
+                stop_phrases = prompt.stop_phrases
 
                 outputs = llm.generate(prompts=prompts, stop_phrases=stop_phrases, **asdict(cfg.inference))
                 output_idx = 0

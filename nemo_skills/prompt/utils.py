@@ -223,6 +223,14 @@ class Prompt:
 
             return messages
 
+    @property
+    def stop_phrases(self):
+        """ Returns the stop phrases from the template if it exists, otherwise None. """
+        if self.config.template:
+            return list(self.config.template.stop_phrases)
+
+        return None
+
     def __str__(self):
         return str(self.config)
 
