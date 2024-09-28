@@ -13,15 +13,13 @@
 # limitations under the License.
 
 import importlib
-from argparse import ArgumentParser
 
 import nemo_run as run
 import typer
 
 from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, get_generation_command, run_exp
+from nemo_skills.pipeline.app import app
 from nemo_skills.utils import setup_logging
-
-app = typer.Typer()
 
 
 def get_greedy_cmd(
@@ -59,53 +57,35 @@ def get_sampling_cmd(benchmark, split, output_dir, random_seed, extra_eval_args=
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 def eval(
     ctx: typer.Context,
-    cluster: str = typer.Option(),
-    output_dir: str = typer.Option(),
-    benchmarks: list[str] = typer.Option(),
-    config_dir: str | None = None,
-    expname: str = "eval",
-    model: str | None = None,
-    server_address: str | None = None,
-    server_type: str = 'trtllm',
-    server_gpus: int | None = None,
-    server_nodes: int = 1,
-    server_args: str = "",
-    starting_seed: int = 0,
-    split: str = 'test',
-    num_jobs: int = -1,
-    partition: str | None = None,
-    extra_eval_args: str = "",
-    skip_greedy: bool = False,
-    run_after: str | None = None,
+    cluster: str = typer.Option(help="One of the configs inside ./cluster_configs or NEMO_SKILLS_CONFIGS"),
+    output_dir: str = typer.Option(help="Where to store evaluation results"),
+    benchmarks: list[str] = typer.Option(
+        help="Need to be in a format <benchmark>:<num samples for majority voting>. "
+        "Use <benchmark>:0 to only run greedy decoding"
+    ),
+    config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
+    expname: str = typer.Option("eval", help="Name of the experiment"),
+    model: str = typer.Option(None, help="Path to the model to be evaluated"),
+    server_address: str = typer.Option(None, help="Address of the server hosting the model"),
+    server_type: str = typer.Option('trtllm', help="Type of server to use"),
+    server_gpus: int = typer.Option(None, help="Number of GPUs to use if hosting the model"),
+    server_nodes: int = typer.Option(1, help="Number of nodes to use if hosting the model"),
+    server_args: str = typer.Option("", help="Additional arguments for the server"),
+    starting_seed: int = typer.Option(0, help="Starting seed for random sampling"),
+    split: str = typer.Option('test', help="Data split to use for evaluation"),
+    num_jobs: int = typer.Option(-1, help="Number of jobs to split the evaluation into"),
+    partition: str = typer.Option(None, help="Cluster partition to use"),
+    extra_eval_args: str = typer.Option("", help="Additional arguments for evaluation"),
+    skip_greedy: bool = typer.Option(False, help="Whether to skip greedy evaluation"),
+    run_after: str = typer.Option(None, help="Task to run after the evaluation"),
 ):
-    """
-    Evaluate a model using specified benchmarks and configurations.
+    """Evaluate a model on specified benchmarks.
 
-    Args:
-        ctx (typer.Context): Context for passing extra options to the underlying script.
-        cluster (str): Cluster configuration name.
-        output_dir (str): Directory to store evaluation outputs.
-        benchmarks (list[str]): List of benchmarks in the format "benchmark_name:num_repeats".
-        config_dir (str | None, optional): Directory containing cluster configuration files. Defaults to None.
-        expname (str, optional): Name of the experiment. Defaults to "eval".
-        model (str | None, optional): Path to the model to be evaluated. Defaults to None.
-        server_address (str | None, optional): Address of the server hosting the model. Defaults to None.
-        server_type (str, optional): Type of server to use. Defaults to 'trtllm'.
-        server_gpus (int | None, optional): Number of GPUs to use if hosting the model. Defaults to None.
-        server_nodes (int, optional): Number of nodes to use if hosting the model. Defaults to 1.
-        server_args (str, optional): Additional arguments for the server. Defaults to "".
-        starting_seed (int, optional): Starting seed for random sampling. Defaults to 0.
-        split (str, optional): Data split to use for evaluation. Defaults to 'test'.
-        num_jobs (int, optional): Number of jobs to split the evaluation into. Defaults to -1.
-        partition (str | None, optional): Cluster partition to use. Defaults to None.
-        extra_eval_args (str, optional): Additional arguments for evaluation. Defaults to "".
-        skip_greedy (bool, optional): Whether to skip greedy evaluation. Defaults to False.
-        run_after (str | None, optional): Task to run after the evaluation. Defaults to None.
+    Any extra arguments will be directly passed to nemo_skills.inference.generate
     """
-
     setup_logging(disable_hydra_logs=False)
 
-    extra_arguments = f'{" ".join(ctx.args)}'
+    extra_arguments = f'{" ".join(ctx.args[1:])}'
 
     cluster_config = get_cluster_config(cluster, config_dir)
     check_if_mounted(cluster_config, output_dir)
@@ -180,5 +160,6 @@ def eval(
 
 
 if __name__ == "__main__":
+    # workaround for https://github.com/fastapi/typer/issues/341
     typer.main.get_command_name = lambda name: name
     app()
