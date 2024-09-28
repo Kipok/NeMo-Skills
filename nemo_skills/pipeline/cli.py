@@ -16,10 +16,16 @@
 import typer
 
 from nemo_skills.pipeline.app import app
+from nemo_skills.pipeline.check_contamination import check_contamination
 
 # need the imports to make sure the commands are registered
 from nemo_skills.pipeline.convert import convert
 from nemo_skills.pipeline.eval import eval
+from nemo_skills.pipeline.generate import generate
+from nemo_skills.pipeline.llm_math_judge import llm_math_judge
+from nemo_skills.pipeline.start_server import start_server
+from nemo_skills.pipeline.summarize_results import summarize_results
+from nemo_skills.pipeline.train import train
 
 typer.main.get_command_name = lambda name: name
 

@@ -12,118 +12,110 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from argparse import ArgumentParser
+import logging
+from enum import Enum
+from typing import List
 
 import nemo_run as run
+import typer
 
 from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, get_generation_command, run_exp
+from nemo_skills.pipeline.app import app, typer_unpacker
 from nemo_skills.utils import setup_logging
+
+LOG = logging.getLogger(__file__)
+
+
+class SupportedServers(str, Enum):
+    trtllm = "trtllm"
+    vllm = "vllm"
+    nemo = "nemo"
+    openai = "openai"
 
 
 def get_judge_cmd(input_files, extra_arguments=""):
     return f'python -m nemo_skills.inference.llm_math_judge ++input_files={input_files} {extra_arguments}'
 
 
-if __name__ == "__main__":
-    setup_logging(disable_hydra_logs=False)
-    parser = ArgumentParser(usage="TODO")
-    wrapper_args = parser.add_argument_group('wrapper arguments')
-    wrapper_args.add_argument("--config_dir", default=None, help="Path to the cluster_configs dir")
-    wrapper_args.add_argument("--log_dir", required=False, help="Can specify a custom location for slurm logs")
-    wrapper_args.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
-    wrapper_args.add_argument(
-        "--input_files",
-        required=True,
-        nargs="+",
+@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+@typer_unpacker
+def judge(
+    ctx: typer.Context,
+    cluster: str = typer.Option(..., help="One of the configs inside ./cluster_configs or NEMO_SKILLS_CONFIGS"),
+    input_files: List[str] = typer.Option(
+        ...,
         help="Can also specify multiple glob patterns, like output-rs*.jsonl. Will add judgement field to each file",
-    )
-    wrapper_args.add_argument("--expname", default="llm-math-judge", help="Nemo run experiment name")
-    wrapper_args.add_argument("--model", required=False, help="Path to the model or model name in API.")
-    # TODO: should all this be inside a single dictionary config?
-    wrapper_args.add_argument(
-        "--server_address",
-        required=False,
-        help="Use ip:port for self-hosted models or the API url if using model providers.",
-    )
-    # TODO: let's make it not needed - we just need to unify our api calls
-    wrapper_args.add_argument(
-        "--server_type",
-        choices=('nemo', 'trtllm', 'vllm', 'openai'),
-        default='trtllm',
-        help="Type of the server to start. This parameter is ignored if server_address is specified.",
-    )
-    wrapper_args.add_argument("--server_gpus", type=int, required=False)
-    wrapper_args.add_argument(
-        "--server_nodes",
-        type=int,
-        default=1,
-        help="Number of nodes required for hosting LLM server.",
-    )
-    parser.add_argument("--server_args", default="", help="Any extra arguments to pass to the server.")
-    # TODO: support this
-    # wrapper_args.add_argument(
-    #     "--num_jobs",
-    #     type=int,
-    #     default=-1,
-    #     help="Will launch this many separate jobs and split the benchmarks across them. "
-    #     "Set -1 to run each benchmark / random seed as a separate job.",
-    # )
-    wrapper_args.add_argument(
-        "--partition",
-        required=False,
-        help="Can specify if need interactive jobs or a specific non-default partition",
-    )
-    wrapper_args.add_argument(
-        "--run_after",
-        required=False,
+    ),
+    config_dir: str = typer.Option(None, help="Path to the cluster_configs dir"),
+    log_dir: str = typer.Option(None, help="Can specify a custom location for slurm logs"),
+    expname: str = typer.Option("llm-math-judge", help="Nemo run experiment name"),
+    model: str = typer.Option(None, help="Path to the model or model name in API"),
+    server_address: str = typer.Option(
+        None, help="Use ip:port for self-hosted models or the API url if using model providers"
+    ),
+    server_type: SupportedServers = typer.Option(SupportedServers.trtllm, help="Type of server to use"),
+    server_gpus: int = typer.Option(None, help="Number of GPUs to use if hosting the model"),
+    server_nodes: int = typer.Option(1, help="Number of nodes to use if hosting the model"),
+    server_args: str = typer.Option("", help="Any extra arguments to pass to the server"),
+    partition: str = typer.Option(
+        None, help="Can specify if need interactive jobs or a specific non-default partition"
+    ),
+    run_after: str = typer.Option(
+        None,
         help="Can specify an expname that needs to be completed before this one starts (will use as slurm dependency)",
-    )
+    ),
+):
+    """Judge LLM math outputs using another LLM."""
+    setup_logging(disable_hydra_logs=False)
+    extra_arguments = f'{" ".join(ctx.args)}'
+    LOG.info("Starting LLM math judge job")
+    LOG.info("Extra arguments that will be passed to the underlying script: %s", extra_arguments)
 
-    args, unknown = parser.parse_known_args()
-
-    extra_arguments = f'{" ".join(unknown)}'
-
-    cluster_config = get_cluster_config(args.cluster, args.config_dir)
-    for input_file in args.input_files:
+    cluster_config = get_cluster_config(cluster, config_dir)
+    for input_file in input_files:
         check_if_mounted(cluster_config, input_file)
-    if args.log_dir:
-        check_if_mounted(cluster_config, args.log_dir)
-    args.input_files = f'"{" ".join(args.input_files)}"'
+    if log_dir:
+        check_if_mounted(cluster_config, log_dir)
+    input_files_str = f'"{" ".join(input_files)}"'
 
-    if args.server_address is None:  # we need to host the model
-        assert args.server_gpus is not None, "Need to specify server_gpus if hosting the model"
-        args.server_address = "localhost:5000"
+    if server_address is None:  # we need to host the model
+        assert server_gpus is not None, "Need to specify server_gpus if hosting the model"
+        server_address = "localhost:5000"
 
         server_config = {
-            "model_path": args.model,
-            "server_type": args.server_type,
-            "num_gpus": args.server_gpus,
-            "num_nodes": args.server_nodes,
-            "server_args": args.server_args,
+            "model_path": model,
+            "server_type": server_type,
+            "num_gpus": server_gpus,
+            "num_nodes": server_nodes,
+            "server_args": server_args,
         }
-        extra_arguments += f" ++server.server_type={args.server_type} "
+        extra_arguments += f" ++server.server_type={server_type} "
     else:  # model is hosted elsewhere
         server_config = None
         extra_arguments += (
-            f" ++server.server_type={args.server_type} "
-            f" ++server.base_url={args.server_address} "
-            f" ++server.model={args.model} "
+            f" ++server.server_type={server_type} ++server.base_url={server_address} ++server.model={model} "
         )
 
-    with run.Experiment(args.expname) as exp:
+    with run.Experiment(expname) as exp:
         add_task(
             exp,
             cmd=get_generation_command(
-                server_address=args.server_address,
-                generation_commands=get_judge_cmd(args.input_files, extra_arguments),
+                server_address=server_address,
+                generation_commands=get_judge_cmd(input_files_str, extra_arguments),
             ),
             task_name="llm-math-judge",
-            log_dir=args.log_dir,
+            log_dir=log_dir,
             container=cluster_config["containers"]["nemo-skills"],
             cluster_config=cluster_config,
-            partition=args.partition,
+            partition=partition,
             server_config=server_config,
             with_sandbox=True,
-            run_after=args.run_after,
+            run_after=run_after,
         )
         run_exp(exp, cluster_config)
+
+
+if __name__ == "__main__":
+    # workaround for https://github.com/fastapi/typer/issues/341
+    typer.main.get_command_name = lambda name: name
+    app()
