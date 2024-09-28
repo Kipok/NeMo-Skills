@@ -148,10 +148,10 @@ def convert(
     LOG.info("Starting conversion job")
     LOG.info("Extra arguments that will be passed to the underlying script: %s", extra_arguments)
 
-    model_type = model_type.value
-    convert_from = convert_from.value
-    convert_to = convert_to.value
-    dtype = dtype.value
+    model_type = str(model_type)
+    convert_from = str(convert_from)
+    convert_to = str(convert_to)
+    dtype = str(dtype)
 
     # TODO: add support for qwen nemo conversion
     if model_type == "qwen":

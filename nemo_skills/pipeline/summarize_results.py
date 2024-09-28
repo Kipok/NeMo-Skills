@@ -44,8 +44,10 @@ def summarize_results(
         "we assume the location is relative to one of the mounted dirs.",
     ),
     config_dir: Optional[str] = typer.Option(None, help="Path to the cluster_configs dir."),
-    benchmarks: Optional[List[str]] = typer.Option(
-        None, help="Specify benchmarks to run. If not specified, all benchmarks in the results_dir will be used."
+    benchmarks: Optional[str] = typer.Option(
+        None,
+        help="Specify benchmarks to run (comma separated). "
+        "If not specified, all benchmarks in the results_dir will be used.",
     ),
     debug: bool = typer.Option(False, help="Print debug information"),
 ):
@@ -75,9 +77,8 @@ def summarize_results(
     benchmarks_paths = glob.glob(f'{results_dir}/*')
 
     if benchmarks:
-        benchmarks_paths = [b for b in benchmarks_paths if Path(b).name in benchmarks]
+        benchmarks_paths = [b for b in benchmarks_paths if Path(b).name in benchmarks.split(",")]
 
-    current_dir = Path(__file__).absolute().parent
     results = defaultdict(dict)
     for benchmark_path in benchmarks_paths:
         benchmark = str(Path(benchmark_path).name)
@@ -123,7 +124,6 @@ def summarize_results(
         except Exception as e:
             print(f"Error running compute_metrics.py for {benchmark}: {e}")
 
-    lines_to_write = []
     for benchmark, benchmark_results in results.items():
         if not benchmark_results:
             continue

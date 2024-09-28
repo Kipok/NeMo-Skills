@@ -164,6 +164,8 @@ def train(
     LOG.info("Starting training job")
     LOG.info("Extra arguments that will be passed to the underlying script: %s", extra_arguments)
 
+    training_algo = str(training_algo)
+
     cluster_config = get_cluster_config(cluster, config_dir)
     check_if_mounted(cluster_config, output_dir)
     check_if_mounted(cluster_config, nemo_model)

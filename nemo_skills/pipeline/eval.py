@@ -80,7 +80,7 @@ def eval(
     expname: str = typer.Option("eval", help="Name of the experiment"),
     model: str = typer.Option(None, help="Path to the model to be evaluated"),
     server_address: str = typer.Option(None, help="Address of the server hosting the model"),
-    server_type: SupportedServers = typer.Option('trtllm', help="Type of server to use"),
+    server_type: SupportedServers = typer.Option(help="Type of server to use"),
     server_gpus: int = typer.Option(None, help="Number of GPUs to use if hosting the model"),
     server_nodes: int = typer.Option(1, help="Number of nodes to use if hosting the model"),
     server_args: str = typer.Option("", help="Additional arguments for the server"),
@@ -100,6 +100,8 @@ def eval(
     extra_arguments = f'{" ".join(ctx.args)}'
     LOG.info("Starting evaluation job")
     LOG.info("Extra arguments that will be passed to the underlying script: %s", extra_arguments)
+
+    server_type = str(server_type)
 
     cluster_config = get_cluster_config(cluster, config_dir)
     check_if_mounted(cluster_config, output_dir)

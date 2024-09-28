@@ -67,7 +67,7 @@ def generate(
     server_address: str = typer.Option(
         None, help="Use ip:port for self-hosted models or the API url if using model providers"
     ),
-    server_type: SupportedServers = typer.Option('trtllm', help="Type of server to use"),
+    server_type: SupportedServers = typer.Option(help="Type of server to use"),
     server_gpus: int = typer.Option(None, help="Number of GPUs to use if hosting the model"),
     server_nodes: int = typer.Option(1, help="Number of nodes required for hosting LLM server"),
     server_args: str = typer.Option("", help="Any extra arguments to pass to the server"),
@@ -89,6 +89,8 @@ def generate(
     """Generate LLM completions for a given input file."""
     setup_logging(disable_hydra_logs=False)
     extra_arguments = f'{" ".join(ctx.args)}'
+
+    server_type = str(server_type)
 
     cluster_config = get_cluster_config(cluster, config_dir)
     check_if_mounted(cluster_config, output_dir)

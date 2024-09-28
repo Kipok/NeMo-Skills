@@ -70,6 +70,8 @@ def check_contamination(
     setup_logging(disable_hydra_logs=False)
     extra_arguments = f'{" ".join(ctx.args)}'
 
+    server_type = str(server_type)
+
     cluster_config = get_cluster_config(cluster, config_dir)
     check_if_mounted(cluster_config, input_file)
     check_if_mounted(cluster_config, output_file)
