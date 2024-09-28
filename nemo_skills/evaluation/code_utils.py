@@ -29,8 +29,8 @@ def postprocess_code_fim(generation_dict: dict):
     end_token = "<|end_of_middle|>"
 
     completion = generation_dict['generation']
-    completion = completion.strip()
-    completion = completion.replace("\r", "")
+    # completion = completion.strip()
+    # completion = completion.replace("\r", "")
     if '```' in completion:
         if '```python' in completion:
             def_line = completion.index('```python') + len('```python')
@@ -45,12 +45,10 @@ def postprocess_code_fim(generation_dict: dict):
             print(completion)
             print("================\n")
 
-    # Find the start and end positions of the tokens
-    start_index = completion.find(start_token) + len(start_token)
+    start_index = completion.find(start_token)
     end_index = completion.find(end_token)
-
-    # Extract the substring between the tokens
     if start_index != -1 and end_index != -1:
+        start_index += len(start_token)
         completion = completion[start_index:end_index]
 
     generation_dict["completion"] = completion

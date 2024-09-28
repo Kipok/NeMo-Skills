@@ -1,0 +1,11 @@
+# Prompt for code generation with Llama instruct
+
+system: ""
+
+user: |-
+  <PRE> {question} <SUF> {suffix} <MID>
+
+prompt_template: |-
+  <s> {system}{user}{generation}
+
+stop_phrases: ["</s>"]

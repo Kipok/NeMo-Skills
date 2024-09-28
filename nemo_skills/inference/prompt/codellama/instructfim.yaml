@@ -1,0 +1,20 @@
+# Prompt for code generation with Llama instruct
+
+system: |-
+  You are an exceptionally intelligent coding assistant that consistently delivers accurate and reliable responses to user instructions.
+
+user: |-
+  Here is the given code where you need to fill in the middle by replacing [FILL_ME] with your code.
+  ```python
+  {question}[FILL_ME]{suffix}
+  ```
+
+prompt_template: |-
+  <s> [INST] <<SYS>>
+  {system}
+  <</SYS>>
+  {user}
+  [/INST]
+  {generation}
+
+stop_phrases: ["</s>"]
