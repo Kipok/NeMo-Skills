@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import inspect
 import logging
-
+import os
 from functools import wraps
 from typing import Callable
 
+import nemo_run as run
 import typer
 from typer.models import ParameterInfo
 
-import nemo_run as run
 from nemo_skills.pipeline.utils import get_mounts_from_config
 
 app = typer.Typer(no_args_is_help=True)
@@ -66,6 +65,7 @@ def typer_unpacker(f: Callable):
         return f(*args, **kwargs)
 
     return wrapper
+
 
 def create_remote_directory(directory: str, cluster_config: dict):
     """Create a remote directory on the cluster."""
