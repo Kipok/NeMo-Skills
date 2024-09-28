@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import importlib
+from enum import Enum
 
 import nemo_run as run
 import typer
@@ -54,20 +55,28 @@ def get_sampling_cmd(benchmark, split, output_dir, random_seed, extra_eval_args=
     )
 
 
+class SupportedServers(str, Enum):
+    trtllm = "trtllm"
+    vllm = "vllm"
+    nemo = "nemo"
+    openai = "openai"
+
+
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 def eval(
     ctx: typer.Context,
-    cluster: str = typer.Option(help="One of the configs inside ./cluster_configs or NEMO_SKILLS_CONFIGS"),
-    output_dir: str = typer.Option(help="Where to store evaluation results"),
+    cluster: str = typer.Option(..., help="One of the configs inside ./cluster_configs or NEMO_SKILLS_CONFIGS"),
+    output_dir: str = typer.Option(..., help="Where to store evaluation results"),
     benchmarks: list[str] = typer.Option(
+        ...,
         help="Need to be in a format <benchmark>:<num samples for majority voting>. "
-        "Use <benchmark>:0 to only run greedy decoding"
+        "Use <benchmark>:0 to only run greedy decoding",
     ),
     config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
     expname: str = typer.Option("eval", help="Name of the experiment"),
     model: str = typer.Option(None, help="Path to the model to be evaluated"),
     server_address: str = typer.Option(None, help="Address of the server hosting the model"),
-    server_type: str = typer.Option('trtllm', help="Type of server to use"),
+    server_type: SupportedServers = typer.Option('trtllm', help="Type of server to use"),
     server_gpus: int = typer.Option(None, help="Number of GPUs to use if hosting the model"),
     server_nodes: int = typer.Option(1, help="Number of nodes to use if hosting the model"),
     server_args: str = typer.Option("", help="Additional arguments for the server"),
