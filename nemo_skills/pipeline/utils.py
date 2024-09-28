@@ -181,22 +181,41 @@ def get_cluster_config(cluster, config_dir=None):
     """Trying to find an appropriate cluster config.
 
     Will search in the following order:
-    1. NEMO_SKILLS_CONFIGS environment variable
+    1. NEMO_SKILLS_CONFIG_DIR environment variable
     2. config_dir parameter
     3. Current folder / cluster_configs
     4. This file folder / ../../cluster_configs
+
+    If NEMO_SKILLS_CONFIG is provided, it will be used as a full path to the config file
+    and NEMO_SKILLS_CONFIG_DIR will be ignored.
     """
-    if 'NEMO_SKILLS_CONFIGS' in os.environ:
-        config_dir = Path(os.environ['NEMO_SKILLS_CONFIGS'])
-    elif config_dir is not None:
-        config_dir = Path(config_dir)
+    config_file = None
+
+    # First check if NEMO_SKILLS_CONFIG is provided as a full path
+    if 'NEMO_SKILLS_CONFIG' in os.environ:
+        config_file = Path(os.environ['NEMO_SKILLS_CONFIG'])
+        config_dir = config_file.parent
+
+    # Then check if NEMO_SKILLS_CONFIG_DIR is provided
+    elif 'NEMO_SKILLS_CONFIG_DIR' in os.environ:
+        config_dir = Path(os.environ['NEMO_SKILLS_CONFIG_DIR'])
+
+    # If config_dir was provided, or one of the above env variables was set
+    if config_dir is not None:
+        config_dir = Path(str(config_dir))
     else:
+        # If no config_dir was provided, we will try to find the config in the current or parent folder
         if (Path.cwd() / 'cluster_configs').is_dir():
             config_dir = Path.cwd() / 'cluster_configs'
         else:
             config_dir = Path(__file__).parents[2] / 'cluster_configs'
 
-    with open(config_dir / f'{cluster}.yaml', "rt", encoding="utf-8") as fin:
+    # If config_file is not already resolved, concatenate the config_dir with the cluster name
+    if config_file is None:
+        config_file = config_dir / f'{cluster}.yaml'
+
+    # Read the config
+    with open(str(config_file), "rt", encoding="utf-8") as fin:
         cluster_config = yaml.safe_load(fin)
 
     return hashabledict(cluster_config)

@@ -39,7 +39,7 @@ your jobs and what to mount in the containers. Please read on to learn more abou
 
 All of the scripts inside [nemo_skills/pipeline](/nemo_skills/pipeline) accept `--cluster` argument which you can use
 to control where the job gets executed. That argument picks up one of the configs inside your local [cluster_configs](/cluster_configs/)
-folder by default, but you can specify another location with `--config_dir` or set it in `NEMO_SKILLS_CONFIGS` env variable.
+folder by default, but you can specify another location with `--config_dir` or set it in `NEMO_SKILLS_CONFIG_DIR` env variable.
 The cluster config defines an executor (local or slurm), mounts for data/model access and (slurm-only) various parameters
 such as account, partition, ssh-tunnel arguments and so on.
 
