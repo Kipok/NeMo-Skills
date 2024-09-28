@@ -19,7 +19,7 @@ import typer
 from huggingface_hub import get_token
 
 from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, run_exp
-from nemo_skills.pipeline.app import app
+from nemo_skills.pipeline.app import app, typer_unpacker
 from nemo_skills.utils import setup_logging
 
 
@@ -116,6 +116,7 @@ class SupportedDtypes(str, Enum):
 
 
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+@typer_unpacker
 def convert(
     ctx: typer.Context,
     config_dir: str = typer.Option(None, help="Path to the cluster_configs dir"),

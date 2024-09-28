@@ -19,7 +19,7 @@ import nemo_run as run
 import typer
 
 from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, get_generation_command, run_exp
-from nemo_skills.pipeline.app import app
+from nemo_skills.pipeline.app import app, typer_unpacker
 from nemo_skills.utils import setup_logging
 
 
@@ -63,6 +63,7 @@ class SupportedServers(str, Enum):
 
 
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+@typer_unpacker
 def eval(
     ctx: typer.Context,
     cluster: str = typer.Option(..., help="One of the configs inside ./cluster_configs or NEMO_SKILLS_CONFIGS"),
