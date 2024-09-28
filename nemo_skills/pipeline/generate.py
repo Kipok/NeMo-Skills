@@ -86,7 +86,7 @@ def generate(
         None, help="Can specify an expname that needs to be completed before this one starts"
     ),
 ):
-    """Generate outputs using a specified model and configuration."""
+    """Generate LLM completions for a given input file."""
     setup_logging(disable_hydra_logs=False)
     extra_arguments = f'{" ".join(ctx.args)}'
 

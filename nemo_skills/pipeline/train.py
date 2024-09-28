@@ -159,7 +159,7 @@ def train(
     average_steps: list[int] = typer.Option(None, help="List of checkpoint steps to average"),
     run_after: str = typer.Option(None, help="Experiment to run after"),
 ):
-    """LLM training pipeline."""
+    """Train (SFT or DPO) an LLM model."""
     setup_logging(disable_hydra_logs=False)
     extra_arguments = f'{" ".join(ctx.args)}'
     LOG.info("Starting training job")

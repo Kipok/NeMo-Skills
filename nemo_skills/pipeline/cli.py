@@ -16,9 +16,9 @@
 import typer
 
 from nemo_skills.pipeline.app import app
-from nemo_skills.pipeline.check_contamination import check_contamination
 
 # need the imports to make sure the commands are registered
+from nemo_skills.pipeline.check_contamination import check_contamination
 from nemo_skills.pipeline.convert import convert
 from nemo_skills.pipeline.eval import eval
 from nemo_skills.pipeline.generate import generate

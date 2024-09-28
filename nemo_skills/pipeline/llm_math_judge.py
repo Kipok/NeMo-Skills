@@ -39,7 +39,7 @@ def get_judge_cmd(input_files, extra_arguments=""):
 
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 @typer_unpacker
-def judge(
+def llm_math_judge(
     ctx: typer.Context,
     cluster: str = typer.Option(..., help="One of the configs inside ./cluster_configs or NEMO_SKILLS_CONFIGS"),
     input_files: List[str] = typer.Option(

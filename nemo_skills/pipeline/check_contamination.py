@@ -66,7 +66,7 @@ def check_contamination(
         help="Can specify an expname that needs to be completed before this one starts (will use as slurm dependency)",
     ),
 ):
-    """Check contamination in the input data."""
+    """Check contamination between train/test via an LLM call."""
     setup_logging(disable_hydra_logs=False)
     extra_arguments = f'{" ".join(ctx.args)}'
 

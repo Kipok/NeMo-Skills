@@ -32,7 +32,7 @@ from nemo_skills.utils import setup_logging
 
 @app.command()
 @typer_unpacker
-def main(
+def summarize_results(
     results_dir: str = typer.Argument(
         ...,
         help="Path to the dir with results. Needs to contain <benchmark> dirs inside. "
@@ -49,6 +49,7 @@ def main(
     ),
     debug: bool = typer.Option(False, help="Print debug information"),
 ):
+    """Summarize results of an evaluation job."""
     setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not debug else logging.DEBUG)
 
     # copying results from the cluster if necessary

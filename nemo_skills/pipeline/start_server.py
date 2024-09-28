@@ -41,7 +41,7 @@ def start_server(
     partition: str = typer.Option(None, help="Cluster partition to use"),
     with_sandbox: bool = typer.Option(False, help="Enables local sandbox if code execution is required"),
 ):
-    """Start a server for hosting the model."""
+    """Self-host a model server."""
     setup_logging(disable_hydra_logs=False)
 
     cluster_config = get_cluster_config(cluster, config_dir)
