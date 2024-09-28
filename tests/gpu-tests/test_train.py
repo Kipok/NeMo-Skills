@@ -14,7 +14,6 @@
 
 import importlib
 import os
-import subprocess
 import sys
 from pathlib import Path
 
@@ -32,52 +31,47 @@ def test_sft():
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
 
-    cmd = (
-        f"ns train "
-        f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
-        f"    --expname test-sft "
-        f"    --output_dir /tmp/nemo-skills-tests/train-sft "
-        f"    --nemo_model {model_path} "
-        f"    --num_nodes 1 "
-        f"    --num_gpus 1 "
-        f"    --num_training_jobs 1 "
-        f"    --training_data /nemo_run/code/tests/data/small-sft-data.test "
-        f"    --disable_wandb "
-        f"    ++trainer.sft.val_check_interval=7 "
-        f"    ++trainer.sft.save_interval=7 "
-        f"    ++trainer.sft.limit_val_batches=1 "
-        f"    ++trainer.sft.max_steps=15 "
-        f"    ++trainer.sft.max_epochs=10 "
-        f"    ++model.data.train_ds.add_eos=False "
-        f"    ++model.data.train_ds.global_batch_size=10 "
-        f"    ++model.data.train_ds.micro_batch_size=2 "
-        f"    ++model.optim.lr=1e-6 "
-        f"    ++model.optim.sched.warmup_steps=0 "
-        f"    ++model.tensor_model_parallel_size=1 "
-        f"    ++model.pipeline_model_parallel_size=1 "
+    train(
+        ctx=wrap_arguments(
+            "++trainer.sft.val_check_interval=7 "
+            "++trainer.sft.save_interval=7 "
+            "++trainer.sft.limit_val_batches=1 "
+            "++trainer.sft.max_steps=15 "
+            "++trainer.sft.max_epochs=10 "
+            "++model.data.train_ds.add_eos=False "
+            "++model.data.train_ds.global_batch_size=10 "
+            "++model.data.train_ds.micro_batch_size=2 "
+            "++model.optim.lr=1e-6 "
+            "++model.optim.sched.warmup_steps=0 "
+            "++model.tensor_model_parallel_size=1 "
+            "++model.pipeline_model_parallel_size=1 "
+        ),
+        cluster="test-local",
+        config_dir=Path(__file__).absolute().parent,
+        expname="test-sft",
+        output_dir="/tmp/nemo-skills-tests/train-sft",
+        nemo_model=model_path,
+        num_nodes=1,
+        num_gpus=1,
+        num_training_jobs=1,
+        training_data="/nemo_run/code/tests/data/small-sft-data.test",
+        disable_wandb=True,
     )
-    subprocess.run(cmd, shell=True, check=True)
-
-    # train(
-
-    # )
 
     # checking that the final model can be used for evaluation
-    cmd = (
-        f"ns eval "
-        f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
-        f"    --model /tmp/nemo-skills-tests/train-sft/model-averaged-nemo "
-        f"    --server_type nemo "
-        f"    --output_dir /tmp/nemo-skills-tests/train-sft/evaluation "
-        f"    --benchmarks gsm8k:0 "
-        f"    --server_gpus 1 "
-        f"    --server_nodes 1 "
-        f"    ++prompt_template=llama3-instruct "
-        f"    ++split=test "
-        f"    ++batch_size=8 "
-        f"    ++max_samples=10 "
+    eval(
+        ctx=wrap_arguments("++prompt_template=llama3-instruct " "++split=test " "++batch_size=8 " "++max_samples=10"),
+        cluster="test-local",
+        config_dir=Path(__file__).absolute().parent,
+        model="/tmp/nemo-skills-tests/train-sft/model-averaged-nemo",
+        server_type="nemo",
+        output_dir="/tmp/nemo-skills-tests/train-sft/evaluation",
+        benchmarks="gsm8k:0",
+        server_gpus=1,
+        server_nodes=1,
+        num_jobs=1,
+        partition="interactive",
     )
-    subprocess.run(cmd, shell=True, check=True)
 
     metrics = compute_metrics(
         [f"/tmp/nemo-skills-tests/train-sft/evaluation/eval-results/gsm8k/output-greedy.jsonl"],
@@ -97,51 +91,47 @@ def test_dpo():
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
 
-    # TODO: change to python interface
-
-    cmd = (
-        f"ns train "
-        f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
-        f"    --expname test-dpo "
-        f"    --output_dir /tmp/nemo-skills-tests/test-dpo "
-        f"    --nemo_model {model_path} "
-        f"    --num_nodes 1 "
-        f"    --num_gpus 1 "
-        f"    --num_training_jobs 1 "
-        f"    --training_data /nemo_run/code/tests/data/small-dpo-data.test "
-        f"    --disable_wandb "
-        f"    --training_algo dpo "
-        f"    ++trainer.dpo.val_check_interval=1 "
-        f"    ++trainer.dpo.save_interval=1 "
-        f"    ++trainer.dpo.limit_val_batches=1 "
-        f"    ++trainer.dpo.max_steps=3 "
-        f"    ++trainer.dpo.max_epochs=10 "
-        f"    ++model.data.train_ds.add_eos=False "
-        f"    ++model.global_batch_size=1 "
-        f"    ++model.micro_batch_size=1 "
-        f"    ++model.optim.lr=1e-6 "
-        f"    ++model.optim.sched.warmup_steps=0 "
-        f"    ++model.tensor_model_parallel_size=1 "
-        f"    ++model.pipeline_model_parallel_size=1 "
+    train(
+        ctx=wrap_arguments(
+            "++trainer.dpo.val_check_interval=1 "
+            "++trainer.dpo.save_interval=1 "
+            "++trainer.dpo.limit_val_batches=1 "
+            "++trainer.dpo.max_steps=3 "
+            "++trainer.dpo.max_epochs=10 "
+            "++model.data.train_ds.add_eos=False "
+            "++model.global_batch_size=1 "
+            "++model.micro_batch_size=1 "
+            "++model.optim.lr=1e-6 "
+            "++model.optim.sched.warmup_steps=0 "
+            "++model.tensor_model_parallel_size=1 "
+            "++model.pipeline_model_parallel_size=1 "
+        ),
+        cluster="test-local",
+        config_dir=Path(__file__).absolute().parent,
+        expname="test-dpo",
+        output_dir="/tmp/nemo-skills-tests/test-dpo",
+        nemo_model=model_path,
+        num_nodes=1,
+        num_gpus=1,
+        num_training_jobs=1,
+        training_data="/nemo_run/code/tests/data/small-dpo-data.test",
+        disable_wandb=True,
     )
-    subprocess.run(cmd, shell=True, check=True)
 
     # checking that the final model can be used for evaluation
-    cmd = (
-        f"ns eval "
-        f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
-        f"    --model /tmp/nemo-skills-tests/test-dpo/model-averaged-nemo "
-        f"    --server_type nemo "
-        f"    --output_dir /tmp/nemo-skills-tests/test-dpo/evaluation "
-        f"    --benchmarks gsm8k:0 "
-        f"    --server_gpus 1 "
-        f"    --server_nodes 1 "
-        f"    ++prompt_template=llama3-instruct "
-        f"    ++split=test "
-        f"    ++batch_size=8 "
-        f"    ++max_samples=10 "
+    eval(
+        ctx=wrap_arguments("++prompt_template=llama3-instruct " "++split=test " "++batch_size=8 " "++max_samples=10"),
+        cluster="test-local",
+        config_dir=Path(__file__).absolute().parent,
+        model="/tmp/nemo-skills-tests/train-sft/model-averaged-nemo",
+        server_type="nemo",
+        output_dir="/tmp/nemo-skills-tests/train-sft/evaluation",
+        benchmarks="gsm8k:0",
+        server_gpus=1,
+        server_nodes=1,
+        num_jobs=1,
+        partition="interactive",
     )
-    subprocess.run(cmd, shell=True, check=True)
 
     metrics = compute_metrics(
         [f"/tmp/nemo-skills-tests/test-dpo/evaluation/eval-results/gsm8k/output-greedy.jsonl"],
