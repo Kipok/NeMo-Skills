@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import logging
 from enum import Enum
 from pathlib import Path
 
@@ -21,6 +22,8 @@ from huggingface_hub import get_token
 from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, run_exp
 from nemo_skills.pipeline.app import app, typer_unpacker
 from nemo_skills.utils import setup_logging
+
+LOG = logging.getLogger(__file__)
 
 
 def get_nemo_to_hf_cmd(
@@ -141,7 +144,8 @@ def convert(
 ):
     """Convert a checkpoint from one format to another."""
     setup_logging(disable_hydra_logs=False)
-    extra_arguments = f'{" ".join(ctx.args[1:])}'
+    extra_arguments = f'{" ".join(ctx.args)}'
+    LOG.info(f"Extra arguments that will be passed to the underlying script: {extra_arguments}")
 
     model_type = model_type.value
     convert_from = convert_from.value
@@ -184,7 +188,6 @@ def convert(
         num_nodes=num_nodes,
         extra_arguments=extra_arguments,
     )
-
     with run.Experiment(expname) as exp:
         add_task(
             exp,

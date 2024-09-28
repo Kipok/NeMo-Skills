@@ -31,7 +31,7 @@ def wrap_arguments(arguments: str):
             self.args = args
 
     # first one is the cli name
-    return MockContext(args=["mock"] + arguments.split())
+    return MockContext(args=arguments.split())
 
 
 def typer_unpacker(f: Callable):

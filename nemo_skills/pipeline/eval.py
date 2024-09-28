@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import importlib
+import logging
 from enum import Enum
 
 import nemo_run as run
@@ -21,6 +21,8 @@ import typer
 from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, get_generation_command, run_exp
 from nemo_skills.pipeline.app import app, typer_unpacker
 from nemo_skills.utils import setup_logging
+
+LOG = logging.getLogger(__file__)
 
 
 def get_greedy_cmd(
@@ -68,10 +70,11 @@ def eval(
     ctx: typer.Context,
     cluster: str = typer.Option(..., help="One of the configs inside ./cluster_configs or NEMO_SKILLS_CONFIGS"),
     output_dir: str = typer.Option(..., help="Where to store evaluation results"),
-    benchmarks: list[str] = typer.Option(
+    benchmarks: str = typer.Option(
         ...,
         help="Need to be in a format <benchmark>:<num samples for majority voting>. "
-        "Use <benchmark>:0 to only run greedy decoding",
+        "Use <benchmark>:0 to only run greedy decoding. Has to be comma-separated "
+        "if providing multiple benchmarks. E.g. gsm8k:4,human-eval:0",
     ),
     config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
     expname: str = typer.Option("eval", help="Name of the experiment"),
@@ -94,8 +97,8 @@ def eval(
     Any extra arguments will be directly passed to nemo_skills.inference.generate
     """
     setup_logging(disable_hydra_logs=False)
-
-    extra_arguments = f'{" ".join(ctx.args[1:])}'
+    extra_arguments = f'{" ".join(ctx.args)}'
+    LOG.info(f"Extra arguments that will be passed to the underlying script: {extra_arguments}")
 
     cluster_config = get_cluster_config(cluster, config_dir)
     check_if_mounted(cluster_config, output_dir)
@@ -115,10 +118,10 @@ def eval(
     else:  # model is hosted elsewhere
         server_config = None
         extra_arguments += (
-            f" ++server.server_type={server_type} " f" ++server.base_url={server_address} " f" ++server.model={model} "
+            f" ++server.server_type={server_type} ++server.base_url={server_address} ++server.model={model} "
         )
 
-    benchmarks = {k: int(v) for k, v in [b.split(":") for b in benchmarks]}
+    benchmarks = {k: int(v) for k, v in [b.split(":") for b in benchmarks.split(",")]}
 
     eval_cmds = (
         [
