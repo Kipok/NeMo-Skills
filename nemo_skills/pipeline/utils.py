@@ -348,10 +348,6 @@ def get_mounts_from_config(cluster_config: dict, env_vars: dict = None):
     """
     mounts = cluster_config.get('mounts', [])
 
-    # if env_vars is None, we will get the env_vars from the cluster config
-    if env_vars is None:
-        env_vars = get_env_variables(cluster_config)
-
     # if there are env_mounts, we will add the mounts from the env_mounts
     for mount_id in range(len(mounts)):
         mount = mounts[mount_id]
