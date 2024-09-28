@@ -1,0 +1,50 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+{%- set found_item = false -%}
+{%- for message in messages -%}
+    {%- if message['role'] == 'system' -%}
+        {%- set found_item = true -%}
+    {%- endif -%}
+{%- endfor -%}
+{%- if not found_item -%}
+{{'You are an AI programming assistant, utilizing the Deepseek Coder model, developed by Deepseek Company, and you only answer questions related to computer science. For politically sensitive questions, security and privacy issues, and other non-computer science questions, you will refuse to answer.\\n'}}
+{%- endif %}
+{%- for message in messages %}
+    {%- if message['role'] == 'system' %}
+{{ message['content'] }}
+    {%- else %}
+        {%- if message['role'] == 'user' %}
+{{'### Instruction:\\n' + message['content'] + '\\n'}}
+        {%- else %}
+{{'### Response:\\n' + message['content'] + '\\n<|EOT|>\\n'}}
+        {%- endif %}
+    {%- endif %}
+{%- endfor %}
+{{'### Response:\\n'}}
+
+
+text_begin: ""
+system_begin: ""
+system_end: "\n\n"
+user_begin: "### Instruction:\n"
+user_end: "\n\n"
+assistant_begin: "### Response:\n"
+assistant_end: "<|EOT|>"
+code_begin: ""
+code_end: ""
+code_output_begin: ""
+code_output_end: ""
+stop_phrases: []
