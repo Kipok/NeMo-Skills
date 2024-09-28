@@ -22,6 +22,8 @@ import pytest
 
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 from nemo_skills.evaluation.metrics import compute_metrics
+from nemo_skills.pipeline import wrap_arguments
+from nemo_skills.pipeline.cli import eval, train
 
 
 @pytest.mark.gpu
@@ -55,6 +57,10 @@ def test_sft():
         f"    ++model.pipeline_model_parallel_size=1 "
     )
     subprocess.run(cmd, shell=True, check=True)
+
+    # train(
+
+    # )
 
     # checking that the final model can be used for evaluation
     cmd = (

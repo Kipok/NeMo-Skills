@@ -153,7 +153,6 @@ def train(
     config_path: str = typer.Option('/nemo_run/code/nemo_skills/training/', help="Config path"),
     wandb_project: str = typer.Option("nemo-skills", help="Weights & Biases project name"),
     disable_wandb: bool = typer.Option(False, help="Disable wandb logging"),
-    chat_format: bool = typer.Option(False, help="Use chat format for SFT data"),
     with_sandbox: bool = typer.Option(False, help="If sandbox is required for code generation"),
     partition: str = typer.Option(None, help="Specify partition for jobs"),
     average_steps: list[int] = typer.Option(None, help="List of checkpoint steps to average"),
@@ -196,7 +195,7 @@ def train(
         training_algo=training_algo,
         disable_wandb=disable_wandb,
         wandb_project=wandb_project,
-        extra_arguments="",
+        extra_arguments=extra_arguments,
     )
 
     with run.Experiment(expname) as exp:
