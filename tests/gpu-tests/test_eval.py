@@ -12,11 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# needs to define NEMO_SKILLS_TEST_TRTLLM_MODEL to run these tests
-# needs to define NEMO_SKILLS_TEST_NEMO_MODEL to run these tests
-# you'd also need 2+ GPUs to run this test
-# the metrics are assuming llama3-8b-base as the model and will fail for other models
-
 import importlib
 import json
 import os
@@ -37,7 +32,7 @@ def test_trtllm_eval():
         pytest.skip("Define NEMO_SKILLS_TEST_TRTLLM_MODEL to run this test")
 
     cmd = (
-        f"python -m nemo_skills.pipeline.eval "
+        f"ns eval "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --model {model_path} "
         f"    --server_type trtllm "
@@ -69,7 +64,7 @@ def test_trtllm_code_execution_eval():
         pytest.skip("Define NEMO_SKILLS_TEST_TRTLLM_MODEL to run this test")
 
     cmd = (
-        f"python -m nemo_skills.pipeline.eval "
+        f"ns eval "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --model {model_path} "
         f"    --server_type trtllm "
@@ -107,7 +102,7 @@ def test_vllm_eval():
         pytest.skip("Define NEMO_SKILLS_TEST_HF_MODEL to run this test")
 
     cmd = (
-        f"python -m nemo_skills.pipeline.eval "
+        f"ns eval "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --model {model_path} "
         f"    --server_type vllm "
@@ -125,7 +120,7 @@ def test_vllm_eval():
 
     # checking that summarize results works (just that there are no errors, but can inspect the output as well)
     subprocess.run(
-        "python -m nemo_skills.pipeline.summarize_results /tmp/nemo-skills-tests/vllm-eval",
+        "ns summarize_results /tmp/nemo-skills-tests/vllm-eval",
         shell=True,
         check=True,
     )
@@ -181,7 +176,7 @@ def test_nemo_eval():
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
 
     cmd = (
-        f"python -m nemo_skills.pipeline.eval "
+        f"ns eval "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --model {model_path} "
         f"    --server_type nemo "

@@ -12,11 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# needs to define NEMO_SKILLS_TEST_TRTLLM_MODEL to run these tests
-# needs to define NEMO_SKILLS_TEST_NEMO_MODEL to run these tests
-# you'd also need 2+ GPUs to run this test
-# the metrics are assuming llama3-8b-base as the model and will fail for other models
-
 import importlib
 import os
 import subprocess
@@ -36,7 +31,7 @@ def test_sft():
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
 
     cmd = (
-        f"python -m nemo_skills.pipeline.train "
+        f"ns train "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --expname test-sft "
         f"    --output_dir /tmp/nemo-skills-tests/train-sft "
@@ -63,7 +58,7 @@ def test_sft():
 
     # checking that the final model can be used for evaluation
     cmd = (
-        f"python -m nemo_skills.pipeline.eval "
+        f"ns eval "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --model /tmp/nemo-skills-tests/train-sft/model-averaged-nemo "
         f"    --server_type nemo "
@@ -96,8 +91,10 @@ def test_dpo():
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
 
+    # TODO: change to python interface
+
     cmd = (
-        f"python -m nemo_skills.pipeline.train "
+        f"ns train "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --expname test-dpo "
         f"    --output_dir /tmp/nemo-skills-tests/test-dpo "
@@ -125,7 +122,7 @@ def test_dpo():
 
     # checking that the final model can be used for evaluation
     cmd = (
-        f"python -m nemo_skills.pipeline.eval "
+        f"ns eval "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --model /tmp/nemo-skills-tests/test-dpo/model-averaged-nemo "
         f"    --server_type nemo "

@@ -12,11 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# needs to define NEMO_SKILLS_TEST_TRTLLM_MODEL to run these tests
-# needs to define NEMO_SKILLS_TEST_NEMO_MODEL to run these tests
-# you'd also need 2+ GPUs to run this test
-# the metrics are assuming llama3-8b-base as the model and will fail for other models
-
 import importlib
 import json
 import os
@@ -39,7 +34,7 @@ def test_vllm_generate_greedy():
         pytest.skip("Define NEMO_SKILLS_TEST_HF_MODEL to run this test")
 
     cmd = (
-        f"python -m nemo_skills.pipeline.generate "
+        f"ns generate "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --model {model_path} "
         f"    --server_type vllm "
@@ -72,7 +67,7 @@ def test_vllm_generate_seeds():
         pytest.skip("Define NEMO_SKILLS_TEST_HF_MODEL to run this test")
     num_seeds = 3
     cmd = (
-        f"python -m nemo_skills.pipeline.generate "
+        f"ns generate "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --model {model_path} "
         f"    --server_type vllm "
