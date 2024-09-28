@@ -188,7 +188,7 @@ def eval_arena(cfg):
                 data_points.append(to_add)
 
             request_metadata = llm.batch_generate(
-                prompts=[prompt.fill_prompt(data_point) for data_point in data_points],
+                prompts=[prompt.fill(data_point) for data_point in data_points],
                 tokens_to_generate=eval_config.tokens_to_generate,
             )
             # saving the request id to be able to retrieve results when they are ready
@@ -226,7 +226,7 @@ def eval_arena(cfg):
 
                     if len(data_points) == eval_config.batch_size:
                         outputs = llm.generate(
-                            prompts=[prompt.fill_prompt(data_point) for data_point in data_points],
+                            prompts=[prompt.fill(data_point) for data_point in data_points],
                             tokens_to_generate=eval_config.tokens_to_generate,
                         )
                         to_write = {}
@@ -240,7 +240,7 @@ def eval_arena(cfg):
                 # collecting the final batch
                 if len(data_points) > 0:
                     outputs = llm.generate(
-                        prompts=[prompt.fill_prompt(data_point) for data_point in data_points],
+                        prompts=[prompt.fill(data_point) for data_point in data_points],
                         tokens_to_generate=eval_config.tokens_to_generate,
                     )
                     to_write = {}

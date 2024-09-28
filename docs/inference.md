@@ -36,7 +36,7 @@ Make sure to complete [prerequisites](/docs/prerequisites.md).
    # see nemo_skills/prompt/template for prompt templates
    prompt = get_prompt('generic/default', 'llama3-instruct')
 
-   prompts = [prompt.fill_prompt({'question': "What's 2 + 2?"})]
+   prompts = [prompt.fill({'question': "What's 2 + 2?"})]
 
    # you can see exactly what we send to the model including all special tokens
    # if you don't want to use our prompt format, just create this string yourself
@@ -81,7 +81,7 @@ llm = get_model(
 # note that with API models we can't add special tokens, so prompt template is unused here
 prompt = get_prompt('generic/default')
 
-prompts = [prompt.fill_prompt({'question': "What's 2 + 2?"})]
+prompts = [prompt.fill({'question': "What's 2 + 2?"})]
 
 # again, you can prepare this yourself if you don't like our prompt utils
 print(prompts[0])

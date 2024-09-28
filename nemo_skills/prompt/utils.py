@@ -184,7 +184,7 @@ class Prompt:
         user = self.config.user.format(examples=examples, **input_dict)
         return user
 
-    def fill_prompt(self, input_dict: Dict[str, str], include_generation: bool = False) -> str | List[dict]:
+    def fill(self, input_dict: Dict[str, str], include_generation: bool = False) -> str | List[dict]:
         """
         Fills the prompt with the input_dict.
         Operates in two modes:

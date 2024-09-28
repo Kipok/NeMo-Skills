@@ -249,7 +249,7 @@ class ModeStrategies:
         )
 
         prompt = Prompt(config=prompt_config)
-        return prompt.fill_prompt(input_dict)
+        return prompt.fill(input_dict)
 
     def _get_search_prompt_layout(self) -> dbc.InputGroup:
         return dbc.InputGroup(

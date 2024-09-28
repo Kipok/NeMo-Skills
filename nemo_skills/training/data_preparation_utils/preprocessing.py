@@ -283,7 +283,7 @@ class WriteFinalSftManifest(BaseProcessor):
 
                 if self.chat_format is None:
                     generation = elem.pop(self.output_key)
-                    output_sample["input"] = prompt.fill_prompt(input_dict=elem)
+                    output_sample["input"] = prompt.fill(input_dict=elem)
                     output_sample["output"] = generation + self.generation_suffix
                 elif self.chat_format.lower() == "nemotron":
                     output_sample['conversations'] = [

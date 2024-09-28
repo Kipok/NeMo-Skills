@@ -89,7 +89,7 @@ def check_contamination(cfg: CheckContaminationConfig):
     LOG.info(
         "Example prompt:\nData dictionary: %s\nPrompt: %s",
         first_element,
-        prompt.fill_prompt(first_element),
+        prompt.fill(first_element),
     )
 
     if cfg.dry_run:
@@ -138,7 +138,7 @@ def check_contamination(cfg: CheckContaminationConfig):
                                 }
                             )
 
-                prompts = [prompt.fill_prompt(dp) for dp in all_data]
+                prompts = [prompt.fill(dp) for dp in all_data]
                 stop_phrases = prompt.stop_phrases
 
                 outputs = llm.generate(prompts=prompts, stop_phrases=stop_phrases, **asdict(cfg.inference))
