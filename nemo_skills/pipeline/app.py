@@ -83,7 +83,6 @@ def create_remote_directory(directory: str | list, cluster_config: dict):
             logging.info(f"Created directory: {dir_path} in local filesystem.")
         tunnel.cleanup()
 
-
     elif cluster_config.get('executor') == 'slurm':
         ssh_tunnel_config = cluster_config.get('ssh_tunnel', None)
         if ssh_tunnel_config is None:
@@ -94,7 +93,6 @@ def create_remote_directory(directory: str | list, cluster_config: dict):
             tunnel.run(f'mkdir -p {dir_path}', hide=False, warn=True)
             logging.info(f"Created directory: {dir_path} on remote cluster.")
         tunnel.cleanup()
-
 
     else:
         raise ValueError(f"Unsupported executor: {cluster_config.get('executor')}")
