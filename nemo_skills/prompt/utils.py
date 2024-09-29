@@ -209,7 +209,7 @@ class Prompt:
             generation = ""
 
         if self.config.template:
-            prompt = Prompt.FORMAT.format(
+            prompt = self.FORMAT.format(
                 system=self.config.system,
                 user=self.build_user_message(input_dict),
                 generation=generation,
