@@ -46,6 +46,9 @@ class FillMajorityAnswerConfig:
     # but change to predicted_answer, to follow up with a judge evaluation
     fill_key: str = "expected_answer"
 
+    # if True, will use string match to fill is_correct key
+    fill_is_correct: bool = True
+
     def __post_init__(self):
         """Building data_file from dataset/split if not provided directly."""
         if isinstance(self.input_files, str):
@@ -91,9 +94,12 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
             predictions[lidx][cfg.fill_key] = majority_answers[idx][0]
             predictions[lidx]["majority_votes"], predictions[lidx]["total_votes"] = majority_answers[idx][1]
             # this is just a string match check, so for full correctness need to rerun the evaluator
-            predictions[lidx]["is_correct"] = (
-                predictions[lidx]["predicted_answer"] == predictions[lidx]["expected_answer"]
-            )
+            if cfg.fill_is_correct:
+                predictions[lidx]["is_correct"] = (
+                    predictions[lidx]["predicted_answer"] == predictions[lidx]["expected_answer"]
+                )
+            else:
+                del predictions[lidx]["is_correct"]
             handle.write(json.dumps(predictions[lidx]) + "\n")
 
     for file_handle in file_handles:

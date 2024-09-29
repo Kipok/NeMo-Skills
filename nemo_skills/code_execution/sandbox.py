@@ -282,6 +282,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         tolerance=1e-4,
         timeout=10.0,
         ignore_cache: bool = False,
+        use_predicted_answer_key: bool = False,
         extract_from_boxed: bool = True,
         extract_regex: str = r"The final answer is (.+)$",
     ):
@@ -315,11 +316,18 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     if not line_dict:  # can be empty for incomplete generations
                         continue
                     gt_answer = line_dict["expected_answer"]
-                    line_dict["predicted_answer"] = extract_answer(
-                        line_dict["generation"],
-                        extract_from_boxed=extract_from_boxed,
-                        extract_regex=extract_regex,
-                    )
+                    if not use_predicted_answer_key:
+                        line_dict["predicted_answer"] = extract_answer(
+                            line_dict["generation"],
+                            extract_from_boxed=extract_from_boxed,
+                            extract_regex=extract_regex,
+                        )
+                    else:
+                        if "predicted_answer" not in line_dict:
+                            raise ValueError(
+                                "predicted_answer key not found in the line_dict. "
+                                "Set use_predicted_answer_key=False to re-extract"
+                            )
 
                     data[-1][-1] = json.dumps(line_dict)
 

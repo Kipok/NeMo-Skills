@@ -35,6 +35,8 @@ class MathEvaluatorConfig:
     tolerance: float = 1e-4
     timeout: float = 10.0
     ignore_cache: bool = False
+    # if True will not attempt to re-extract based on \boxed or regex
+    use_predicted_answer_key: bool = False
 
     extract_from_boxed: bool = True
     # only used if extract_from_boxed is False
