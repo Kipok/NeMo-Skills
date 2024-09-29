@@ -67,29 +67,34 @@ def typer_unpacker(f: Callable):
     return wrapper
 
 
-def create_remote_directory(directory: str, cluster_config: dict):
+def create_remote_directory(directory: str | list, cluster_config: dict):
     """Create a remote directory on the cluster."""
 
     if cluster_config is None:
         raise ValueError("Cluster config is not provided.")
 
+    if isinstance(directory, str):
+        directory = [directory]
+
     if cluster_config.get('executor') == 'local':
-        tunnel = run.LocalTunnel(job_dir=directory)
-        tunnel.run(f'mkdir -p {directory}', hide=False, warn=True)
+        tunnel = run.LocalTunnel(job_dir=directory[0])
+        for dir_path in directory:
+            tunnel.run(f'mkdir -p {dir_path}', hide=False, warn=True)
+            logging.info(f"Created directory: {dir_path} in local filesystem.")
         tunnel.cleanup()
 
-        logging.info(f"Created directory: {directory} in local filesystem.")
 
     elif cluster_config.get('executor') == 'slurm':
         ssh_tunnel_config = cluster_config.get('ssh_tunnel', None)
         if ssh_tunnel_config is None:
             raise ValueError("`ssh_tunnel` sub-config is not provided in cluster_config.")
 
-        tunnel = run.SSHTunnel(job_dir=directory, **ssh_tunnel_config)
-        tunnel.run(f'mkdir -p {directory}', hide=False, warn=True)
+        tunnel = run.SSHTunnel(job_dir=directory[0], **ssh_tunnel_config)
+        for dir_path in directory:
+            tunnel.run(f'mkdir -p {dir_path}', hide=False, warn=True)
+            logging.info(f"Created directory: {dir_path} on remote cluster.")
         tunnel.cleanup()
 
-        logging.info(f"Created directory: {directory} on remote cluster.")
 
     else:
         raise ValueError(f"Unsupported executor: {cluster_config.get('executor')}")
