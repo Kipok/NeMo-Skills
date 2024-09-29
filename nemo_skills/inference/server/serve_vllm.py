@@ -18,20 +18,20 @@ import subprocess
 
 def main():
     parser = argparse.ArgumentParser(description="Serve vLLM model")
-    parser.add_argument("--model_path", help="Path to the model")
+    parser.add_argument("--model", help="Path to the model or a model name to pull from HF")
     parser.add_argument("--num_gpus", type=int, required=True)
     parser.add_argument("--port", type=int, default=5000, help="Server port")
     args, unknown = parser.parse_known_args()
 
     extra_arguments = f'{" ".join(unknown)}'
 
-    print(f"Deploying model {args.model_path}")
+    print(f"Deploying model {args.model}")
     print("Starting OpenAI Server")
 
     cmd = (
         f'python -m vllm.entrypoints.openai.api_server '
-        f'    --model="{args.model_path}" '
-        f'    --served-model-name="self-hosted-model"'
+        f'    --model="{args.model}" '
+        f'    --served-model-name="{args.model}"'
         f'    --trust-remote-code '
         f'    --host="0.0.0.0" '
         f'    --port={args.port} '

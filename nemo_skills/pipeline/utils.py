@@ -35,7 +35,7 @@ LOG = logging.getLogger(__file__)
 
 def check_if_mounted(cluster_config, path_to_check):
     """Will check that path_to_check is referenced inside one of the mounts."""
-    for mount in cluster_config.get('mounts', []) + ['/nemo_run/code:/nemo_run/code']:
+    for mount in get_mounts_from_config(cluster_config) + ['/nemo_run/code:/nemo_run/code']:
         if path_to_check.startswith(mount.split(":")[1]):
             return
     raise ValueError(f"The path '{path_to_check}' is not mounted. Check cluster config.")
@@ -45,7 +45,7 @@ def get_unmounted_path(cluster_config, path):
     """Will return the path on the filesystem before it's mounted."""
     if path is None:
         return None
-    for mount in cluster_config.get('mounts', []):
+    for mount in get_mounts_from_config(cluster_config):
         if path.startswith(mount.split(":")[1]):
             return mount.split(":")[0] + path[len(mount.split(":")[1]) :]
     raise ValueError(f"The path '{path}' is not mounted. Check cluster config.")
@@ -92,6 +92,16 @@ def get_server_command(
     server_type: str, num_gpus: int, num_nodes: int, model_path: str, cluster_config: dict, server_args: str = ""
 ):
     num_tasks = num_gpus
+
+    # check if the model path is mounted if not vllm;
+    # vllm can also pass model name as "model_path" so we need special processing
+    if server_type != "vllm":
+        check_if_mounted(cluster_config, model_path)
+
+    # the model path will be mounted, so generally it will start with /
+    elif server_type == "vllm" and model_path.startswith("/"):
+        check_if_mounted(cluster_config, model_path)
+
     if server_type == 'nemo':
         server_start_cmd = (
             f"python -m nemo_skills.inference.server.serve_nemo "
@@ -108,9 +118,10 @@ def get_server_command(
     elif server_type == 'vllm':
         if num_nodes > 1:
             raise ValueError("VLLM server does not support multi-node execution")
+
         server_start_cmd = (
             f"python -m nemo_skills.inference.server.serve_vllm "
-            f"    --model_path {model_path} "
+            f"    --model {model_path} "
             f"    --num_gpus {num_gpus} "
             f"    {server_args} "
         )
@@ -266,6 +277,100 @@ def get_packager():
         )
 
 
+def get_env_variables(cluster_config):
+    """
+    Will get the environment variables from the cluster config and the user environment.
+
+    The following items in the cluster config are supported:
+    - `required_env_vars` - list of required environment variables
+    - `env_vars` - list of optional environment variables
+
+    Args:
+        cluster_config: cluster config dictionary
+
+    Returns:
+        dict: dictionary of environment
+    """
+    env_vars = {}
+    # Check for user requested env variables
+    required_env_vars = cluster_config.get("required_env_vars", [])
+    for env_var in required_env_vars:
+        if env_var not in os.environ:
+            raise ValueError(f"Required environment variable {env_var} not found.")
+
+        env_vars[env_var] = os.environ[env_var]
+        logging.info(f"Adding required environment variable {env_var} (value={os.environ[env_var]})")
+
+    # Add optional env variables
+    optional_env_vars = cluster_config.get("env_vars", [])
+    for env_var in optional_env_vars:
+        if env_var in os.environ:
+            logging.info(f"Adding optional environment variable {env_var} (value={os.environ[env_var]})")
+            env_vars[env_var] = os.environ[env_var]
+        else:
+            logging.info(f"Optional environment variable {env_var} not found in user environment; skipping.")
+
+    return env_vars
+
+
+def get_mounts_from_config(cluster_config: dict, env_vars: dict = None):
+    """
+    Determines if there are mount paths that are being passed via environment variables.
+    Selects the key in the cluster config called `mounts` which is a list of strings.
+    Each string is in the format of `<str | {env_var}>:<str | {env_var}>` where `env_var`
+    is the name of the environment variable.
+
+    Args:
+        cluster_config (dict): cluster config dictionary
+        env_vars (dict): dictionary of environment variables
+
+    Returns:
+        list: updated list of mounts
+    """
+    mounts = cluster_config.get('mounts', [])
+
+    # if env_vars is None, we will get the env_vars from the cluster config
+    if env_vars is None:
+        env_vars = get_env_variables(cluster_config)
+
+    # if there are env_mounts, we will add the mounts from the env_mounts
+    for mount_id in range(len(mounts)):
+        mount = mounts[mount_id]
+
+        if ":" not in mount:
+            raise ValueError(f"Invalid mount format: {mount}. The mount path must be separated by a colon.")
+
+        mount_source, mount_target = mount.split(":")
+
+        if mount_source[0] == "{" and mount_source[-1] == "}":
+            # Resolve the environment variable for the mount source
+            mount_source = mount_source[1:-1]
+
+            if mount_source not in os.environ:
+                raise ValueError(
+                    f"Required environment variable {mount_source} not found in env variables passed in cluster configs."
+                )
+
+            mount_source = os.environ[mount_source]
+
+        if mount_target[0] == "{" and mount_target[-1] == "}":
+            # Resolve the environment variable for the mount target
+            mount_target = mount_target[1:-1]
+
+            if mount_target not in os.environ:
+                raise ValueError(
+                    f"Required environment variable {mount_target} not found in env variables passed in cluster configs."
+                )
+
+            mount_target = os.environ[mount_target]
+
+        # add the mount to the list of mounts
+        resolved_mount = f"{mount_source}:{mount_target}"
+        mounts[mount_id] = resolved_mount
+
+    return mounts
+
+
 @lru_cache
 def get_executor(
     cluster_config,
@@ -280,12 +385,17 @@ def get_executor(
     partition=None,
     dependencies=None,
 ):
-    config_mounts = cluster_config.get('mounts', [])
+    env_vars = get_env_variables(cluster_config)
+    config_mounts = get_mounts_from_config(cluster_config, env_vars)
+
     mounts = mounts or config_mounts
     packager = get_packager()
     if cluster_config["executor"] == "local":
         if num_nodes > 1:
             raise ValueError("Local executor does not support multi-node execution")
+
+        env_vars["PYTHONUNBUFFERED"] = "1"  # this makes sure logs are streamed right away
+
         return DockerExecutor(
             container_image=container,
             packager=packager,
@@ -294,7 +404,7 @@ def get_executor(
             ntasks_per_node=1,
             num_gpus=gpus_per_node,
             network="host",
-            env_vars={"PYTHONUNBUFFERED": "1"},  # this makes sure logs are streamed right away
+            env_vars=env_vars,
         )
 
     partition = partition or cluster_config.get("partition")
@@ -335,6 +445,7 @@ def get_executor(
         monitor_group_job_wait_time=20,
         dependencies=dependencies,
         dependency_type="afterany",
+        env_vars=env_vars,
     )
 
 

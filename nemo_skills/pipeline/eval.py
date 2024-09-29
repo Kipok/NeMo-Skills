@@ -129,7 +129,7 @@ if __name__ == "__main__":
     if args.server_address is None:  # we need to host the model
         assert args.server_gpus is not None, "Need to specify server_gpus if hosting the model"
         args.server_address = "localhost:5000"
-        check_if_mounted(cluster_config, args.model)
+
         server_config = {
             "model_path": args.model,
             "server_type": args.server_type,

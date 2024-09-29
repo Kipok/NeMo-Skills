@@ -445,6 +445,9 @@ class VLLMModel(BaseModel):
             api_key="EMPTY", base_url=f"http://{self.server_host}:{self.server_port}/v1", timeout=None
         )
 
+        self.model_name_server = self.get_model_name_from_server()
+        self.model = self.model_name_server
+
     def generate(
         self,
         prompts: list[str | dict],
@@ -513,7 +516,7 @@ class VLLMModel(BaseModel):
             }
         }
         response = self.oai_client.completions.create(
-            model='self-hosted-model',
+            model=self.model,
             prompt=prompt,
             max_tokens=max_tokens,
             temperature=temperature,
@@ -549,6 +552,11 @@ class VLLMModel(BaseModel):
                     output += choice.stop_reason
                 responses.append(output)
         return responses
+
+    def get_model_name_from_server(self):
+        model_list = self.oai_client.models.list()
+        model_name = model_list.data[0].id
+        return model_name
 
 
 models = {
