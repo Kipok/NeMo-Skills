@@ -25,7 +25,7 @@ Make sure to complete [prerequisites](/docs/prerequisites.md).
 4. Run inference
 
    ```
-   from nemo_skills.inference.server import get_model
+   from nemo_skills.inference.server.model import get_model
    from nemo_skills.prompt.utils import get_prompt
 
    llm = get_model(server_type="vllm")  # localhost by default
@@ -67,7 +67,7 @@ We support using models from [Nvidia NIM API](https://www.nvidia.com/en-us/ai/) 
 You need to define `NVIDIA_API_KEY` for this to work.
 
 ```
-from nemo_skills.inference.server import get_model
+from nemo_skills.inference.server.model import get_model
 from nemo_skills.prompt.utils import get_prompt
 
 llm = get_model(

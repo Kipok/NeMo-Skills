@@ -49,7 +49,7 @@ def test_sft():
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
         expname="test-sft",
-        output_dir="/tmp/nemo-skills-tests/train-sft",
+        output_dir="/tmp/nemo-skills-tests/test-sft",
         nemo_model=model_path,
         num_nodes=1,
         num_gpus=1,
@@ -63,9 +63,9 @@ def test_sft():
         ctx=wrap_arguments("++prompt_template=llama3-instruct " "++split=test " "++batch_size=8 " "++max_samples=10"),
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
-        model="/tmp/nemo-skills-tests/train-sft/model-averaged-nemo",
+        model="/tmp/nemo-skills-tests/test-sft/model-averaged-nemo",
         server_type="nemo",
-        output_dir="/tmp/nemo-skills-tests/train-sft/evaluation",
+        output_dir="/tmp/nemo-skills-tests/test-sft/evaluation",
         benchmarks="gsm8k:0",
         server_gpus=1,
         server_nodes=1,
@@ -74,7 +74,7 @@ def test_sft():
     )
 
     metrics = compute_metrics(
-        [f"/tmp/nemo-skills-tests/train-sft/evaluation/eval-results/gsm8k/output-greedy.jsonl"],
+        [f"/tmp/nemo-skills-tests/test-sft/evaluation/eval-results/gsm8k/output-greedy.jsonl"],
         importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS(),
     )
     # only checking the total, since model is tiny
@@ -109,6 +109,7 @@ def test_dpo():
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
         expname="test-dpo",
+        training_algo="dpo",
         output_dir="/tmp/nemo-skills-tests/test-dpo",
         nemo_model=model_path,
         num_nodes=1,
@@ -123,9 +124,9 @@ def test_dpo():
         ctx=wrap_arguments("++prompt_template=llama3-instruct " "++split=test " "++batch_size=8 " "++max_samples=10"),
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
-        model="/tmp/nemo-skills-tests/train-sft/model-averaged-nemo",
+        model="/tmp/nemo-skills-tests/test-dpo/model-averaged-nemo",
         server_type="nemo",
-        output_dir="/tmp/nemo-skills-tests/train-sft/evaluation",
+        output_dir="/tmp/nemo-skills-tests/test-dpo/evaluation",
         benchmarks="gsm8k:0",
         server_gpus=1,
         server_nodes=1,
