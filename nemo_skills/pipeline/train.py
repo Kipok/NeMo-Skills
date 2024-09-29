@@ -77,10 +77,12 @@ def get_training_cmd(
     else:
         timeout = cluster_config["timeouts"][partition or cluster_config["partition"]]
 
-    # subtracting 15 minutes to account for the time it takes to save the model
-    # the format expected by nemo is days:hours:minutes:seconds
-    time_diff = datetime.strptime(timeout, "%H:%M:%S") - datetime.strptime("00:15:00", "%H:%M:%S")
-    timeout = f'00:{time_diff.seconds // 3600:02d}:{(time_diff.seconds % 3600) // 60:02d}:{time_diff.seconds % 60:02d}'
+        # subtracting 15 minutes to account for the time it takes to save the model
+        # the format expected by nemo is days:hours:minutes:seconds
+        time_diff = datetime.strptime(timeout, "%H:%M:%S") - datetime.strptime("00:15:00", "%H:%M:%S")
+        timeout = (
+            f'00:{time_diff.seconds // 3600:02d}:{(time_diff.seconds % 3600) // 60:02d}:{time_diff.seconds % 60:02d}'
+        )
 
     if not disable_wandb:
         if os.getenv('WANDB_API_KEY') is None:
@@ -103,16 +105,16 @@ def get_training_cmd(
         f"cd /nemo_run/code && "
         f"echo 'Starting training' && "
         f"python -m nemo_skills.training.start_{training_algo} "
-        f" --config-name={config_name} --config-path={config_path} "
-        f" ++model.tensor_model_parallel_size={num_gpus} "
-        f" trainer.devices={num_gpus} "
-        f" trainer.num_nodes={num_nodes} "
-        f" {logging_params} "
-        f" exp_manager.name={expname} "
-        f" exp_manager.explicit_log_dir={output_dir}/training "
-        f" exp_manager.exp_dir={output_dir}/training "
-        f" ++exp_manager.max_time_per_run={timeout} "
-        f" {extra_arguments} "
+        f"    --config-name={config_name} --config-path={config_path} "
+        f"    ++model.tensor_model_parallel_size={num_gpus} "
+        f"    trainer.devices={num_gpus} "
+        f"    trainer.num_nodes={num_nodes} "
+        f"    {logging_params} "
+        f"    exp_manager.name={expname} "
+        f"    exp_manager.explicit_log_dir={output_dir}/training "
+        f"    exp_manager.exp_dir={output_dir}/training "
+        f"    ++exp_manager.max_time_per_run={timeout} "
+        f"    {extra_arguments} "
     )
 
     return cmd

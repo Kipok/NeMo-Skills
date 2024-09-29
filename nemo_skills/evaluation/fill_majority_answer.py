@@ -42,8 +42,9 @@ class FillMajorityAnswerConfig:
     # if set to True will error if any responses/data is missing
     allow_incomplete: bool = False
 
-    # will be used to fill up when not enough votes are available for the majority
-    default_answer: str = "no_answer"
+    # where to put the majority answer. By default replacing the expected_answer (assuming it's unknown)
+    # but change to predicted_answer, to follow up with a judge evaluation
+    fill_key: str = "expected_answer"
 
     def __post_init__(self):
         """Building data_file from dataset/split if not provided directly."""
@@ -61,15 +62,12 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
     LOG.info("Config used: %s", cfg)
 
     file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(cfg.input_files)]
-    if cfg.min_votes < 0:
-        cfg.min_votes = len(file_handles) // 2
 
     # currently majority is only defined for math evals
     evaluator = MathMetrics()
 
     majority_answers = []
     all_predictions = []
-    retained_questions = 0
     for idx, predictions in enumerate(tqdm(zip_longest(*file_handles))):
         data = read_predictions(predictions, evaluator, cfg.allow_incomplete)
         all_predictions.append(data)
@@ -77,14 +75,11 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
         valid_answers_and_results = [
             (elem['predicted_answer'], elem['is_correct']) for elem in data if elem['predicted_answer'] is not None
         ]
-        majority_answers.append((cfg.default_answer, (0, len(file_handles))))
+        majority_answers.append((None, (0, len(file_handles))))
         if len(valid_answers_and_results) == 0:
             continue
         (majority_answer, _), num_votes = Counter(valid_answers_and_results).most_common(1)[0]
         majority_answers[-1] = (majority_answer, (num_votes, len(file_handles)))
-        retained_questions += 1
-
-    LOG.info("Total questions: %d, retained questions: %d", len(all_predictions), retained_questions)
 
     for file_handle in file_handles:
         file_handle.close()
@@ -93,9 +88,12 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
     file_handles = [open(file, "wt", encoding="utf-8") for file in unroll_files(cfg.input_files)]
     for idx, predictions in enumerate(all_predictions):
         for lidx, handle in enumerate(file_handles):
-            predictions[lidx]["expected_answer"] = majority_answers[idx][0]
+            predictions[lidx][cfg.fill_key] = majority_answers[idx][0]
             predictions[lidx]["majority_votes"], predictions[lidx]["total_votes"] = majority_answers[idx][1]
-            predictions[lidx]["is_correct"] = predictions[lidx]["predicted_answer"] == majority_answers[idx][0]
+            # this is just a string match check, so for full correctness need to rerun the evaluator
+            predictions[lidx]["is_correct"] = (
+                predictions[lidx]["predicted_answer"] == predictions[lidx]["expected_answer"]
+            )
             handle.write(json.dumps(predictions[lidx]) + "\n")
 
     for file_handle in file_handles:
