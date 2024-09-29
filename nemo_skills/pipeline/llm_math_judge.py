@@ -71,7 +71,10 @@ def llm_math_judge(
     LOG.info("Starting LLM math judge job")
     LOG.info("Extra arguments that will be passed to the underlying script: %s", extra_arguments)
 
-    server_type = str(server_type)
+    try:
+        server_type = server_type.value
+    except AttributeError:
+        pass
 
     cluster_config = get_cluster_config(cluster, config_dir)
     for input_file in input_files:

@@ -46,7 +46,10 @@ def start_server(
 
     cluster_config = get_cluster_config(cluster, config_dir)
 
-    server_type = str(server_type)
+    try:
+        server_type = server_type.value
+    except AttributeError:
+        pass
 
     if log_dir:
         check_if_mounted(cluster_config, log_dir)

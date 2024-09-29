@@ -101,7 +101,10 @@ def eval(
     LOG.info("Starting evaluation job")
     LOG.info("Extra arguments that will be passed to the underlying script: %s", extra_arguments)
 
-    server_type = str(server_type)
+    try:
+        server_type = server_type.value
+    except AttributeError:
+        pass
 
     cluster_config = get_cluster_config(cluster, config_dir)
     check_if_mounted(cluster_config, output_dir)
