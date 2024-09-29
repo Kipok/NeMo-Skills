@@ -184,7 +184,7 @@ class Prompt:
         user = self.config.user.format(examples=examples, **input_dict)
         return user
 
-    def fill(self, input_dict: Dict[str, str], include_generation: bool = False) -> str | List[dict]:
+    def fill(self, input_dict: Dict[str, str], include_generation: bool = False, message_as_prompt: bool = False) -> str | List[dict]:
         """
         Fills the prompt with the input_dict.
         Operates in two modes:
@@ -194,6 +194,9 @@ class Prompt:
         Args:
             input_dict: The input dictionary to fill the prompt with.
             include_generation: Whether to include the generation in the prompt.
+            message_as_prompt: Whether to return the prompt as a single string or as a list of dictionaries.
+                If True, the prompt will be returned as a single string. If False, the prompt will be returned as a list
+                of dictionaries. Defaults to False.
 
         Returns:
             The filled prompt - either a string or a list of dictionaries.
@@ -220,6 +223,17 @@ class Prompt:
             ]
             if generation and include_generation:
                 messages.append({"role": "assistant", "content": generation})
+
+            if message_as_prompt:
+                # return the prompt as a single string
+                # if the first message (system) is empty, remove it
+                messages = [m["content"] for m in messages]
+
+                if messages[0] == "":
+                    messages = messages[1]
+                else:
+                    # join the messages with newlines
+                    messages = "\n\n".join(messages)
 
             return messages
 
