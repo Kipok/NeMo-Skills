@@ -10,7 +10,7 @@ All scripts inside pipeline folder have the following parameters.
   control where the job is executed.
 - **--config_dir**: By default we search for cluster configs inside `cluster_configs`
   local folder, but you can control where they are located with this parameter.
-  You can also use `NEMO_SKILLS_CONFIGS` environment variable for this purpose.
+  You can also use `NEMO_SKILLS_CONFIG_DIR` environment variable for this purpose.
 - **--expname**: You can always specify an experiment name, which is a
   [NeMo-Run](https://github.com/NVIDIA/NeMo-Run) concept. This will control where
   the metadata is stored, what is slurm job name and allows you to chain jobs one
