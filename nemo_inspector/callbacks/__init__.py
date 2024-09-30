@@ -123,7 +123,7 @@ def set_config(cfg: InspectorConfig) -> None:
     config['nemo_inspector']['retrieval_fields'] = get_specific_fields(config['nemo_inspector'], RETRIEVAL_FIELDS)
 
     config['nemo_inspector']['input_file'] = str(config['nemo_inspector']['input_file'])
-    for name in ['offset', 'max_samples', 'batch_size']:
+    for name in ['offset', 'max_samples', 'batch_size', 'skip_filled', 'dry_run']:
         config['nemo_inspector'].pop(name)
 
 

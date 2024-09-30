@@ -14,7 +14,6 @@
 
 import inspect
 import logging
-from dataclasses import asdict
 from typing import Callable, Dict, List, Union
 
 import dash_bootstrap_components as dbc
@@ -41,10 +40,10 @@ from utils.common import get_config, get_settings, get_utils_from_config, initia
 
 from nemo_skills.code_execution.math_grader import extract_answer
 from nemo_skills.code_execution.sandbox import get_sandbox
-from nemo_skills.inference.generate import InferenceConfig
 from nemo_skills.inference.server.code_execution_model import get_code_execution_model
+from nemo_skills.inference.server.model import get_model
 from nemo_skills.prompt.few_shot_examples import examples_map
-from nemo_skills.prompt.utils import FewShotExamplesConfig, Prompt, PromptConfig
+from nemo_skills.prompt.utils import Prompt, PromptConfig
 
 
 class ModeStrategies:
@@ -52,7 +51,7 @@ class ModeStrategies:
         self.sandbox = None
 
     def sandbox_init(self):
-        if self.sandbox is None:
+        if self.sandbox is None and 'sandbox' in current_app.config['nemo_inspector']:
             self.sandbox = get_sandbox(
                 **current_app.config['nemo_inspector']['sandbox'],
             )
@@ -175,19 +174,25 @@ class ModeStrategies:
 
     def run(self, utils: Dict, params: Dict) -> html.Div:
         utils = {key.split(SEPARATOR_ID)[-1]: value for key, value in utils.items()}
-        self.sandbox_init()
-        llm = get_code_execution_model(
-            **current_app.config['nemo_inspector']['server'],
-            sandbox=self.sandbox,
-        )
+        if utils['code_execution'] and str(utils['code_execution']) == 'True':
+            self.sandbox_init()
+            llm = get_code_execution_model(
+                **current_app.config['nemo_inspector']['server'],
+                sandbox=self.sandbox,
+            )
+        else:
+            llm = get_model(**current_app.config['nemo_inspector']['server'])
 
+        generate_params = {
+            key: value for key, value in utils.items() if key in inspect.signature(llm.generate).parameters
+        }
         logging.info(f"query to process: {params['prompts'][0]}")
 
         try:
             outputs = llm.generate(
                 prompts=params['prompts'],
                 stop_phrases=current_app.config['nemo_inspector']['prompt']['stop_phrases'],
-                **{key: value for key, value in utils.items() if key in inspect.signature(llm.generate).parameters},
+                **generate_params,
             )
         except requests.exceptions.ConnectionError as e:
             return self._get_connection_error_message()
