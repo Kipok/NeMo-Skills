@@ -265,6 +265,25 @@ def eval_arena(cfg):
 def dummy_eval(cfg):
     return
 
+@nested_dataclass(kw_only=True)
+class LeanEvaluatorConfig:
+    sandbox: dict = field(default_factory=lambda: {'sandbox_type': 'local'})
+    num_parallel_requests: int = 10
+    in_memory_lines: int = 500
+    timeout: float = 30.0 
+    ignore_cache: bool = False
+def eval_lean4(cfg):
+    eval_config = LeanEvaluatorConfig(**cfg.eval_config)
+    from nemo_skills.code_execution.sandbox import get_sandbox
+    sandbox = get_sandbox(**eval_config.sandbox)
+    eval_config_dict = asdict(eval_config)
+    eval_config_dict.pop('sandbox')
+    # Assuming 'batch_evaluate_results' accepts a 'language' parameter
+    sandbox.batch_evaluate_results(
+        input_files=cfg.input_files,
+        language='lean4',
+        **eval_config_dict,
+    )
 
 EVALUATOR_MAP = {
     'math': eval_math,
@@ -272,6 +291,8 @@ EVALUATOR_MAP = {
     'if': eval_if,
     'arena': eval_arena,
     'answer_judgement': dummy_eval,
+    'lean4' : eval_lean4,
+
 }
 
 

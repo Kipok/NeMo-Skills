@@ -161,6 +161,7 @@ class Sandbox(abc.ABC):
     def execute_code(
         self,
         generated_code: str,
+        language: str = 'python',
         timeout: float = 10.0,
         max_output_characters: int = 1000,
         session_id: Optional[str] = None,
@@ -169,8 +170,12 @@ class Sandbox(abc.ABC):
             session_id = uuid.uuid4()
             self.sessions[session_id] = []
         generated_code = generated_code.replace('"""', r'\"\"\"')
+        while generated_code.endswith('\\'):
+            generated_code = generated_code[:-1]
         self.sessions[session_id].append(generated_code)
-        TO_EXECUTE = """
+
+        if language == 'python':
+            TO_EXECUTE = """
 import traceback
 import json
 import os
@@ -183,10 +188,10 @@ from IPython.utils import io
 
 code_snippets = []
 """
-        for code_snippet in self.sessions[session_id]:
-            TO_EXECUTE += f'\ncode_snippets.append("""{code_snippet}""")\n'
+            for code_snippet in self.sessions[session_id]:
+                TO_EXECUTE += f'\ncode_snippets.append("""{code_snippet}""")\n'
 
-        TO_EXECUTE += f"""
+            TO_EXECUTE += f"""
 try:
     shell = InteractiveShell()
     for code in code_snippets:
@@ -208,6 +213,18 @@ except Exception:
     }}
 print(json.dumps(to_return))
 """
+        elif language == 'lean4':
+            # Lean code execution logic
+            # Write the code snippets to a temporary Lean file
+            code_content = '\n'.join(self.sessions[session_id])
+            lean_file_name = f'/tmp/{session_id}.lean'
+            with open(lean_file_name, 'w', encoding='utf-8') as f:
+                f.write(code_content)
+
+            TO_EXECUTE = f"lean {lean_file_name}"
+        else:
+            raise ValueError(f"Unsupported language: {language}") 
+
         request = self._prepare_request(TO_EXECUTE, timeout)
         try:
             output = self._send_request(request, timeout)
@@ -218,23 +235,24 @@ print(json.dumps(to_return))
             self.sessions[session_id] = self.sessions[session_id][:-1]
         return output, session_id
 
-    def is_output_correct(self, pred_output, gt_output, include_percentage=True, tolerance=1e-4, timeout=10.0):
-        # embedding the full math grader code here to send to server for execution
-        with open(Path(__file__).absolute().parent / "math_grader.py", "rt") as fin:
-            math_grader_code = fin.read()
+    def is_output_correct(self, pred_output, gt_output="", include_percentage=True, tolerance=1e-4, timeout=10.0, language="python"):
+        if language == "python":
+            # embedding the full math grader code here to send to server for execution
+            with open(Path(__file__).absolute().parent / "math_grader.py", "rt") as fin:
+                math_grader_code = fin.read()
 
-        # corner cases
-        if isinstance(pred_output, str):
-            pred_output = pred_output.replace("'''", r'\'\'\'')
-            while pred_output.endswith('\\'):
-                pred_output = pred_output[:-1]
+            # corner cases
+            if isinstance(pred_output, str):
+                pred_output = pred_output.replace("'''", r'\'\'\'')
+                while pred_output.endswith('\\'):
+                    pred_output = pred_output[:-1]
 
-        if isinstance(gt_output, str):
-            gt_output = gt_output.replace("'''", r'\'\'\'')
-            while gt_output.endswith('\\'):
-                gt_output = gt_output[:-1]
+            if isinstance(gt_output, str):
+                gt_output = gt_output.replace("'''", r'\'\'\'')
+                while gt_output.endswith('\\'):
+                    gt_output = gt_output[:-1]
 
-        TO_EXECUTE = f"""
+            TO_EXECUTE = f"""
 import os
 import sys
 import json
@@ -262,11 +280,21 @@ except Exception as e:
 sys.stdout = stdout
 print(json.dumps({{"result": output, "error_message": error_message}}))
 """
-        request = self._prepare_request(TO_EXECUTE, timeout)
+        elif language == "lean4":
+            TO_EXECUTE=pred_output
+
+        request = self._prepare_request(TO_EXECUTE, timeout, language)
         try:
             output = self._send_request(request, timeout)
         except requests.exceptions.Timeout:
             output = {'result': False, 'error_message': 'timeout'}
+        
+        if language == "lean4" and "process_status" in output:
+            if output["process_status"] == "finished":
+                return True
+            else:
+                return False
+
         if output['error_message']:
             # logging the error
             LOG.warning("Error during correctness check: %s", output['error_message'])
@@ -281,8 +309,8 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         include_percentage=True,
         tolerance=1e-4,
         timeout=10.0,
+        language="python",
         ignore_cache: bool = False,
-        use_predicted_answer_key: bool = False,
         extract_from_boxed: bool = True,
         extract_regex: str = r"The final answer is (.+)$",
     ):
@@ -316,18 +344,14 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     if not line_dict:  # can be empty for incomplete generations
                         continue
                     gt_answer = line_dict["expected_answer"]
-                    if not use_predicted_answer_key:
+                    if language == "python":
                         line_dict["predicted_answer"] = extract_answer(
                             line_dict["generation"],
                             extract_from_boxed=extract_from_boxed,
                             extract_regex=extract_regex,
                         )
-                    else:
-                        if "predicted_answer" not in line_dict:
-                            raise ValueError(
-                                "predicted_answer key not found in the line_dict. "
-                                "Set use_predicted_answer_key=False to re-extract"
-                            )
+                    elif language == "lean4":
+                        line_dict["predicted_answer"] = line_dict["generation"]
 
                     data[-1][-1] = json.dumps(line_dict)
 
@@ -365,10 +389,11 @@ class LocalSandbox(Sandbox):
     def _parse_request_output(self, output):
         return output.json()
 
-    def _prepare_request(self, generated_code, timeout):
+    def _prepare_request(self, generated_code, timeout, language='python'):
         return {
             "generated_code": generated_code,
             "timeout": timeout,
+            "language": language,
         }
 
 
@@ -417,3 +442,4 @@ def sandbox_params():
     """Returns sandbox documentation (to include in cmd help)."""
     prefix = f'\n        sandbox_type: str = MISSING - Choices: {list(sandboxes.keys())}'
     return python_doc_to_cmd_help(Sandbox, docs_prefix=prefix, arg_prefix="sandbox.")
+
