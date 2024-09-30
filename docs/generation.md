@@ -107,7 +107,7 @@ python -m nemo_skills.pipeline.generate \
        --server_nodes=2 \
        --num_random_seeds=32 \
        --output_dir=/workspace/synthetic-math-solutions \
-       --eval_args="++eval_type=math"
+       --eval_args="++eval_type=math" \
        ++dataset=math \
        ++split=train_full \
        ++prompt_config=generic/math \

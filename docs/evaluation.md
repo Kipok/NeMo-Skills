@@ -13,7 +13,7 @@ We support many popular benchmarks and it's easy to add new in the future. E.g. 
 - Math problem solving: gsm8k, math, amc23, aime24 (and many more)
 - Coding skills: human-eval, mbpp
 - Chat/instruction following: ifeval, arena-hard
-- General knowledge: mmlu
+- General knowledge: mmlu (generative)
 
 See [nemo_skills/dataset](/nemo_skills/dataset) where each folder is a benchmark we support.
 

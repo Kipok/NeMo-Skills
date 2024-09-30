@@ -3,7 +3,7 @@
 To get started first install the repo (python 3.10+). Either clone and run `pip install -e .` or install directly with
 
 ```
-pip install git+https://github.com/NVIDIA/NeMo-Run.git
+pip install git+https://github.com/Kipok/NeMo-Skills.git
 ```
 
 Then prepare the data.
@@ -37,9 +37,56 @@ your jobs and what to mount in the containers. Please read on to learn more abou
 
 ## General information
 
+All of the scripts inside [nemo_skills/pipeline](/nemo_skills/pipeline) can be called in 3 equivalent ways.
+E.g. to [evaluate](/docs/evaluation.md) a model on 10 samples you might run it like this.
+
+1. Through `ns` command-line entrypoint
+
+   ```
+   ns eval \
+       --cluster local \
+       --server_type openai \
+       --model meta/llama-3.1-8b-instruct \
+       --server_address https://integrate.api.nvidia.com/v1 \
+       --benchmarks gsm8k:0,math:0 \
+       --output_dir /workspace/test-eval \
+       ++max_samples=10
+   ```
+
+2. By directly calling relevant Python module
+
+   ```
+   python -m nemo_skills.pipeline.eval \
+       --cluster local \
+       --server_type openai \
+       --model meta/llama-3.1-8b-instruct \
+       --server_address https://integrate.api.nvidia.com/v1 \
+       --benchmarks gsm8k:0,math:0 \
+       --output_dir /workspace/test-eval \
+       ++max_samples=10
+   ```
+
+3. By calling the corresponding Python function
+
+   ```python
+   from nemo_skills.pipeline import wrap_arguments
+   from nemo_skills.pipeline.cli import eval
+
+   eval(
+       cluster="local",
+       server_type="openai",
+       model="meta/llama-3.1-8b-instruct",
+       server_address="https://integrate.api.nvidia.com/v1",
+       benchmarks="gsm8k:0,math:0",
+       output_dir="/workspace/test-eval",
+       ctx=wrap_arguments("++max_samples=10"),  # arguments of the underlying script need to be wrapped
+   )
+   ```
+
 All of the scripts inside [nemo_skills/pipeline](/nemo_skills/pipeline) accept `--cluster` argument which you can use
 to control where the job gets executed. That argument picks up one of the configs inside your local [cluster_configs](/cluster_configs/)
 folder by default, but you can specify another location with `--config_dir` or set it in `NEMO_SKILLS_CONFIG_DIR` env variable.
+You can also use `NEMO_SKILLS_CONFIG` env variable instead of the `--cluster` parameter.
 The cluster config defines an executor (local or slurm), mounts for data/model access and (slurm-only) various parameters
 such as account, partition, ssh-tunnel arguments and so on.
 

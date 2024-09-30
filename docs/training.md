@@ -97,38 +97,62 @@ python -m nemo_skills.pipeline.eval \
 
 In general we don't recommend to run inference using NeMo checkpoints as it is
 much slower than other server formats. Here is how you can chain the commands
-to schedule checkpoint conversion and evaluation after training.
+to schedule checkpoint conversion and evaluation after training
+(whenever you need to run multiple commands, it's more convenient to use python interface)
 
-```
-python -m nemo_skills.pipeline.convert \
-    --cluster=slurm \
-    --input_model=/workspace/my-training-job/checkpoints/model-averaged-nemo \
-    --output_model=/workspace/my-training-job/checkpoints/model-averaged-hf \
-    --expname=my-training-job-to-hf \
-    --run_after=my-training-job \
-    --convert_from=nemo \
-    --convert_to=hf \
-    --num_gpus=8 \
-    --hf_model_name=meta-llama/Meta-Llama-3.1-8B
+```python
+from nemo_skills.pipeline import wrap_arguments
+from nemo_skills.pipeline.cli import train, convert, eval
 
-python -m nemo_skills.pipeline.convert \
-    --cluster=slurm \
-    --input_model=/workspace/my-training-job/checkpoints/model-averaged-hf \
-    --output_model=/workspace/my-training-job/checkpoints/model-averaged-trtllm \
-    --expname=my-training-job-to-trtllm \
-    --run_after=training-job-to-hf \
-    --convert_from=hf \
-    --convert_to=trtllm \
-    --num_gpus=8
+expname = "my-training-job"
+cluster = "slurm"
+output_dir = f"/workspace/{expname}/checkpoints"
 
-python -m nemo_skills.pipeline.eval \
-    --cluster=slurm \
-    --model=/workspace/my-training-job/checkpoints/model-averaged-nemo \
-    --server_type=nemo \
-    --output_dir=/workspace/my-training-job/results/ \
-    --benchmarks gsm8k:0,math:0 \
-    --server_gpus=8 \
-    --run_after=my-training-job-to-trtllm \
-    ++prompt_template=llama3-instruct \
-    ++batch_size=128
+train(
+    ctx=wrap_arguments(""),
+    clustercluster,
+    expname=expname,
+    output_dir=output_dir,
+    nemo_model="/nemo_models/llama3.1-8b-base",
+    num_nodes=8,
+    num_gpus=8,
+    num_training_jobs=4,
+    training_data="/data/sft-data.jsonl",
+)
+
+convert(
+    ctx=wrap_arguments(""),
+    cluster=cluster,
+    input_model=f"{output_dir}/model-averaged-nemo",
+    output_model=f"{output_dir}/model-averaged-hf",
+    expname=f"{expname}-to-hf",
+    run_after=expname,
+    convert_from="nemo",
+    convert_to="hf",
+    num_gpus=8,
+    hf_model_name="meta-llama/Meta-Llama-3.1-8B",
+)
+
+convert(
+    ctx=wrap_arguments(""),
+    cluster=cluster,
+    input_model=f"{output_dir}/model-averaged-hf",
+    output_model=f"{output_dir}/model-averaged-trtllm",
+    expname=f"{expname}-to-trtllm",
+    run_after=f"{expname}-to-hf",
+    convert_from="hf",
+    convert_to="trtllm",
+    num_gpus=8,
+)
+
+eval(
+    ctx=wrap_arguments("++prompt_template=llama3-instruct ++batch_size=128"),
+    cluster=cluster,
+    model=f"{output_dir}/model-averaged-trtllm",
+    server_type="trtllm",
+    output_dir=f"{output_dir}/results/",
+    benchmarks="gsm8k:0,math:0",
+    server_gpus=8,
+    run_after=f"{expname}-to-trtllm",
+)
 ```
