@@ -9,4 +9,7 @@ few_shot_examples:
 
 system: Please reason step by step, and put your final answer within \boxed{{}}.
 
-user: "{problem}"
+user:  |-
+  {examples}
+  Solve the following math problem step by step using Python code for the calculations.
+  Problem: {problem}
