@@ -69,21 +69,6 @@ def summarize_results(
         tunnel.cleanup()
         results_dir = Path(temp_dir) / Path(results_dir).name
 
-    # copying results from the cluster if necessary
-    if args.cluster is not None:
-        cluster_config = get_cluster_config(args.cluster, args.config_dir)
-        check_if_mounted(cluster_config, args.results_dir)
-    if args.cluster == "local":
-        args.results_dir = get_unmounted_path(cluster_config, args.results_dir)
-    elif args.cluster is not None:
-        tunnel = get_tunnel(cluster_config)
-        temp_dir = tempfile.mkdtemp()
-        print(f"Copying results from {args.results_dir} on cluster {args.cluster} to {temp_dir}")
-        os.makedirs(temp_dir, exist_ok=True)
-        cluster_download(tunnel, get_unmounted_path(cluster_config, args.results_dir), temp_dir)
-        tunnel.cleanup()
-        args.results_dir = Path(temp_dir) / Path(args.results_dir).name
-
     # running compute_metrics.py to get greedy, majority and pass @k results for all benchmarks available
     # Check if there is an eval-results dir inside the results_dir
     eval_results_dir = Path(results_dir) / 'eval-results'

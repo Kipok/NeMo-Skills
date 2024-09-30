@@ -36,7 +36,11 @@ def test_trtllm_eval():
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --model {model_path} "
         f"    --server_type trtllm "
+        f"    --output_dir /tmp/nemo-skills-tests/trtllm-eval "
+        f"    --benchmarks gsm8k:0 "
+        f"    --server_gpus 1 "
         f"    --server_nodes 1 "
+        f"    ++prompt_template=llama3-instruct "
         f"    ++split=test "
         f"    ++batch_size=8 "
         f"    ++max_samples=20 "
@@ -46,8 +50,7 @@ def test_trtllm_eval():
     # running compute_metrics to check that results are expected
     metrics_calculator = importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS()
     metrics = compute_metrics(
-        [f"/tmp/nemo-skills-tests/trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"],
-        metrics_calculator,
+        [f"/tmp/nemo-skills-tests/trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
     )
     # rough check, since exact accuracy varies depending on gpu type
     assert metrics['symbolic_correct'] >= 50
@@ -81,8 +84,7 @@ def test_trtllm_code_execution_eval():
     # running compute_metrics to check that results are expected
     metrics_calculator = importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS()
     metrics = compute_metrics(
-        [f"/tmp/nemo-skills-tests/trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"],
-        metrics_calculator,
+        [f"/tmp/nemo-skills-tests/trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
     )
     # rough check, since exact accuracy varies depending on gpu type
     assert metrics['symbolic_correct'] >= 60
@@ -192,8 +194,7 @@ def test_nemo_eval():
     # running compute_metrics to check that results are expected
     metrics_calculator = importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS()
     metrics = compute_metrics(
-        [f"/tmp/nemo-skills-tests/nemo-eval/eval-results/gsm8k/output-greedy.jsonl"],
-        metrics_calculator,
+        [f"/tmp/nemo-skills-tests/nemo-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
     )
     # rough check, since exact accuracy varies depending on gpu type
     assert metrics['symbolic_correct'] >= 50

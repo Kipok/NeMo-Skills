@@ -76,6 +76,7 @@ def get_training_cmd(
         timeout = "10000:00:00:00"
     else:
         timeout = cluster_config["timeouts"][partition or cluster_config["partition"]]
+
         # subtracting 15 minutes to account for the time it takes to save the model
         # the format expected by nemo is days:hours:minutes:seconds
         time_diff = datetime.strptime(timeout, "%H:%M:%S") - datetime.strptime("00:15:00", "%H:%M:%S")
@@ -115,6 +116,7 @@ def get_training_cmd(
         f"    ++exp_manager.max_time_per_run={timeout} "
         f"    {extra_arguments} "
     )
+
     return cmd
 
 
