@@ -271,9 +271,7 @@ class OpenAIModel(BaseModel):
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
         if isinstance(prompts[0], str):
-            for pidx in range(len(prompts)):
-                prompts[pidx] = [{"role": "user", "content": prompts[pidx]}]
-
+            raise NotImplementedError("OpenAI server requires \"messages\" dicts as prompt.")
         if stop_phrases is None:
             stop_phrases = []
         if top_k != 0:
