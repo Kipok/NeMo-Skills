@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import logging
 from dataclasses import asdict
 from typing import Callable, Dict, List, Union
@@ -36,7 +37,7 @@ from settings.constants import (
     SEPARATOR_DISPLAY,
     SEPARATOR_ID,
 )
-from utils.common import get_config, get_settings, get_utils_from_config
+from utils.common import get_config, get_settings, get_utils_from_config, initialize_default
 
 from nemo_skills.code_execution.math_grader import extract_answer
 from nemo_skills.code_execution.sandbox import get_sandbox
@@ -146,6 +147,7 @@ class ModeStrategies:
                         },
                         value=str(value),
                         text_modes=text_modes,
+                        editable=True,
                     ),
                 ],
                 className="mb-3",
@@ -181,13 +183,11 @@ class ModeStrategies:
 
         logging.info(f"query to process: {params['prompts'][0]}")
 
-        inference_cfg = get_config(InferenceConfig, utils, get_settings())
-
         try:
             outputs = llm.generate(
                 prompts=params['prompts'],
                 stop_phrases=current_app.config['nemo_inspector']['prompt']['stop_phrases'],
-                **asdict(inference_cfg),
+                **{key: value for key, value in utils.items() if key in inspect.signature(llm.generate).parameters},
             )
         except requests.exceptions.ConnectionError as e:
             return self._get_connection_error_message()
@@ -234,20 +234,7 @@ class ModeStrategies:
             for key, value in utils.items()
             if key != RETRIEVAL and key not in RETRIEVAL_FIELDS
         }
-        examples_type = utils.pop('examples_type', None)
-        utils["example_dicts"] = examples_map.get(
-            examples_type,
-            [],
-        )
-        len_example_dicts = len(utils["example_dicts"])
-        prompt_config = get_config(PromptConfig, utils, get_settings())
-
-        prompt_config.few_shot_examples = get_config(
-            FewShotExamplesConfig,
-            utils,
-            get_settings(),
-        )
-
+        prompt_config = initialize_default(PromptConfig, {**utils})
         prompt = Prompt(config=prompt_config)
         return prompt.build_string(input_dict)
 
