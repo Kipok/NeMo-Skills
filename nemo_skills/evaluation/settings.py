@@ -62,7 +62,7 @@ for benchmark in CODE_BENCHMARKS:
 EXTRA_EVAL_ARGS = {
     # some benchmarks require specific extra arguments, which are defined here
     'human-eval': '++eval_type=code ++eval_config.dataset=humaneval',
-    'human-eval-infilling': '++eval_type=code_infill ++eval_config.dataset=humaneval_infilling',
+    'human-eval-infilling': '++eval_type=code_infill ++eval_config.dataset=humaneval_infilling ++eval_config.truncation=none',
     'mbpp': '++eval_type=code ++eval_config.dataset=mbpp',
     'ifeval': '++eval_type=ifeval',
     'arena-hard': '++eval_type=arena',

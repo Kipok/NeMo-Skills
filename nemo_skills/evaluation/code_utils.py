@@ -23,7 +23,7 @@ def preprocess_code(generation_dict: dict):
     return generation_dict
 
 
-def postprocess_code_fim(generation_dict: dict):
+def postprocess_code_fim(generation_dict: dict, truncation_type: str):
     # start and end tokens for FIM generation
     start_token = "<|start_of_middle|>"
     end_token = "<|end_of_middle|>"
@@ -50,6 +50,9 @@ def postprocess_code_fim(generation_dict: dict):
     if start_index != -1 and end_index != -1:
         start_index += len(start_token)
         completion = completion[start_index:end_index]
+
+    if truncation_type == "single-line":
+        completion = completion.split("\n")[0] + "\n"
 
     generation_dict["completion"] = completion
     return generation_dict

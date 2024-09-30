@@ -241,7 +241,8 @@ def humaneval_infill_grader(cfg):
     # processing each generation separately (TODO: evalplus can do it together, but need to figure out the format)
     for jsonl_file in unroll_files(cfg.prediction_jsonl_files):
         with open(jsonl_file) as f:
-            samples = [postprocess_code_fim(json.loads(line)) for line in f]
+            samples = [postprocess_code_fim(json.loads(
+                line), cfg.eval_config.truncation) for line in f]
         # all changes will be done with a new key "completion", so it's ok to write to the same file
         with open(jsonl_file, "wt", encoding="utf-8") as f:
             for sample in samples:

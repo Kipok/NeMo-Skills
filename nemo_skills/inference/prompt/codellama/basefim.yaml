@@ -3,9 +3,9 @@
 system: ""
 
 user: |-
-  <PRE> {question} <SUF> {suffix} <MID>
+  ▁<PRE>{question}▁<SUF> {suffix}▁<MID>
 
 prompt_template: |-
-  <s> {system}{user}{generation}
+  <s>{system}{user}{generation}
 
-stop_phrases: ["</s>"]
+stop_phrases: ["▁<EOT>", "</s>"]
