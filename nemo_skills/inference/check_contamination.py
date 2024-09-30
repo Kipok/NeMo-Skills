@@ -86,18 +86,12 @@ def check_contamination(cfg: CheckContaminationConfig):
         f'{cfg.retrieve_key}1': data[0][cfg.retrieve_key],
         f'{cfg.retrieve_key}2': data[0]['similar_items'][0],
     }
-    if cfg.prompt_template:
-        LOG.info(
-            "Example prompt:\nData dictionary: %s\nPrompt string: %s",
-            first_element,
-            prompt.build_string(first_element),
-        )
-    else:
-        LOG.info(
-            "Example prompt:\nData dictionary: %s\nPrompt messages: %s",
-            first_element,
-            prompt.build_messages(first_element),
-        )
+    LOG.info(
+        "Example prompt:\nData dictionary: %s\nPrompt: %s",
+        first_element,
+        prompt.fill(first_element),
+    )
+
     if cfg.dry_run:
         return
 
@@ -143,12 +137,9 @@ def check_contamination(cfg: CheckContaminationConfig):
                                     f'{cfg.retrieve_key}1': similar_item,
                                 }
                             )
-                if cfg.prompt_template:
-                    prompts = [prompt.build_string(dp) for dp in all_data]
-                    stop_phrases = list(prompt.config.template.stop_phrases)
-                else:
-                    prompts = [prompt.build_messages(dp) for dp in all_data]
-                    stop_phrases = None
+
+                prompts = [prompt.fill(dp) for dp in all_data]
+                stop_phrases = prompt.stop_phrases
 
                 outputs = llm.generate(prompts=prompts, stop_phrases=stop_phrases, **asdict(cfg.inference))
                 output_idx = 0

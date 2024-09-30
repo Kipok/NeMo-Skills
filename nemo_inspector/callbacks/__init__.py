@@ -119,6 +119,7 @@ def set_config(cfg: InspectorConfig) -> None:
         config['nemo_inspector']['prompt']['template']['code_output_end'],
     )
 
+    config['nemo_inspector']['prompt'] = asdict(initialize_default(PromptConfig))
     config['nemo_inspector']['retrieval_fields'] = get_specific_fields(config['nemo_inspector'], RETRIEVAL_FIELDS)
 
     config['nemo_inspector']['input_file'] = str(config['nemo_inspector']['input_file'])

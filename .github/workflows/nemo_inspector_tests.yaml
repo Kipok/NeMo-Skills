@@ -45,7 +45,7 @@ jobs:
         python -m pytest nemo_inspector/tests/ --reruns 3 --reruns-delay 1 --junitxml=results.xml --cov-report=term-missing:skip-covered --cov=visualization --durations=30 -vv
 
     - name: Upload test coverage
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: test-coverage-report
         path: results.xml

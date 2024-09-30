@@ -96,7 +96,7 @@ def test_code_sft_data():
         shell=True,
     )
 
-    expected_md5 = "8e97f934946d863a4ad3df6ebf9df984"
+    expected_md5 = "a830a174291795cc7db0d1c3ee39de25"
     output_md5 = compute_md5(output_file)
 
     assert (

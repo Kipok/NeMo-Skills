@@ -1,26 +1,36 @@
-# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
-#
+# Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
+
+# http://www.apache.org/licenses/LICENSE-2.0
+
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
-from argparse import ArgumentParser
 from datetime import datetime
+from enum import Enum
 
 import nemo_run as run
+import typer
 from huggingface_hub import get_token
 
 from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, run_exp
+from nemo_skills.pipeline.app import app, typer_unpacker
 from nemo_skills.utils import setup_logging
+
+LOG = logging.getLogger(__file__)
+
+
+class TrainingAlgo(str, Enum):
+    sft = "sft"
+    dpo = "dpo"
 
 
 def get_training_cmd(
@@ -42,7 +52,6 @@ def get_training_cmd(
 ):
     if training_algo == "dpo" and config_name is None:
         config_name = "dpo_config"
-
     if training_algo == "sft" and config_name is None:
         config_name = "sft_config"
 
@@ -115,139 +124,127 @@ def get_avg_checkpoints_cmd(nemo_model, output_dir, final_nemo_path, average_ste
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"cd /nemo_run/code && "
         f"python -m nemo_skills.training.average_checkpoints "
-        f"    --untarred_nemo_dir {nemo_model} "
-        f"    --name_prefix=model "
-        f"    --checkpoint_dir={output_dir}/training/checkpoints {average_steps} && "
+        f" --untarred_nemo_dir {nemo_model} "
+        f" --name_prefix=model "
+        f" --checkpoint_dir={output_dir}/training/checkpoints {average_steps} && "
         f"mkdir -p {os.path.dirname(final_nemo_path)} && "
         f"mv {output_dir}/training/checkpoints/{name} {final_nemo_path} "
     )
     return cmd
 
 
-if __name__ == "__main__":
+@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+@typer_unpacker
+def train(
+    ctx: typer.Context,
+    config_dir: str = typer.Option(None, help="Path to the cluster_configs dir"),
+    cluster: str = typer.Option(..., help="One of the configs inside cluster_configs"),
+    output_dir: str = typer.Option(..., help="Where to put results"),
+    final_nemo_path: str = typer.Option(None, help="Where to put the final checkpoint"),
+    expname: str = typer.Option(..., help="Experiment name"),
+    nemo_model: str = typer.Option(..., help="Path to the NeMo model"),
+    training_data: str = typer.Option(None, help="Path to the training data"),
+    validation_data: str = typer.Option(None, help="Path to the validation data"),
+    num_nodes: int = typer.Option(1, help="Number of nodes"),
+    num_gpus: int = typer.Option(..., help="Number of GPUs"),
+    num_training_jobs: int = typer.Option(1, help="Number of training jobs"),
+    training_algo: TrainingAlgo = typer.Option(TrainingAlgo.sft, help="Training algorithm"),
+    config_name: str = typer.Option(None, help="Config name"),
+    config_path: str = typer.Option('/nemo_run/code/nemo_skills/training/', help="Config path"),
+    wandb_project: str = typer.Option("nemo-skills", help="Weights & Biases project name"),
+    disable_wandb: bool = typer.Option(False, help="Disable wandb logging"),
+    with_sandbox: bool = typer.Option(False, help="If sandbox is required for code generation"),
+    partition: str = typer.Option(None, help="Specify partition for jobs"),
+    average_steps: list[int] = typer.Option(None, help="List of checkpoint steps to average"),
+    run_after: str = typer.Option(None, help="Experiment to run after"),
+):
+    """Train (SFT or DPO) an LLM model."""
     setup_logging(disable_hydra_logs=False)
-    parser = ArgumentParser()
-    # by default we are using a shared project
-    parser.add_argument("--config_dir", default=None, help="Path to the cluster_configs dir")
-    parser.add_argument("--cluster", required=True, help="One of the configs inside cluster_configs")
-    # TODO: maybe not required and reuse expname in that case?
-    parser.add_argument("--output_dir", required=True, help="Where to put results")
-    parser.add_argument(
-        "--final_nemo_path",
-        required=False,
-        help="Where to put the final checkpoint. By default, it will be saved in the output_dir/model-averaged-nemo",
-    )
-    parser.add_argument("--expname", required=True, help="Experiment name")
-    parser.add_argument("--nemo_model", required=True)
-    parser.add_argument("--training_data", required=False, help="Path to the training data")
-    # TODO: this needs to be fixed in nemo-aligner
-    parser.add_argument(
-        "--validation_data", required=False, help="Will default to the training data, since we can't disable it"
-    )
-    parser.add_argument("--num_nodes", type=int, default=1)
-    parser.add_argument("--num_gpus", type=int)
-    parser.add_argument(
-        "--num_training_jobs", type=int, default=1, help="Set to 0 if you only want to convert the model."
-    )
-    parser.add_argument("--training_algo", default="sft", choices=["sft", "dpo"])
-    # have to be handled explicitly since hydra requires these to be first arguments
-    parser.add_argument("--config-name", "-cn", required=False, help="If not specified will use (sft/dpo)_config")
-    parser.add_argument("--config-path", "-cp", default='/nemo_run/code/nemo_skills/training/')
-    parser.add_argument("--wandb_project", default="nemo-skills")
-    parser.add_argument(
-        "--disable_wandb", action="store_true", help="Disable wandb logging and use tensorboard instead"
-    )
-    parser.add_argument("--chat_format", action="store_true", help="Use chat format for SFT data")
-    parser.add_argument("--with_sandbox", action="store_true", help="If sandbox is required for code generation")
-    parser.add_argument(
-        "--partition",
-        required=False,
-        help="Can specify if need interactive jobs or a specific non-default partition",
-    )
-    parser.add_argument(
-        "--average_steps",
-        nargs="+",
-        type=int,
-        help="List of checkpoint steps to average. If not specified, will average all.",
-    )
-    parser.add_argument(
-        "--run_after",
-        required=False,
-        help="Can specify an expname that needs to be completed before this one starts (will use as slurm dependency)",
-    )
+    extra_arguments = f'{" ".join(ctx.args)}'
+    LOG.info("Starting training job")
+    LOG.info("Extra arguments that will be passed to the underlying script: %s", extra_arguments)
 
-    args, unknown = parser.parse_known_args()
-    extra_arguments = f'{" ".join(unknown)}'
+    try:
+        training_algo = training_algo.value
+    except AttributeError:
+        pass
 
-    if not args.output_dir.startswith("/"):
-        raise ValueError("output_dir must be referenced in a mounted location (mounts section in the config file)")
+    cluster_config = get_cluster_config(cluster, config_dir)
+    check_if_mounted(cluster_config, output_dir)
+    check_if_mounted(cluster_config, nemo_model)
 
-    cluster_config = get_cluster_config(args.cluster, args.config_dir)
-    check_if_mounted(cluster_config, args.output_dir)
-    check_if_mounted(cluster_config, args.nemo_model)
-    if args.num_training_jobs > 0:
-        if args.training_data is None:
+    if num_training_jobs > 0:
+        if training_data is None:
             raise ValueError("training_data is required when num_training_jobs > 0")
-        check_if_mounted(cluster_config, args.training_data)
-    if not args.final_nemo_path:
-        args.final_nemo_path = f"{args.output_dir}/model-averaged-nemo"
-    check_if_mounted(cluster_config, args.final_nemo_path)
-    if args.validation_data:
-        check_if_mounted(cluster_config, args.validation_data)
+        check_if_mounted(cluster_config, training_data)
+
+    if not final_nemo_path:
+        final_nemo_path = f"{output_dir}/model-averaged-nemo"
+    check_if_mounted(cluster_config, final_nemo_path)
+
+    if validation_data:
+        check_if_mounted(cluster_config, validation_data)
 
     train_cmd = get_training_cmd(
         cluster_config=cluster_config,
-        partition=args.partition,
-        config_name=args.config_name,
-        config_path=args.config_path,
-        nemo_model=args.nemo_model,
-        output_dir=args.output_dir,
-        training_data=args.training_data,
-        validation_data=args.validation_data,
-        num_gpus=args.num_gpus,
-        num_nodes=args.num_nodes,
-        expname=args.expname,
-        training_algo=args.training_algo,
-        disable_wandb=args.disable_wandb,
-        wandb_project=args.wandb_project,
+        partition=partition,
+        config_name=config_name,
+        config_path=config_path,
+        nemo_model=nemo_model,
+        output_dir=output_dir,
+        training_data=training_data,
+        validation_data=validation_data,
+        num_gpus=num_gpus,
+        num_nodes=num_nodes,
+        expname=expname,
+        training_algo=training_algo,
+        disable_wandb=disable_wandb,
+        wandb_project=wandb_project,
         extra_arguments=extra_arguments,
     )
 
-    with run.Experiment(args.expname) as exp:
-        for job_id in range(args.num_training_jobs):
+    with run.Experiment(expname) as exp:
+        for job_id in range(num_training_jobs):
             add_task(
                 exp,
                 cmd=train_cmd,
-                task_name=f'{args.training_algo}-{job_id}',
-                log_dir=f"{args.output_dir}/training-logs",
+                task_name=f'{training_algo}-{job_id}',
+                log_dir=f"{output_dir}/training-logs",
                 container=cluster_config["containers"]["nemo"],
-                num_gpus=args.num_gpus,
-                num_nodes=args.num_nodes,
-                num_tasks=args.num_gpus if cluster_config["executor"] == "slurm" else 1,
+                num_gpus=num_gpus,
+                num_nodes=num_nodes,
+                num_tasks=num_gpus if cluster_config["executor"] == "slurm" else 1,
                 cluster_config=cluster_config,
-                partition=args.partition,
-                with_sandbox=args.with_sandbox,
-                run_after=args.run_after,
+                partition=partition,
+                with_sandbox=with_sandbox,
+                run_after=run_after,
             )
 
         cmd = get_avg_checkpoints_cmd(
-            nemo_model=args.nemo_model,
-            output_dir=args.output_dir,
-            final_nemo_path=args.final_nemo_path,
-            average_steps=f"--steps {' '.join(map(str, args.average_steps))} " if args.average_steps else "",
+            nemo_model=nemo_model,
+            output_dir=output_dir,
+            final_nemo_path=final_nemo_path,
+            average_steps=f"--steps {' '.join(map(str, average_steps))} " if average_steps else "",
         )
+
         add_task(
             exp,
             cmd=cmd,
             task_name="prepare-eval",
-            log_dir=f"{args.output_dir}/prepare-eval-logs",
+            log_dir=f"{output_dir}/prepare-eval-logs",
             container=cluster_config["containers"]['nemo'],
             cluster_config=cluster_config,
-            partition=args.partition,
+            partition=partition,
             num_nodes=1,
             num_tasks=1,
-            num_gpus=args.num_gpus,
-            run_after=args.run_after,
+            num_gpus=num_gpus,
+            run_after=run_after,
         )
 
         run_exp(exp, cluster_config, sequential=True)
+
+
+if __name__ == "__main__":
+    # workaround for https://github.com/fastapi/typer/issues/341
+    typer.main.get_command_name = lambda name: name
+    app()

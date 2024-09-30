@@ -87,15 +87,15 @@ class PromptTemplate:
     assistant_begin: str
     assistant_end: str
 
-    # used to execute code within these tags
-    code_begin: str
-    code_end: str
-    # used to extract the code output
-    code_output_begin: str
-    code_output_end: str
-
     # TODO: should stop phrases not be here?
     stop_phrases: List[str]
+
+    # used to execute code within these tags
+    code_begin: str = '<llm-code>'
+    code_end: str = '</llm-code>'
+    # used to extract the code output
+    code_output_begin: str = '<llm-code-output>'
+    code_output_end: str = '</llm-code-output>'
 
 
 @nested_dataclass(kw_only=True)
@@ -184,34 +184,52 @@ class Prompt:
         user = self.config.user.format(examples=examples, **input_dict)
         return user
 
-    def build_string(self, input_dict: Dict[str, str], include_generation: bool = False) -> str:
-        """Returns the complete prompt string representation."""
-        if self.config.template is None:
-            raise ValueError("Prompt template was not provided, so only build_messages API is available.")
+    def fill(self, input_dict: Dict[str, str], include_generation: bool = False) -> str | List[dict]:
+        """
+        Fills the prompt with the input_dict.
+        Operates in two modes:
+        - If `config.template` is set, it will use the template to fill the prompt, returning a string.
+        - If `config.template` is not set, it will assume chat format and return a list of dictionaries.
+
+        Args:
+            input_dict: The input dictionary to fill the prompt with.
+            include_generation: Whether to include the generation in the prompt.
+
+        Returns:
+            The filled prompt - either a string or a list of dictionaries.
+        """
         if include_generation:
             generation = input_dict.get("generation", "")
         else:
             generation = ""
 
-        prompt = Prompt.FORMAT.format(
-            system=self.config.system,
-            user=self.build_user_message(input_dict),
-            generation=generation,
-            **asdict(self.config.template),
-        )
-        return prompt
+        if self.config.template:
+            prompt = Prompt.FORMAT.format(
+                system=self.config.system,
+                user=self.build_user_message(input_dict),
+                generation=generation,
+                **asdict(self.config.template),
+            )
 
-    def build_messages(self, input_dict: Dict[str, str], include_generation: bool = False) -> List[dict]:
-        """Returns the messages as required by OpenAI API."""
-        generation = input_dict.get("generation", "")
+            return prompt
 
-        messages = [
-            {"role": "system", "content": self.config.system},
-            {"role": "user", "content": self.build_user_message(input_dict)},
-        ]
-        if generation and include_generation:
-            messages.append({"role": "assistant", "content": generation})
-        return messages
+        else:
+            messages = [
+                {"role": "system", "content": self.config.system},
+                {"role": "user", "content": self.build_user_message(input_dict)},
+            ]
+            if generation and include_generation:
+                messages.append({"role": "assistant", "content": generation})
+
+            return messages
+
+    @property
+    def stop_phrases(self):
+        """Returns the stop phrases from the template if it exists, otherwise None."""
+        if self.config.template:
+            return list(self.config.template.stop_phrases)
+
+        return None
 
     def __str__(self):
         return str(self.config)

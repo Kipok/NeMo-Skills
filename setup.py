@@ -41,4 +41,9 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
+    entry_points={
+        'console_scripts': [
+            'ns=nemo_skills.pipeline.cli:app',
+        ],
+    },
 )

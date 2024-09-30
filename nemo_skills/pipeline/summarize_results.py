@@ -12,54 +12,62 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# will run compute metrics on all relevant files and summarize results in a .csv file
-
-import argparse
 import glob
 import importlib
-import json
 import logging
 import os
-import sys
 import tempfile
 from collections import defaultdict
 from pathlib import Path
+from typing import List, Optional
 
-# adding nemo_skills to python path to avoid requiring installation
-sys.path.append(str(Path(__file__).absolute().parents[1]))
-sys.path.append(str(Path(__file__).absolute().parents[0]))
+import typer
 
 from nemo_skills.evaluation.metrics import MathMetrics
 from nemo_skills.pipeline import check_if_mounted, cluster_download, get_cluster_config, get_tunnel, get_unmounted_path
+from nemo_skills.pipeline.app import app, typer_unpacker
 from nemo_skills.pipeline.compute_metrics import compute_metrics
 from nemo_skills.utils import setup_logging
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        'results_dir',
-        help=(
-            "Path to the dir with results. Needs to contain <benchmark> dirs inside. "
-            "If cluster is specified, will fetch the results from there."
-        ),
-    )
-    parser.add_argument(
-        '--cluster',
-        required=False,
+
+@app.command()
+@typer_unpacker
+def summarize_results(
+    results_dir: str = typer.Argument(
+        ...,
+        help="Path to the dir with results. Needs to contain <benchmark> dirs inside. "
+        "If cluster is specified, will fetch the results from there.",
+    ),
+    cluster: Optional[str] = typer.Option(
+        None,
         help="Cluster configuration to take results from. If 'local' is explicitly specified, "
         "we assume the location is relative to one of the mounted dirs.",
-    )
-    parser.add_argument('--config_dir', default=None, help="Path to the cluster_configs dir.")
-    parser.add_argument(
-        '--benchmarks',
-        nargs="+",
-        default=[],
-        help="Specify benchmarks to run. If not specified, all benchmarks in the results_dir will be used.",
-    )
-    parser.add_argument("--debug", action="store_true", help="Print debug information")
-    args = parser.parse_args()
+    ),
+    config_dir: Optional[str] = typer.Option(None, help="Path to the cluster_configs dir."),
+    benchmarks: Optional[str] = typer.Option(
+        None,
+        help="Specify benchmarks to run (comma separated). "
+        "If not specified, all benchmarks in the results_dir will be used.",
+    ),
+    debug: bool = typer.Option(False, help="Print debug information"),
+):
+    """Summarize results of an evaluation job."""
+    setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not debug else logging.DEBUG)
 
-    setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not args.debug else logging.DEBUG)
+    # copying results from the cluster if necessary
+    if cluster is not None:
+        cluster_config = get_cluster_config(cluster, config_dir)
+        check_if_mounted(cluster_config, results_dir)
+    if cluster == "local":
+        results_dir = get_unmounted_path(cluster_config, results_dir)
+    elif cluster is not None:
+        tunnel = get_tunnel(cluster_config)
+        temp_dir = tempfile.mkdtemp()
+        print(f"Copying results from {results_dir} on cluster {cluster} to {temp_dir}")
+        os.makedirs(temp_dir, exist_ok=True)
+        cluster_download(tunnel, get_unmounted_path(cluster_config, results_dir), temp_dir)
+        tunnel.cleanup()
+        results_dir = Path(temp_dir) / Path(results_dir).name
 
     # copying results from the cluster if necessary
     if args.cluster is not None:
@@ -78,19 +86,16 @@ if __name__ == "__main__":
 
     # running compute_metrics.py to get greedy, majority and pass @k results for all benchmarks available
     # Check if there is an eval-results dir inside the results_dir
-    eval_results_dir = Path(args.results_dir) / 'eval-results'
+    eval_results_dir = Path(results_dir) / 'eval-results'
     if eval_results_dir.exists() and eval_results_dir.is_dir():
-        args.results_dir = eval_results_dir
-    benchmarks = glob.glob(f'{args.results_dir}/*')
+        results_dir = eval_results_dir
+    benchmarks_paths = glob.glob(f'{results_dir}/*')
 
-    if args.benchmarks:
-        for benchmark in benchmarks.copy():
-            if Path(benchmark).name not in args.benchmarks:
-                benchmarks.remove(benchmark)
+    if benchmarks:
+        benchmarks_paths = [b for b in benchmarks_paths if Path(b).name in benchmarks.split(",")]
 
-    current_dir = Path(__file__).absolute().parent
     results = defaultdict(dict)
-    for benchmark_path in benchmarks:
+    for benchmark_path in benchmarks_paths:
         benchmark = str(Path(benchmark_path).name)
         if not Path(benchmark_path).is_dir():
             continue
@@ -134,7 +139,6 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Error running compute_metrics.py for {benchmark}: {e}")
 
-    lines_to_write = []
     for benchmark, benchmark_results in results.items():
         if not benchmark_results:
             continue
@@ -162,3 +166,9 @@ if __name__ == "__main__":
             print(' | '.join(values))
 
         print('\n')
+
+
+if __name__ == "__main__":
+    # workaround for https://github.com/fastapi/typer/issues/341
+    typer.main.get_command_name = lambda name: name
+    app()

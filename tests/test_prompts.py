@@ -97,7 +97,7 @@ Start directly with the problem statement and DO NOT include any phrases such as
 After the problem is completed finish your response right away.<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
 """
-    assert prompt.build_string({'problem': "What's the meaning of life?"}) == expected_prompt
+    assert prompt.fill({'problem': "What's the meaning of life?"}) == expected_prompt
 
 
 def test_generic_gsm8k_problem_augmentation_prompt():
@@ -198,7 +198,7 @@ Start directly with the problem statement and DO NOT include any phrases such as
 After the problem is completed finish your response right away.
 <extra_id_1>Assistant
 """
-    assert prompt.build_string({'problem': "What's the meaning of life?"}) == expected_prompt
+    assert prompt.fill({'problem': "What's the meaning of life?"}) == expected_prompt
 
 
 def test_generic_codegen_prompt():
@@ -221,9 +221,7 @@ The solution should be in the following format:
 ```'''.strip(),
         },
     ]
-    assert (
-        prompt.build_messages({'question': 'def 2_plus_2():\n    """Write code to solve 2 + 2"""'}) == expected_prompt
-    )
+    assert prompt.fill({'question': 'def 2_plus_2():\n    """Write code to solve 2 + 2"""'}) == expected_prompt
 
 
 def test_generic_default_prompt():
@@ -236,7 +234,7 @@ def test_generic_default_prompt():
             'content': 'How are you?',
         },
     ]
-    assert prompt.build_messages({'question': 'How are you?'}) == expected_prompt
+    assert prompt.fill({'question': 'How are you?'}) == expected_prompt
 
 
 def test_generic_math_prompt():
@@ -251,7 +249,7 @@ Solve the following math problem. Make sure to put the answer (and only answer) 
 2 + 2 = ?<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
 """
-    assert prompt.build_string({'problem': '2 + 2 = ?'}) == expected_prompt
+    assert prompt.fill({'problem': '2 + 2 = ?'}) == expected_prompt
 
 
 def test_generic_math_prompt_code_examples():
@@ -436,7 +434,7 @@ So the bee is $\\boxed{1008\\sqrt{2} + 1008\\sqrt{6}}$ far from the starting poi
 
 Here is the problem you need to solve:
 2 + 2 = ?"""
-    assert prompt.build_string({'problem': '2 + 2 = ?'}) == expected_prompt
+    assert prompt.fill({'problem': '2 + 2 = ?'}) == expected_prompt
 
 
 def test_generic_multichoice_prompt():
@@ -454,7 +452,7 @@ D. 42
 
 Think step by step before answering."""
     assert (
-        prompt.build_string({'question': 'How are you?', 'A': 'Good', 'B': 'Bad', 'C': 'And you?', 'D': '42'})
+        prompt.fill({'question': 'How are you?', 'A': 'Good', 'B': 'Bad', 'C': 'And you?', 'D': '42'})
         == expected_prompt
     )
 
@@ -489,7 +487,7 @@ Where [answer] is just the final number or expression that solves the problem.
 Problem: 3 + 5?<|eot_id|><|start_header_id|>assistant<|end_header_id|>
 
 """
-    assert prompt.build_string({'problem': '3 + 5?'}) == expected_prompt
+    assert prompt.fill({'problem': '3 + 5?'}) == expected_prompt
 
 
 def test_judge_arena():
@@ -537,7 +535,7 @@ I mean, coffee, why do you even ask?
         },
     ]
     assert (
-        prompt.build_messages(
+        prompt.fill(
             {
                 'question': "What's better for a cold: tea or coffee?",
                 "answer_1": "Tea for sure",
@@ -638,7 +636,7 @@ Expected answer: 2
         },
     ]
     assert (
-        prompt.build_messages(
+        prompt.fill(
             {
                 'problem': "1 + 1",
                 "predicted_answer": "eh, 15?",
@@ -672,7 +670,7 @@ Respond with only "True" (problems are the same) or "False" (problems are differ
         },
     ]
     assert (
-        prompt.build_messages(
+        prompt.fill(
             {
                 'problem1': "1 + 3",
                 "problem2": "what's 3 plus 1?",

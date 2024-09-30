@@ -152,10 +152,8 @@ def generate(cfg: GenerateSolutionsConfig):
     if len(data) == 0:  # we might not have any examples if skip_filled=True
         return
 
-    if cfg.prompt_template:
-        LOG.info("Example prompt:\nData dictionary: %s\nPrompt string: %s", data[0], prompt.build_string(data[0]))
-    else:
-        LOG.info("Example prompt:\nData dictionary: %s\nPrompt messages: %s", data[0], prompt.build_messages(data[0]))
+    LOG.info("Example prompt:\nData dictionary: %s\nPrompt: %s", data[0], prompt.fill(data[0]))
+
     if cfg.dry_run:
         return
 
@@ -180,12 +178,8 @@ def generate(cfg: GenerateSolutionsConfig):
             data_points.append(data_point)
 
             if len(data_points) == cfg.batch_size or idx == cfg.max_samples - 1:
-                if cfg.prompt_template:
-                    prompts = [prompt.build_string(dp) for dp in data_points]
-                    stop_phrases = list(prompt.config.template.stop_phrases)
-                else:
-                    prompts = [prompt.build_messages(dp) for dp in data_points]
-                    stop_phrases = None
+                prompts = [prompt.fill(dp) for dp in data_points]
+                stop_phrases = prompt.stop_phrases
 
                 outputs = llm.generate(
                     prompts=prompts, stop_phrases=stop_phrases, **asdict(cfg.inference), **extra_generate_params

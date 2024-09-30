@@ -244,7 +244,7 @@ def update_prompt_type(
 
     return [
         get_utils_field_representation(value, key)
-        for key, value in get_utils_from_config(asdict(prompt_config)).items()
+        for key, value in get_utils_from_config(asdict(prompt_config.config)).items()
     ] + ['', js_trigger + " "]
 
 

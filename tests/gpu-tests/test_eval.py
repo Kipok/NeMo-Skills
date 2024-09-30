@@ -12,11 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# needs to define NEMO_SKILLS_TEST_TRTLLM_MODEL to run these tests
-# needs to define NEMO_SKILLS_TEST_NEMO_MODEL to run these tests
-# you'd also need 2+ GPUs to run this test
-# the metrics are assuming llama3-8b-base as the model and will fail for other models
-
 import importlib
 import json
 import os
@@ -37,15 +32,11 @@ def test_trtllm_eval():
         pytest.skip("Define NEMO_SKILLS_TEST_TRTLLM_MODEL to run this test")
 
     cmd = (
-        f"python -m nemo_skills.pipeline.eval "
+        f"ns eval "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --model {model_path} "
         f"    --server_type trtllm "
-        f"    --output_dir /tmp/nemo-skills-tests/trtllm-eval "
-        f"    --benchmarks gsm8k:0 "
-        f"    --server_gpus 1 "
         f"    --server_nodes 1 "
-        f"    ++prompt_template=llama3-instruct "
         f"    ++split=test "
         f"    ++batch_size=8 "
         f"    ++max_samples=20 "
@@ -55,7 +46,8 @@ def test_trtllm_eval():
     # running compute_metrics to check that results are expected
     metrics_calculator = importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS()
     metrics = compute_metrics(
-        [f"/tmp/nemo-skills-tests/trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
+        [f"/tmp/nemo-skills-tests/trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"],
+        metrics_calculator,
     )
     # rough check, since exact accuracy varies depending on gpu type
     assert metrics['symbolic_correct'] >= 50
@@ -69,7 +61,7 @@ def test_trtllm_code_execution_eval():
         pytest.skip("Define NEMO_SKILLS_TEST_TRTLLM_MODEL to run this test")
 
     cmd = (
-        f"python -m nemo_skills.pipeline.eval "
+        f"ns eval "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --model {model_path} "
         f"    --server_type trtllm "
@@ -89,7 +81,8 @@ def test_trtllm_code_execution_eval():
     # running compute_metrics to check that results are expected
     metrics_calculator = importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS()
     metrics = compute_metrics(
-        [f"/tmp/nemo-skills-tests/trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
+        [f"/tmp/nemo-skills-tests/trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"],
+        metrics_calculator,
     )
     # rough check, since exact accuracy varies depending on gpu type
     assert metrics['symbolic_correct'] >= 60
@@ -107,12 +100,12 @@ def test_vllm_eval():
         pytest.skip("Define NEMO_SKILLS_TEST_HF_MODEL to run this test")
 
     cmd = (
-        f"python -m nemo_skills.pipeline.eval "
+        f"ns eval "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --model {model_path} "
         f"    --server_type vllm "
         f"    --output_dir /tmp/nemo-skills-tests/vllm-eval "
-        f"    --benchmarks algebra222:0 human-eval:0 mbpp:0 ifeval:0 mmlu:0 "
+        f"    --benchmarks algebra222:0,human-eval:0,mbpp:0,ifeval:0,mmlu:0 "
         f"    --server_gpus 1 "
         f"    --server_nodes 1 "
         f"    --num_jobs 1 "
@@ -125,7 +118,7 @@ def test_vllm_eval():
 
     # checking that summarize results works (just that there are no errors, but can inspect the output as well)
     subprocess.run(
-        "python -m nemo_skills.pipeline.summarize_results /tmp/nemo-skills-tests/vllm-eval",
+        "ns summarize_results /tmp/nemo-skills-tests/vllm-eval",
         shell=True,
         check=True,
     )
@@ -181,7 +174,7 @@ def test_nemo_eval():
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
 
     cmd = (
-        f"python -m nemo_skills.pipeline.eval "
+        f"ns eval "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --model {model_path} "
         f"    --server_type nemo "
@@ -199,7 +192,8 @@ def test_nemo_eval():
     # running compute_metrics to check that results are expected
     metrics_calculator = importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS()
     metrics = compute_metrics(
-        [f"/tmp/nemo-skills-tests/nemo-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
+        [f"/tmp/nemo-skills-tests/nemo-eval/eval-results/gsm8k/output-greedy.jsonl"],
+        metrics_calculator,
     )
     # rough check, since exact accuracy varies depending on gpu type
     assert metrics['symbolic_correct'] >= 50

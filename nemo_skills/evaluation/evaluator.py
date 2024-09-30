@@ -35,6 +35,8 @@ class MathEvaluatorConfig:
     tolerance: float = 1e-4
     timeout: float = 10.0
     ignore_cache: bool = False
+    # if True will not attempt to re-extract based on \boxed or regex
+    use_predicted_answer_key: bool = False
 
     extract_from_boxed: bool = True
     # only used if extract_from_boxed is False
@@ -188,7 +190,7 @@ def eval_arena(cfg):
                 data_points.append(to_add)
 
             request_metadata = llm.batch_generate(
-                prompts=[prompt.build_string(data_point) for data_point in data_points],
+                prompts=[prompt.fill(data_point) for data_point in data_points],
                 tokens_to_generate=eval_config.tokens_to_generate,
             )
             # saving the request id to be able to retrieve results when they are ready
@@ -226,7 +228,7 @@ def eval_arena(cfg):
 
                     if len(data_points) == eval_config.batch_size:
                         outputs = llm.generate(
-                            prompts=[prompt.build_string(data_point) for data_point in data_points],
+                            prompts=[prompt.fill(data_point) for data_point in data_points],
                             tokens_to_generate=eval_config.tokens_to_generate,
                         )
                         to_write = {}
@@ -240,7 +242,7 @@ def eval_arena(cfg):
                 # collecting the final batch
                 if len(data_points) > 0:
                     outputs = llm.generate(
-                        prompts=[prompt.build_string(data_point) for data_point in data_points],
+                        prompts=[prompt.fill(data_point) for data_point in data_points],
                         tokens_to_generate=eval_config.tokens_to_generate,
                     )
                     to_write = {}

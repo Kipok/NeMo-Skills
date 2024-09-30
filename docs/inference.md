@@ -14,7 +14,7 @@ Make sure to complete [prerequisites](/docs/prerequisites.md).
 3. Start the server hosting your model. Here is an example (make sure the `/hf_models` mount is defined in your cluster config).
 
    ```
-   python -m nemo_skills.pipeline.start_server \
+   ns start_server \
        --cluster local \
        --model /hf_models/Meta-Llama-3.1-8B-Instruct \
        --server_type vllm \
@@ -25,7 +25,7 @@ Make sure to complete [prerequisites](/docs/prerequisites.md).
 4. Run inference
 
    ```
-   from nemo_skills.inference.server import get_model
+   from nemo_skills.inference.server.model import get_model
    from nemo_skills.prompt.utils import get_prompt
 
    llm = get_model(server_type="vllm")  # localhost by default
@@ -36,7 +36,7 @@ Make sure to complete [prerequisites](/docs/prerequisites.md).
    # see nemo_skills/prompt/template for prompt templates
    prompt = get_prompt('generic/default', 'llama3-instruct')
 
-   prompts = [prompt.build_string({'question': "What's 2 + 2?"})]
+   prompts = [prompt.fill({'question': "What's 2 + 2?"})]
 
    # you can see exactly what we send to the model including all special tokens
    # if you don't want to use our prompt format, just create this string yourself
@@ -67,7 +67,7 @@ We support using models from [Nvidia NIM API](https://www.nvidia.com/en-us/ai/) 
 You need to define `NVIDIA_API_KEY` for this to work.
 
 ```
-from nemo_skills.inference.server import get_model
+from nemo_skills.inference.server.model import get_model
 from nemo_skills.prompt.utils import get_prompt
 
 llm = get_model(
@@ -81,8 +81,7 @@ llm = get_model(
 # note that with API models we can't add special tokens, so prompt template is unused here
 prompt = get_prompt('generic/default')
 
-# not using build_string, but build_messages instead
-prompts = [prompt.build_messages({'question': "What's 2 + 2?"})]
+prompts = [prompt.fill({'question': "What's 2 + 2?"})]
 
 # again, you can prepare this yourself if you don't like our prompt utils
 print(prompts[0])

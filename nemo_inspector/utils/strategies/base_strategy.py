@@ -236,7 +236,7 @@ class ModeStrategies:
         }
         prompt_config = initialize_default(PromptConfig, {**utils})
         prompt = Prompt(config=prompt_config)
-        return prompt.build_string(input_dict)
+        return prompt.fill(input_dict)
 
     def _get_search_prompt_layout(self) -> dbc.InputGroup:
         return dbc.InputGroup(

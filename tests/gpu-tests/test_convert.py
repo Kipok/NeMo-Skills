@@ -12,11 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# needs to define NEMO_SKILLS_TEST_HF_MODEL to run this test
-# you'd also need 2+ GPUs to run this test
-
 import os
-import shutil
 import subprocess
 from pathlib import Path
 
@@ -30,7 +26,7 @@ def test_hf_trtllm_conversion():
         pytest.skip("Define NEMO_SKILLS_TEST_HF_MODEL to run this test")
 
     cmd = (
-        f"python -m nemo_skills.pipeline.convert "
+        f"ns convert "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --input_model {model_path} "
         f"    --output_model /tmp/nemo-skills-tests/conversion/hf-to-trtllm/model "
@@ -51,7 +47,7 @@ def test_hf_nemo_conversion():
         pytest.skip("Define NEMO_SKILLS_TEST_HF_MODEL to run this test")
 
     cmd = (
-        f"python -m nemo_skills.pipeline.convert "
+        f"ns convert "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --input_model {model_path} "
         f"    --output_model /tmp/nemo-skills-tests/conversion/hf-to-nemo/model "
@@ -73,7 +69,7 @@ def test_nemo_hf_conversion():
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
 
     cmd = (
-        f"python -m nemo_skills.pipeline.convert "
+        f"ns convert "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --input_model {model_path} "
         f"    --output_model /tmp/nemo-skills-tests/conversion/nemo-to-hf/model "

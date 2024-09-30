@@ -124,12 +124,8 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
         with open(jsonl_file, 'rt', encoding='utf-8') as fin:
             data = [json.loads(line) for line in fin]
 
-        if cfg.prompt_template:
-            LOG.info("Example prompt:\nData dictionary: %s\nPrompt string: %s", data[0], prompt.build_string(data[0]))
-        else:
-            LOG.info(
-                "Example prompt:\nData dictionary: %s\nPrompt messages: %s", data[0], prompt.build_messages(data[0])
-            )
+        LOG.info("Example prompt:\nData dictionary: %s\nPrompt string: %s", data[0], prompt.fill(data[0]))
+
         if cfg.dry_run:
             return
 
@@ -162,12 +158,8 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
                     prefilled_indices.append(idx)
 
                 if len(data_points) == cfg.batch_size or idx == len(data) - 1:
-                    if cfg.prompt_template:
-                        prompts = [prompt.build_string(dp) for dp in data_points]
-                        stop_phrases = list(prompt.config.template.stop_phrases)
-                    else:
-                        prompts = [prompt.build_messages(dp) for dp in data_points]
-                        stop_phrases = None
+                    prompts = [prompt.fill(dp) for dp in data_points]
+                    stop_phrases = prompt.stop_phrases
 
                     outputs = llm.generate(
                         prompts=prompts,
