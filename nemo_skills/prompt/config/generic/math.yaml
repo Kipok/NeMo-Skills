@@ -1,7 +1,7 @@
 # default prompt for all math benchmarks (e.g. gsm8k, math)
 
 few_shot_examples:
-  prefix: "Here are some examples of questions and solutions followed by a new question that you need to solve. Make sure to put the answer (and only answer) inside \boxed{{}}."
+  prefix: "Here are some examples of questions and solutions followed by a new question that you need to solve. Make sure to put the answer (and only answer) inside \\boxed{{}}.\n\n"
   template: "Problem:\n{problem}\n\nSolution:\n{solution}\n\n\n\n\n\n"
   suffix: "Problem:\n"
   # this is built as <prefix>{template.format(example1)}{template.format(example2)}...{template.format(exampleN)}<suffix>
@@ -14,5 +14,5 @@ system: ""
 user: |-
   {examples}{problem}
   
-  Solution:
+  Solution: 
 
