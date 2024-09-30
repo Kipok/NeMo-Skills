@@ -170,6 +170,15 @@ class CustomJobDetails(SlurmJobDetails):
     def srun_stderr(self) -> Path:
         return Path(self.folder) / f"{self.log_prefix}_srun.log"
 
+    @property
+    def ls_term(self) -> str:
+        """This term will be used to fetch the logs.
+
+        The command used to list the files is ls -1 {ls_term} 2> /dev/null
+        """
+        assert self.folder
+        return os.path.join(self.folder, "*_srun.log")
+
 
 # a very hacky way to cache cluster config - is there a better way to do this?
 class hashabledict(dict):
