@@ -17,6 +17,8 @@ Here are some of the things we support.
     - Chat/instruction following: ifeval, arena-hard
     - General knowledge: mmlu (generative)
 - [Train models](/docs/training.md) using [NeMo-Aligner](https://github.com/NVIDIA/NeMo-Aligner/).
+- We support other pipelines as well, such as [LLM-based dataset decontamination](/docs/decontamination.md)
+  or using [LLM-as-a-judge](/docs/llm-as-a-judge.md). And it's easy to add new workflows!
 
 To get started, follow the [prerequisites](/docs/prerequisites.md) and then run `ns --help` to see all available
 commands and their options.
