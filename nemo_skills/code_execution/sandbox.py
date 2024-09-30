@@ -161,6 +161,7 @@ class Sandbox(abc.ABC):
     def execute_code(
         self,
         generated_code: str,
+        language: str = 'python',
         timeout: float = 10.0,
         max_output_characters: int = 1000,
         session_id: Optional[str] = None,
@@ -169,8 +170,12 @@ class Sandbox(abc.ABC):
             session_id = uuid.uuid4()
             self.sessions[session_id] = []
         generated_code = generated_code.replace('"""', r'\"\"\"')
+        while generated_code.endswith('\\'):
+            generated_code = generated_code[:-1]
         self.sessions[session_id].append(generated_code)
-        TO_EXECUTE = """
+
+        if language == 'python':
+            TO_EXECUTE = """
 import traceback
 import json
 import os
@@ -183,10 +188,10 @@ from IPython.utils import io
 
 code_snippets = []
 """
-        for code_snippet in self.sessions[session_id]:
-            TO_EXECUTE += f'\ncode_snippets.append("""{code_snippet}""")\n'
+            for code_snippet in self.sessions[session_id]:
+                TO_EXECUTE += f'\ncode_snippets.append("""{code_snippet}""")\n'
 
-        TO_EXECUTE += f"""
+            TO_EXECUTE += f"""
 try:
     shell = InteractiveShell()
     for code in code_snippets:
@@ -208,6 +213,18 @@ except Exception:
     }}
 print(json.dumps(to_return))
 """
+        elif language == 'lean4':
+            # Lean code execution logic
+            # Write the code snippets to a temporary Lean file
+            code_content = '\n'.join(self.sessions[session_id])
+            lean_file_name = f'/tmp/{session_id}.lean'
+            with open(lean_file_name, 'w', encoding='utf-8') as f:
+                f.write(code_content)
+
+            TO_EXECUTE = f"lean {lean_file_name}"
+        else:
+            raise ValueError(f"Unsupported language: {language}") 
+
         request = self._prepare_request(TO_EXECUTE, timeout)
         try:
             output = self._send_request(request, timeout)
@@ -357,10 +374,11 @@ class LocalSandbox(Sandbox):
     def _parse_request_output(self, output):
         return output.json()
 
-    def _prepare_request(self, generated_code, timeout):
+    def _prepare_request(self, generated_code, timeout, language='python'):
         return {
             "generated_code": generated_code,
             "timeout": timeout,
+            "language": language,
         }
 
 
