@@ -66,7 +66,7 @@ def start_server(
         add_task(
             exp,
             cmd="",  # not running anything except the server
-            task_name=f'server-{model.replace("/", "-")}',
+            task_name='server',
             log_dir=log_dir,
             container=cluster_config["containers"]["nemo-skills"],
             cluster_config=cluster_config,
@@ -77,7 +77,6 @@ def start_server(
         # we don't want to detach in this case even on slurm, so not using run_exp
         exp.run(detach=False, tail_logs=True)
         # TODO: seems like not being killed? If nemorun doesn't do this, we can catch the signal and kill the server ourselves
-        # TODO: logs not streamed, probably a bug with custom log path
 
 
 if __name__ == "__main__":
