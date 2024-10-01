@@ -26,7 +26,7 @@ you're running from locally installed repository you can do it in the following 
 python -m nemo_skills.inference.retrieve_similar \
     ++retrieve_from=./nemo_skills/dataset/math/train_full.jsonl \
     ++compare_to="./nemo_skills/dataset/math/test.jsonl ./nemo_skills/dataset/amc23/test.jsonl ./nemo_skills/dataset/aime24/test.jsonl" \
-    ++output_file=./math-contamination-check.jsonl \
+    ++output_file=./math-contamination-retrieved.jsonl \
     ++top_k=1
 ```
 
@@ -37,5 +37,22 @@ Next, you need to run LLM inference to check those closest found questions from 
 using Llama-405B from Nvidia API catalog, but you can replace it with OpenAI models or self-hosted models.
 
 ```
-ns 
+ns check_contamination \
+    --cluster local \
+    --input_file /workspace/NeMo-Skills/math-contamination-retrieved.jsonl \
+    --output_file /workspace/NeMo-Skills/math-contamination-results.jsonl \
+    --server_type=openai \
+    --model=meta/llama-3.1-405b-instruct \
+    --server_address=https://integrate.api.nvidia.com/v1
 ```
+
+assuming you have a parent dir mounted as `/workspace` in your cluster config. This script will print an output that
+looks like this
+
+```
+Contamination portion: 13.91% (705/5070)
+```
+
+## To decontamination the training data
+
+TBD
