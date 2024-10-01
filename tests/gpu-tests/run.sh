@@ -22,6 +22,7 @@ pytest tests/gpu-tests/test_generate.py -s -x
 
 # for sft we are using the tiny random llama model to run much faster
 docker run --rm \
+    -e HYDRA_FULL_ERROR=1 \
     -e HF_TOKEN=$HF_TOKEN \
     -v /tmp:/tmp \
     -v `pwd`:/nemo_run/code \
