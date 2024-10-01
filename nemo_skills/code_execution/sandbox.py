@@ -322,7 +322,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
 
         def update_fn(map_to_future, line_dict):
             line_dict["is_correct"] = map_to_future[
-                (line_dict["predicted_answer"], line_dict["expected_answer"])
+                (line_dict["predicted_answer"], line_dict.get("expected_answer", ""))
             ].result()
 
         data = []
