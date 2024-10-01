@@ -127,10 +127,14 @@ def check_remote_mount_directories(directories: list, cluster_config: dict, exit
         tunnel.cleanup()
 
         if len(missing_source_locations) > 0 and exit_on_failure:
-            missing_source_locations = [f"{loc} DOES NOT exist at source destination" for loc in missing_source_locations]
+            missing_source_locations = [
+                f"{loc} DOES NOT exist at source destination" for loc in missing_source_locations
+            ]
             missing_source_locations = "\n".join(missing_source_locations)
-            raise FileNotFoundError(f"Some files or directories do not exist at the source location for mounting !!\n\n"
-                                    f"{missing_source_locations}")
+            raise FileNotFoundError(
+                f"Some files or directories do not exist at the source location for mounting !!\n\n"
+                f"{missing_source_locations}"
+            )
 
     elif cluster_config.get('executor') == 'slurm':
         ssh_tunnel_config = cluster_config.get('ssh_tunnel', None)
@@ -155,11 +159,14 @@ def check_remote_mount_directories(directories: list, cluster_config: dict, exit
         tunnel.cleanup()
 
         if len(missing_source_locations) > 0 and exit_on_failure:
-            missing_source_locations = [f"{loc} DOES NOT exist at source destination" for loc in
-                                        missing_source_locations]
+            missing_source_locations = [
+                f"{loc} DOES NOT exist at source destination" for loc in missing_source_locations
+            ]
             missing_source_locations = "\n".join(missing_source_locations)
-            raise FileNotFoundError(f"Some files or directories do not exist at the source location for mounting !!\n\n"
-                                    f"{missing_source_locations}")
+            raise FileNotFoundError(
+                f"Some files or directories do not exist at the source location for mounting !!\n\n"
+                f"{missing_source_locations}"
+            )
 
     else:
         raise ValueError(f"Unsupported executor: {cluster_config.get('executor')}")
