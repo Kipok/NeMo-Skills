@@ -114,7 +114,6 @@ def generate(cfg: GenerateSolutionsConfig):
         sandbox = get_sandbox(**cfg.sandbox) if cfg.sandbox is not None else None
         llm = get_code_execution_model(**cfg.server, sandbox=sandbox)
     else:
-        print(**cfg.server)
         llm = get_model(**cfg.server)
 
     # making sure output dir exists
