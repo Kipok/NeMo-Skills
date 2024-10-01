@@ -1,0 +1,5 @@
+system: ""
+
+user: |-
+  Solve the following math problem in lean4.
+  {formal_statement}
