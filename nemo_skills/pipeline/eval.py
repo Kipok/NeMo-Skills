@@ -68,7 +68,11 @@ class SupportedServers(str, Enum):
 @typer_unpacker
 def eval(
     ctx: typer.Context,
-    cluster: str = typer.Option(..., help="One of the configs inside ./cluster_configs or NEMO_SKILLS_CONFIG_DIR"),
+    cluster: str = typer.Option(
+        None,
+        help="One of the configs inside ./cluster_configs or NEMO_SKILLS_CONFIG_DIR. "
+        "Can also use NEMO_SKILLS_CONFIG instead of specifying as argument.",
+    ),
     output_dir: str = typer.Option(..., help="Where to store evaluation results"),
     benchmarks: str = typer.Option(
         ...,

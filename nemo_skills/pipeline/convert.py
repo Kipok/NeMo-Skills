@@ -123,7 +123,11 @@ class SupportedDtypes(str, Enum):
 def convert(
     ctx: typer.Context,
     config_dir: str = typer.Option(None, help="Path to the cluster_configs dir"),
-    cluster: str = typer.Option(..., help="One of the configs inside cluster_configs"),
+    cluster: str = typer.Option(
+        None,
+        help="One of the configs inside ./cluster_configs or NEMO_SKILLS_CONFIG_DIR. "
+        "Can also use NEMO_SKILLS_CONFIG instead of specifying as argument.",
+    ),
     input_model: str = typer.Option(...),
     model_type: SupportedTypes = typer.Option("llama", help="Type of the model"),
     output_model: str = typer.Option(..., help="Where to put the final model"),

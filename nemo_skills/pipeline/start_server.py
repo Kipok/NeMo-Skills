@@ -30,7 +30,11 @@ class SupportedServers(str, Enum):
 @app.command()
 @typer_unpacker
 def start_server(
-    cluster: str = typer.Option(..., help="One of the configs inside cluster_configs"),
+    cluster: str = typer.Option(
+        None,
+        help="One of the configs inside ./cluster_configs or NEMO_SKILLS_CONFIG_DIR. "
+        "Can also use NEMO_SKILLS_CONFIG instead of specifying as argument.",
+    ),
     model: str = typer.Option(..., help="Path to the model"),
     server_type: SupportedServers = typer.Option('trtllm', help="Type of server to use"),
     server_gpus: int = typer.Option(..., help="Number of GPUs to use for hosting the model"),

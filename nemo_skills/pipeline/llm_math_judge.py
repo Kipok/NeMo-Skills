@@ -41,7 +41,11 @@ def get_judge_cmd(input_files, extra_arguments=""):
 @typer_unpacker
 def llm_math_judge(
     ctx: typer.Context,
-    cluster: str = typer.Option(..., help="One of the configs inside ./cluster_configs or NEMO_SKILLS_CONFIGS"),
+    cluster: str = typer.Option(
+        None,
+        help="One of the configs inside ./cluster_configs or NEMO_SKILLS_CONFIG_DIR. "
+        "Can also use NEMO_SKILLS_CONFIG instead of specifying as argument.",
+    ),
     input_files: List[str] = typer.Option(
         ...,
         help="Can also specify multiple glob patterns, like output-rs*.jsonl. Will add judgement field to each file",

@@ -186,22 +186,23 @@ class hashabledict(dict):
         return hash(frozenset(self))
 
 
-def get_cluster_config(cluster, config_dir=None):
+def get_cluster_config(cluster=None, config_dir=None):
     """Trying to find an appropriate cluster config.
 
     Will search in the following order:
-    1. NEMO_SKILLS_CONFIG_DIR environment variable
-    2. config_dir parameter
+    1. config_dir parameter
+    2. NEMO_SKILLS_CONFIG_DIR environment variable
     3. Current folder / cluster_configs
     4. This file folder / ../../cluster_configs
 
-    If NEMO_SKILLS_CONFIG is provided, it will be used as a full path to the config file
+    If NEMO_SKILLS_CONFIG is provided and cluster is None,
+    it will be used as a full path to the config file
     and NEMO_SKILLS_CONFIG_DIR will be ignored.
     """
     config_file = None
 
     # First check if NEMO_SKILLS_CONFIG is provided as a full path
-    if 'NEMO_SKILLS_CONFIG' in os.environ:
+    if cluster is None and 'NEMO_SKILLS_CONFIG' in os.environ:
         config_file = Path(os.environ['NEMO_SKILLS_CONFIG'])
         config_dir = config_file.parent
 
