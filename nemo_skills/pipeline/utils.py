@@ -386,6 +386,11 @@ def get_mounts_from_config(cluster_config: dict, env_vars: dict = None):
     return mounts
 
 
+@lru_cache(maxsize=1)
+def get_ssh_tunnel(**ssh_tunnel):
+    return run.SSHTunnel(**ssh_tunnel)
+
+
 @lru_cache
 def get_executor(
     cluster_config,

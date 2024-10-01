@@ -22,7 +22,7 @@ import nemo_run as run
 import typer
 from typer.models import ParameterInfo
 
-from nemo_skills.pipeline.utils import get_mounts_from_config
+from nemo_skills.pipeline.utils import get_mounts_from_config, get_ssh_tunnel
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -89,12 +89,10 @@ def create_remote_directory(directory: str | list, cluster_config: dict):
             raise ValueError("`ssh_tunnel` sub-config is not provided in cluster_config.")
 
         # Check for pre-existing job_dir in the ssh_tunnel_config
-        if 'job_dir' in ssh_tunnel_config:
-            job_dir = {}
-        else:
-            job_dir = {"job_dir": directory[0]}
+        if 'job_dir' not in ssh_tunnel_config:
+            ssh_tunnel_config['job_dir'] = directory[0]
 
-        tunnel = run.SSHTunnel(**job_dir, **ssh_tunnel_config)
+        tunnel = get_ssh_tunnel(**ssh_tunnel_config)
         for dir_path in directory:
             tunnel.run(f'mkdir -p {dir_path}', hide=False, warn=True)
             logging.info(f"Created directory: {dir_path} on remote cluster.")
@@ -142,12 +140,10 @@ def check_remote_mount_directories(directories: list, cluster_config: dict, exit
             raise ValueError("`ssh_tunnel` sub-config is not provided in cluster_config.")
 
         # Check for pre-existing job_dir in the ssh_tunnel_config
-        if 'job_dir' in ssh_tunnel_config:
-            job_dir = {}
-        else:
-            job_dir = {"job_dir": os.getcwd()}
+        if 'job_dir' not in ssh_tunnel_config:
+            ssh_tunnel_config['job_dir'] = os.getcwd()
 
-        tunnel = run.SSHTunnel(**job_dir, **ssh_tunnel_config)
+        tunnel = get_ssh_tunnel(**ssh_tunnel_config)
         missing_source_locations = []
 
         for directory in directories:
