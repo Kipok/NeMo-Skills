@@ -18,3 +18,5 @@ system: |-
 
 
 user: |- 
+  You have to solve the following problem in lean4 format:
+  {formal_statement}

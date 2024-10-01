@@ -343,7 +343,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     line_dict = json.loads(file_line)
                     if not line_dict:  # can be empty for incomplete generations
                         continue
-                    gt_answer = line_dict["expected_answer"]
+                    gt_answer = line_dict.get("expected_answer", "")
                     if language == "python":
                         line_dict["predicted_answer"] = extract_answer(
                             line_dict["generation"],
