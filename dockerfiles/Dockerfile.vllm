@@ -24,15 +24,30 @@ WORKDIR /opt
 
 ARG VLLM_HASH=v0.6.1.post2
 
+# max jobs used by Ninja to build extensions
+ARG max_jobs=4
+ENV MAX_JOBS=${max_jobs}
+
+# number of threads used by nvcc
+ARG nvcc_threads=8
+ENV NVCC_THREADS=$nvcc_threads
+
 RUN git clone https://github.com/vllm-project/vllm.git && \
   cd vllm && \
   git checkout ${VLLM_HASH} && \
   pip install -e . && \
   cd ..
 
+# Install Flash Infer
+# ALWAYS UPDATE FROM https://github.com/vllm-project/vllm/blob/main/Dockerfile
+ARG FLASHINFER_URL=https://github.com/flashinfer-ai/flashinfer/releases/download/v0.1.6/flashinfer-0.1.6+cu121torch2.4-cp310-cp310-linux_x86_64.whl
+
+RUN pip install $FLASHINFER_URL
+
+
 # Install requirements
-RUN pip install openai>=1.3 ray pydantic flufl.lock fire text_dedup wandb hydra-core geventhttpclient && \
-    pip install rouge_score outlines sentencepiece transformers>=4.40 sentence-transformers>=2.2.2
+RUN pip install geventhttpclient outlines sentencepiece transformers>=4.40 sentence-transformers>=2.2.2 && \
+    pip install "megablocks==0.5.1"
 
 WORKDIR /opt
 
