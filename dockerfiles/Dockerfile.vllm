@@ -24,14 +24,6 @@ WORKDIR /opt
 
 ARG VLLM_HASH=v0.6.1.post2
 
-# max jobs used by Ninja to build extensions
-ARG max_jobs=4
-ENV MAX_JOBS=${max_jobs}
-
-# number of threads used by nvcc
-ARG nvcc_threads=8
-ENV NVCC_THREADS=$nvcc_threads
-
 RUN git clone https://github.com/vllm-project/vllm.git && \
   cd vllm && \
   git checkout ${VLLM_HASH} && \
