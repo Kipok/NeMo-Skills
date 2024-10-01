@@ -564,7 +564,7 @@ class WrapperServer:
             api.add_resource(TrtStartGeneration, "/start_generation", resource_class_args=[self.model])
             api.add_resource(TrtGetResult, "/get_result", resource_class_args=[self.model])
 
-    def run(self, url, port=5000):
+    def run(self, url, port=1254):
         if self.rank == 0:
             self.app.run(url, threaded=True, port=port, debug=False)
         else:
@@ -593,7 +593,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--model_path", required=True)
     parser.add_argument("--host", type=str, default="0.0.0.0")
-    parser.add_argument("--port", type=int, default=5000)
+    parser.add_argument("--port", type=int, default=1254)
     args = parser.parse_args()
 
     server = WrapperServer(model_path=args.model_path)

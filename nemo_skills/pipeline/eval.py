@@ -121,7 +121,7 @@ def eval(
 
     if server_address is None:  # we need to host the model
         assert server_gpus is not None, "Need to specify server_gpus if hosting the model"
-        server_address = "localhost:5000"
+        server_address = "localhost:1254"
 
         server_config = {
             "model_path": model,

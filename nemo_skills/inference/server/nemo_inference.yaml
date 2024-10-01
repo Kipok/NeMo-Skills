@@ -26,7 +26,7 @@ pipeline_model_parallel_split_rank: -1 # used for encoder and decoder model (0 f
 megatron_amp_O2: True  # Enable O2-level automatic mixed precision to save memory
 gpt_model_file: null  # GPT nemo file path
 server: True  # whether launch the API server
-port: 5000 # the port number for the inference server
+port: 1254 # the port number for the inference server
 use_flash_attention: True
 
 sandbox:
