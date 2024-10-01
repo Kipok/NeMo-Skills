@@ -32,15 +32,15 @@ class SupportedServers(str, Enum):
 def start_server(
     cluster: str = typer.Option(
         None,
-        help="One of the configs inside ./cluster_configs or NEMO_SKILLS_CONFIG_DIR. "
+        help="One of the configs inside config_dir or NEMO_SKILLS_CONFIG_DIR or ./cluster_configs. "
         "Can also use NEMO_SKILLS_CONFIG instead of specifying as argument.",
     ),
+    config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
     model: str = typer.Option(..., help="Path to the model"),
     server_type: SupportedServers = typer.Option('trtllm', help="Type of server to use"),
     server_gpus: int = typer.Option(..., help="Number of GPUs to use for hosting the model"),
     server_nodes: int = typer.Option(1, help="Number of nodes to use for hosting the model"),
     server_args: str = typer.Option("", help="Additional arguments for the server"),
-    config_dir: str = typer.Option(None, help="Path to the cluster_configs dir"),
     log_dir: str = typer.Option(None, help="Custom location for slurm logs"),
     partition: str = typer.Option(None, help="Cluster partition to use"),
     with_sandbox: bool = typer.Option(False, help="Enables local sandbox if code execution is required"),

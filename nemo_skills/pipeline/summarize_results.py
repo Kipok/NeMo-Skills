@@ -40,11 +40,11 @@ def summarize_results(
     ),
     cluster: str = typer.Option(
         None,
-        help="One of the configs inside ./cluster_configs or NEMO_SKILLS_CONFIG_DIR. "
+        help="One of the configs inside config_dir or NEMO_SKILLS_CONFIG_DIR or ./cluster_configs. "
         "Can also use NEMO_SKILLS_CONFIG instead of specifying as argument. "
         "If not specified, will assume the results are in the local filesystem.",
     ),
-    config_dir: Optional[str] = typer.Option(None, help="Path to the cluster_configs dir."),
+    config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
     benchmarks: Optional[str] = typer.Option(
         None,
         help="Specify benchmarks to run (comma separated). "
