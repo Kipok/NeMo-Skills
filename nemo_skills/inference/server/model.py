@@ -70,7 +70,8 @@ class BaseModel(abc.ABC):
     def __init__(
         self,
         host: str = '127.0.0.1',
-        port: str = '5000',
+        # port: str = '5000',
+        port: str = '1254',
         ssh_server: str | None = None,
         ssh_key_path: str | None = None,
     ):
@@ -446,8 +447,8 @@ class VLLMModel(BaseModel):
             raise NotImplementedError("SSH tunnelling is not implemented for vLLM model.")
 
         self.oai_client = openai.OpenAI(
-            api_key="EMPTY", base_url=f"http://{self.server_host}:{1254}/v1", timeout=None
-            # api_key="EMPTY", base_url=f"http://{self.server_host}:{self.server_port}/v1", timeout=None
+            # api_key="EMPTY", base_url=f"http://{self.server_host}:{1254}/v1", timeout=None
+            api_key="EMPTY", base_url=f"http://{self.server_host}:{self.server_port}/v1", timeout=None
         )
 
         self.model_name_server = self.get_model_name_from_server()
