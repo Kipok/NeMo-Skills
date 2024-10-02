@@ -133,7 +133,7 @@ class Prompt:
                     code_output_end=self.config.template.code_output_end,
                     code_output_format=self.config.template.code_output_format,
                 )
-                return f"{{code_output_begin}}\n{formatted_output}\n{{code_output_end}}"
+                return formatted_output
 
             pattern = r'{code_output_begin}(.*?){code_output_end}'
             example_dict["solution"] = re.sub(pattern, replace_code_output, example_dict["solution"], flags=re.DOTALL)
@@ -142,12 +142,6 @@ class Prompt:
                 "{code_begin}", self.config.template.code_begin
             )
             example_dict["solution"] = example_dict["solution"].replace("{code_end}", self.config.template.code_end)
-            example_dict["solution"] = example_dict["solution"].replace(
-                "{code_output_begin}", self.config.template.code_output_begin
-            )
-            example_dict["solution"] = example_dict["solution"].replace(
-                "{code_output_end}", self.config.template.code_output_end
-            )
 
         return self.config.few_shot_examples.template.format(**example_dict, **asdict(self.config.template))
 

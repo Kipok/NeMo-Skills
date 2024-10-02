@@ -26,11 +26,12 @@ def format_code_output(
             output += f"\n[stdout]\n{execution_dict['stdout']}\n[/stdout]"
         if execution_dict['stderr']:
             output += f"\n[stderr]\n{execution_dict['stderr']}\n[/stderr]"
+        output = f"{code_output_begin}\n\n{output}{code_output_end}\n\n"
     elif code_output_format == 'openmathinstruct':
         output = f"\n{execution_dict['stdout']}\n" if execution_dict['stdout'] else f"\n{execution_dict['stderr']}\n"
+        output = f"{code_output_begin}\n{output}\n{code_output_end}\n"
 
     # wrapping with code output separators
-    output = f"{code_output_begin}\n\n{output}{code_output_end}\n\n"
     return output
 
 
