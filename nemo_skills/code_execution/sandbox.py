@@ -283,7 +283,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         elif language == "lean4":
             TO_EXECUTE=pred_output
 
-        LOG.info(TO_EXECUTE)
+        # LOG.info(TO_EXECUTE)
 
         request = self._prepare_request(TO_EXECUTE, timeout, language)
         try:
@@ -359,6 +359,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     data[-1][-1] = json.dumps(line_dict)
 
                     predicted_answer = line_dict["predicted_answer"]
+                    LOG.info(pred_anser)
                     if (predicted_answer, gt_answer) in map_to_future:
                         continue
 
