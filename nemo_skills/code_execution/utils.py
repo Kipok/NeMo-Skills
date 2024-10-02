@@ -29,7 +29,7 @@ def format_code_output(
         output = f"{code_output_begin}\n\n{output}{code_output_end}\n\n"
     elif code_output_format == 'openmathinstruct':
         output = f"\n{execution_dict['stdout']}\n" if execution_dict['stdout'] else f"\n{execution_dict['stderr']}\n"
-        output = f"{code_output_begin}\n{output}\n{code_output_end}"
+        output = f"{code_output_begin}{output}{code_output_end}"
 
     # wrapping with code output separators
     return output
