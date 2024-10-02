@@ -45,7 +45,8 @@ def execute_lean4(generated_code, timeout):
     # Create a temporary file to store the generated Lean code
     with tempfile.NamedTemporaryFile(dir=project_path, delete=False, suffix=".lean") as temp_file:
         temp_file_name = temp_file.name
-        temp_file.write(generated_code.encode('utf-8'))
+        # temp_file.write(generated_code.encode('utf-8'))
+        temp_file.write(generated_code)
     try:
         # Modify the subprocess call to include the --dir option for lake
         result = subprocess.run(
