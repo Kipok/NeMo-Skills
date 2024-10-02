@@ -25,11 +25,6 @@ from flask import Flask, request
 app = Flask(__name__)
 
 def execute_python(generated_code, timeout):
-    return {
-            "process_status": "finished",  # could be replaced by 0 for successful completion
-            "stdout": result.stdout.decode('utf-8'),
-            "stderr": result.stderr.decode('utf-8')
-        }
     queue = multiprocessing.Queue()
     process = multiprocessing.Process(target=execute_code_subprocess, args=(generated_code, queue))
     process.start()
@@ -43,25 +38,18 @@ def execute_python(generated_code, timeout):
 
 
 def execute_lean4(generated_code, timeout):
-    return {
-            "process_status": "finished"
-        }
-
     project_path = "/lean4/my_project"
     
-    # Create a temporary file to store the generated Lean code
     with tempfile.NamedTemporaryFile(dir=project_path, delete=False, suffix=".lean") as temp_file:
         temp_file_name = temp_file.name
-        # temp_file.write(generated_code.encode('utf-8'))
         temp_file.write(generated_code)
     try:
-        # Modify the subprocess call to include the --dir option for lake
         result = subprocess.run(
             ["lake", "env", "--dir", project_path, "lean", temp_file_name],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             timeout=timeout,
-            cwd=project_path  # Set the working directory to the project path
+            cwd=project_path
         )
 
         return {
@@ -72,7 +60,6 @@ def execute_lean4(generated_code, timeout):
     except subprocess.TimeoutExpired:
         return {"process_status": "timeout", "stdout": "Timed out", "stderr": "Timed out"}
     finally:
-        # Clean up by removing the temporary Lean file
         if os.path.exists(temp_file_name):
             os.remove(temp_file_name)
 
@@ -97,13 +84,12 @@ def execute_code_subprocess(generated_code, queue):
     def execute():
         return {
                 "process_status": "finished",  # could be replaced by 0 for successful completion
-                "stdout": "NO",
-                "stderr": "NO"
+                "stdout": "",
+                "stderr": ""
             }
         generated_code = request.json['generated_code']
         timeout = request.json['timeout']
-        # language = request.json.get('language', 'python')  
-        language = request.json['language']
+        language = request.json.get('language', 'python')  
 
 
         if language == 'python':
@@ -111,8 +97,6 @@ def execute_code_subprocess(generated_code, queue):
         elif language == 'lean4':
             return execute_lean4(generated_code, timeout)
 
-        # if language == 'lean4':
-        #     return execute_lean4(generated_code, timeout)
 
 
     if __name__ == "__main__":
