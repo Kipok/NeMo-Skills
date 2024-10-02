@@ -143,8 +143,6 @@ class Sandbox(abc.ABC):
                 timeout=timeout,
                 headers={"Content-Type": "application/json"},
             )
-
-        LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD {output}\n\n\n\n\n\n")
         return self._parse_request_output(output)
 
     @abc.abstractmethod
@@ -279,7 +277,6 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
 
         request = self._prepare_request(TO_EXECUTE, timeout, language)
         try:
-            LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDDaaaa {request}\n\n\n\n\n\n")
             output = self._send_request(request, timeout)
         except Exception as e:
             output = {'result': False, 'error_message': e}
@@ -391,6 +388,7 @@ class LocalSandbox(Sandbox):
             "generated_code": generated_code,
             "timeout": timeout,
             "language": language,
+            "a_true": False, ## Remove or change this
         }
 
 
