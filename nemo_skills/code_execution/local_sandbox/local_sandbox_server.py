@@ -94,9 +94,12 @@ def execute():
     language = request.json['language']
 
 
-    if language == 'python':
-        return execute_python(generated_code, timeout)
-    elif language == 'lean4':
+    # if language == 'python':
+    #     return execute_python(generated_code, timeout)
+    # elif language == 'lean4':
+    #     return execute_lean4(generated_code, timeout)
+
+    if language == 'lean4':
         return execute_lean4(generated_code, timeout)
 
 
