@@ -288,7 +288,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
             LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD \n\n\n\n\n\n")
             output = self._send_request(request, timeout)
             LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD \n {output}\n\n\n\n\n\n")
-        except Error as e:
+        except Exception as e:
             output = {'result': False, 'error_message': e}
         
         if language == "lean4" and "process_status" in output:
