@@ -44,9 +44,7 @@ def render_latex(text):
             # Handle nested exponents
             latex = re.sub(r'\^{([^{}]+)}', r'^{\1}', latex)
 
-            # Protect square brackets in intervals
-            latex = re.sub(r'(\[[-\d, ]+\])', lambda m: r'\left' + m.group(1) + r'\right', latex)
-
+            # Convert LaTeX to MathML
             mathml = convert(latex)
             mathml = re.sub(r'<math.*?>(.*)</math>', r'\1', mathml)
             return mathml
@@ -61,9 +59,9 @@ def render_latex(text):
         flags=re.DOTALL,
     )
 
-    # Handle display math
+    # Handle display math, excluding intervals
     text = re.sub(
-        r'\[(.*?)\]',
+        r'\[(?![-\d, ]+\])(.*?)\]',
         lambda m: f'<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">{convert_and_clean(m.group(1))}</math>',
         text,
         flags=re.DOTALL,
@@ -79,12 +77,19 @@ def render_latex(text):
     return text
 
 
-def display_entry(index, data_openmath2, data_math_train):
+def display_entry(index, data_openmath2, data_math_train, current_test_set):
     entry_openmath2 = data_openmath2[index]
     entry_math_train = data_math_train[index]
-    test_problem = render_latex(entry_openmath2['problem'])
-    similar_openmath2 = [render_latex(cand) for cand in entry_openmath2['similar_items']]
-    similar_math_train = [render_latex(cand) for cand in entry_math_train['similar_items']]
+
+    # Check if the current test set is GSM8K
+    if current_test_set == "gsm8k":
+        test_problem = entry_openmath2['problem']
+        similar_openmath2 = entry_openmath2['similar_items']
+        similar_math_train = entry_math_train['similar_items']
+    else:
+        test_problem = render_latex(entry_openmath2['problem'])
+        similar_openmath2 = [render_latex(cand) for cand in entry_openmath2['similar_items']]
+        similar_math_train = [render_latex(cand) for cand in entry_math_train['similar_items']]
 
     html = f"<h2>Test set problem:</h2><p>{test_problem}</p>"
     html += "<hr>"
@@ -160,6 +165,7 @@ with gr.Blocks() as demo:
 
     data_openmath2 = gr.State(load_test_sets(test_sets[0])[0])
     data_math_train = gr.State(load_test_sets(test_sets[0])[1])
+    current_test_set = gr.State(test_set_names[0])
 
     def update_test_set(test_set):
         new_data_openmath2, new_data_math_train = load_test_sets(f"{test_set}.jsonl")
@@ -172,13 +178,14 @@ with gr.Blocks() as demo:
             new_data_openmath2,
             new_data_math_train,
             0,
-            display_entry(0, new_data_openmath2, new_data_math_train),
+            display_entry(0, new_data_openmath2, new_data_math_train, test_set),
             warning,
             gr.update(visible=warning_visible),
+            test_set,
         )
 
-    def display_entry_wrapper(index, data_openmath2, data_math_train):
-        return display_entry(index, data_openmath2, data_math_train)
+    def display_entry_wrapper(index, data_openmath2, data_math_train, current_test_set):
+        return display_entry(index, data_openmath2, data_math_train, current_test_set)
 
     def random_entry_wrapper(data_openmath2):
         return random_entry(data_openmath2)
@@ -186,11 +193,15 @@ with gr.Blocks() as demo:
     test_set_dropdown.change(
         update_test_set,
         inputs=[test_set_dropdown],
-        outputs=[data_openmath2, data_math_train, index_input, output, warning_box, warning_box],
+        outputs=[data_openmath2, data_math_train, index_input, output, warning_box, warning_box, current_test_set],
     )
-    index_input.change(display_entry_wrapper, inputs=[index_input, data_openmath2, data_math_train], outputs=output)
+    index_input.change(
+        display_entry_wrapper, inputs=[index_input, data_openmath2, data_math_train, current_test_set], outputs=output
+    )
     random_button.click(random_entry_wrapper, inputs=[data_openmath2], outputs=index_input)
 
-    demo.load(display_entry_wrapper, inputs=[index_input, data_openmath2, data_math_train], outputs=output)
+    demo.load(
+        display_entry_wrapper, inputs=[index_input, data_openmath2, data_math_train, current_test_set], outputs=output
+    )
 
 demo.launch(debug=False, server_name='0.0.0.0', server_port=5005)
