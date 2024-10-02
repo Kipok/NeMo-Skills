@@ -20,12 +20,12 @@ def render_latex(text):
 
 def display_entry(index, data):
     entry = data[index]
-    question = render_latex(entry['question'])
-    candidates = [render_latex(cand['question']) for cand in entry['top_k_similar_example']]
+    test_problem = render_latex(entry['problem'])
+    similar_training_problems = [render_latex(cand) for cand in entry['similar_items']]
 
-    html = f"<h2>Question:</h2><p>{question}</p>"
-    html += "<h2>Candidates:</h2><ol>"
-    for cand in candidates:
+    html = f"<h2>Test set problem:</h2><p>{test_problem}</p>"
+    html += "<h2>Most similar training set problems:</h2><ol>"
+    for cand in similar_training_problems:
         html += f"<li>{cand}</li>"
     html += "</ol>"
 
@@ -37,17 +37,7 @@ def random_entry(data):
 
 
 # Load the JSONL file
-data = load_jsonl('test-contam.jsonl')
-# Filter the data to keep only the required keys
-filtered_data = []
-for entry in data:
-    filtered_entry = {
-        'question': entry['question'],
-        'top_k_similar_example': [{'question': cand['question']} for cand in entry['top_k_similar_example']],
-    }
-    filtered_data.append(filtered_entry)
-
-data = filtered_data
+data = load_jsonl('./similar-retrieved/math.jsonl')
 
 with gr.Blocks() as demo:
     gr.Markdown("# JSONL Viewer with LaTeX Support")
