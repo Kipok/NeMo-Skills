@@ -126,7 +126,6 @@ class Sandbox(abc.ABC):
 
     @backoff.on_exception(backoff.constant, requests.exceptions.Timeout, interval=1, max_tries=3)
     def _send_request(self, request, timeout):
-        LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD {request}\n\n\n\n\n\n")
         if self.ssh_server and self.ssh_key_path:
             import sshtunnel_requests
 
@@ -138,9 +137,6 @@ class Sandbox(abc.ABC):
                 headers={"Content-Type": "application/json"},
             )
         else:
-            LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD {self._get_execute_url()}\n\n\n\n\n\n")
-            LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD {json.dumps(request)}\n\n\n\n\n\n")
-
             output = self.http_session.post(
                 url=self._get_execute_url(),
                 data=json.dumps(request),
@@ -283,9 +279,8 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
 
         request = self._prepare_request(TO_EXECUTE, timeout, language)
         try:
-            LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD {request}\n\n\n\n\n\n")
+            LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDDaaaa {request}\n\n\n\n\n\n")
             output = self._send_request(request, timeout)
-            LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD \n {output}\n\n\n\n\n\n")
         except Exception as e:
             output = {'result': False, 'error_message': e}
         
