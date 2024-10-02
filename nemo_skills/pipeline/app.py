@@ -22,7 +22,7 @@ import nemo_run as run
 import typer
 from typer.models import ParameterInfo
 
-from nemo_skills.pipeline.utils import get_mounts_from_config, get_ssh_tunnel
+from nemo_skills.pipeline.utils import get_mounts_from_config, get_tunnel
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -92,7 +92,7 @@ def create_remote_directory(directory: str | list, cluster_config: dict):
         if 'job_dir' not in ssh_tunnel_config:
             ssh_tunnel_config['job_dir'] = directory[0]
 
-        tunnel = get_ssh_tunnel(**ssh_tunnel_config)
+        tunnel = get_tunnel(cluster_config)
         for dir_path in directory:
             tunnel.run(f'mkdir -p {dir_path}', hide=False, warn=True)
             logging.info(f"Created directory: {dir_path} on remote cluster.")
@@ -143,7 +143,7 @@ def check_remote_mount_directories(directories: list, cluster_config: dict, exit
         if 'job_dir' not in ssh_tunnel_config:
             ssh_tunnel_config['job_dir'] = os.getcwd()
 
-        tunnel = get_ssh_tunnel(**ssh_tunnel_config)
+        tunnel = get_tunnel(cluster_config)
         missing_source_locations = []
 
         for directory in directories:
