@@ -99,8 +99,8 @@ def execute():
     # elif language == 'lean4':
     #     return execute_lean4(generated_code, timeout)
 
-    if language == 'lean4':
-        return execute_lean4(generated_code, timeout)
+    # if language == 'lean4':
+    #     return execute_lean4(generated_code, timeout)
 
 
 if __name__ == "__main__":
