@@ -39,38 +39,38 @@ def execute_python(generated_code, timeout):
     return queue.get()
 
 
-# Function to execute Lean4 code using subprocess and a temporary file
 def execute_lean4(generated_code, timeout):
-    # Create a temporary file to store Lean4 code
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".lean") as temp_file:
+    project_path = "/lean4/my_project"
+    
+    # Create a temporary file to store the generated Lean code
+    with tempfile.NamedTemporaryFile(dir=project_path, delete=False, suffix=".lean") as temp_file:
         temp_file_name = temp_file.name
         temp_file.write(generated_code.encode('utf-8'))
 
     try:
-        # Run Lean4 code using subprocess and the temporary file
+        # Modify the subprocess call to include the --dir option for lake
         result = subprocess.run(
-            ["lean", temp_file_name],
+            ["lake", "env", "--dir", project_path, "lean", temp_file_name],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            timeout=timeout
+            timeout=timeout,
+            cwd=project_path  # Set the working directory to the project path
         )
 
-        # Return the result from stdout and stderr
         return {
-            "process_status": "finished", # could be replaced by 0
+            "process_status": "finished",  # could be replaced by 0 for successful completion
             "stdout": result.stdout.decode('utf-8'),
             "stderr": result.stderr.decode('utf-8')
         }
     except subprocess.TimeoutExpired:
-        # Handle the timeout case
         return {"process_status": "timeout", "stdout": "Timed out", "stderr": "Timed out"}
     finally:
-        # Clean up the temporary file
+        # Clean up by removing the temporary Lean file
         if os.path.exists(temp_file_name):
             os.remove(temp_file_name)
 
 
-# Function that runs Python code in a subprocess and limits resources
+
 def execute_code_subprocess(generated_code, queue):
     limit = 1024 * 1024 * 1024 * 10  # 10 GB memory limit
     resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
