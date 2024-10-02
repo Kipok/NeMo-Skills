@@ -283,6 +283,8 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         elif language == "lean4":
             TO_EXECUTE=pred_output
 
+        LOG.info(TO_EXECUTE)
+
         request = self._prepare_request(TO_EXECUTE, timeout, language)
         try:
             output = self._send_request(request, timeout)
