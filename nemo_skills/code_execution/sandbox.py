@@ -288,8 +288,8 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         try:
             output = self._send_request(request, timeout)
             LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD \n {output}\n\n\n\n\n\n")
-        except requests.exceptions.Timeout:
-            output = {'result': False, 'error_message': 'timeout'}
+        except Error as e:
+            output = {'result': False, 'error_message': e}
         
         if language == "lean4" and "process_status" in output:
             if output["process_status"] == "finished":
