@@ -285,7 +285,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
 
         request = self._prepare_request(TO_EXECUTE, timeout, language)
         try:
-            LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD \n {output}\n\n\n\n\n\n")
+            LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD \n\n\n\n\n\n")
             output = self._send_request(request, timeout)
             LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD \n {output}\n\n\n\n\n\n")
         except Error as e:
