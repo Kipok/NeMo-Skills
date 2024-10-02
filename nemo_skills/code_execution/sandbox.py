@@ -386,7 +386,7 @@ class LocalSandbox(Sandbox):
 
     def _prepare_request(self, generated_code, timeout, language='python'):
         return {
-            "generated_code": generated_code,
+            "generated_code": generated_code.encode('utf-8'),
             "timeout": timeout,
             "language": language,
             "a_true": "", ## Remove or change this
