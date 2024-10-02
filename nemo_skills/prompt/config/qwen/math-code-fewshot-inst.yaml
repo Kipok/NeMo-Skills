@@ -1,0 +1,20 @@
+few_shot_examples:
+  prefix: ""
+  template: |-
+    Solve the following math problem step by step using Python code for the calculations.
+    Problem: {problem}
+    {user_end}{assistant_begin}{solution}{assistant_end}{user_begin}
+  suffix: ""
+  examples_type: math_text_with_code
+
+system:  |-
+  Please reason step by step, and put your final answer within \boxed{{}}.
+  For the Python code, you MUST use the following template:
+  <llm-code>
+  # Your Python code
+  </llm-code>
+
+user:  |-
+  {examples}
+  Solve the following math problem step by step using Python code for the calculations.
+  Problem: {problem}
