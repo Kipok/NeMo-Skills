@@ -98,6 +98,7 @@ class PromptTemplate:
     # used to extract the code output
     code_output_begin: str = '<llm-code-output>'
     code_output_end: str = '</llm-code-output>'
+    code_output_format: str = 'llama'
 
 
 @nested_dataclass(kw_only=True)
