@@ -214,18 +214,11 @@ except Exception:
 print(json.dumps(to_return))
 """
         elif language == 'lean4':
-            # Lean code execution logic
-            # Write the code snippets to a temporary Lean file
-            code_content = '\n'.join(self.sessions[session_id])
-            lean_file_name = f'/tmp/{session_id}.lean'
-            with open(lean_file_name, 'w', encoding='utf-8') as f:
-                f.write(code_content)
-
-            TO_EXECUTE = f"lean {lean_file_name}"
+            TO_EXECUTE = generated_code
         else:
             raise ValueError(f"Unsupported language: {language}") 
 
-        request = self._prepare_request(TO_EXECUTE, timeout)
+        request = self._prepare_request(TO_EXECUTE, timeout, language)
         try:
             output = self._send_request(request, timeout)
         except requests.exceptions.Timeout:
