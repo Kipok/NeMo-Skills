@@ -23,7 +23,6 @@
        ++top_k=5
    ```
 
-
 4. Start the Gradio demo.
 
    ```

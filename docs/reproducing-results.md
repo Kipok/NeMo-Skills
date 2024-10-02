@@ -83,14 +83,93 @@ if running on slurm or using different paths.
    Finally, to print the metrics run
 
    ```
-   ns summarize_results /workspace/openmath2-llama3.1-8b-eval/ --cluster local
+   ns summarize_results /workspace/openmath2-llama3.1-8b-eval/eval-results --cluster local
    ```
 
    This should print the metrics including both symbolic and judge evaluation. The judge is typically more accurate.
 
    ```
-   TBD
+   ------------------------------------------------- aime24 ------------------------------------------------
+   evaluation_mode | num_entries | symbolic_correct | judge_correct | both_correct | any_correct | no_answer
+   greedy          | 30          | 10.00            | 10.00         | 10.00        | 10.00       | 6.67
+
+
+   ------------------------------------------------- gsm8k -------------------------------------------------
+   evaluation_mode | num_entries | symbolic_correct | judge_correct | both_correct | any_correct | no_answer
+   greedy          | 1319        | 90.75            | 91.70         | 90.75        | 91.70       | 0.00
+
+
+   ----------------------------------------------- omni-math -----------------------------------------------
+   evaluation_mode | num_entries | symbolic_correct | judge_correct | both_correct | any_correct | no_answer
+   greedy          | 4428        | 18.97            | 22.22         | 18.11        | 23.08       | 2.55
+
+
+   -------------------------------------------------- math -------------------------------------------------
+   evaluation_mode | num_entries | symbolic_correct | judge_correct | both_correct | any_correct | no_answer
+   greedy          | 5000        | 67.70            | 68.10         | 67.50        | 68.30       | 1.36
+
+
+   ------------------------------------------------- amc23 -------------------------------------------------
+   evaluation_mode | num_entries | symbolic_correct | judge_correct | both_correct | any_correct | no_answer
+   greedy          | 40          | 32.50            | 40.00         | 32.50        | 40.00       | 0.00
    ```
+
+   The numbers may vary by 1-2% depending on the server type, number of GPUs and batch size used.
+
+4. Run majority voting.
+
+   ```
+   ns eval \
+       --cluster=local \
+       --model=/workspace/openmath2-llama3.1-8b-trtllm \
+       --server_type=trtllm \
+       --output_dir=/workspace/openmath2-llama3.1-8b-eval \
+       --benchmarks=aime24:256,amc23:256,math:256,gsm8k:256,omni-math:256 \
+       --server_gpus=1 \
+       --num_jobs=1 \
+       ++prompt_template=llama3-instruct \
+       ++batch_size=512 \
+       ++inference.tokens_to_generate=4096
+   ```
+
+   This will take a very long time unless you run on slurm cluster. After the generation is done, you will be able
+   to see symbolic scores right away. You can evaluate with the judge by first creating new files with majority
+   answers. E.g. for "math" benchmark run
+
+   ```
+   python -m nemo_skills.evaluation.fill_majority_answer \
+       ++input_files="./openmath2-llama3.1-8b-eval/eval-results/math/output-rs*.jsonl" \
+       ++fill_key=predicted_answer
+   ```
+
+   This will replace `predicted_answer` in all files with majority answer.
+
+   After that, let's copy just a single of those files into a new folder so that we can run the llm-judge pipeline
+   on them.
+
+   ```
+   mkdir -p ./openmath2-llama3.1-8b-eval/eval-results-majority/math
+   cp ./openmath2-llama3.1-8b-eval/eval-results/math/output-rs0.jsonl ./openmath2-llama3.1-8b-eval/eval-results-majority/math/
+   ```
+
+   Repeat the above steps for all benchmarks. Now we are ready to run the judge pipeline and summarize results
+   after it is finished.
+
+   ```
+   ns llm_math_judge \
+       --cluster=local \
+       --model=gpt-4o \
+       --server_type=openai \
+       --server_address=https://api.openai.com/v1 \
+       --input_files="/workspace/openmath2-llama3.1-8b-eval/eval-results-majority/**/output*.jsonl"
+   ```
+
+   ```
+   ns summarize_results /workspace/openmath2-llama3.1-8b-eval/eval-results-majority --cluster local
+   ```
+
+   This will print majority results (they will be labeled as `majority@1` since we fused them into a single file).
+   You can also ignore the symbolic score as it's not accurate anymore after we filled majority answers.
 
 ## Dataset construction
 
