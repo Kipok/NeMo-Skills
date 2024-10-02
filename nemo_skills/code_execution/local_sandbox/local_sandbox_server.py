@@ -80,24 +80,25 @@ def execute_code_subprocess(generated_code, queue):
 
 
     # Main Flask endpoint to handle execution requests
-    @app.route("/execute", methods=["POST"])
-    def execute():
+@app.route("/execute", methods=["POST"])
+def execute():
+    if request.json.get('a_true', 'true'):
         return {
                 "process_status": "finished",  # could be replaced by 0 for successful completion
                 "stdout": "",
                 "stderr": ""
             }
-        generated_code = request.json['generated_code']
-        timeout = request.json['timeout']
-        language = request.json.get('language', 'python')  
+    generated_code = request.json['generated_code']
+    timeout = request.json['timeout']
+    language = request.json.get('language', 'python')  
 
 
-        if language == 'python':
-            return execute_python(generated_code, timeout)
-        elif language == 'lean4':
-            return execute_lean4(generated_code, timeout)
+    if language == 'python':
+        return execute_python(generated_code, timeout)
+    elif language == 'lean4':
+        return execute_lean4(generated_code, timeout)
 
 
 
-    if __name__ == "__main__":
-        app.run(debug=True)
+if __name__ == "__main__":
+    app.run(debug=True)
