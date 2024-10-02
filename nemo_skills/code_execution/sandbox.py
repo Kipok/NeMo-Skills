@@ -131,7 +131,6 @@ class Sandbox(abc.ABC):
             import sshtunnel_requests
 
             sshtunnel_request = sshtunnel_requests.from_url(f"ssh://{self.ssh_server}:22", self.ssh_key_path)
-            LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD {sshtunnel_request}\n\n\n\n\n\n")
             output = sshtunnel_request.post(
                 url=self._get_execute_url(),
                 data=json.dumps(request),
@@ -139,6 +138,9 @@ class Sandbox(abc.ABC):
                 headers={"Content-Type": "application/json"},
             )
         else:
+            LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD {self._get_execute_url()}\n\n\n\n\n\n")
+            LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD {json.dumps(request)}\n\n\n\n\n\n")
+
             output = self.http_session.post(
                 url=self._get_execute_url(),
                 data=json.dumps(request),
