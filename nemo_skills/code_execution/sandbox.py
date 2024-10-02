@@ -109,7 +109,7 @@ class Sandbox(abc.ABC):
     def __init__(
         self,
         host: Optional[str] = os.getenv("NEMO_SKILLS_SANDBOX_HOST", "127.0.0.1"),
-        port: Optional[str] = os.getenv("NEMO_SKILLS_SANDBOX_PORT", "1111"),
+        port: Optional[str] = os.getenv("NEMO_SKILLS_SANDBOX_PORT", "6000"),
         ssh_server: Optional[str] = None,
         ssh_key_path: Optional[str] = None,
     ):
