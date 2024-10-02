@@ -99,6 +99,11 @@ def execute_code_subprocess(generated_code, queue):
 # Main Flask endpoint to handle execution requests
 @app.route("/execute", methods=["POST"])
 def execute():
+    return {
+            "process_status": "finished",  # could be replaced by 0 for successful completion
+            "stdout": result.stdout.decode('utf-8'),
+            "stderr": result.stderr.decode('utf-8')
+        }
     generated_code = request.json['generated_code']
     timeout = request.json['timeout']
     # language = request.json.get('language', 'python')  
