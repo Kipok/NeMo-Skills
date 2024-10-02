@@ -42,7 +42,7 @@ def execute_lean4(generated_code, timeout):
     
     with tempfile.NamedTemporaryFile(dir=project_path, delete=False, suffix=".lean") as temp_file:
         temp_file_name = temp_file.name
-        temp_file.write(generated_code)
+        temp_file.write(generated_code.encode('utf-8'))
     try:
         result = subprocess.run(
             ["lake", "env", "--dir", project_path, "lean", temp_file_name],
@@ -82,7 +82,7 @@ def execute_code_subprocess(generated_code, queue):
     # Main Flask endpoint to handle execution requests
 @app.route("/execute", methods=["POST"])
 def execute():
-    if request.json.get('a_true', 'True'):
+    if bool(request.json.get('a_true', 'True')):
         return {
                 "process_status": "finished",  # could be replaced by 0 for successful completion
                 "stdout": "",
