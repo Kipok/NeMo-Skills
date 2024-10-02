@@ -82,7 +82,7 @@ def execute_code_subprocess(generated_code, queue):
     # Main Flask endpoint to handle execution requests
 @app.route("/execute", methods=["POST"])
 def execute():
-    if request.json.get('a_true', 'true'):
+    if request.json.get('a_true', 'True'):
         return {
                 "process_status": "finished",  # could be replaced by 0 for successful completion
                 "stdout": "",

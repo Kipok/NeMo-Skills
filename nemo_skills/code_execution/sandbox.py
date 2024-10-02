@@ -389,7 +389,7 @@ class LocalSandbox(Sandbox):
             "generated_code": generated_code,
             "timeout": timeout,
             "language": language,
-            "a_true": "False", ## Remove or change this
+            "a_true": "", ## Remove or change this
         }
 
 
