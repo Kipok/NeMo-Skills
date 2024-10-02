@@ -236,6 +236,7 @@ print(json.dumps(to_return))
         return output, session_id
 
     def is_output_correct(self, pred_output, gt_output="", include_percentage=True, tolerance=1e-4, timeout=10.0, language="python"):
+        LOG.info(pred_answer)
         if language == "python":
             # embedding the full math grader code here to send to server for execution
             with open(Path(__file__).absolute().parent / "math_grader.py", "rt") as fin:
@@ -283,7 +284,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         elif language == "lean4":
             TO_EXECUTE=pred_output
 
-        # LOG.info(TO_EXECUTE)
+        LOG.info(TO_EXECUTE)
 
         request = self._prepare_request(TO_EXECUTE, timeout, language)
         try:
