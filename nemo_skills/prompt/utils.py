@@ -126,7 +126,7 @@ class Prompt:
         if 'solution' in example_dict:
 
             def replace_code_output(match):
-                code_output = match.group(1)
+                code_output = match.group(2)
                 formatted_output = format_code_output(
                     execution_dict={"process_status": "completed", "stdout": code_output, "stderr": ""},
                     code_output_begin=self.config.template.code_output_begin,
@@ -135,13 +135,15 @@ class Prompt:
                 )
                 return formatted_output
 
-            pattern = r'{code_output_begin}(.*?){code_output_end}'
+            pattern = r'({code_output_begin})(.*?)({code_output_end})'
             example_dict["solution"] = re.sub(pattern, replace_code_output, example_dict["solution"], flags=re.DOTALL)
 
             example_dict["solution"] = example_dict["solution"].replace(
                 "{code_begin}", self.config.template.code_begin
             )
             example_dict["solution"] = example_dict["solution"].replace("{code_end}", self.config.template.code_end)
+            example_dict["solution"] = example_dict["solution"].replace("{code_output_begin}", "")
+            example_dict["solution"] = example_dict["solution"].replace("{code_output_end}", "")
 
         return self.config.few_shot_examples.template.format(**example_dict, **asdict(self.config.template))
 
