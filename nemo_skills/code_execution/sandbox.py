@@ -126,6 +126,7 @@ class Sandbox(abc.ABC):
 
     @backoff.on_exception(backoff.constant, requests.exceptions.Timeout, interval=1, max_tries=3)
     def _send_request(self, request, timeout):
+        LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD {request}\n\n\n\n\n\n")
         if self.ssh_server and self.ssh_key_path:
             import sshtunnel_requests
 
@@ -144,6 +145,7 @@ class Sandbox(abc.ABC):
                 headers={"Content-Type": "application/json"},
             )
 
+        LOG.info(f"\n\n\n\n\n\nTHE ONLY OUPUT MESSAGE YOU NEEEEEEEDDDDDDD {output}\n\n\n\n\n\n")
         return self._parse_request_output(output)
 
     @abc.abstractmethod
