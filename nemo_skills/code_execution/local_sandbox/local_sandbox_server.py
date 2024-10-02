@@ -24,8 +24,6 @@ from flask import Flask, request
 
 app = Flask(__name__)
 
-
-# Function to execute Python code in a subprocess
 def execute_python(generated_code, timeout):
     return {
             "process_status": "finished",  # could be replaced by 0 for successful completion
@@ -46,9 +44,7 @@ def execute_python(generated_code, timeout):
 
 def execute_lean4(generated_code, timeout):
     return {
-            "process_status": "finished",  # could be replaced by 0 for successful completion
-            "stdout": result.stdout.decode('utf-8'),
-            "stderr": result.stderr.decode('utf-8')
+            "process_status": "finished"
         }
 
     project_path = "/lean4/my_project"
