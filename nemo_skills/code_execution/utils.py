@@ -16,13 +16,18 @@ import re
 from typing import Dict, Tuple
 
 
-def format_code_output(execution_dict: Dict[str, str], code_output_begin: str, code_output_end: str):
+def format_code_output(
+    execution_dict: Dict[str, str], code_output_begin: str, code_output_end: str, code_output_format: str = 'llama'
+):
     """Formatting code output to be displayed as an llm expects it."""
-    output = execution_dict["process_status"]
-    if execution_dict['stdout']:
-        output += f"\n[stdout]\n{execution_dict['stdout']}\n[/stdout]"
-    if execution_dict['stderr']:
-        output += f"\n[stderr]\n{execution_dict['stderr']}\n[/stderr]"
+    if code_output_format == 'llama':
+        output = execution_dict["process_status"]
+        if execution_dict['stdout']:
+            output += f"\n[stdout]\n{execution_dict['stdout']}\n[/stdout]"
+        if execution_dict['stderr']:
+            output += f"\n[stderr]\n{execution_dict['stderr']}\n[/stderr]"
+    elif code_output_format == 'openmathinstruct':
+        output = f"\n{execution_dict['stdout']}\n" if execution_dict['stdout'] else f"\n{execution_dict['stderr']}\n"
 
     # wrapping with code output separators
     output = f"{code_output_begin}\n\n{output}{code_output_end}\n\n"

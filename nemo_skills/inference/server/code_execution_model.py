@@ -65,6 +65,7 @@ class CodeExecutionWrapper:
         code_end: str,
         code_output_begin: str,
         code_output_end: str,
+        code_output_format: str,
         tokens_to_generate: int = 512,
         temperature: float = 0.0,
         top_p: float = 0.95,
@@ -136,7 +137,7 @@ class CodeExecutionWrapper:
 
                         # adding code output to the prompt
                         new_outputs[idx]['prompt'] += format_code_output(
-                            execution_dict, code_output_begin, code_output_end
+                            execution_dict, code_output_begin, code_output_end, code_output_format
                         )
                         # setting a limit on max code executions to speed things up
                         # (sometimes keeps repeating the same sequence forever)

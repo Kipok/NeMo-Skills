@@ -28,3 +28,6 @@ code_end: '</llm-code>'
 # used to extract the code output
 code_output_begin: '<llm-code-output>'
 code_output_end: '</llm-code-output>'
+# used to post-process code output
+# choices: openmathinstruct, llama
+code_output_format: "openmathinstruct"
