@@ -92,28 +92,28 @@ def execute_code_subprocess(generated_code, queue):
         queue.put({"process_status": "error", "stdout": "", "stderr": str(e)})
 
 
-# Main Flask endpoint to handle execution requests
-@app.route("/execute", methods=["POST"])
-def execute():
-    return {
-            "process_status": "finished",  # could be replaced by 0 for successful completion
-            "stdout": result.stdout.decode('utf-8'),
-            "stderr": result.stderr.decode('utf-8')
-        }
-    generated_code = request.json['generated_code']
-    timeout = request.json['timeout']
-    # language = request.json.get('language', 'python')  
-    language = request.json['language']
+    # Main Flask endpoint to handle execution requests
+    @app.route("/execute", methods=["POST"])
+    def execute():
+        return {
+                "process_status": "finished",  # could be replaced by 0 for successful completion
+                "stdout": "NO",
+                "stderr": "NO"
+            }
+        generated_code = request.json['generated_code']
+        timeout = request.json['timeout']
+        # language = request.json.get('language', 'python')  
+        language = request.json['language']
 
 
-    if language == 'python':
-        return execute_python(generated_code, timeout)
-    elif language == 'lean4':
-        return execute_lean4(generated_code, timeout)
+        if language == 'python':
+            return execute_python(generated_code, timeout)
+        elif language == 'lean4':
+            return execute_lean4(generated_code, timeout)
 
-    # if language == 'lean4':
-    #     return execute_lean4(generated_code, timeout)
+        # if language == 'lean4':
+        #     return execute_lean4(generated_code, timeout)
 
 
-if __name__ == "__main__":
-    app.run(debug=True)
+    if __name__ == "__main__":
+        app.run(debug=True)
