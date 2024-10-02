@@ -65,40 +65,57 @@ def execute_python(generated_code, timeout):
 
 def execute_lean4(generated_code, timeout):
     try:
+        # Set the correct PATH for elan (lake and lean)
+        elan_path = "/root/.elan/bin"
+        os.environ['PATH'] = elan_path + ":" + os.environ['PATH']
+
         # Step 1: Check and log the current PATH environment variable
         result_path = subprocess.run(['echo', '$PATH'], capture_output=True, text=True, shell=True)
         print(f"Current PATH: {result_path.stdout}")
         
-        # Step 2: Verify if 'lake' command is available in the PATH
-        result_which = subprocess.run(['which', 'lake'], capture_output=True, text=True)
-        print(f"Location of 'lake': {result_which.stdout}")
+        # Step 2: Verify if 'lake' and 'lean' commands are available in the PATH
+        result_which_lake = subprocess.run(['which', 'lake'], capture_output=True, text=True)
+        result_which_lean = subprocess.run(['which', 'lean'], capture_output=True, text=True)
+        print(f"Location of 'lake': {result_which_lake.stdout}")
+        print(f"Location of 'lean': {result_which_lean.stdout}")
         
-        # Step 3: Try running 'lake --version' to check if it works
-        result_version = subprocess.run(['lake', '--version'], capture_output=True, text=True)
-        print(f"Lake version: {result_version.stdout}")
+        # Step 3: Try running 'lake --version' and 'lean --version' to check if they work
+        result_lake_version = subprocess.run(['lake', '--version'], capture_output=True, text=True)
+        result_lean_version = subprocess.run(['lean', '--version'], capture_output=True, text=True)
+        print(f"Lake version: {result_lake_version.stdout}")
+        print(f"Lean version: {result_lean_version.stdout}")
         
-        # Step 4: If 'lake' command is not found in the PATH, try running it using full path
-        if result_version.returncode != 0:  # If 'lake' fails, try full path
-            # Modify this full path according to your environment (find it using 'which lake' when it works)
-            full_lake_path = "/path/to/lake"  # Update this with the actual path to 'lake'
-            result_full_path = subprocess.run([full_lake_path, '--version'], capture_output=True, text=True)
-            print(f"Lake version (full path): {result_full_path.stdout}")
+        # Step 4: Create a temporary Lean file to hold the generated code
+        project_path = "/lean4/my_project"
+        with tempfile.NamedTemporaryFile(dir=project_path, delete=False, suffix=".lean") as temp_file:
+            temp_file_name = temp_file.name
+            temp_file.write(generated_code.encode('utf-8'))
         
-        # Step 5: Proceed with running the generated Lean4 code using lake
+        # Step 5: Run the Lean code using lake
         result = subprocess.run(
-            ['lake', 'env', 'lean', generated_code],  # Replace 'some_command' with the actual lake command you use
-            capture_output=True,
+            ['lake', 'env', '--dir', project_path, 'lean', temp_file_name],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             timeout=timeout,
-            text=True
+            cwd=project_path  # Ensure we are in the correct working directory
         )
-        
+
         # Step 6: Log and return the result
-        print(f"Execution result: {result.stdout}")
-        return result.stdout
+        print(f"Execution result: {result.stdout.decode('utf-8')}")
+        return {
+            "process_status": "finished",
+            "stdout": result.stdout.decode('utf-8'),
+            "stderr": result.stderr.decode('utf-8')
+        }
     
+    except subprocess.TimeoutExpired:
+        return {"process_status": "timeout", "stdout": "Timed out", "stderr": "Timed out"}
     except Exception as e:
         print(f"Error: {str(e)}")
         return {"error": str(e)}
+    finally:
+        if os.path.exists(temp_file_name):
+            os.remove(temp_file_name)
 
 
 
