@@ -71,7 +71,6 @@ result
 {code_output_begin}
 30
 {code_output_end}
-
 Thus Missy put \\boxed{30} dollars in the bank the first year.
 """.strip(),
     },
@@ -96,7 +95,6 @@ bryan_deposit
 {code_output_begin}
 400
 {code_output_end}
-
 So Bryan deposited \\boxed{400} dollars in the bank.
 """.strip(),
     },
@@ -115,7 +113,6 @@ price_after_discount
 {code_output_begin}
 96.0
 {code_output_end}
-
 So the new price of the lamp is \\boxed{96} dollars.
 """.strip(),
     },
@@ -142,7 +139,6 @@ cost_per_week
 {code_output_begin}
 3440.0
 {code_output_end}
-
 Thus James's weekly expenses add up to \\boxed{3440} dollars.
 """.strip(),
     },

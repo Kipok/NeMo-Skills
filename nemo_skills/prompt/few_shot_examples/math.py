@@ -177,7 +177,6 @@ solutions[c]
 {code_output_begin}
 -7
 {code_output_end}
-
 So c is \\boxed{-7}
 """.strip(),
     },
@@ -208,7 +207,6 @@ options = [Rational(1, 4), Rational(1, 5), Rational(1, 6), Rational(1, 7), Ratio
 {code_output_begin}
 [2/25, 3/100, 1/300, 19/700, 9/200]
 {code_output_end}
-
 Let's now check which difference is the smallest.
 {code_begin}
 import numpy as np
@@ -222,7 +220,6 @@ print(options[min_idx])
 {code_output_begin}
 1/6
 {code_output_end}
-
 So the answer is \\boxed{1/6}.
 """.strip(),
     },
@@ -255,7 +252,6 @@ solutions = solve((eq1, eq2, diagonal_eq), (x, y, z, r))
 {code_output_begin}
 [-10, -10, 10, 10]
 {code_output_end}
-
 Since the radius of the sphere is positive, we get $r = \\boxed{10}$.
 """.strip(),
     },
@@ -286,7 +282,6 @@ print(dist)
 {code_output_begin}
 sqrt(2)*(1008 + 1008*sqrt(3))
 {code_output_end}
-
 So the bee is $\\boxed{1008\\sqrt{2} + 1008\\sqrt{6}}$ far from the starting point.
 """.strip(),
     },
@@ -316,7 +311,6 @@ sp.solve(eq, j)
 {code_output_begin}
 [22]
 {code_output_end}
-
 So John is \\boxed{22} years old.
 """.strip(),
     },
@@ -336,7 +330,6 @@ print(simplify(expr))
 {code_output_begin}
 16*x**2 + 4*x + 5
 {code_output_end}
-
 So the simplified expression is $\\boxed{16x^2+4x+5}$
 """.strip(),
     },
@@ -364,7 +357,6 @@ max_soln
 {code_output_begin}
 8
 {code_output_end}
-
 So the largest value of $x$ for which the expression is undefined is \\boxed{8}
 """.strip(),
     },
@@ -391,7 +383,6 @@ t_f_5
 {code_output_begin}
 2
 {code_output_end}
-
 So $t(f(5))$ is \\boxed{2}
 """.strip(),
     },
@@ -416,7 +407,6 @@ len(integer_solns)
 {code_output_begin}
 4
 {code_output_end}
-
 We have \\boxed{4} integer solutions.
 """.strip(),
     },
@@ -446,7 +436,6 @@ prob_C
 {code_output_begin}
 1/4
 {code_output_end}
-
 So probability of the event is $\\boxed{\\frac{1}{4}}$.
 """.strip(),
     },
@@ -480,7 +469,6 @@ prob
 {code_output_begin}
 2/11
 {code_output_end}
-
 So probability of the event is $\\boxed{\\frac{2}{11}}$.
 """.strip(),
     },
@@ -512,7 +500,6 @@ all_sum_pair/total_pairs
 {code_output_begin}
 6
 {code_output_end}
-
 So the expected value is \\boxed{6}
 """.strip(),
     },
@@ -541,7 +528,6 @@ choice_B * choice_first * choice_last
 {code_output_begin}
 36
 {code_output_end}
-
 So the total arrangements are \\boxed{36}
 """.strip(),
     },
@@ -566,7 +552,6 @@ prob_both_not_one = prob_not_one * prob_not_one
 {code_output_begin}
 11/36
 {code_output_end}
-
 So the total arrangements are $\\boxed{\\frac{11}{36}}$.
 """.strip(),
     },
@@ -589,7 +574,6 @@ product
 {code_output_begin}
 1/50
 {code_output_end}
-
 So the answer is $\\boxed{\\frac{1}{50}}$.
 """.strip(),
     },
@@ -615,7 +599,6 @@ domain
 {code_output_begin}
 Union(Interval.open(-oo, 1), Interval.open(1, 3), Interval.open(3, oo))
 {code_output_end}
-
 So the domain is: $\\boxed{ (-\infty, 1) \cup (1, 3) \cup (3, \infty) }$.
 """.strip(),
     },
@@ -644,7 +627,6 @@ c_value
 {code_output_begin}
 [3]
 {code_output_end}
-
 So the only possible value of c is $\\boxed{3}$.
 """.strip(),
     },
@@ -678,7 +660,6 @@ values
 {code_output_begin}
 [32.0000000000000]
 {code_output_end}
-
 Thus the minimum value of the given function for $x > 8$ is $\\boxed{32}$.
 """.strip(),
     },
@@ -708,7 +689,6 @@ solution
 {code_output_begin}
 {a: 8/9, b: -40/27}
 {code_output_end}
-
 By Vieta's formulas the sum of the roots of a cubic equation
 $ax^3 + bx^2 + cx + d = 0$ is equal to $-\frac{b}{a}$.
 In our case, the equation is
@@ -731,7 +711,6 @@ third_root
 {code_output_begin}
 [4/3]
 {code_output_end}
-
 The third root of the given cubic equation is $\\boxed{\\frac{4}{3}}$.
 """.strip(),
     },
@@ -751,7 +730,6 @@ for m in range(30, 81):
 {code_output_begin}
 42
 {code_output_end}
-
 The only number that satisfies the requirements is $\\boxed{42}$.
 """.strip(),
     },
@@ -774,7 +752,6 @@ solution
 {code_output_begin}
 (29/4 <= x) & (x < oo)
 {code_output_end}
-
 So the minimum number of students in a row is $29/4 = 7.25$.
 Since this must be an integer, such minimum number is $8$.
 Thus the total number of students is
@@ -786,7 +763,6 @@ total_students
 {code_output_begin}
 33
 {code_output_end}
-
 The answer is $\\boxed{33}$.
 """.strip(),
     },
@@ -817,7 +793,6 @@ repr_diff
 {code_output_begin}
 3
 {code_output_end}
-
 So the answer is $\\boxed{3}$.
 """.strip(),
     },
@@ -841,7 +816,6 @@ for a in range(1, 10):
 {code_output_begin}
 225
 {code_output_end}
-
 Thus the smallest such number is $\\boxed{225}$
 """,
     },
@@ -866,7 +840,6 @@ number_of_divisors_multiple_of_3
 {code_output_begin}
 32
 {code_output_end}
-
 So 3240 has $\\boxed{32}$ divisors that are multiples of 3.
 """.strip(),
     },
@@ -896,7 +869,6 @@ A, B, C_value
 {code_output_begin}
 (40, 40, 100)
 {code_output_end}
-
 Since we need to find the measure of the largest angle, the answer is $\\boxed{100}$.
 """.strip(),
     },
@@ -920,7 +892,6 @@ sum_coordinates
 {code_output_begin}
 12
 {code_output_end}
-
 Thus the answer is $\\boxed{12}$.
 """.strip(),
     },
@@ -950,7 +921,6 @@ total_volume
 {code_output_begin}
 640*pi/3
 {code_output_end}
-
 So the total volume is $\\boxed{\\frac{640}{3}\\pi}$.
 """.strip(),
     },
@@ -983,7 +953,6 @@ total_feet
 {code_output_begin}
 280
 {code_output_end}
-
 So the total distance traveled by the fly is $\\boxed{280}$.
 """.strip(),
     },
@@ -1035,7 +1004,6 @@ solutions
   z,
   10)]
 {code_output_end}
-
 We need the solution corresponding to the r: the last value of tuple.
 And we need r to be positive.
 So the radius of the sphere $r$ is $\\boxed{10}$.
@@ -1060,7 +1028,6 @@ det_M_4
 {code_output_begin}
 16
 {code_output_end}
-
 So the answer is \\boxed{16}.
 '''.strip(),
     },
@@ -1108,7 +1075,6 @@ print([solution[b1], solution[b2], solution[b3]])
 {code_output_begin}
 [-1, 3, 2]
 {code_output_end}
-
 So the answer is $\\boxed{\\begin{pmatrix} -1 \\\\ 3 \\\\ 2 \\end{pmatrix}}$.
 '''.strip(),
     },
@@ -1134,7 +1100,6 @@ print(simplified_expression)
 {code_output_begin}
 -2*sqrt(3) + 2*sqrt(6)
 {code_output_end}
-
 So the answer is $\\boxed{2 \\sqrt{6} - 2 \\sqrt{3}}$.
 '''.strip(),
     },
@@ -1178,7 +1143,6 @@ integer_solutions
 {code_output_begin}
 [(3, -2, 2)]
 {code_output_end}
-
 Hence the fourth vertex is \\boxed{(3,-2,2)}.
 '''.strip(),
     },
@@ -1205,7 +1169,6 @@ diff_apple
 {code_output_begin}
 5
 {code_output_end}
-
 So Aaron ate \\boxed{5} more apples than Zeb.
 """.strip(),
     },
@@ -1234,7 +1197,6 @@ total_count
 {code_output_begin}
 81
 {code_output_end}
-
 Hence, there are a total of \\boxed{81} marbles.
 """.strip(),
     },
@@ -1257,7 +1219,6 @@ print(num_perfect_cubes)
 {code_output_begin}
 5
 {code_output_end}
-
 Hence, there are a total of \\boxed{5} perfect cubes between 100 and 900.
 """.strip(),
     },
@@ -1280,7 +1241,6 @@ print(answer)
 {code_output_begin}
 7
 {code_output_end}
-
 Hence, \\boxed{7} is the smallest number which is relatively prime to 120.
 '''.strip(),
     },
