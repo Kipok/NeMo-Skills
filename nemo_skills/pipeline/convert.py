@@ -202,7 +202,7 @@ def convert(
             exp,
             cmd=conversion_cmd,
             task_name=f'conversion-{convert_from}-{convert_to}',
-            log_dir=str(Path(output_model).parent / "conversion-logs" / f"{convert_from}-{convert_to}"),
+            log_dir=str(Path(output_model) / "conversion-logs" / f"{convert_from}-{convert_to}"),
             container=container_map[(convert_from, convert_to)],
             num_gpus=num_gpus,
             num_nodes=1,  # always running on a single node, might need to change that in the future

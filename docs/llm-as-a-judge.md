@@ -18,11 +18,11 @@ in the following way (assuming you have `/workspace` mounted in your cluster con
 
 ```
 ns llm_math_judge \
-    --cluster local \
-    --model gpt-4o \
-    --server_type openai \
-    --server_address https://api.openai.com/v1 \
-    --input_files "/workspace/test-eval/eval-results/**/output*.jsonl"
+    --cluster=local \
+    --model=gpt-4o \
+    --server_type=openai \
+    --server_address=https://api.openai.com/v1 \
+    --input_files="/workspace/test-eval/eval-results/**/output*.jsonl"
 ```
 
 This will run the judge pipeline on all benchmarks inside `eval-results` folder and evaluation all `output*.jsonl` files.

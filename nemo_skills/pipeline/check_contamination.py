@@ -48,7 +48,11 @@ def check_contamination(
         "Can also use NEMO_SKILLS_CONFIG instead of specifying as argument.",
     ),
     config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
-    log_dir: str = typer.Option(None, help="Can specify a custom location for slurm logs"),
+    log_dir: str = typer.Option(
+        None,
+        help="Can specify a custom location for slurm logs. "
+        "If not specified, will be inside `ssh_tunnel.job_dir` part of your cluster config.",
+    ),
     input_file: str = typer.Option(
         ..., help="Input file with the data to check for contamination. An output of the retrieve_similar.py script."
     ),

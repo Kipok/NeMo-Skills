@@ -41,9 +41,15 @@ def start_server(
     server_gpus: int = typer.Option(..., help="Number of GPUs to use for hosting the model"),
     server_nodes: int = typer.Option(1, help="Number of nodes to use for hosting the model"),
     server_args: str = typer.Option("", help="Additional arguments for the server"),
-    log_dir: str = typer.Option(None, help="Custom location for slurm logs"),
     partition: str = typer.Option(None, help="Cluster partition to use"),
-    with_sandbox: bool = typer.Option(False, help="Enables local sandbox if code execution is required"),
+    with_sandbox: bool = typer.Option(
+        False, help="Starts a sandbox (set this flag if model supports calling Python interpreter)"
+    ),
+    log_dir: str = typer.Option(
+        None,
+        help="Can specify a custom location for slurm logs. "
+        "If not specified, will be inside `ssh_tunnel.job_dir` part of your cluster config.",
+    ),
 ):
     """Self-host a model server."""
     setup_logging(disable_hydra_logs=False)
