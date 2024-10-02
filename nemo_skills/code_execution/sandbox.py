@@ -285,9 +285,9 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
             TO_EXECUTE=pred_output
 
         request = self._prepare_request(TO_EXECUTE, timeout, language)
-        LOG.info(request)
         try:
             output = self._send_request(request, timeout)
+            LOG.warning(output)
         except requests.exceptions.Timeout:
             output = {'result': False, 'error_message': 'timeout'}
         
