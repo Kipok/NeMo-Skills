@@ -46,11 +46,6 @@ def execute_lean4(generated_code, timeout):
     with tempfile.NamedTemporaryFile(dir=project_path, delete=False, suffix=".lean") as temp_file:
         temp_file_name = temp_file.name
         temp_file.write(generated_code.encode('utf-8'))
-
-    print("RUNNIGN EVALUATION")
-    print(f"\n\n\nFile: {temp_file}\n\n\n")
-    print(f"\n\n\nCode: {generated_code.encode('utf-8')}\n\n\n")
-
     try:
         # Modify the subprocess call to include the --dir option for lake
         result = subprocess.run(
