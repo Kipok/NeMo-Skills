@@ -359,7 +359,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     data[-1][-1] = json.dumps(line_dict)
 
                     predicted_answer = line_dict["predicted_answer"]
-                    LOG.info(pred_anser)
+                    LOG.info(predicted_answer)
                     if (predicted_answer, gt_answer) in map_to_future:
                         continue
 
