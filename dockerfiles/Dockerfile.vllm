@@ -56,4 +56,4 @@ ENV HF_DATASETS_CACHE=/cache/huggingface/datasets
 RUN pip install opencv-fixer==0.2.5 && python -c "from opencv_fixer import AutoFix; AutoFix()"
 
 # Expose port for vLLM API
-EXPOSE 1254
+EXPOSE 5000
