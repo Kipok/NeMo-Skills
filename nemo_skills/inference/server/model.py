@@ -49,7 +49,8 @@ def preprocess_request(request: dict):
 def postprocess_output(outputs: list[dict], stop_phrases: list[str]):
     """Post-processes the outputs of the model."""
     for output in outputs:
-        output['generation'] = remove_stop_phrases(output['generation'], stop_phrases)
+        output['generation'] = remove_stop_phrases(
+            output['generation'], stop_phrases)
 
 
 class BaseModel(abc.ABC):
@@ -85,7 +86,8 @@ class BaseModel(abc.ABC):
         if self.ssh_server and self.ssh_key_path:
             import sshtunnel_requests
 
-            self.requests_lib = sshtunnel_requests.from_url(f"ssh://{self.ssh_server}:22", self.ssh_key_path)
+            self.requests_lib = sshtunnel_requests.from_url(
+                f"ssh://{self.ssh_server}:22", self.ssh_key_path)
         else:
             self.requests_lib = requests
 
@@ -144,7 +146,8 @@ class TensorRTLLMModel(BaseModel):
             request["prompt"] = prompt
             generation_ids.append(
                 self.requests_lib.put(
-                    url="http://{}:{}/start_generation".format(self.server_host, self.server_port),
+                    url="http://{}:{}/start_generation".format(
+                        self.server_host, self.server_port),
                     data=json.dumps(request),
                     headers={"Content-Type": "application/json"},
                 ).json()
@@ -158,7 +161,8 @@ class TensorRTLLMModel(BaseModel):
                 if outputs[pos] is not None:
                     continue
                 result = self.requests_lib.put(
-                    url="http://{}:{}/get_result".format(self.server_host, self.server_port),
+                    url="http://{}:{}/get_result".format(
+                        self.server_host, self.server_port),
                     data=json.dumps({'generation_id': generation_id}),
                     headers={"Content-Type": "application/json"},
                 ).json()
@@ -197,7 +201,8 @@ class NemoModel(BaseModel):
         }
         preprocess_request(request)
         generations = self.requests_lib.put(
-            url="http://{}:{}/generate".format(self.server_host, self.server_port),
+            url="http://{}:{}/generate".format(self.server_host,
+                                               self.server_port),
             data=json.dumps(request),
             headers={"Content-Type": "application/json"},
         ).json()
@@ -209,7 +214,8 @@ class NemoModel(BaseModel):
             begin_idx = 0
             while begin_idx < len(prompts[idx]) and not prompts[idx][begin_idx:].startswith(generation[:20]):
                 begin_idx += 1
-            outputs[idx] = {'generation': generation[(len(prompts[idx]) - begin_idx) :]}
+            outputs[idx] = {'generation': generation[(
+                len(prompts[idx]) - begin_idx):]}
 
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
@@ -231,7 +237,8 @@ class OpenAIModel(BaseModel):
         if model is None:
             model = os.getenv("NEMO_SKILLS_OPENAI_MODEL")
             if model is None:
-                raise ValueError("model argument is required for OpenAI model.")
+                raise ValueError(
+                    "model argument is required for OpenAI model.")
 
         if base_url is None:
             base_url = os.getenv("NEMO_SKILLS_OPENAI_BASE_URL")
@@ -262,7 +269,8 @@ class OpenAIModel(BaseModel):
         if stop_phrases is None:
             stop_phrases = []
         if top_k != 0:
-            raise ValueError("`top_k` is not supported by OpenAI API, please set it to default value `0`.")
+            raise ValueError(
+                "`top_k` is not supported by OpenAI API, please set it to default value `0`.")
 
         futures = []
         with ThreadPoolExecutor(max_workers=self.max_parallel_requests) as executor:
@@ -303,7 +311,8 @@ class OpenAIModel(BaseModel):
         if stop_phrases is None:
             stop_phrases = []
         if top_k != 0:
-            raise ValueError("`top_k` is not supported by OpenAI API, please set it to default value `0`.")
+            raise ValueError(
+                "`top_k` is not supported by OpenAI API, please set it to default value `0`.")
 
         # preparing the requests jsonl file
         with open("requests.jsonl", "wt", encoding='utf-8') as fout:
@@ -330,7 +339,8 @@ class OpenAIModel(BaseModel):
                 )
 
         with open("requests.jsonl", "rb") as batch_file_handle:
-            batch_file_id = self.client.files.create(file=batch_file_handle, purpose="batch").id
+            batch_file_id = self.client.files.create(
+                file=batch_file_handle, purpose="batch").id
 
             metadata = self.client.batches.create(
                 input_file_id=batch_file_id,
@@ -400,7 +410,8 @@ class OpenAIModel(BaseModel):
             if msg.startswith("This model's maximum context length is"):
                 numbers = re.findall(r"\d+", msg)
                 max_tokens = int(numbers[0]) - int(numbers[2])
-                LOG.warning("Reached max tokens! Reducing the number of tokens to generate to %d", max_tokens)
+                LOG.warning(
+                    "Reached max tokens! Reducing the number of tokens to generate to %d", max_tokens)
                 response = self.client.chat.completions.create(
                     model=self.model,
                     temperature=temperature,
@@ -426,7 +437,8 @@ class OpenAIModel(BaseModel):
         OpenAI chat API requires a structured input, so we need to parse the prompt
         into a structured list of messages.
         """
-        system_pattern = re.compile(r"<system_start>(.*?)<system_end>", re.DOTALL)
+        system_pattern = re.compile(
+            r"<system_start>(.*?)<system_end>", re.DOTALL)
         user_pattern = re.compile(r"<user_start>(.*?)<user_end>", re.DOTALL)
         generation_pattern = re.compile(r"<assistant_start>(.*)", re.DOTALL)
         try:
@@ -444,7 +456,8 @@ class OpenAIModel(BaseModel):
         try:
             assistant_message = generation_pattern.search(prompt).group(1)
             if assistant_message:
-                messages.append({"role": "assistant", "content": assistant_message})
+                messages.append(
+                    {"role": "assistant", "content": assistant_message})
         except AttributeError:
             pass
         return messages
@@ -455,11 +468,13 @@ class VLLMModel(BaseModel):
         super().__init__(**kwargs)
 
         if self.ssh_server and self.ssh_key_path:
-            raise NotImplementedError("SSH tunnelling is not implemented for vLLM model.")
+            raise NotImplementedError(
+                "SSH tunnelling is not implemented for vLLM model.")
 
         self.server_type = "openai"
         self.oai_client = None
-        self.oai_client = self.prepare_openai(self.server_host, self.server_port)  # type: openai.OpenAI
+        self.oai_client = self.prepare_openai(
+            self.server_host, self.server_port)  # type: openai.OpenAI
 
         self.model_name_server = self.get_model_name_from_server()
         self.model = self.model_name_server
@@ -486,7 +501,8 @@ class VLLMModel(BaseModel):
             'temperature': temperature,
             'top_p': top_p,
             'top_k': top_k,
-            'num_generations': 1,  # VLLM provides 1 generation per prompt, duplicate prompts if you want more
+            # VLLM provides 1 generation per prompt, duplicate prompts if you want more
+            'num_generations': 1,
             'stop': stop_phrases,
             'echo': False,
             'repetition_penalty': repetition_penalty,
@@ -497,7 +513,8 @@ class VLLMModel(BaseModel):
             'seed': random_seed,
         }
         preprocess_request(request)
-        outputs = [{'generation': output} for output in self.prompt_api(**request, parse_response=True)]
+        outputs = [{'generation': output}
+                   for output in self.prompt_api(**request, parse_response=True)]
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
         return outputs
@@ -578,7 +595,8 @@ class VLLMModel(BaseModel):
         openai.base_url = f"http://{host}:{port}/v1"
 
         # Create local client with no timeout
-        client = openai.OpenAI(api_key="EMPTY", base_url=f"http://{host}:{port}/v1", timeout=None)
+        client = openai.OpenAI(
+            api_key="EMPTY", base_url=f"http://{host}:{port}/v1", timeout=None)
         return client
 
     def get_model_name_from_server(self) -> str:
