@@ -35,7 +35,6 @@ def start_server(
         help="One of the configs inside config_dir or NEMO_SKILLS_CONFIG_DIR or ./cluster_configs. "
         "Can also use NEMO_SKILLS_CONFIG instead of specifying as argument.",
     ),
-    config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
     model: str = typer.Option(..., help="Path to the model"),
     server_type: SupportedServers = typer.Option('trtllm', help="Type of server to use"),
     server_gpus: int = typer.Option(..., help="Number of GPUs to use for hosting the model"),
@@ -45,6 +44,7 @@ def start_server(
     with_sandbox: bool = typer.Option(
         False, help="Starts a sandbox (set this flag if model supports calling Python interpreter)"
     ),
+    config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
     log_dir: str = typer.Option(
         None,
         help="Can specify a custom location for slurm logs. "
