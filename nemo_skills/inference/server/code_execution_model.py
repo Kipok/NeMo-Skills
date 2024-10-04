@@ -118,7 +118,7 @@ class CodeExecutionWrapper:
                 # checking if any of the outputs need code execution and submitting requests in parallel
                 futures = [None] * len(prompts)
                 for idx, output in zip(remaining_ids, outputs):
-                    if output.strip().endswith(code_end):
+                    if output.endswith(code_end) and output.rfind(code_begin) > output.rfind(code_end, 0, -1):
                         futures[idx] = executor.submit(
                             self.sandbox.execute_code,
                             generated_code=extract_code_to_execute(output, code_begin, code_end),
@@ -127,7 +127,7 @@ class CodeExecutionWrapper:
                             session_id=new_outputs[idx]['session_id'],
                         )
                 for idx, output in zip(remaining_ids, outputs):
-                    if output.strip().endswith(code_end):
+                    if output.endswith(code_end) and output.rfind(code_begin) > output.rfind(code_end, 0, -1):
                         execution_dict, new_outputs[idx]['session_id'] = futures[idx].result()
                         if execution_dict['stderr']:
                             # TODO: error recovery should happen here that might change output
