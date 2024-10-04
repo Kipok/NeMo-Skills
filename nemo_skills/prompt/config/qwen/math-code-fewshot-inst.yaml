@@ -6,13 +6,14 @@ few_shot_examples:
   suffix: ""
   examples_type: math_text_with_code
 
-system:  |-
-  Please reason step by step, and put your final answer within \boxed{{}}.
+system: Please reason step by step, and put your final answer within \boxed{{}}.
+
+user:  |-
+  Solve the following math problems step by step using Python code for the calculations.
   For the Python code, you MUST use the following template:
   ```python
   # Your Python code
   ```
 
-user:  |-
   {examples}
   Problem: {problem}
