@@ -32,7 +32,7 @@ def format_code_output(
         output = f"{code_output_begin}{output}{code_output_end}\n"
     elif code_output_format == 'qwen':
         output = execution_dict['stdout'] if execution_dict['stdout'] else execution_dict['stderr']
-        output = f"{code_output_begin}{output}\n{code_output_end}"
+        output = f"{code_output_begin}\n{output}\n{code_output_end}"
     else:
         raise ValueError(f"Unknown code_output_format: {code_output_format}")
 

@@ -141,7 +141,9 @@ class Prompt:
             example_dict["solution"] = example_dict["solution"].replace(
                 "{code_begin}", self.config.template.code_begin
             )
-            example_dict["solution"] = example_dict["solution"].replace("{code_end}", self.config.template.code_end)
+            example_dict["solution"] = example_dict["solution"].replace(
+                "{code_end}", self.config.template.code_end.strip()
+            )
             example_dict["solution"] = example_dict["solution"].replace("{code_output_begin}", "")
             example_dict["solution"] = example_dict["solution"].replace("{code_output_end}", "")
 
