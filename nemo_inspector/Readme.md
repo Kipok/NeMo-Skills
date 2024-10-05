@@ -25,7 +25,7 @@ python nemo_inspector/nemo_inspector.py \
 For the "Inference" page, launch the server with the model (see [inference.md](/docs/inference.md)), specify `host` and, if necessary, `ssh_key` and `ssh_server`.
 
 ## Inference page
-This page enables the analysis of model answers based on different parameters. It offers three modes: "Chat", "Run one sample", and "Run whole dataset".
+This page enables the analysis of model answers based on different parameters. It offers two modes: "Chat", "Run one sample".
 
 - **Chat** mode facilitates a conversation with the model and requires minimal parameter setup.
 - **Run one sample** mode allows you to send a single question to the model. It can be a question from the dataset (with parameters `input_file` or `dataset` and `split`) or a custom question. The answer is validated by comparing it with the `expected_answer` field.
