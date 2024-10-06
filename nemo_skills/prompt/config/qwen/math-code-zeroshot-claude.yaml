@@ -10,7 +10,8 @@ system: |-
     ```python
     # Your Python code
     ```
-  4. Put the final answer in \boxed{{}}.
+  4. Keep the reasoning clear and concise.
+  5. Put the final answer in \boxed{{}}.
 
 user: |-
   Solve this math problem, using Python code for all calculations:
