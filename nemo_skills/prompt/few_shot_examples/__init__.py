@@ -13,7 +13,9 @@
 # limitations under the License.
 from nemo_skills.prompt.few_shot_examples.gsm8k import examples_map as examples_gsm8k
 from nemo_skills.prompt.few_shot_examples.math import examples_map as examples_math
+from nemo_skills.prompt.few_shot_examples.minif2f import examples_map as examples_minif2f
 
 examples_map = examples_gsm8k.copy()
 examples_map.update(examples_math)
-assert len(examples_map) == len(examples_gsm8k) + len(examples_math), "Duplicate keys in examples!"
+examples_map.update(examples_minif2f)
+assert len(examples_map) == len(examples_gsm8k) + len(examples_math) + len(examples_minif2f), "Duplicate keys in examples!"

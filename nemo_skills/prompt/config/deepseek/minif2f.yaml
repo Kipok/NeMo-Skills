@@ -15,7 +15,24 @@
 system: |-
   You are an AI programming assistant, utilizing the Deepseek Coder model, developed by Deepseek Company, and you only answer questions related to computer science. For politically sensitive questions, security and privacy issues, and other non-computer science questions, you will refuse to answer.
 
-user: |-
+few_shot_examples:
+  prefix: ""
+  template: |-
+    {user_begin}
+    Complete the following Lean 4 code:
+      ‘‘‘lean4
+      import Mathlib
+      import Aesop
+
+      set_option maxHeartbeats 0
+
+      open BigOperators Real Nat Topology Rat
+      {formal_statement}
+      {assistant_begin}{formal_proof}{assistant_end}
+  suffix: ""
+  examples_type: minif2f_deepseek_fewshot
+
+user: |- 
   Complete the following Lean 4 code:
 
   ```lean4
