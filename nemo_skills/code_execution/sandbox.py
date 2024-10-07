@@ -344,8 +344,17 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                             extract_regex=extract_regex,
                         )
                     elif language == "lean4":
-                        # line_dict["predicted_answer"] = line_dict["generation"]
-                        line_dict["predicted_answer"] = line_dict["formal_statement"] + "\n" + line_dict["goal"]
+                        pre = """
+                        import Mathlib
+                        import Aesop
+
+                        set_option maxHeartbeats 0
+
+                        open BigOperators Real Nat Topology Rat
+
+                        """
+                        line_dict["predicted_answer"] = pre + line_dict["generation"]
+                        # line_dict["predicted_answer"] = line_dict["formal_statement"] + "\n" + line_dict["goal"]
                         # line_dict["predicted_answer"] = ""
                         
                     data[-1][-1] = json.dumps(line_dict)
