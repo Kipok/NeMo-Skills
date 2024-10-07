@@ -33,6 +33,7 @@ few_shot_examples:
   examples_type: minif2f_deepseek_fewshot
 
 user: |- 
+  {examples}
   Complete the following Lean 4 code:
 
   ```lean4
