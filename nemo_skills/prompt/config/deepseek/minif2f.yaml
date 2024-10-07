@@ -16,6 +16,11 @@
 user: |- 
   Complete the following Lean 4 code:
     ‘‘‘lean4
-    {header}
+    import Mathlib
+    import Aesop
+
+    set_option maxHeartbeats 0
+
+    open BigOperators Real Nat Topology Rat
 
     {formal_statement}
