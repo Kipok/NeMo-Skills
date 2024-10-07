@@ -345,8 +345,8 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                         )
                     elif language == "lean4":
                         # line_dict["predicted_answer"] = line_dict["generation"]
-                        # line_dict["predicted_answer"] = line_dict["formal_statement"] + "\n" + line_dict["goal"]
-                        line_dict["predicted_answer"] = ""
+                        line_dict["predicted_answer"] = line_dict["formal_statement"] + "\n" + line_dict["goal"]
+                        # line_dict["predicted_answer"] = ""
                         
                     data[-1][-1] = json.dumps(line_dict)
 
