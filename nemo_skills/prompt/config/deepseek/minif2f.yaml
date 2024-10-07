@@ -18,7 +18,6 @@ system: |-
 few_shot_examples:
   prefix: ""
   template: |-
-    {user_begin}
     Complete the following Lean 4 code:
       ‘‘‘lean4
       import Mathlib
@@ -28,7 +27,7 @@ few_shot_examples:
 
       open BigOperators Real Nat Topology Rat
       {formal_statement}
-      {assistant_begin}{formal_proof}```{assistant_end}
+      {assistant_begin}{formal_proof}```{assistant_end}\n{user_begin}
   suffix: ""
   examples_type: minif2f_deepseek_fewshot
 
