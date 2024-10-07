@@ -18,5 +18,12 @@ system: |-
 
 
 user: |- 
-  You have to solve the following problem in lean4 format:
-  {formal_statement}
+Complete the following Lean 4 code:
+  ‘‘‘lean4
+  import Mathlib
+  import Aesop
+
+  set_option maxHeartbeats 0
+  
+  open BigOperators Real Nat Topology Rat
+    {formal_statement}
