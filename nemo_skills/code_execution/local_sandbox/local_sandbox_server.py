@@ -64,6 +64,7 @@ def execute_python(generated_code, timeout):
 #             os.remove(temp_file_name)
 
 def execute_lean4(generated_code, timeout):
+    temp_file_name = None
     try:
         # Set the correct PATH for elan (lake and lean)
         elan_path = "/root/.elan/bin"
@@ -100,22 +101,39 @@ def execute_lean4(generated_code, timeout):
             cwd=project_path  # Ensure we are in the correct working directory
         )
 
-        # Step 6: Log and return the result
+        # Step 6: Check if the execution was successful (return code 0 indicates success)
+        if result.returncode == 0:
+            process_status = "finished"
+        else:
+            process_status = "failed"
+
+        # Log and return the result
         print(f"Execution result: {result.stdout.decode('utf-8')}")
+        
         return {
-            "process_status": "finished",
+            "process_status": process_status,
             "stdout": result.stdout.decode('utf-8'),
             "stderr": result.stderr.decode('utf-8')
         }
     
     except subprocess.TimeoutExpired:
-        return {"process_status": "timeout", "stdout": "Timed out", "stderr": "Timed out"}
+        return {
+            "process_status": "timeout",
+            "stdout": "Timed out",
+            "stderr": "Timed out"
+        }
     except Exception as e:
         print(f"Error: {str(e)}")
-        return {"error": str(e)}
+        return {
+            "process_status": "error",
+            "stdout": "",
+            "stderr": str(e)
+        }
     finally:
-        if os.path.exists(temp_file_name):
+        # Safely remove the temporary file if it was created
+        if temp_file_name and os.path.exists(temp_file_name):
             os.remove(temp_file_name)
+
 
 
 
