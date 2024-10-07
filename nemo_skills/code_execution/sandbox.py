@@ -344,7 +344,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                             extract_regex=extract_regex,
                         )
                     elif language == "lean4":
-                        line_dict["predicted_answer"] = line_dict["header"] + line_dict["generation"][:-3]
+                        line_dict["predicted_answer"] = line_dict["header"] + line_dict["formal_statement"] + line_dict["generation"][:-3]
                         # line_dict["predicted_answer"] = line_dict["header"] + line_dict["formal_statement"] + line_dict["goal"]
                         # line_dict["predicted_answer"] = ""
                         
