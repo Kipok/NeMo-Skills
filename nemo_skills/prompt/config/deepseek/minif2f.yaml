@@ -15,7 +15,7 @@
 
 user: |- 
   Complete the following Lean 4 code:
-    ‘‘‘lean4
-      {header}
+    
+    {header}
 
-      {formal_statement}
+    {formal_statement}
