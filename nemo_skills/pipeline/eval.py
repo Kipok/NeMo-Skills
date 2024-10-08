@@ -46,7 +46,7 @@ def get_greedy_cmd(
 
 
 def get_sampling_cmd(benchmark, split, output_dir, random_seed, extra_eval_args="", extra_arguments=""):
-    extra_arguments = f" inference.random_seed={random_seed} inference.temperature=0.7 {extra_arguments}"
+    extra_arguments = f" inference.random_seed={random_seed} inference.temperature=100 {extra_arguments}"
     return get_greedy_cmd(
         benchmark=benchmark,
         split=split,
