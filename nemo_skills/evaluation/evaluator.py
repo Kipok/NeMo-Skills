@@ -270,12 +270,14 @@ class LeanEvaluatorConfig:
     sandbox: dict = field(default_factory=lambda: {'sandbox_type': 'local'})
     num_parallel_requests: int = 10
     in_memory_lines: int = 500
-    timeout: float = 30.0 
+    timeout: float = 30.0
     ignore_cache: bool = False
-    
+
+
 def eval_lean4(cfg):
     eval_config = LeanEvaluatorConfig(**cfg.eval_config)
     from nemo_skills.code_execution.sandbox import get_sandbox
+
     sandbox = get_sandbox(**eval_config.sandbox)
     eval_config_dict = asdict(eval_config)
     eval_config_dict.pop('sandbox')
@@ -284,6 +286,7 @@ def eval_lean4(cfg):
         language='lean4',
         **eval_config_dict,
     )
+
 
 EVALUATOR_MAP = {
     'math': eval_math,

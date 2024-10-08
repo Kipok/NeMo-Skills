@@ -20,9 +20,11 @@ from pathlib import Path
 
 URL = "https://raw.githubusercontent.com/deepseek-ai/DeepSeek-Prover-V1.5/main/datasets/minif2f.jsonl"
 
+
 def download_dataset(output_path):
     if not os.path.exists(output_path):
         urllib.request.urlretrieve(URL, output_path)
+
 
 def split_data(input_file):
     valid_data = []
@@ -38,14 +40,17 @@ def split_data(input_file):
 
     return valid_data, test_data
 
+
 def save_data(data, output_file):
     with open(output_file, "w", encoding="utf-8") as fout:
         for entry in data:
             fout.write(json.dumps(entry) + "\n")
 
+
 def delete_file(file_path):
     if os.path.exists(file_path):
         os.remove(file_path)
+
 
 def main(split):
     data_dir = Path(__file__).absolute().parent
@@ -65,6 +70,7 @@ def main(split):
         save_data(test_data, test_file)
 
     delete_file(original_file)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

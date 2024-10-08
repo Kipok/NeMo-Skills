@@ -215,7 +215,7 @@ print(json.dumps(to_return))
         elif language == 'lean4':
             TO_EXECUTE = generated_code
         else:
-            raise ValueError(f"Unsupported language: {language}") 
+            raise ValueError(f"Unsupported language: {language}")
 
         request = self._prepare_request(TO_EXECUTE, timeout, language)
         try:
@@ -227,7 +227,9 @@ print(json.dumps(to_return))
             self.sessions[session_id] = self.sessions[session_id][:-1]
         return output, session_id
 
-    def is_output_correct(self, pred_output, gt_output="", include_percentage=True, tolerance=1e-4, timeout=10.0, language="python"):
+    def is_output_correct(
+        self, pred_output, gt_output="", include_percentage=True, tolerance=1e-4, timeout=10.0, language="python"
+    ):
         if language == "python":
             # embedding the full math grader code here to send to server for execution
             with open(Path(__file__).absolute().parent / "math_grader.py", "rt") as fin:
@@ -273,7 +275,7 @@ sys.stdout = stdout
 print(json.dumps({{"result": output, "error_message": error_message}}))
 """
         elif language == "lean4":
-            TO_EXECUTE=pred_output
+            TO_EXECUTE = pred_output
 
         request = self._prepare_request(TO_EXECUTE, timeout, language)
         try:
@@ -281,7 +283,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
             output = self._send_request(request, timeout)
         except Exception as e:
             output = {'result': False, 'error_message': e}
-        
+
         if language == "lean4" and "process_status" in output:
             if output["process_status"] == "finished":
                 return True
@@ -344,10 +346,12 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                             extract_regex=extract_regex,
                         )
                     elif language == "lean4":
-                        line_dict["predicted_answer"] = line_dict["header"] + line_dict["formal_statement"] + line_dict["generation"][:-3]
+                        line_dict["predicted_answer"] = (
+                            line_dict["header"] + line_dict["formal_statement"] + line_dict["generation"][:-3]
+                        )
                         # line_dict["predicted_answer"] = line_dict["header"] + line_dict["formal_statement"] + line_dict["goal"]
                         # line_dict["predicted_answer"] = ""
-                        
+
                     data[-1][-1] = json.dumps(line_dict)
 
                     predicted_answer = line_dict["predicted_answer"]
@@ -390,7 +394,7 @@ class LocalSandbox(Sandbox):
             "generated_code": generated_code,
             "timeout": timeout,
             "language": language,
-            "a_true": "", ## Remove or change this
+            "a_true": "",  ## Remove or change this
         }
 
 
@@ -439,4 +443,3 @@ def sandbox_params():
     """Returns sandbox documentation (to include in cmd help)."""
     prefix = f'\n        sandbox_type: str = MISSING - Choices: {list(sandboxes.keys())}'
     return python_doc_to_cmd_help(Sandbox, docs_prefix=prefix, arg_prefix="sandbox.")
-
