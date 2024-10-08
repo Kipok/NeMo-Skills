@@ -20,3 +20,4 @@ user: |-
 
   ```lean4
   {header}{informal_prefix}{formal_statement}
+  {generation}
