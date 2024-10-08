@@ -523,6 +523,9 @@ class VLLMModel(BaseModel):
                 "spaces_between_special_tokens": False,
             }
         }
+        print("Using temperature:", temperature)
+        print("Using top_p:", top_p)
+        print("Using top_k:", top_k)
         response = self.oai_client.completions.create(
             model=self.model,
             prompt=prompt,
