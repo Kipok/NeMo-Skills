@@ -14,9 +14,9 @@
 
 text_begin: ""
 system_begin: ""
-system_end: "\n\n"
+system_end: "\n"
 user_begin: "### Instruction:\n"
-user_end: "\n\n"
+user_end: "\n"
 assistant_begin: "### Response:\n"
 assistant_end: "<|EOT|>"
 code_begin: "code_lean"
