@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-text_begin: ""
+text_begin: "<｜begin▁of▁sentence｜>"
 system_begin: ""
 system_end: ""
 user_begin: ""
@@ -23,4 +23,4 @@ code_begin: "code_lean"
 code_end: "code_lean"
 code_output_begin: ""
 code_output_end: ""
-stop_phrases: []
+stop_phrases: ["<|EOT|>", "<｜end▁of▁sentence｜>"]
