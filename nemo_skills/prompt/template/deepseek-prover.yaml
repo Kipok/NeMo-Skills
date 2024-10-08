@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-text_begin: ""
+text_begin: "<｜begin▁of▁sentence｜>"
 system_begin: ""
 system_end: ""
 user_begin: ""
