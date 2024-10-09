@@ -39,7 +39,7 @@ from nemo.utils import logging
 def get_args():
     parser = ArgumentParser()
     parser.add_argument(
-        "--input_name_or_path",
+        "--in_path",
         type=str,
         default=None,
         required=True,
@@ -73,8 +73,8 @@ def load_config(args, qwen_config):
         nemo_config.num_query_groups = qwen_config['num_key_value_heads']
     nemo_config.use_cpu_initialization = True
     nemo_config.activation = 'fast-swiglu'
-    nemo_config.tokenizer.type = str(args.input_name_or_path)
-    nemo_config.tokenizer.model = str(args.input_name_or_path) + '/vocab.json'
+    nemo_config.tokenizer.type = str(args.in_path)
+    nemo_config.tokenizer.model = str(args.in_path) + '/vocab.json'
     nemo_config.override_vocab_size = qwen_config['vocab_size']
 
     base = 128
@@ -86,9 +86,9 @@ def load_config(args, qwen_config):
 
 
 def convert(args):
-    logging.info(f"loading checkpoint {args.input_name_or_path}")
-    model = Qwen2ForCausalLM.from_pretrained(args.input_name_or_path)
-    tokenizer = Qwen2Tokenizer.from_pretrained(args.input_name_or_path)
+    logging.info(f"loading checkpoint {args.in_path}")
+    model = Qwen2ForCausalLM.from_pretrained(args.in_path)
+    tokenizer = Qwen2Tokenizer.from_pretrained(args.in_path)
     hf_config = vars(model.config)
     print(f"hf_config: {hf_config}")
     print("named parameters:")
