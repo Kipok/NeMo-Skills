@@ -83,16 +83,13 @@ def get_hf_to_nemo_cmd(
     input_model, output_model, model_type, hf_model_name, dtype, num_gpus, num_nodes, extra_arguments
 ):
     # Check if the model_type is "nemo"
-    if model_type == "qwen":
-        conversion_command = "python -m nemo_skills.conversion.hf_to_nemo_qwen"
-    else:
-        conversion_command = "python -m nemo_skills.conversion.hf_to_nemo"
-
+    
+    script = "hf_to_nemo" if model_type == "llama" else "hf_to_nemo_qwen"
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"export HF_TOKEN={get_token()} && "
         f"cd /nemo_run/code && "
-        f"{conversion_command} "  # Use the appropriate command based on the model_type
+        f"python -m nemo_skills.conversion.{script} " # Use the appropriate command based on the model_type
         f"    --in-path {input_model} "
         f"    --out-path {output_model} "
         f"    --hf-model-name {hf_model_name} "
@@ -172,9 +169,9 @@ def convert(
         pass
 
     # TODO: add support for qwen nemo conversion
-    # if model_type == "qwen":
-    #     if convert_from == "nemo" or convert_to == "nemo":
-    #         raise ValueError("NeMo conversion for Qwen models is not supported yet")
+    if model_type == "qwen":
+        if convert_from == "nemo":
+            raise ValueError("NeMo conversion for Qwen models from nemo to hf formate is not supported yet")
 
     # TODO: add support for conversion from NeMo to trtllm using nemo.export (need to test thoroughly)
     if convert_from == "nemo" and convert_to == "trtllm":
