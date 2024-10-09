@@ -87,7 +87,7 @@ def get_hf_to_nemo_cmd(
         conversion_command = "python -m nemo_skills.conversion.hf_to_nemo_qwen"
     else:
         conversion_command = "python -m nemo_skills.conversion.hf_to_nemo"
-    
+
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"export HF_TOKEN={get_token()} && "
@@ -99,7 +99,7 @@ def get_hf_to_nemo_cmd(
         f"    --precision {dtype} "
         f"    {extra_arguments} "
     )
-    
+
     return cmd
 
 
