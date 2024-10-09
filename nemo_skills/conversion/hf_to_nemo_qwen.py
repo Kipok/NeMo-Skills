@@ -50,7 +50,7 @@ def get_args():
         # this is required for Llama3 tokenizer loading as it's not in the checkpoint dir
         '--hf-model-name',
         required=False,
-        help="Name of HF model we are converting to (e.g. mistralai/Mistral-7B-v0.1)",
+        help="Name of HF model we are converting to (e.g. Qwen/Qwen2.5-Math-7B)",
     )
     parser.add_argument("--override", action="store_true", help="Override existing output directory if it exists.")
     args = parser.parse_args()
