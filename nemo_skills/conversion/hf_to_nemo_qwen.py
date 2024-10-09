@@ -298,7 +298,7 @@ def convert(args):
         except FileNotFoundError:
             pass
         
-    model.save_to(args.out_path)
+    model.save_to(os.path.join(args.out_path, 'model.nemo'))
     logging.info(f'NeMo model saved to: {args.out_path}')
 
 
