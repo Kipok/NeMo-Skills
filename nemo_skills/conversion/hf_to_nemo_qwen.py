@@ -53,6 +53,7 @@ def get_args():
         required=False,
         help="Name of HF model we are converting to (e.g. mistralai/Mistral-7B-v0.1)",
     )
+    parser.add_argument("--override", action="store_true", help="Override existing output directory if it exists.")
     args = parser.parse_args()
     return args
 
