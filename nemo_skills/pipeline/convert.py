@@ -171,7 +171,7 @@ def convert(
     # TODO: add support for qwen nemo conversion
     if model_type == "qwen":
         if convert_from == "nemo":
-            raise ValueError("NeMo conversion for Qwen models from nemo to hf formate is not supported yet")
+            raise ValueError("NeMo conversion for Qwen models from nemo to hf format is not supported yet")
 
     # TODO: add support for conversion from NeMo to trtllm using nemo.export (need to test thoroughly)
     if convert_from == "nemo" and convert_to == "trtllm":
