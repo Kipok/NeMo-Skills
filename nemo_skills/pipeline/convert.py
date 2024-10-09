@@ -122,8 +122,11 @@ class SupportedDtypes(str, Enum):
 @typer_unpacker
 def convert(
     ctx: typer.Context,
-    config_dir: str = typer.Option(None, help="Path to the cluster_configs dir"),
-    cluster: str = typer.Option(..., help="One of the configs inside cluster_configs"),
+    cluster: str = typer.Option(
+        None,
+        help="One of the configs inside config_dir or NEMO_SKILLS_CONFIG_DIR or ./cluster_configs. "
+        "Can also use NEMO_SKILLS_CONFIG instead of specifying as argument.",
+    ),
     input_model: str = typer.Option(...),
     model_type: SupportedTypes = typer.Option("llama", help="Type of the model"),
     output_model: str = typer.Option(..., help="Where to put the final model"),
@@ -141,8 +144,13 @@ def convert(
         None,
         help="Can specify an expname that needs to be completed before this one starts (will use as slurm dependency)",
     ),
+    config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
+    log_dir: str = typer.Option(None, help="Can specify a custom location for slurm logs. "),
 ):
-    """Convert a checkpoint from one format to another."""
+    """Convert a checkpoint from one format to another.
+
+    All extra arguments are passed directly to the underlying conversion script (see their docs).
+    """
     setup_logging(disable_hydra_logs=False)
     extra_arguments = f'{" ".join(ctx.args)}'
     LOG.info("Starting conversion job")
@@ -171,6 +179,10 @@ def convert(
     cluster_config = get_cluster_config(cluster, config_dir)
     check_if_mounted(cluster_config, input_model)
     check_if_mounted(cluster_config, output_model)
+    if log_dir:
+        check_if_mounted(cluster_config, log_dir)
+    else:
+        log_dir = str(Path(output_model) / "conversion-logs")
 
     conversion_cmd_map = {
         ("nemo", "hf"): get_nemo_to_hf_cmd,
@@ -198,7 +210,7 @@ def convert(
             exp,
             cmd=conversion_cmd,
             task_name=f'conversion-{convert_from}-{convert_to}',
-            log_dir=str(Path(output_model).parent / "conversion-logs" / f"{convert_from}-{convert_to}"),
+            log_dir=log_dir,
             container=container_map[(convert_from, convert_to)],
             num_gpus=num_gpus,
             num_nodes=1,  # always running on a single node, might need to change that in the future

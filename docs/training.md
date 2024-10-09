@@ -41,7 +41,8 @@ so you can check their documentation to learn about all supported parameters.
 
 Here is an example of how to run a training job.
 
-python -m nemo_skills.pipeline.train \
+```
+ns train \
     --cluster=slurm \
     --expname=my-training-job \
     --output_dir=/workspace/my-training-job/checkpoints \
@@ -50,6 +51,7 @@ python -m nemo_skills.pipeline.train \
     --num_gpus=8 \
     --num_training_jobs=4 \
     --training_data=/data/sft-data.jsonl
+```
 
 This will run training on 8 nodes of 8 GPUs, using 4 dependent slurm jobs.
 By default we are training for 2 epochs, saving checkpoints every 1000 steps,
@@ -83,7 +85,7 @@ an evaluation job right away by providing a `--run_after=my-training-job` argume
 which will appropriately set slurm dependencies.
 
 ```
-python -m nemo_skills.pipeline.eval \
+ns eval \
     --cluster=slurm \
     --model=/workspace/my-training-job/checkpoints/model-averaged-nemo \
     --server_type=nemo \
@@ -92,7 +94,7 @@ python -m nemo_skills.pipeline.eval \
     --server_gpus=8 \
     --run_after=my-training-job \
     ++prompt_template=llama3-instruct \
-    ++batch_size=128
+    ++batch_size=512
 ```
 
 In general we don't recommend to run inference using NeMo checkpoints as it is
@@ -110,7 +112,7 @@ output_dir = f"/workspace/{expname}/checkpoints"
 
 train(
     ctx=wrap_arguments(""),
-    clustercluster,
+    cluster=cluster,
     expname=expname,
     output_dir=output_dir,
     nemo_model="/nemo_models/llama3.1-8b-base",
@@ -146,7 +148,7 @@ convert(
 )
 
 eval(
-    ctx=wrap_arguments("++prompt_template=llama3-instruct ++batch_size=128"),
+    ctx=wrap_arguments("++prompt_template=llama3-instruct ++batch_size=512"),
     cluster=cluster,
     model=f"{output_dir}/model-averaged-trtllm",
     server_type="trtllm",
