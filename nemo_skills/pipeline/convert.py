@@ -83,7 +83,7 @@ def get_hf_to_nemo_cmd(
     input_model, output_model, model_type, hf_model_name, dtype, num_gpus, num_nodes, extra_arguments
 ):
     # Check if the model_type is "nemo"
-    if model_type == "nemo":
+    if model_type == "qwen":
         conversion_command = "python -m nemo_skills.conversion.hf_to_nemo_qwen"
     else:
         conversion_command = "python -m nemo_skills.conversion.hf_to_nemo"
