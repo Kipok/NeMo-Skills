@@ -47,6 +47,12 @@ def get_args():
     )
     parser.add_argument("--output_path", type=str, default=None, required=True, help="Path to output .nemo file.")
     parser.add_argument("--precision", type=str, default="16", help="Model precision")
+    parser.add_argument(
+        # this is required for Llama3 tokenizer loading as it's not in the checkpoint dir
+        '--hf-model-name',
+        required=False,
+        help="Name of HF model we are converting to (e.g. mistralai/Mistral-7B-v0.1)",
+    )
     args = parser.parse_args()
     return args
 
