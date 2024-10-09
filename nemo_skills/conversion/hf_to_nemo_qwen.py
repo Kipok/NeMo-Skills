@@ -39,13 +39,13 @@ from nemo.utils import logging
 def get_args():
     parser = ArgumentParser()
     parser.add_argument(
-        "--in_path",
+        "--in-path",
         type=str,
         default=None,
         required=True,
         help="Path to Huggingface QWen2 checkpoints",
     )
-    parser.add_argument("--output_path", type=str, default=None, required=True, help="Path to output .nemo file.")
+    parser.add_argument("--output-path", type=str, default=None, required=True, help="Path to output .nemo file.")
     parser.add_argument("--precision", type=str, default="16", help="Model precision")
     parser.add_argument(
         # this is required for Llama3 tokenizer loading as it's not in the checkpoint dir
