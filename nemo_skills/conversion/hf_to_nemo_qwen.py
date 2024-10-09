@@ -45,7 +45,7 @@ def get_args():
         required=True,
         help="Path to Huggingface QWen2 checkpoints",
     )
-    parser.add_argument("--output-path", type=str, default=None, required=True, help="Path to output .nemo file.")
+    parser.add_argument("--out-path", type=str, default=None, required=True, help="Path to output .nemo file.")
     parser.add_argument("--precision", type=str, default="16", help="Model precision")
     parser.add_argument(
         # this is required for Llama3 tokenizer loading as it's not in the checkpoint dir
@@ -297,8 +297,8 @@ def convert(args):
         except FileNotFoundError:
             pass
         
-    model.save_to(args.output_path)
-    logging.info(f'NeMo model saved to: {args.output_path}')
+    model.save_to(args.out_path)
+    logging.info(f'NeMo model saved to: {args.out_path}')
 
 
 if __name__ == '__main__':
