@@ -74,7 +74,7 @@ def load_config(args, qwen_config):
         nemo_config.num_query_groups = qwen_config['num_key_value_heads']
     nemo_config.use_cpu_initialization = True
     nemo_config.activation = 'fast-swiglu'
-    nemo_config.tokenizer.type = str(args.in_path)
+    nemo_config.tokenizer.type = str(args.hf_model_name)
     nemo_config.tokenizer.model = str(args.in_path) + '/vocab.json'
     nemo_config.override_vocab_size = qwen_config['vocab_size']
 
