@@ -58,7 +58,7 @@ def get_args():
 
 
 def load_config(args, qwen_config):
-    nemo_config = OmegaConf.load(os.path.join(os.path.dirname(__file__), 'qwen2_nemo_config.yaml')).model
+    nemo_config = OmegaConf.load(os.path.join(os.path.dirname(__file__), 'nemo_config_qwen.yaml')).model
     if qwen_config.get('rope_theta', None):
         nemo_config['rotary_base'] = qwen_config['rope_theta']
     nemo_config.encoder_seq_length = qwen_config['max_position_embeddings']
