@@ -58,7 +58,7 @@ def execute_lean4(generated_code, timeout):
         )
 
         if result.returncode == 0:
-            process_status = "finished"
+            process_status = "completed"
         else:
             process_status = "failed"
 
@@ -88,7 +88,7 @@ def execute_code_subprocess(generated_code, queue):
     sys.stdout = StringIO()
     try:
         exec(generated_code, {})
-        queue.put({"process_status": "finished", "stdout": sys.stdout.getvalue(), "stderr": ""})
+        queue.put(sys.stdout.getvalue())
     except Exception as e:
         queue.put({"process_status": "error", "stdout": "", "stderr": str(e)})
 

@@ -171,7 +171,7 @@ class Sandbox(abc.ABC):
         generated_code = generated_code.replace('"""', r'\"\"\"')
         while generated_code.endswith('\\'):
             generated_code = generated_code[:-1]
-            
+
         self.sessions[session_id].append(generated_code)
 
         if language == 'python':
@@ -285,7 +285,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
             output = {'result': False, 'error_message': e}
 
         if language == "lean4" and "process_status" in output:
-            if output["process_status"] == "finished":
+            if output["process_status"] == "completed":
                 return True
             else:
                 return False
