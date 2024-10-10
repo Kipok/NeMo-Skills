@@ -392,18 +392,27 @@ run inference through Nvidia NIM API.
         --model=meta/llama-3.1-405b-instruct \
         --server_address=https://integrate.api.nvidia.com/v1 \
         ++check_both_ways=True \
-        ++generation_key=contaminated
+        ++generation_key=contaminated;
     ```
     
     Identify all the questions for which the `contaminated` key has the output True. 
     Add the entry `"contaminated": True` in all the generation files in `/workspace/new-problems-solution-augmentation/` 
 
 7. Now all the data is generated and you can follow up by converting it to the SFT format.
+   We remove the questions marked as contaminated. 
+   We also remove solutions with length > 1024 Llama tokens.
+   To avoid the models from generating extremely short solutions, we remove solutions shorter than 200 tokens.    
    ```
    python -m nemo_skills.training.prepare_sft_data \
       ++prompt_type=llama3/math_sft \
       ++prediction_jsonl_files="/workspace/solution-augmentation/*/output-rs*.jsonl /workspace/new-problems-solution-augmentation/*/*/output-rs*.jsonl" \
-      ++output_path=/workspace/sft_data/data.jsonl \
+      ++output_path=/workspace/sft_data.jsonl \
+      ++filters.remove_contamindated=true \
+      ++filters.remove_len_outlier_solutions=true \
+      ++use_chars_for_min_length=true \
+      ++min_solution_length=200 \
+      ++hf_model_name="meta-llama/Meta-Llama-3.1-8B" \
+      ++max_solution_length=1024 \
       ++generation_suffix='"<|eot_id|>"';
    ```
 
@@ -439,7 +448,21 @@ if running on slurm or using different paths.
 
 2. Convert the data into the SFT format that NeMo-Aligner understands.
 
-   TBD
+   ```
+   python -m nemo_skills.training.prepare_sft_data \
+       ++prompt_template=llama3-instruct \
+       ++prompt_config=generic/math \
+       ++preprocessed_dataset_files=/workspace/openmathinstruct2.jsonl \
+       ++output_key=generated_solution \
+       ++output_path=/workspace/openmathinstruct2-sft.jsonl \
+       ++filters.drop_multi_boxed=false \
+       ++filters.trim_prefix=false \
+       ++filters.trim_solutions=false \
+       ++filters.drop_incorrect_arithmetic=false \
+       ++filters.split_arithmetic=false \
+       ++generation_suffix='"<|eot_id|>"';
+  ```
+
 
 3. Download the base model and convert it to NeMo format. The instructions below are for Llama3.1-8B, but the same
    commands should work for 70B model as well.

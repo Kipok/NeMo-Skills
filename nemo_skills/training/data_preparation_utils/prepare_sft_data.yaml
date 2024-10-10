@@ -22,6 +22,7 @@ num_output_samples: null
 min_solution_length: 0
 max_solution_length: 2048
 hf_model_name: "meta-llama/Meta-Llama-3.1-8B"
+use_chars_for_min_length: false
 
 chat_format: null  # null/nemotron/llama
 generation_suffix: ""  # suffix to add to the end of expected response (e.g. <|eot_id|>)
@@ -37,7 +38,9 @@ majority_filter:
 
 filters:
   drop_multi_boxed: true
+  remove_contamindated: false
   majority_filter: false
+  trim_prefix: true
   trim_solutions: true
   drop_incorrect_arithmetic: true
   split_arithmetic: true
@@ -62,6 +65,10 @@ processors:
       - {input: {generation: "He had \\boxed{3} 4090s and \\boxed{2} 4080s"}, output: null}
       - {input: {generation: "She had \\boxed{6} 4090s"}, output: {generation: "She had \\boxed{6} 4090s"}}
       - {input: {generation: "boxed boxed 42"}, output: {generation: "boxed boxed 42"}}
+
+  - _target_: nemo_skills.training.data_preparation_utils.filters.RemoveContaminated
+    should_run: ${filters.remove_contamindated}
+    solution_key: ${output_key}
 
   - _target_: nemo_skills.training.data_preparation_utils.filters.MajorityFiler
     should_run: ${filters.majority_filter}
@@ -99,6 +106,7 @@ processors:
     min_length: ${min_solution_length}
     max_length: ${max_solution_length}
     hf_model_name: ${hf_model_name}
+    use_chars_for_min_length: ${use_chars_for_min_length}
 
   - _target_: nemo_skills.training.data_preparation_utils.preprocessing.GroupSamples
     group_key: ${input_key}
