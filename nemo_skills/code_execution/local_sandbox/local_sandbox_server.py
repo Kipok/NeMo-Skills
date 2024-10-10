@@ -41,6 +41,9 @@ def execute_python(generated_code, timeout):
 def execute_lean4(generated_code, timeout):
     temp_file_name = None
     try:
+        elan_path = "/root/.elan/bin"
+        os.environ['PATH'] = elan_path + ":" + os.environ['PATH']
+
         project_path = "/lean4/my_project"
         with tempfile.NamedTemporaryFile(dir=project_path, delete=False, suffix=".lean") as temp_file:
             temp_file_name = temp_file.name
@@ -58,9 +61,6 @@ def execute_lean4(generated_code, timeout):
             process_status = "finished"
         else:
             process_status = "failed"
-
-        # Log and return the result
-        print(f"Execution result: {result.stdout.decode('utf-8')}")
 
         return {
             "process_status": process_status,
