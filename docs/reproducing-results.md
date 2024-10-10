@@ -393,13 +393,13 @@ run inference through Nvidia NIM API.
 
     ```python
     def load_contaminated_problems(jsonl_file):
-    contaminated_problems = set()
-    with open(jsonl_file, 'r') as f:
-        for line in f:
-            data = json.loads(line)
-            if data.get('contaminated', False):
-                contaminated_problems.add(data['problem'])
-    return contaminated_problems
+        contaminated_problems = set()
+        with open(jsonl_file, 'r') as f:
+            for line in f:
+                data = json.loads(line)
+                if data.get('contaminated', False):
+                    contaminated_problems.add(data['problem'])
+        return contaminated_problems
 
     def update_output_files(directory, contaminated_problems):
         file_pattern = str(Path(directory) / '**' / 'output-rs*.jsonl')
