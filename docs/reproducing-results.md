@@ -365,22 +365,22 @@ run inference through Nvidia NIM API.
 6. Check for test set contamination.
    We test against GSM8K, MATH, AMC 2023, and AIME 2024.  
 
-   First we use this command to get all the unique questions:
+   First we use this command to get all the unique problems:
    ```
-   cat /workspace/new-problems-solution-augmentation/*/*/output-rs0.jsonl | jq '.question' | sort -u | shuf | jq -c -R '{"question": .}' > /workspace/new-problems-solution-augmentation/unique_questions_all.jsonl
+   cat /workspace/new-problems-solution-augmentation/*/*/output-rs0.jsonl | jq '.problem' | sort -u | shuf | jq -c -R '{"problem": .}' > /workspace/new-problems-solution-augmentation/unique_problems_all.jsonl
    ``` 
  
    Retrieve top-5 similar items from the test sets
    ```
    python -m nemo_skills.inference.retrieve_similar \
-      ++retrieve_from=/workspace/new-problems-solution-augmentation/unique_questions_all.jsonl \
+      ++retrieve_from=/workspace/new-problems-solution-augmentation/unique_problems_all.jsonl \
       ++compare_to="./nemo_skills/dataset/gsm8k/test.jsonl ./nemo_skills/dataset/math/test.jsonl ./nemo_skills/dataset/amc23/test.jsonl ./nemo_skills/dataset/aime24/test.jsonl" \
       ++output_file=/workspace/new-problems-solution-augmentation/contamination-retrieved.jsonl \
       ++top_k=5
    ```
    > **_NOTE:_** Currently the above command doesn't run inside docker, so you will need to install additional packages.
 
-   Next, you need to run LLM inference to check those closest found questions from the output file. Here is an example using Llama-405B from Nvidia API catalog, but you can replace it with OpenAI models or self-hosted models.
+   Next, you need to run LLM inference to check those closest found problems from the output file. Here is an example using Llama-405B from Nvidia API catalog, but you can replace it with OpenAI models or self-hosted models.
 
     ```
     ns check_contamination \
@@ -394,18 +394,18 @@ run inference through Nvidia NIM API.
         ++generation_key=contaminated;
     ```
     
-   Identify all the questions for which the `contaminated` key has the output True. 
+   Identify all the problems for which the `contaminated` key has the output True. 
    Add the entry `"contaminated": True` in all the generation files in `/workspace/new-problems-solution-augmentation/` 
 
 7. Now all the data is generated and you can follow up by converting it to the SFT format.
-   We remove the questions marked as contaminated. 
+   We remove the problems marked as contaminated. 
    We also remove solutions with length > 1024 Llama tokens.
    To avoid the models from generating extremely short solutions, we remove solutions shorter than 200 characters.    
    ```
    python -m nemo_skills.training.prepare_sft_data \
       ++prompt_template=llama3-instruct \
       ++prompt_config=generic/math \
-      ++prediction_jsonl_files="/workspace/solution-augmentation/*/output-rs*.jsonl /workspace/new-problems-solution-augmentation/*/*/output-rs*.jsonl" \
+      ++input_files="/workspace/solution-augmentation/*/output-rs*.jsonl /workspace/new-problems-solution-augmentation/*/*/output-rs*.jsonl" \
       ++output_path=/workspace/sft_data.jsonl \
       ++filters.remove_contamindated=true \
       ++filters.remove_len_outlier_solutions=true \
