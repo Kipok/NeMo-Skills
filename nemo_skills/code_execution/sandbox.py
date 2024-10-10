@@ -169,6 +169,9 @@ class Sandbox(abc.ABC):
             session_id = uuid.uuid4()
             self.sessions[session_id] = []
         generated_code = generated_code.replace('"""', r'\"\"\"')
+        while generated_code.endswith('\\'):
+            generated_code = generated_code[:-1]
+            
         self.sessions[session_id].append(generated_code)
 
         if language == 'python':
