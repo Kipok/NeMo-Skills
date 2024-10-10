@@ -148,6 +148,7 @@ class RemoveContaminated(BaseFilter):
 
 
 class RemoveLenOutlierSolutions(BaseFilter):
+    """Remove solutions based on minimum and maximum lengths."""
     def __init__(
         self,
         solution_key: str = "generation",
@@ -175,7 +176,7 @@ class RemoveLenOutlierSolutions(BaseFilter):
 
 
 class TrimPrefix(BaseFilter):
-
+    """Remove common prefix from solutions."""
     def __init__(self, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
@@ -189,7 +190,7 @@ class TrimPrefix(BaseFilter):
 
 
 class TrimSolutions(BaseFilter):
-
+    """Filter for trimming solutions till the last line with the answer in \\boxed{}."""
     def __init__(self, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
@@ -218,7 +219,6 @@ class TrimSolutions(BaseFilter):
 
 
 class SplitArithmetic(BaseFilter):
-
     def __init__(self, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
@@ -275,7 +275,8 @@ class SplitArithmetic(BaseFilter):
 
 
 class CodeTextFilter(BaseParallelProcessor):
-    def __init__(self, filter_type, solution_key='generation', **kwargs):
+    def __init__(self, filter_type, solution_key='generation', 
+                 code_separators=('<llm-code>', '</llm-code>'), **kwargs):
         if 'in_memory_chunksize' not in kwargs:
             kwargs['in_memory_chunksize'] = 100000000
         if 'chunksize' not in kwargs:
@@ -283,12 +284,13 @@ class CodeTextFilter(BaseParallelProcessor):
         super().__init__(**kwargs)
         self.text_filter_type = filter_type
         self.solution_key = solution_key
+        self.code_separators = code_separators
 
     def process_dataset_entry(self, grouped_samples: List):
         code_solns = []
         text_solns = []
         for sample in grouped_samples:
-            if CODE_SEPARATORS[0] in sample[self.solution_key]:
+            if self.code_separators[0] in sample[self.solution_key]:
                 code_solns.append(sample)
             else:
                 text_solns.append(sample)

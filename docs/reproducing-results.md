@@ -362,18 +362,41 @@ run inference through Nvidia NIM API.
        subprocess.run(cmd, shell=True, check=True)
    ```
 
-6. Remove contaminat
+6. Check for test set contamination.
+   We test against GSM8K, MATH, AMC 2023, and AIME 2024.  
 
+   First we use this command to get all the unique questions:
+   ```
+   cat /workspace/new-problems-solution-augmentation/*/*/output-rs0.jsonl | jq '.question' | sort -u | shuf | jq -c -R '{"question": .}' > /workspace/new-problems-solution-augmentation/unique_questions_all.jsonl
+   ``` 
+ 
+   Retrieve top-5 similar items from the test sets
    ```
    python -m nemo_skills.inference.retrieve_similar \
-      ++retrieve_from=./nemo_skills/dataset/math/train_full.jsonl \
-      ++compare_to="./nemo_skills/dataset/math/test.jsonl ./nemo_skills/dataset/amc23/test.jsonl ./nemo_skills/dataset/aime24/test.jsonl" \
-      ++output_file=./math-contamination-retrieved.jsonl \
+      ++retrieve_from=/workspace/new-problems-solution-augmentation/unique_questions_all.jsonl \
+      ++compare_to="./nemo_skills/dataset/gsm8k/test.jsonl ./nemo_skills/dataset/math/test.jsonl ./nemo_skills/dataset/amc23/test.jsonl ./nemo_skills/dataset/aime24/test.jsonl" \
+      ++output_file=/workspace/new-problems-solution-augmentation/contamination-retrieved.jsonl \
       ++top_k=5
    ```
-
    > **_NOTE:_** Currently the above command doesn't run inside docker, so you will need to install additional packages.
 
+   Next, you need to run LLM inference to check those closest found questions from the output file. Here is an example
+    using Llama-405B from Nvidia API catalog, but you can replace it with OpenAI models or self-hosted models.
+
+    ```
+    ns check_contamination \
+        --cluster=local \
+        --input_file=/workspace/new-problems-solution-augmentation/contamination-retrieved.jsonl \
+        --output_file=/workspace/new-problems-solution-augmentation/contamination-llm.jsonl \
+        --server_type=openai \
+        --model=meta/llama-3.1-405b-instruct \
+        --server_address=https://integrate.api.nvidia.com/v1 \
+        ++check_both_ways=True \
+        ++generation_key=contaminated
+    ```
+    
+    Identify all the questions for which the `contaminated` key has the output True. 
+    Add the entry `"contaminated": True` in all the generation files in `/workspace/new-problems-solution-augmentation/` 
 
 7. Now all the data is generated and you can follow up by converting it to the SFT format.
    ```
