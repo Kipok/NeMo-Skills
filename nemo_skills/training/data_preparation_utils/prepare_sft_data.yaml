@@ -41,7 +41,7 @@ majority_filter:
 
 filters:
   drop_multi_boxed: true
-  remove_contamindated: false
+  remove_contamindated: true
   majority_filter: false
   trim_prefix: true
   trim_solutions: true
