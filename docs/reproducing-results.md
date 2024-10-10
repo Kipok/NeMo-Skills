@@ -380,8 +380,7 @@ run inference through Nvidia NIM API.
    ```
    > **_NOTE:_** Currently the above command doesn't run inside docker, so you will need to install additional packages.
 
-   Next, you need to run LLM inference to check those closest found questions from the output file. Here is an example
-    using Llama-405B from Nvidia API catalog, but you can replace it with OpenAI models or self-hosted models.
+   Next, you need to run LLM inference to check those closest found questions from the output file. Here is an example using Llama-405B from Nvidia API catalog, but you can replace it with OpenAI models or self-hosted models.
 
     ```
     ns check_contamination \
@@ -395,8 +394,8 @@ run inference through Nvidia NIM API.
         ++generation_key=contaminated;
     ```
     
-    Identify all the questions for which the `contaminated` key has the output True. 
-    Add the entry `"contaminated": True` in all the generation files in `/workspace/new-problems-solution-augmentation/` 
+   Identify all the questions for which the `contaminated` key has the output True. 
+   Add the entry `"contaminated": True` in all the generation files in `/workspace/new-problems-solution-augmentation/` 
 
 7. Now all the data is generated and you can follow up by converting it to the SFT format.
    We remove the questions marked as contaminated. 
@@ -404,7 +403,8 @@ run inference through Nvidia NIM API.
    To avoid the models from generating extremely short solutions, we remove solutions shorter than 200 tokens.    
    ```
    python -m nemo_skills.training.prepare_sft_data \
-      ++prompt_type=llama3/math_sft \
+      ++prompt_template=llama3-instruct \
+      ++prompt_config=generic/math \
       ++prediction_jsonl_files="/workspace/solution-augmentation/*/output-rs*.jsonl /workspace/new-problems-solution-augmentation/*/*/output-rs*.jsonl" \
       ++output_path=/workspace/sft_data.jsonl \
       ++filters.remove_contamindated=true \
