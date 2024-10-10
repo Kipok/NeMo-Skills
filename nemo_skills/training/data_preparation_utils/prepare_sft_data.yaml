@@ -30,6 +30,9 @@ generation_suffix: ""  # suffix to add to the end of expected response (e.g. <|e
 input_key: problem
 output_key: generation
 
+# For synthesized questions
+contamination_key: contaminated
+
 majority_filter:
   # minimum number of majority votes to use the answer
   min_majority_votes: 0
@@ -68,12 +71,18 @@ processors:
 
   - _target_: nemo_skills.training.data_preparation_utils.filters.RemoveContaminated
     should_run: ${filters.remove_contamindated}
-    solution_key: ${output_key}
+    contamination_key: ${contamination_key}
 
-  - _target_: nemo_skills.training.data_preparation_utils.filters.MajorityFiler
+  - _target_: nemo_skills.training.data_preparation_utils.filters.MajorityFilter
     should_run: ${filters.majority_filter}
     min_majority_votes: ${majority_filter.min_majority_votes}
     min_majority_portion: ${majority_filter.min_majority_portion}
+
+  - _target_: nemo_skills.training.data_preparation_utils.filters.TrimPrefix
+    should_run: ${filters.trim_solutions}
+    solution_key: ${output_key}
+    test_cases:
+      - {input: {generation: "My solution:\nSubtract 3 from 5"}, output: {generation: "Subtract 3 from 5"}}
 
   - _target_: nemo_skills.training.data_preparation_utils.filters.TrimSolutions
     should_run: ${filters.trim_solutions}

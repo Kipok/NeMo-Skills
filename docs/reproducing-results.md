@@ -400,7 +400,7 @@ run inference through Nvidia NIM API.
 7. Now all the data is generated and you can follow up by converting it to the SFT format.
    We remove the questions marked as contaminated. 
    We also remove solutions with length > 1024 Llama tokens.
-   To avoid the models from generating extremely short solutions, we remove solutions shorter than 200 tokens.    
+   To avoid the models from generating extremely short solutions, we remove solutions shorter than 200 characters.    
    ```
    python -m nemo_skills.training.prepare_sft_data \
       ++prompt_template=llama3-instruct \

@@ -84,7 +84,6 @@ class DropIncorrectCodeBlocks(BaseFilter):
 
 
 class DropIncorrectArithmetic(BaseFilter):
-
     def __init__(self, solution_key: str = "generation", tolerance=1e-4, **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
@@ -155,7 +154,7 @@ class RemoveLenOutlierSolutions(BaseFilter):
         min_length: int = 0,
         max_length: int = None,
         hf_model_name: str = None,
-        use_chars_for_min_length: bool = False
+        use_chars_for_min_length: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -173,15 +172,15 @@ class RemoveLenOutlierSolutions(BaseFilter):
 
         if self.use_chars_for_min_length:
             if len(solution) < self.min_length:
-                return [DataEntry(data=data_entry, metrics=dict(num_removed=1))]
+                return [DataEntry(data=None, metrics=dict(num_removed=1))]
         else:
             if solution_len < self.min_length:
-                return [DataEntry(data=data_entry, metrics=dict(num_removed=1))]
+                return [DataEntry(data=None, metrics=dict(num_removed=1))]
 
         if solution_len > self.max_length:
-            return [DataEntry(data=data_entry, metrics=dict(num_removed=1))]
+            return [DataEntry(data=None, metrics=dict(num_removed=1))]
         
-        return [DataEntry(data=None, metrics=dict(num_removed=0))]
+        return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
 
 class TrimPrefix(BaseFilter):
@@ -193,7 +192,7 @@ class TrimPrefix(BaseFilter):
     def process_dataset_entry(self, data_entry) -> List:
         if data_entry[self.solution_key].startswith(PREFIX_SOLN):
             data_entry[self.solution_key] = data_entry[self.solution_key][len(PREFIX_SOLN):]
-            return [DataEntry(data=None, metrics=dict(num_modified=1))]
+            return [DataEntry(data=data_entry, metrics=dict(num_modified=1))]
         
         return [DataEntry(data=data_entry, metrics=dict(num_modified=0))]
 
