@@ -25,6 +25,7 @@ import tqdm
 from sdp.processors.base_processor import BaseParallelProcessor, DataEntry
 from tqdm.contrib.concurrent import process_map
 
+from nemo_skills.prompt.utils import get_prompt
 from nemo_skills.training.data_preparation_utils.arithmetic_utils import (
     extract_expressions,
     merge_solution_steps,
@@ -250,20 +251,22 @@ class SplitArithmetic(BaseFilter):
 
 
 class CodeTextFilter(BaseParallelProcessor):
-    def __init__(self, filter_type, solution_key='generation', **kwargs):
+    def __init__(self, filter_type, prompt_config, prompt_template, solution_key='generation', **kwargs):
         if 'in_memory_chunksize' not in kwargs:
             kwargs['in_memory_chunksize'] = 100000000
         if 'chunksize' not in kwargs:
             kwargs['chunksize'] = 100000
         super().__init__(**kwargs)
+        self.prompt_config = prompt_config
+        self.prompt_template = prompt_template
         self.text_filter_type = filter_type
         self.solution_key = solution_key
 
-    def process_dataset_entry(self, grouped_samples: List):
+    def process_dataset_entry(self, grouped_samples: List, code_begin_token: str):
         code_solns = []
         text_solns = []
         for sample in grouped_samples:
-            if CODE_SEPARATORS[0] in sample[self.solution_key]:
+            if code_begin_token in sample[self.solution_key]:
                 code_solns.append(sample)
             else:
                 text_solns.append(sample)
@@ -298,6 +301,8 @@ class CodeTextFilter(BaseParallelProcessor):
         self.prepare()
         os.makedirs(os.path.dirname(self.output_manifest_file), exist_ok=True)
         metrics = []
+        prompt = get_prompt(self.prompt_config, self.prompt_template)
+        code_begin_token = prompt.config.template.code_begin
 
         with open(self.output_manifest_file, "wt", encoding="utf-8") as fout:
             for manifest_chunk in self._chunk_manifest():
@@ -306,6 +311,7 @@ class CodeTextFilter(BaseParallelProcessor):
                     *process_map(
                         self.process_dataset_entry,
                         manifest_chunk,
+                        code_begin_token,
                         max_workers=self.max_workers,
                         chunksize=self.chunksize,
                     )
