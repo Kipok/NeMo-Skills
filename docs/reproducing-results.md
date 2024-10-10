@@ -369,8 +369,8 @@ run inference through Nvidia NIM API.
    ```
    python -m nemo_skills.inference.retrieve_similar \
       ++retrieve_from="./nemo_skills/dataset/gsm8k/test.jsonl ./nemo_skills/dataset/math/test.jsonl ./nemo_skills/dataset/amc23/test.jsonl ./nemo_skills/dataset/aime24/test.jsonl" \
-      ++compare_from="/workspace/new-problems-solution-augmentation/**/output-rs0.jsonl" \
-      ++output_file=/workspace/new-problems-solution-augmentation/contamination-retrieved.jsonl \
+      ++compare_to="<path to workspace>/new-problems-solution-augmentation/**/output-rs0.jsonl" \
+      ++output_file=<path to workspace>/new-problems-solution-augmentation/contamination-retrieved.jsonl \
       ++top_k=5
    ```
    > **_NOTE:_** Currently the above command doesn't run inside docker, so you will need to install additional packages.
@@ -380,8 +380,8 @@ run inference through Nvidia NIM API.
     ```
     ns check_contamination \
         --cluster=local \
-        --input_file=/workspace/new-problems-solution-augmentation/contamination-retrieved.jsonl \
-        --output_file=/workspace/new-problems-solution-augmentation/contamination-llm.jsonl \
+        --input_file=<path to workspace>/new-problems-solution-augmentation/contamination-retrieved.jsonl \
+        --output_file=<path to workspace>/new-problems-solution-augmentation/contamination-llm.jsonl \
         --server_type=openai \
         --model=meta/llama-3.1-405b-instruct \
         --server_address=https://integrate.api.nvidia.com/v1 \
