@@ -389,7 +389,44 @@ run inference through Nvidia NIM API.
     ```
     
    Identify all the problems for which the `contaminated` key has the output True. 
-   Add the entry `"contaminated": True` in all the generation files in `/workspace/new-problems-solution-augmentation/` 
+   Add the entry `"contaminated": True` in all the generation files in `<path to workspace>/new-problems-solution-augmentation/`. Here is a sample python script for this:
+
+    ```python
+    def load_contaminated_problems(jsonl_file):
+    contaminated_problems = set()
+    with open(jsonl_file, 'r') as f:
+        for line in f:
+            data = json.loads(line)
+            if data.get('contaminated', False):
+                contaminated_problems.add(data['problem'])
+    return contaminated_problems
+
+    def update_output_files(directory, contaminated_problems):
+        for root, _, files in os.walk(directory):
+            for file in files:
+                if file.startswith('output-rs') and file.endswith('.jsonl'):
+                    file_path = Path(root) / file
+                    temp_file_path = file_path.with_suffix('.temp')
+                    
+                    with open(file_path, 'r') as input_file, open(temp_file_path, 'w') as output_file:
+                        for line in input_file:
+                            data = json.loads(line)
+                            if data.get('question') in contaminated_problems:
+                                data['contaminated'] = True
+                            json.dump(data, output_file)
+                            output_file.write('\n')
+                    
+                    # Replace the original file with the updated one
+                    temp_file_path.replace(file_path)
+                    print(f"Updated file: {file_path}")
+
+    contaminated_problems = load_contaminated_problems("<path to workspace>/new-problems-solution-augmentation/contamination-llm.jsonl")
+
+
+
+    ``` 
+
+
 
 7. Now all the data is generated and you can follow up by converting it to the SFT format.
    We remove the problems marked as contaminated. 
