@@ -107,5 +107,3 @@ def execute():
         return execute_lean4(generated_code, timeout)
 
 
-if __name__ == "__main__":
-    app.run(debug=True)
