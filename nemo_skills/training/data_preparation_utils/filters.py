@@ -139,16 +139,17 @@ class RemoveContaminated(BaseFilter):
     def __init__(self, contamination_key: str = "contaminated", **kwargs):
         super().__init__(**kwargs)
         self.contamination_key = contamination_key
- 
+
     def process_dataset_entry(self, data_entry) -> List:
-        if self.contamination_key in data_entry and data_entry[self.contamination_key]: 
+        if self.contamination_key in data_entry and data_entry[self.contamination_key]:
             return [DataEntry(data=None, metrics=dict(num_removed=1))]
-        
+
         return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
 
 class RemoveLenOutlierSolutions(BaseFilter):
     """Remove solutions based on minimum and maximum lengths."""
+
     def __init__(
         self,
         solution_key: str = "generation",
@@ -165,6 +166,7 @@ class RemoveLenOutlierSolutions(BaseFilter):
         self.use_chars_for_min_length = use_chars_for_min_length
 
         from transformers import AutoTokenizer
+
         self.tokenizer = AutoTokenizer.from_pretrained(hf_model_name)
 
     def process_dataset_entry(self, data_entry):
@@ -180,26 +182,28 @@ class RemoveLenOutlierSolutions(BaseFilter):
 
         if solution_len > self.max_length:
             return [DataEntry(data=None, metrics=dict(num_removed=1))]
-        
+
         return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
 
 class TrimPrefix(BaseFilter):
     """Remove common prefix from solutions."""
+
     def __init__(self, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
 
     def process_dataset_entry(self, data_entry) -> List:
         if data_entry[self.solution_key].startswith(PREFIX_SOLN):
-            data_entry[self.solution_key] = data_entry[self.solution_key][len(PREFIX_SOLN):]
+            data_entry[self.solution_key] = data_entry[self.solution_key][len(PREFIX_SOLN) :]
             return [DataEntry(data=data_entry, metrics=dict(num_modified=1))]
-        
+
         return [DataEntry(data=data_entry, metrics=dict(num_modified=0))]
 
 
 class TrimSolutions(BaseFilter):
     """Filter for trimming solutions till the last line with the answer in \\boxed{}."""
+
     def __init__(self, solution_key: str = "generation", **kwargs):
         super().__init__(**kwargs)
         self.solution_key = solution_key
