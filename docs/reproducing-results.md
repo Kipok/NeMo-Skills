@@ -402,27 +402,25 @@ run inference through Nvidia NIM API.
     return contaminated_problems
 
     def update_output_files(directory, contaminated_problems):
-        for root, _, files in os.walk(directory):
-            for file in files:
-                if file.startswith('output-rs') and file.endswith('.jsonl'):
-                    file_path = Path(root) / file
-                    temp_file_path = file_path.with_suffix('.temp')
-                    
-                    with open(file_path, 'r') as input_file, open(temp_file_path, 'w') as output_file:
-                        for line in input_file:
-                            data = json.loads(line)
-                            if data.get('question') in contaminated_problems:
-                                data['contaminated'] = True
-                            json.dump(data, output_file)
-                            output_file.write('\n')
-                    
-                    # Replace the original file with the updated one
-                    temp_file_path.replace(file_path)
-                    print(f"Updated file: {file_path}")
+        file_pattern = str(Path(directory) / '**' / 'output-rs*.jsonl')
+        for file_path in glob.glob(file_pattern, recursive=True):
+            temp_file_path = Path(file_path).with_suffix('.temp')
+            
+            with open(file_path, 'r') as input_file, open(temp_file_path, 'w') as output_file:
+                for line in input_file:
+                    data = json.loads(line)
+                    if data.get('problem') in contaminated_problems:
+                        data['contaminated'] = True
+                    json.dump(data, output_file)
+                    output_file.write('\n')
+            
+            # Replace the original file with the updated one
+            temp_file_path.replace(file_path)
+            print(f"Updated file: {file_path}")
 
     contaminated_problems = load_contaminated_problems("<path to workspace>/new-problems-solution-augmentation/contamination-llm.jsonl")
 
-
+    update_output_files("<path to workspace>/new-problems-solution-augmentation/", contaminated_problems)
 
     ``` 
 
@@ -480,7 +478,7 @@ if running on slurm or using different paths.
 2. Convert the data into the SFT format that NeMo-Aligner understands.
 
    ```
-   python -m nemo_skills.training.prepare_sft_data \
+    python -m nemo_skills.training.prepare_sft_data \
        ++prompt_template=llama3-instruct \
        ++prompt_config=generic/math \
        ++preprocessed_dataset_files=/workspace/openmathinstruct2.jsonl \
@@ -492,11 +490,9 @@ if running on slurm or using different paths.
        ++filters.drop_incorrect_arithmetic=false \
        ++filters.split_arithmetic=false \
        ++generation_suffix='"<|eot_id|>"';
-  ```
+   ```
 
-
-3. Download the base model and convert it to NeMo format. The instructions below are for Llama3.1-8B, but the same
-   commands should work for 70B model as well.
+3. Download the base model and convert it to NeMo format. The instructions below are for Llama3.1-8B, but the same commands should work for 70B model as well.
 
    ```
    pip install -U "huggingface_hub[cli]"
