@@ -131,5 +131,3 @@ def test_openmathinstruct2():
     assert (
         expected_md5 == output_md5
     ), "MD5 hashes do not match, something is wrong with nemo_skills/finetuning/prepare_sft_data.py"
-
-
