@@ -38,64 +38,14 @@ def execute_python(generated_code, timeout):
 
     return queue.get()
 
-
-# def execute_lean4(generated_code, timeout):
-#     project_path = "/lean4/my_project"
-
-#     with tempfile.NamedTemporaryFile(dir=project_path, delete=False, suffix=".lean") as temp_file:
-#         temp_file_name = temp_file.name
-#         temp_file.write(generated_code.encode('utf-8'))
-#     try:
-#         result = subprocess.run(
-#             ["lake", "env", "--dir", project_path, "lean", temp_file_name],
-#             stdout=subprocess.PIPE,
-#             stderr=subprocess.PIPE,
-#             timeout=timeout,
-#             cwd=project_path
-#         )
-
-#         return {
-#             "process_status": "finished",  # could be replaced by 0 for successful completion
-#             "stdout": result.stdout.decode('utf-8'),
-#             "stderr": result.stderr.decode('utf-8')
-#         }
-#     except subprocess.TimeoutExpired:
-#         return {"process_status": "timeout", "stdout": "Timed out", "stderr": "Timed out"}
-#     finally:
-#         if os.path.exists(temp_file_name):
-#             os.remove(temp_file_name)
-
-
 def execute_lean4(generated_code, timeout):
     temp_file_name = None
     try:
-        # Set the correct PATH for elan (lake and lean)
-        elan_path = "/root/.elan/bin"
-        os.environ['PATH'] = elan_path + ":" + os.environ['PATH']
-
-        # Step 1: Check and log the current PATH environment variable
-        result_path = subprocess.run(['echo', '$PATH'], capture_output=True, text=True, shell=True)
-        print(f"Current PATH: {result_path.stdout}")
-
-        # Step 2: Verify if 'lake' and 'lean' commands are available in the PATH
-        result_which_lake = subprocess.run(['which', 'lake'], capture_output=True, text=True)
-        result_which_lean = subprocess.run(['which', 'lean'], capture_output=True, text=True)
-        print(f"Location of 'lake': {result_which_lake.stdout}")
-        print(f"Location of 'lean': {result_which_lean.stdout}")
-
-        # Step 3: Try running 'lake --version' and 'lean --version' to check if they work
-        result_lake_version = subprocess.run(['lake', '--version'], capture_output=True, text=True)
-        result_lean_version = subprocess.run(['lean', '--version'], capture_output=True, text=True)
-        print(f"Lake version: {result_lake_version.stdout}")
-        print(f"Lean version: {result_lean_version.stdout}")
-
-        # Step 4: Create a temporary Lean file to hold the generated code
         project_path = "/lean4/my_project"
         with tempfile.NamedTemporaryFile(dir=project_path, delete=False, suffix=".lean") as temp_file:
             temp_file_name = temp_file.name
             temp_file.write(generated_code.encode('utf-8'))
 
-        # Step 5: Run the Lean code using lake
         result = subprocess.run(
             ['lake', 'env', '--dir', project_path, 'lean', temp_file_name],
             stdout=subprocess.PIPE,
@@ -104,7 +54,6 @@ def execute_lean4(generated_code, timeout):
             cwd=project_path,  # Ensure we are in the correct working directory
         )
 
-        # Step 6: Check if the execution was successful (return code 0 indicates success)
         if result.returncode == 0:
             process_status = "finished"
         else:
@@ -143,17 +92,11 @@ def execute_code_subprocess(generated_code, queue):
     except Exception as e:
         queue.put({"process_status": "error", "stdout": "", "stderr": str(e)})
 
-    # Main Flask endpoint to handle execution requests
 
 
+# Main Flask endpoint to handle execution requests
 @app.route("/execute", methods=["POST"])
 def execute():
-    if bool(request.json.get('a_true', 'True')):
-        return {
-            "process_status": "finished",  # could be replaced by 0 for successful completion
-            "stdout": "",
-            "stderr": "",
-        }
     generated_code = request.json['generated_code']
     timeout = request.json['timeout']
     language = request.json.get('language', 'python')
