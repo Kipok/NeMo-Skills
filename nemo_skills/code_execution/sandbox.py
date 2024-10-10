@@ -305,6 +305,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         timeout=10.0,
         language="python",
         ignore_cache: bool = False,
+        use_predicted_answer_key: bool = False,
         extract_from_boxed: bool = True,
         extract_regex: str = r"The final answer is (.+)$",
     ):
@@ -338,16 +339,23 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     if not line_dict:  # can be empty for incomplete generations
                         continue
                     gt_answer = line_dict.get("expected_answer", "")
-                    if language == "python":
-                        line_dict["predicted_answer"] = extract_answer(
-                            line_dict["generation"],
-                            extract_from_boxed=extract_from_boxed,
-                            extract_regex=extract_regex,
-                        )
-                    elif language == "lean4":
-                        line_dict["predicted_answer"] = (
-                            line_dict["header"] + line_dict["formal_statement"] + line_dict["generation"][:-3]
-                        )
+                    if not use_predicted_answer_key:
+                        if language == "python":
+                            line_dict["predicted_answer"] = extract_answer(
+                                line_dict["generation"],
+                                extract_from_boxed=extract_from_boxed,
+                                extract_regex=extract_regex,
+                            )
+                        elif language == "lean4":
+                            line_dict["predicted_answer"] = (
+                                line_dict["header"] + line_dict["formal_statement"] + line_dict["generation"][:-3]
+                            )
+                    else:
+                        if "predicted_answer" not in line_dict:
+                            raise ValueError(
+                                "predicted_answer key not found in the line_dict. "
+                                "Set use_predicted_answer_key=False to re-extract"
+                            )
 
                     data[-1][-1] = json.dumps(line_dict)
 
