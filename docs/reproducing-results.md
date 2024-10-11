@@ -442,7 +442,7 @@ run inference through Nvidia NIM API.
       ++min_solution_length=200 \
       ++hf_model_name="meta-llama/Meta-Llama-3.1-8B" \
       ++max_solution_length=1024 \
-      ++generation_suffix='"<|eot_id|>"';
+      ++generation_suffix='"<|eot_id|>"'
    ```
 
 
