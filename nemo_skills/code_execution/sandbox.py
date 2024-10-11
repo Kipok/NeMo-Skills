@@ -214,6 +214,8 @@ except Exception:
 print(json.dumps(to_return))
 """
         elif language == 'lean4':
+            if session_id is not None:
+                raise RuntimeError(f"Stateful execution for {language} is not supported. session_id is not None")
             TO_EXECUTE = generated_code
         else:
             raise ValueError(f"Unsupported language: {language}")
@@ -296,6 +298,21 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
 
         return output['result']
 
+    def is_proof_correct(
+        self, pred_output, timeout=30.0, language="lean4"
+    ):
+
+        TO_EXECUTE = pred_output
+
+        request = self._prepare_request(TO_EXECUTE, timeout, language)
+        try:
+            output = self._send_request(request, timeout)
+        except Exception as e:
+            LOG.warning("Error during correctness check: %s", e)
+            return "failed"
+
+        return output["process_status"]
+
     def batch_evaluate_results(
         self,
         input_files: List[str],
@@ -317,9 +334,14 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         cleanup_tmp_files(input_files)
 
         def update_fn(map_to_future, line_dict):
-            line_dict["is_correct"] = map_to_future[
-                (line_dict["predicted_answer"], line_dict.get("expected_answer", ""))
-            ].result()
+            if self.language == "python":
+                line_dict["is_correct"] = map_to_future[
+                    (line_dict["predicted_answer"], line_dict.get("expected_answer", ""))
+                ].result()
+            elif self.language == "lean4":
+                line_dict["proof_status"] = map_to_future[
+                    (line_dict["predicted_answer"], line_dict.get("expected_answer", ""))
+                ].result()
 
         data = []
         with ThreadPoolExecutor(max_workers=num_parallel_requests) as executor:
@@ -364,18 +386,29 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     if (predicted_answer, gt_answer) in map_to_future:
                         continue
 
-                    if ignore_cache or line_dict.get("is_correct") is None:
-                        map_to_future[(predicted_answer, gt_answer)] = executor.submit(
-                            self.is_output_correct,
-                            predicted_answer,
-                            gt_answer,
-                            language=language,
-                            include_percentage=include_percentage,
-                            tolerance=tolerance,
-                            timeout=timeout,
-                        )
+                    if ignore_cache or (line_dict.get("is_correct") is None and self.language == "pytohn") or (line_dict.get("proof_status") is None and self.language == "lean4"):
+                        if self.language == "python":
+                            map_to_future[(predicted_answer, gt_answer)] = executor.submit(
+                                self.is_output_correct,
+                                predicted_answer,
+                                gt_answer,
+                                language=language,
+                                include_percentage=include_percentage,
+                                tolerance=tolerance,
+                                timeout=timeout,
+                            )
+                        elif self.language == "lean4":
+                            map_to_future[(predicted_answer, gt_answer)] = executor.submit(
+                                self.is_proof_correct,
+                                predicted_answer,
+                                language=language,
+                                timeout=timeout,
+                            )
                     else:
-                        map_to_future[(predicted_answer, gt_answer)] = DummyFuture(line_dict["is_correct"])
+                        if self.language == "python": 
+                            map_to_future[(predicted_answer, gt_answer)] = DummyFuture(line_dict["is_correct"])
+                        elif self.language == "lean4":
+                            map_to_future[(predicted_answer, gt_answer)] = DummyFuture(line_dict["proof_status"])
 
             for file_handle in file_handles:
                 file_handle.close()

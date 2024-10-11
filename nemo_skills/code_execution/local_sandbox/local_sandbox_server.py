@@ -69,10 +69,10 @@ def execute_lean4(generated_code, timeout):
         }
 
     except subprocess.TimeoutExpired:
-        return {"process_status": "timeout", "stdout": "Timed out", "stderr": "Timed out"}
+        return {"process_status": "timeout error", "stdout": "timeout_error", "stderr": "timeout_error"}
     except Exception as e:
         print(f"Error: {str(e)}")
-        return {"process_status": "error", "stdout": "", "stderr": str(e)}
+        return {"process_status": "syntax error", "stdout": "", "stderr": str(e)}
     finally:
         # Safely remove the temporary file if it was created
         if temp_file_name and os.path.exists(temp_file_name):
@@ -85,11 +85,13 @@ def execute_code_subprocess(generated_code, queue):
     resource.setrlimit(resource.RLIMIT_DATA, (limit, limit))
     resource.setrlimit(resource.RLIMIT_STACK, (limit, limit))
 
+    # this can be overriden inside generated code, so it's not a guaranteed protection
     sys.stdout = StringIO()
     try:
         exec(generated_code, {})
         queue.put(sys.stdout.getvalue())
     except Exception as e:
+        print(f"Error: {str(e)}")
         queue.put({"process_status": "error", "stdout": "", "stderr": str(e)})
 
 

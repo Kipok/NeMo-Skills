@@ -468,6 +468,72 @@ class ArenaMetrics(BaseMetrics):
         self.lengths = 0
         self.total = 0
 
+class Lean4Metrics(BaseMetrics):
+    def setup(self, input_files):
+        pass
+
+    def __init__(self):
+        self.reset()
+
+    def fill_up_missing(self):
+        return {'predicted_answer': None, 'proof_status': "failed"}
+
+    def is_incomplete(self, elem):
+        incomplete = 'predicted_answer' not in elem
+        if not incomplete:
+            incomplete = 'proof_status' not in elem
+        return incomplete
+
+    def update(self, predictions, aggregation_mode):
+        """Updating the evaluation results with the current element.
+
+        Args:
+            predictions (list[dict]): aggregated predictions across all generations.
+                The content of the file is benchmark specific.
+            aggregation_mode (str): "best", "majority", "first", etc. Might vary by benchmark.
+        """
+        # this shouldn't do any heavy calculation, but just read the metric from existing json entry
+        # all the heavy lifting should be done in the evaluation script
+        self.total += 1
+        if 'proof_status' in predictions[0]:
+            self.has_proof = True
+
+        if aggregation_mode == "best":
+            if self.has_proof:
+                self.correct_proof = any([elem['proof_status'] == "completed" for elem in predictions])
+            if all([elem['predicted_answer'] is None for elem in predictions]):
+                self.no_answer += 1
+            if all([elem['proof_status'] == "syntax error" for elem in predictions]):
+                self.syntax_error += 1
+            if all([elem['proof_status'] == "timeout error" for elem in predictions]):
+                self.timeout_error += 1
+        elif aggregation_mode == "first":
+            if self.has_proof:
+                self.correct_proof += predictions[0]['proof_status'] == "completed"
+                self.syntax_error += predictions[0]['proof_status'] == "syntax error"
+                self.timeout_error += predictions[0]['proof_status'] == "timeout error"
+            self.no_answer += predictions[0]['predicted_answer'] is None
+        else:
+            raise ValueError(f"Unsupported mode {aggregation_mode}")
+
+
+    def get_metrics(self):
+        metrics = {"num_entries": self.total}
+        if self.has_proof:
+            metrics["lean4_correct"] = self.correct_proof / self.total * 100.0
+            metrics["syntax_error"] = self.syntax_error / self.total * 100.0
+            metrics["timeout_error"] = self.timeout_error / self.total * 100.0
+        metrics["no_answer"] = self.no_answer / self.total * 100.0
+        return metrics
+
+    def reset(self):
+        self.correct_proof = 0
+        self.timeout_error = 0
+        self.syntax_error = 0
+        self.no_answer = 0
+        self.total = 0
+        self.has_proof = False
+
 
 class AnswerJudgementMetrics(BaseMetrics):
     def __init__(self):
@@ -539,6 +605,9 @@ class AnswerJudgementMetrics(BaseMetrics):
         self.fp_count = 0
         self.fn_count = 0
         self.total = 0
+
+
+
 
 
 def read_predictions(predictions, evaluator, allow_incomplete=False):
