@@ -55,7 +55,7 @@ def cleanup_tmp_files(input_files):
             pass
 
 
-def dump_data(input_files, data, map_to_future, update_fn):
+def dump_data(input_files, data, map_to_future, update_fn, language="python"):
     LOG.info("Waiting for current results and dumping to tmp files")
     tmp_file_handles = [
         open(manifest + f"-tmp", "at", encoding="utf-8", buffering=1) for manifest in unroll_files(input_files)
@@ -69,7 +69,7 @@ def dump_data(input_files, data, map_to_future, update_fn):
             if not line_dict:
                 file_handle.write("\n")
                 continue
-            update_fn(map_to_future, line_dict)
+            update_fn(map_to_future, line_dict, language)
             file_handle.write(json.dumps(line_dict) + "\n")
 
     for file_handle in tmp_file_handles:
@@ -333,12 +333,12 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         file_handles = [open(manifest, "rt", encoding="utf-8") for manifest in unroll_files(input_files)]
         cleanup_tmp_files(input_files)
 
-        def update_fn(map_to_future, line_dict):
-            if self.language == "python":
+        def update_fn(map_to_future, line_dict, language="python"):
+            if language == "python":
                 line_dict["is_correct"] = map_to_future[
                     (line_dict["predicted_answer"], line_dict.get("expected_answer", ""))
                 ].result()
-            elif self.language == "lean4":
+            elif language == "lean4":
                 line_dict["proof_status"] = map_to_future[
                     (line_dict["predicted_answer"], line_dict.get("expected_answer", ""))
                 ].result()
@@ -348,7 +348,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
             for line_idx, lines in tqdm.tqdm(enumerate(zip_longest(*file_handles))):
                 if line_idx % in_memory_lines == 0:
                     if line_idx > 0:  # dumping into tmp files
-                        dump_data(input_files, data, map_to_future, update_fn)
+                        dump_data(input_files, data, map_to_future, update_fn, language)
                     # new in-memory buffer
                     data = []
                     map_to_future = {}
@@ -386,8 +386,8 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     if (predicted_answer, gt_answer) in map_to_future:
                         continue
 
-                    if ignore_cache or (line_dict.get("is_correct") is None and self.language == "pytohn") or (line_dict.get("proof_status") is None and self.language == "lean4"):
-                        if self.language == "python":
+                    if ignore_cache or (line_dict.get("is_correct") is None and language == "pytohn") or (line_dict.get("proof_status") is None and language == "lean4"):
+                        if language == "python":
                             map_to_future[(predicted_answer, gt_answer)] = executor.submit(
                                 self.is_output_correct,
                                 predicted_answer,
@@ -397,7 +397,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                 tolerance=tolerance,
                                 timeout=timeout,
                             )
-                        elif self.language == "lean4":
+                        elif language == "lean4":
                             map_to_future[(predicted_answer, gt_answer)] = executor.submit(
                                 self.is_proof_correct,
                                 predicted_answer,
@@ -405,16 +405,16 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                 timeout=timeout,
                             )
                     else:
-                        if self.language == "python": 
+                        if language == "python": 
                             map_to_future[(predicted_answer, gt_answer)] = DummyFuture(line_dict["is_correct"])
-                        elif self.language == "lean4":
+                        elif language == "lean4":
                             map_to_future[(predicted_answer, gt_answer)] = DummyFuture(line_dict["proof_status"])
 
             for file_handle in file_handles:
                 file_handle.close()
 
             if len(data) > 0:
-                dump_data(input_files, data, map_to_future, update_fn)
+                dump_data(input_files, data, map_to_future, update_fn, language)
 
         write_tmp_files_back(input_files)
 
