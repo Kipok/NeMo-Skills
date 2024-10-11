@@ -385,7 +385,7 @@ run inference through Nvidia NIM API.
         --server_type=openai \
         --model=meta/llama-3.1-405b-instruct \
         --server_address=https://integrate.api.nvidia.com/v1 \
-        ++check_both_ways=True;
+        ++check_both_ways=True
     ```
     
    Identify all the problems for which the `contaminated` key has the output True. 
