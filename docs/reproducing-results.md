@@ -381,7 +381,7 @@ run inference through Nvidia NIM API.
     ns check_contamination \
         --cluster=local \
         --input_file=/workspace/new-problems-solution-augmentation/contamination-retrieved.jsonl \
-        --output_file=<path to workspace>/new-problems-solution-augmentation/contamination-llm.jsonl \
+        --output_file=/workspace/new-problems-solution-augmentation/contamination-llm.jsonl \
         --server_type=openai \
         --model=meta/llama-3.1-405b-instruct \
         --server_address=https://integrate.api.nvidia.com/v1 \
