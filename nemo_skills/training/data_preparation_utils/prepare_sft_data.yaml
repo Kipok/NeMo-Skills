@@ -123,7 +123,7 @@ processors:
   - _target_: nemo_skills.training.data_preparation_utils.filters.CodeTextFilter
     should_run: ${filters.code_text_filter}
     filter_type: ${filters.code_text_filter}
-    prompt_config: ${prompt_config}
+    prompt_template: ${prompt_template}
     solution_key: ${output_key}
 
   - _target_: nemo_skills.training.data_preparation_utils.preprocessing.ShuffleAndDownsampleData

@@ -397,7 +397,7 @@ run inference through Nvidia NIM API.
         with open(jsonl_file, 'r') as f:
             for line in f:
                 data = json.loads(line)
-                if data.get('contaminated', False):
+                if data['contaminated']:
                     contaminated_problems.add(data['problem'])
         return contaminated_problems
 
@@ -409,7 +409,7 @@ run inference through Nvidia NIM API.
             with open(file_path, 'r') as input_file, open(temp_file_path, 'w') as output_file:
                 for line in input_file:
                     data = json.loads(line)
-                    if data.get('problem') in contaminated_problems:
+                    if data['problem'] in contaminated_problems:
                         data['contaminated'] = True
                     json.dump(data, output_file)
                     output_file.write('\n')
