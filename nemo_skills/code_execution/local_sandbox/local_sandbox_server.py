@@ -41,8 +41,8 @@ def execute_python(generated_code, timeout):
 def execute_lean4(generated_code, timeout):
     temp_file_name = None
     try:
-        elan_path = "/root/.elan/bin"
-        os.environ['PATH'] = elan_path + ":" + os.environ['PATH']
+        # elan_path = "/root/.elan/bin"
+        # os.environ['PATH'] = elan_path + ":" + os.environ['PATH']
 
         project_path = "/lean4/my_project"
         with tempfile.NamedTemporaryFile(dir=project_path, delete=False, suffix=".lean") as temp_file:
