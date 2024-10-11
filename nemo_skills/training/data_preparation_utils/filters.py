@@ -19,6 +19,7 @@ import re
 import warnings
 from itertools import chain
 from math import isclose
+from pathlib import Path
 from typing import List
 
 import tqdm
@@ -337,7 +338,7 @@ class CodeTextFilter(BaseParallelProcessor):
         self.prepare()
         os.makedirs(os.path.dirname(self.output_manifest_file), exist_ok=True)
         metrics = []
-        prompt = load_config(self.prompt_template)
+        prompt = load_config(self.prompt_template, Path(__file__).absolute().parents[2] / 'prompt' / 'template')
         code_begin_token = prompt.config.template.code_begin
 
         with open(self.output_manifest_file, "wt", encoding="utf-8") as fout:
