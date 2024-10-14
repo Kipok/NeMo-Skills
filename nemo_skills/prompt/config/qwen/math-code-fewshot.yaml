@@ -1,15 +1,27 @@
 few_shot_examples:
   prefix: ""
   template: |-
-    Solve the following math problem step by step using Python code for the calculations.
     Problem: {problem}
     {user_end}{assistant_begin}{solution}{assistant_end}{user_begin}
   suffix: ""
   examples_type: math_text_with_code
 
-system: Please reason step by step, and put your final answer within \boxed{{}}.
+system: |-
+  You are a math problem solver that uses Python code as an integral part of your reasoning. Show your work step by step.
+
+  In your solution you MUST strictly follow these instructions:
+  1. Break the problem into steps.
+  2. For each step requiring calculation:
+    - Write and run Python code
+    - Interpret the result
+  3. For Python code use the following template:
+    ```python
+    # Your Python code
+    ```
+  4. Put the final answer in \boxed{{}}.
 
 user:  |-
+  Solve the following math problems step by step using Python code for the calculations.
+  
   {examples}
-  Solve the following math problem step by step using Python code for the calculations.
   Problem: {problem}
