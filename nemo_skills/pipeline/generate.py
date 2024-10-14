@@ -138,7 +138,7 @@ def generate(
                     extra_arguments=extra_arguments,
                     eval_args=eval_args,
                 )
-                prev_task_ids = None
+                prev_tasks = None
                 for _ in range(dependent_jobs):
                     new_task = add_task(
                         exp,
@@ -151,9 +151,9 @@ def generate(
                         server_config=server_config,
                         with_sandbox=True,
                         run_after=run_after,
-                        task_dependencies=prev_task_ids,
+                        task_dependencies=prev_tasks,
                     )
-                    prev_task_ids = [new_task]
+                    prev_tasks = [new_task]
         else:
             cmd = get_cmd(
                 random_seed=None,
@@ -161,7 +161,7 @@ def generate(
                 extra_arguments=extra_arguments,
                 eval_args=eval_args,
             )
-            prev_task_ids = None
+            prev_tasks = None
             for _ in range(dependent_jobs):
                 task = add_task(
                     exp,
@@ -174,9 +174,9 @@ def generate(
                     server_config=server_config,
                     with_sandbox=True,
                     run_after=run_after,
-                    task_dependencies=prev_task_ids,
+                    task_dependencies=prev_tasks,
                 )
-                prev_task_ids = [new_task]
+                prev_tasks = [new_task]
         run_exp(exp, cluster_config)
 
 
