@@ -250,8 +250,12 @@ class OpenAIModel(BaseModel):
         if api_key is None:
             if base_url is not None and 'api.nvidia.com' in base_url:
                 api_key = os.getenv("NVIDIA_API_KEY", api_key)
+                if not api_key:
+                    raise ValueError("NVIDIA_API_KEY is required for Nvidia-hosted models.")
             else:
                 api_key = os.getenv("OPENAI_API_KEY", api_key)
+                if not api_key:
+                    raise ValueError("OPENAI_API_KEY is required for OpenAI models.")
 
         self.model = model
         self.client = OpenAI(api_key=api_key, base_url=base_url)
@@ -505,7 +509,7 @@ class VLLMModel(BaseModel):
         parse_response: bool = True,
     ) -> Union[list[str], openai.types.Completion]:
         if top_k == 0:
-            top_k = 1
+            top_k = -1
 
         # Process top_k
         extra_body = {

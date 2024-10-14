@@ -22,8 +22,12 @@ import dash_bootstrap_components as dbc
 import hydra
 from dash import Dash
 from flask import Flask
-from omegaconf import DictConfig, OmegaConf, open_dict
+from omegaconf import OmegaConf
 from settings.constants import (
+    CODE_BEGIN,
+    CODE_END,
+    CODE_OUTPUT_BEGIN,
+    CODE_OUTPUT_END,
     CODE_SEPARATORS,
     CONFIGS_FOLDER,
     RETRIEVAL,
@@ -72,20 +76,20 @@ def get_specific_fields(dict_cfg: Dict, fields: List[Dict]) -> Dict:
 def set_config(cfg: InspectorConfig) -> None:
     global config
     if not cfg.input_file and not cfg.dataset and not cfg.split:
-        cfg.input_file = UNDEFINED
+        cfg.dataset = UNDEFINED
+        cfg.split = UNDEFINED
 
     cfg.output_file = UNDEFINED
 
     examples_types = list(examples_map.keys())
 
     if "server_type" not in cfg.server:
-        if not isinstance(cfg.server, DictConfig):
-            cfg.server = OmegaConf.create(cfg.server)
+        cfg.server = OmegaConf.create({"server_type": UNDEFINED})
 
-        with open_dict(cfg.server):
-            cfg.server.server_type = UNDEFINED
+    if cfg.server.server_type != 'openai' and cfg.prompt_template is None:
+        cfg.prompt_template = UNDEFINED
 
-    config['nemo_inspector'] = OmegaConf.to_container(cfg, resolve=True)
+    config['nemo_inspector'] = asdict(OmegaConf.to_object(cfg))
 
     config['nemo_inspector']['types'] = {
         "prompt_config": [UNDEFINED] + list_yaml_files(os.path.join(CONFIGS_FOLDER)),
@@ -111,15 +115,14 @@ def set_config(cfg: InspectorConfig) -> None:
             config['nemo_inspector']['prompt']['template'][separator_type] = separator
 
     config['nemo_inspector']['inspector_params']['code_separators'] = (
-        config['nemo_inspector']['prompt']['template']['code_begin'],
-        config['nemo_inspector']['prompt']['template']['code_end'],
+        config['nemo_inspector']['prompt']['template'][CODE_BEGIN],
+        config['nemo_inspector']['prompt']['template'][CODE_END],
     )
     config['nemo_inspector']['inspector_params']['code_output_separators'] = (
-        config['nemo_inspector']['prompt']['template']['code_output_begin'],
-        config['nemo_inspector']['prompt']['template']['code_output_end'],
+        config['nemo_inspector']['prompt']['template'][CODE_OUTPUT_BEGIN],
+        config['nemo_inspector']['prompt']['template'][CODE_OUTPUT_END],
     )
 
-    config['nemo_inspector']['prompt'] = asdict(initialize_default(PromptConfig))
     config['nemo_inspector']['retrieval_fields'] = get_specific_fields(config['nemo_inspector'], RETRIEVAL_FIELDS)
 
     config['nemo_inspector']['input_file'] = str(config['nemo_inspector']['input_file'])

@@ -243,4 +243,5 @@ examples_map = {
     "gsm8k_standard_few_shot": gsm8k_standard_few_shot,
     "gsm8k_text_with_code": gsm8k_text_with_code,
     "gsm8k_problem_augmentation": gsm8k_problem_augmentation,
+    "gsm8k_text_detailed": gsm8k_text_detailed,
 }

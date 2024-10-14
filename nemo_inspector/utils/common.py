@@ -349,8 +349,8 @@ def get_data_from_files(cache_indicator=None) -> List:
         return []
     base_config = current_app.config['nemo_inspector']
     dataset = None
-    if base_config['data_file'] != UNDEFINED:
-        with open(base_config['data_file']) as f:
+    if os.path.isfile(base_config['input_file']):
+        with open(base_config['input_file']) as f:
             dataset = [json.loads(line) for line in f]
 
     available_models = {
@@ -438,7 +438,7 @@ def is_detailed_answers_rows_key(key: str) -> bool:
         key not in get_deleted_stats()
         and 'index' not in key
         and key not in STATS_KEYS + list(get_metrics([]).keys())
-        or key == 'question'
+        or key == QUESTION_FIELD
     )
 
 
