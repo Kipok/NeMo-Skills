@@ -25,11 +25,10 @@ python nemo_inspector/nemo_inspector.py \
 For the "Inference" page, launch the server with the model (see [inference.md](/docs/inference.md)), specify `host` and, if necessary, `ssh_key` and `ssh_server`.
 
 ## Inference page
-This page enables the analysis of model answers based on different parameters. It offers three modes: "Chat", "Run one sample", and "Run whole dataset".
+This page enables the analysis of model answers based on different parameters. It offers two modes: "Chat", "Run one sample".
 
 - **Chat** mode facilitates a conversation with the model and requires minimal parameter setup.
-- **Run one sample** mode allows you to send a single question to the model. It can be a question from the dataset (with parameters `data_file` or `dataset` and `split_name`) or a custom question. The answer is validated by comparing it with the `expected_answer` field.
-- **Run whole dataset** mode lets you launch the generation with chosen parameters on the entire dataset. Results are saved in `nemo_inspector/results/{generation_name}` folder. If the "use random seed range" flag is enabled, each answer will be sampled with multiple random seeds in the range from `start_random_seed` to `end_random_seed`. After generation is done, you can review the results on the "Analyze" page. The parameters used for the generation are also recorded in the `nemo_inspector/results/parameters.jsonl` file and displayed on the "Analyze" page.
+- **Run one sample** mode allows you to send a single question to the model. It can be a question from the dataset (with parameters `input_file` or `dataset` and `split`) or a custom question. The answer is validated by comparing it with the `expected_answer` field.
 
 ## Analyze page
 To use the Analyze page, specify paths to the generations you want to use (if not obtained through the "Inference" page). You can pass parameters via the command line with `++inspector_params.model_prediction.generation1='/some_path/generation1/output-greedy.jsonl'` or add them in an additional config file.
@@ -41,7 +40,7 @@ inspector_params:
     generation2: /some_path/generation2/output-rs*.jsonl
 ```
 
-The tool also supports comparison of multiple generations (e.g. 
+The tool also supports comparison of multiple generations (e.g.
  `generation2` in the config above). All files satisfying the given pattern will be considered for analysis.
 
 On this page, you can sort, filter, and compare generations. You can also add labels to the data and save your modified, filtered, and sorted generation by specifying `save_generations_path`.
@@ -63,7 +62,7 @@ custom_filtering_function(data['generation1']['error_message']) # This line will
 ```
 The last line in the custom filtering function will be used for data filtering; all preceding code within the function is executed but does not directly impact the filtering process.
 
-To apply filters for different generations, separate expressions with '&&' symbols. 
+To apply filters for different generations, separate expressions with '&&' symbols.
  ```python
  data['generation1']['is_correct'] && not data['generation2']['is_correct']
  ```
@@ -80,7 +79,7 @@ In this mode you should not use the && separator. For instance, an example from 
  or like this:
   ```python
  data['generation1'][0]['correct_responses'] == 1 and data['generation2'][0]['correct_responses'] == 0
- # Custom Statistics are dublicated in all JSONs. So here, 'correct_responses' value will be the same for all file for a specific generation and question 
+ # Custom Statistics are dublicated in all JSONs. So here, 'correct_responses' value will be the same for all file for a specific generation and question
  ```
  In this mode you can also compare fields of different generations
    ```python
@@ -97,10 +96,10 @@ Sorting functions operate similarly to filtering functions, with a few distincti
 Here is an example of a correct sorting function:
 
 ```python
-def custom_sorting_function(generated_solution: str):
-    return len(generated_solution)
+def custom_sorting_function(generation: str):
+    return len(generation)
 
-custom_sorting_function(data['generated_solution'])
+custom_sorting_function(data['generation'])
 ```
 
 ### Statistics

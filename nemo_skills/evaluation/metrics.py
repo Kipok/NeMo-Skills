@@ -25,7 +25,7 @@ from nemo_skills.utils import unroll_files
 LOG = logging.getLogger(__file__)
 
 
-class BaseEval(abc.ABC):
+class BaseMetrics(abc.ABC):
     @abc.abstractmethod
     def fill_up_missing(self):
         pass
@@ -46,16 +46,23 @@ class BaseEval(abc.ABC):
     def reset(self):
         pass
 
-    def setup(self, prediction_jsonl_files):
+    def setup(self, input_files):
         pass
 
 
-class MathEval(BaseEval):
-    def setup(self, prediction_jsonl_files):
+def is_correct_judgement(judgement):
+    if 'Judgement:' not in judgement:
+        return False  # improper judgement format, so have to judge as false
+    verdict = judgement.split('Judgement:')[-1].strip()
+    return verdict.lower() == 'yes'
+
+
+class MathMetrics(BaseMetrics):
+    def setup(self, input_files):
         # checking if judgements are ready and fusing them with predictions
         # might get permission errors when running locally, since original file
         # is generated inside docker. Is there any way around that?
-        for jsonl_file in unroll_files(prediction_jsonl_files):
+        for jsonl_file in unroll_files(input_files):
             if Path(jsonl_file + '-batch-request-id').exists():
                 with open(jsonl_file + '-batch-request-id', 'rt', encoding='utf-8') as fin:
                     request_id = json.load(fin)['request_id']
@@ -101,7 +108,7 @@ class MathEval(BaseEval):
         # this shouldn't do any heavy calculation, but just read the metric from existing json entry
         # all the heavy lifting should be done in the evaluation script
         self.total += 1
-        # TODO: rename is_correc since it's only for sympy now?
+        # TODO: rename is_correct since it's only for sympy now?
         if 'is_correct' in predictions[0]:
             self.has_sympy = True
         if 'judgement' in predictions[0]:
@@ -114,7 +121,7 @@ class MathEval(BaseEval):
             if self.has_sympy:
                 current_correct_sympy = any([elem['is_correct'] for elem in predictions])
             if self.has_judge:
-                current_correct_judge = any(["Yes" in elem['judgement'] for elem in predictions])
+                current_correct_judge = any([is_correct_judgement(elem['judgement']) for elem in predictions])
             if all([elem['predicted_answer'] is None for elem in predictions]):
                 self.no_answer += 1
         elif aggregation_mode == "majority":
@@ -126,7 +133,6 @@ class MathEval(BaseEval):
                     for elem in predictions
                     if elem['predicted_answer'] is not None
                 ]
-
                 if len(valid_answers_and_results) == 0:
                     self.no_answer += 1
                 else:
@@ -134,7 +140,7 @@ class MathEval(BaseEval):
                     current_correct_sympy = majority_result[1]
             if self.has_judge:
                 valid_answers_and_results = [
-                    (elem['predicted_answer'], "Yes" in elem['judgement'])
+                    (elem['predicted_answer'], is_correct_judgement(elem['judgement']))
                     for elem in predictions
                     if elem['predicted_answer'] is not None
                 ]
@@ -148,7 +154,7 @@ class MathEval(BaseEval):
             if self.has_sympy:
                 current_correct_sympy += predictions[0]['is_correct']
             if self.has_judge:
-                current_correct_judge += "Yes" in predictions[0]['judgement']
+                current_correct_judge += is_correct_judgement(predictions[0]['judgement'])
             self.no_answer += predictions[0]['predicted_answer'] is None
         else:
             raise ValueError(f"Unsupported mode {aggregation_mode}")
@@ -162,17 +168,20 @@ class MathEval(BaseEval):
             self.any_correct += current_correct_sympy or current_correct_judge
             if current_correct_sympy != current_correct_judge:
                 LOG.debug(
-                    "Discrepancy between sympy (%s) and LLM checkers (%s).\nPredicted answer: %s\nExpected answer: %s",
+                    "Discrepancy between symbolic (%s) and LLM checkers (%s).\n"
+                    "Question: %s\nPredicted answer: %s\nExpected answer: %s\nLLM reasoning: %s\n",
                     bool(current_correct_sympy),
                     bool(current_correct_judge),
+                    predictions[0]['problem'],
                     predictions[0]['predicted_answer'],
                     predictions[0]['expected_answer'],
+                    predictions[0]['judgement'],
                 )
 
     def get_metrics(self):
         metrics = {"num_entries": self.total}
         if self.has_sympy:
-            metrics["sympy_correct"] = self.correct_sympy / self.total * 100.0
+            metrics["symbolic_correct"] = self.correct_sympy / self.total * 100.0
         if self.has_judge:
             metrics["judge_correct"] = self.correct_judge / self.total * 100.0
         if self.has_sympy and self.has_judge:
@@ -192,7 +201,7 @@ class MathEval(BaseEval):
         self.has_judge = False
 
 
-class CodeEval(BaseEval):
+class CodeMetrics(BaseMetrics):
     def __init__(self):
         self.reset()
 
@@ -235,7 +244,7 @@ class CodeEval(BaseEval):
         self.total = 0
 
 
-class IFEval(BaseEval):
+class IFMetrics(BaseMetrics):
     # loosely adapted from
     # https://github.com/google-research/google-research/blob/master/instruction_following_eval/evaluation_main.py
 
@@ -339,15 +348,15 @@ class IFEval(BaseEval):
         }
 
 
-class ArenaEval(BaseEval):
+class ArenaMetrics(BaseMetrics):
     def __init__(self):
         self.reset()
 
-    def setup(self, prediction_jsonl_files):
+    def setup(self, input_files):
         # checking if judgements are ready and fusing them with predictions
         # might get permission errors when running locally, since original file
         # is generated inside docker. Is there any way around that?
-        for jsonl_file in unroll_files(prediction_jsonl_files):
+        for jsonl_file in unroll_files(input_files):
             if Path(jsonl_file + '-batch-request-id').exists():
                 with open(jsonl_file + '-batch-request-id', 'rt', encoding='utf-8') as fin:
                     request_id = json.load(fin)['request_id']
@@ -460,6 +469,78 @@ class ArenaEval(BaseEval):
         self.total = 0
 
 
+class AnswerJudgementMetrics(BaseMetrics):
+    def __init__(self):
+        self.reset()
+
+    def fill_up_missing(self):
+        return {'judgement': "Judgement: No", 'expected_judgement': "Judgement: No"}
+
+    def is_incomplete(self, elem):
+        return 'judgement' not in elem or 'expected_judgement' not in elem
+
+    def update(self, predictions, aggregation_mode):
+        """Updating the evaluation results with the current element.
+
+        Args:
+            predictions (list[dict]): aggregated predictions across all generations.
+                The content of the file is benchmark specific.
+            aggregation_mode (str): "best", "majority", "first", etc. Might vary by benchmark.
+        """
+        # this shouldn't do any heavy calculation, but just read the metric from existing json entry
+        # all the heavy lifting should be done in the evaluation script
+        self.total += 1
+        if aggregation_mode == "best":
+            is_correct = any(
+                [
+                    is_correct_judgement(elem['judgement']) == is_correct_judgement(elem['expected_judgement'])
+                    for elem in predictions
+                ]
+            )
+            self.total_correct += is_correct
+            if not is_correct:
+                if is_correct_judgement(predictions[0]['judgement']):
+                    self.fp_count += 1
+                else:
+                    self.fn_count += 1
+        elif aggregation_mode == "majority":
+            answers = [is_correct_judgement(elem['judgement']) for elem in predictions]
+            majority_judgement = Counter(answers).most_common(1)[0]
+            is_correct = majority_judgement == is_correct_judgement(predictions[0]['expected_judgement'])
+            self.total_correct += is_correct
+            if not is_correct:
+                if majority_judgement:
+                    self.fp_count += 1
+                else:
+                    self.fn_count += 1
+        elif aggregation_mode == "first":
+            is_correct = is_correct_judgement(predictions[0]['judgement']) == is_correct_judgement(
+                predictions[0]['expected_judgement']
+            )
+            self.total_correct += is_correct
+            if not is_correct:
+                if is_correct_judgement(predictions[0]['judgement']):
+                    self.fp_count += 1
+                else:
+                    self.fn_count += 1
+        else:
+            raise ValueError(f"Unsupported mode {aggregation_mode}")
+
+    def get_metrics(self):
+        return {
+            "num_entries": self.total,
+            "correct_judgements": self.total_correct / self.total * 100.0,
+            "false_positives": self.fp_count / self.total * 100.0,
+            "false_negatives": self.fn_count / self.total * 100.0,
+        }
+
+    def reset(self):
+        self.total_correct = 0
+        self.fp_count = 0
+        self.fn_count = 0
+        self.total = 0
+
+
 def read_predictions(predictions, evaluator, allow_incomplete=False):
     data = []
     for prediction in predictions:
@@ -485,23 +566,23 @@ def read_predictions(predictions, evaluator, allow_incomplete=False):
 
 
 def compute_metrics(
-    prediction_jsonl_files,
-    evaluator,
+    input_files,
+    metrics_calculator,
     allow_incomplete=False,
     max_samples=-1,
     aggregation_mode='first',
 ):
-    evaluator.reset()
-    evaluator.setup(prediction_jsonl_files)
+    metrics_calculator.reset()
+    metrics_calculator.setup(input_files)
 
-    file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(prediction_jsonl_files)]
+    file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(input_files)]
     for idx, predictions in enumerate(zip_longest(*file_handles)):
         if idx == max_samples:
             break
-        data = read_predictions(predictions, evaluator, allow_incomplete)
-        evaluator.update(data, aggregation_mode)
+        data = read_predictions(predictions, metrics_calculator, allow_incomplete)
+        metrics_calculator.update(data, aggregation_mode)
 
     for file_handle in file_handles:
         file_handle.close()
 
-    return evaluator.get_metrics()
+    return metrics_calculator.get_metrics()

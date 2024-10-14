@@ -20,9 +20,9 @@ import os
 import re
 import subprocess
 from collections import defaultdict
-from copy import deepcopy
-from dataclasses import fields
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
+from dataclasses import fields, is_dataclass
+from types import NoneType
+from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple, Union, get_args, get_origin, get_type_hints
 
 from dash import html
 from flask import current_app
@@ -33,6 +33,7 @@ from settings.constants import (
     ERROR_MESSAGE_TEMPLATE,
     FILE_NAME,
     GENERAL_STATS,
+    IGNORE_FIELDS,
     INLINE_STATS,
     OUTPUT,
     PARAMETERS_FILE_NAME,
@@ -45,13 +46,11 @@ from settings.constants import (
     UNDEFINED,
 )
 
-from nemo_skills.inference.generate_solutions import GenerateSolutionsConfig, InferenceConfig
-from nemo_skills.inference.prompt.few_shot_examples import examples_map
-from nemo_skills.inference.prompt.utils import FewShotExamplesConfig, PromptConfig
+from nemo_skills.inference.generate import GenerateSolutionsConfig, InferenceConfig
+from nemo_skills.prompt.utils import FewShotExamplesConfig, PromptConfig, PromptTemplate
 from nemo_skills.utils import unroll_files
 
 custom_stats = {}
-default_examples = deepcopy(examples_map)
 general_custom_stats = {}
 deleted_stats = set()
 excluded_rows = set()
@@ -82,10 +81,6 @@ def get_compared_rows() -> Dict:
 
 def get_general_custom_stats() -> Dict:
     return general_custom_stats
-
-
-def get_examples() -> Dict:
-    return examples_map
 
 
 def get_stats_raw() -> Dict:
@@ -218,7 +213,7 @@ def get_values_from_input_group(children: Iterable) -> Dict:
 
 
 def extract_query_params(query_params_ids: List[Dict], query_params: List[Dict]) -> Dict:
-    default_answer = {"question": "", "expected_answer": ""}
+    default_answer = {QUESTION_FIELD: "", "expected_answer": ""}
     try:
         query_params_extracted = {param_id['id']: param for param_id, param in zip(query_params_ids, query_params)}
     except ValueError:
@@ -230,7 +225,7 @@ def extract_query_params(query_params_ids: List[Dict], query_params: List[Dict])
 def get_utils_from_config_helper(cfg: Dict, display_path: bool = True) -> Dict:
     config = {}
     for key, value in sorted(cfg.items()):
-        if key in PARAMS_TO_REMOVE:
+        if key in PARAMS_TO_REMOVE or key in SETTING_PARAMS:
             continue
         elif isinstance(value, Dict):
             config = {
@@ -249,7 +244,7 @@ def get_utils_from_config(cfg: Dict, display_path: bool = True) -> Dict:
     return {
         SEPARATOR_DISPLAY.join(key.split(SEPARATOR_DISPLAY)[1:]) or key: value
         for key, value in get_utils_from_config_helper(cfg, display_path).items()
-        if key not in RETRIEVAL_FIELDS
+        if key not in RETRIEVAL_FIELDS + IGNORE_FIELDS
     }
 
 
@@ -367,8 +362,8 @@ def get_data_from_files(cache_indicator=None) -> List:
         return []
     base_config = current_app.config['nemo_inspector']
     dataset = None
-    if base_config['data_file'] != UNDEFINED:
-        with open(base_config['data_file']) as f:
+    if os.path.isfile(base_config['input_file']):
+        with open(base_config['input_file']) as f:
             dataset = [json.loads(line) for line in f]
 
     available_models = {
@@ -456,7 +451,7 @@ def is_detailed_answers_rows_key(key: str) -> bool:
         key not in get_deleted_stats()
         and 'index' not in key
         and key not in STATS_KEYS + list(get_metrics([]).keys())
-        or key == 'question'
+        or key == QUESTION_FIELD
     )
 
 
@@ -589,3 +584,39 @@ def get_utils_dict(name: Union[str, Dict], value: Union[str, int], id: Union[str
         'type': 'InputGroup',
         'namespace': 'dash_bootstrap_components',
     }
+
+
+def initialize_default(
+    cls: Union[PromptTemplate, PromptConfig], specification: Dict = {}
+) -> Union[PromptTemplate, PromptConfig]:
+    if not specification:
+        specification = {}
+
+    def get_default(field, specification: Dict = None):
+        if not specification:
+            specification = {}
+        _type = get_type_hints(cls)[field.name]
+        if is_dataclass(_type):
+            return initialize_default(
+                _type,
+                {
+                    **specification,
+                    **(
+                        specification.get(field.name, {})
+                        if isinstance(specification.get(field.name, {}), Dict)
+                        else {}
+                    ),
+                },
+            )
+        if isinstance(specification, Dict) and field.name in specification:
+            return specification[field.name]
+        else:
+            args = get_args(_type)
+            if len(args):
+                if NoneType in args:
+                    return None
+                else:
+                    return args[0]()
+            return (get_origin(_type) or _type)()
+
+    return cls(**{field.name: get_default(field, specification) for field in fields(cls)})
