@@ -500,18 +500,18 @@ class Lean4Metrics(BaseMetrics):
 
         if aggregation_mode == "best":
             if self.has_proof:
-                self.correct_proof = any([elem['proof_status'] == "completed" for elem in predictions])
+                self.correct_proof += any([elem['proof_status'] == "completed" for elem in predictions])
             if all([elem['predicted_answer'] is None for elem in predictions]):
                 self.no_answer += 1
-            if all([elem['proof_status'] == "syntax error" for elem in predictions]):
+            if all([elem['proof_status'] == "syntax" for elem in predictions]):
                 self.syntax_error += 1
-            if all([elem['proof_status'] == "timeout error" for elem in predictions]):
+            if all([elem['proof_status'] == "timeout" for elem in predictions]):
                 self.timeout_error += 1
         elif aggregation_mode == "first":
             if self.has_proof:
                 self.correct_proof += predictions[0]['proof_status'] == "completed"
-                self.syntax_error += predictions[0]['proof_status'] == "syntax error"
-                self.timeout_error += predictions[0]['proof_status'] == "timeout error"
+                self.syntax_error += predictions[0]['proof_status'] == "syntax"
+                self.timeout_error += predictions[0]['proof_status'] == "timeout"
             self.no_answer += predictions[0]['predicted_answer'] is None
         else:
             raise ValueError(f"Unsupported mode {aggregation_mode}")

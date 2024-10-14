@@ -71,7 +71,6 @@ class BaseModel(abc.ABC):
         self,
         host: str = '127.0.0.1',
         port: str = '5000',
-        # port: str = '1254',
         ssh_server: str | None = None,
         ssh_key_path: str | None = None,
     ):
@@ -447,7 +446,6 @@ class VLLMModel(BaseModel):
             raise NotImplementedError("SSH tunnelling is not implemented for vLLM model.")
 
         self.oai_client = openai.OpenAI(
-            # api_key="EMPTY", base_url=f"http://{self.server_host}:{5000}/v1", timeout=None
             api_key="EMPTY",
             base_url=f"http://{self.server_host}:{self.server_port}/v1",
             timeout=None,
@@ -523,9 +521,6 @@ class VLLMModel(BaseModel):
                 "spaces_between_special_tokens": False,
             }
         }
-        print("Using temperature:", temperature)
-        print("Using top_p:", top_p)
-        print("Using top_k:", top_k)
         response = self.oai_client.completions.create(
             model=self.model,
             prompt=prompt,

@@ -233,23 +233,22 @@ print(json.dumps(to_return))
     def is_output_correct(
         self, pred_output, gt_output="", include_percentage=True, tolerance=1e-4, timeout=10.0, language="python"
     ):
-        if language == "python":
-            # embedding the full math grader code here to send to server for execution
-            with open(Path(__file__).absolute().parent / "math_grader.py", "rt") as fin:
-                math_grader_code = fin.read()
+        # embedding the full math grader code here to send to server for execution
+        with open(Path(__file__).absolute().parent / "math_grader.py", "rt") as fin:
+            math_grader_code = fin.read()
 
-            # corner cases
-            if isinstance(pred_output, str):
-                pred_output = pred_output.replace("'''", r'\'\'\'')
-                while pred_output.endswith('\\'):
-                    pred_output = pred_output[:-1]
+        # corner cases
+        if isinstance(pred_output, str):
+            pred_output = pred_output.replace("'''", r'\'\'\'')
+            while pred_output.endswith('\\'):
+                pred_output = pred_output[:-1]
 
-            if isinstance(gt_output, str):
-                gt_output = gt_output.replace("'''", r'\'\'\'')
-                while gt_output.endswith('\\'):
-                    gt_output = gt_output[:-1]
+        if isinstance(gt_output, str):
+            gt_output = gt_output.replace("'''", r'\'\'\'')
+            while gt_output.endswith('\\'):
+                gt_output = gt_output[:-1]
 
-            TO_EXECUTE = f"""
+        TO_EXECUTE = f"""
 import os
 import sys
 import json
@@ -277,20 +276,12 @@ except Exception as e:
 sys.stdout = stdout
 print(json.dumps({{"result": output, "error_message": error_message}}))
 """
-        elif language == "lean4":
-            TO_EXECUTE = pred_output
 
-        request = self._prepare_request(TO_EXECUTE, timeout, language)
+        request = self._prepare_request(TO_EXECUTE, timeout)
         try:
             output = self._send_request(request, timeout)
         except Exception as e:
             output = {'result': False, 'error_message': e}
-
-        if language == "lean4" and "process_status" in output:
-            if output["process_status"] == "completed":
-                return True
-            else:
-                return False
 
         if output['error_message']:
             # logging the error
@@ -336,11 +327,11 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         def update_fn(map_to_future, line_dict, language="python"):
             if language == "python":
                 line_dict["is_correct"] = map_to_future[
-                    (line_dict["predicted_answer"], line_dict.get("expected_answer", ""))
+                    (line_dict["predicted_answer"], line_dict["expected_answer"])
                 ].result()
-            elif language == "lean4":
+            elif language == "lean4": 
                 line_dict["proof_status"] = map_to_future[
-                    (line_dict["predicted_answer"], line_dict.get("expected_answer", ""))
+                    (line_dict["predicted_answer"], "")
                 ].result()
 
         data = []
@@ -361,7 +352,9 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     line_dict = json.loads(file_line)
                     if not line_dict:  # can be empty for incomplete generations
                         continue
-                    gt_answer = line_dict.get("expected_answer", "")
+                    if language == "lean4":
+                        line_dict["expected_answer"] = ""        
+                    gt_answer = line_dict["expected_answer"]
                     if not use_predicted_answer_key:
                         if language == "python":
                             line_dict["predicted_answer"] = extract_answer(
@@ -371,7 +364,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                             )
                         elif language == "lean4":
                             line_dict["predicted_answer"] = (
-                                line_dict["header"] + line_dict["formal_statement"] + line_dict["generation"][:-3]
+                                line_dict["header"] + line_dict["formal_statement"] + (line_dict["generation"][:-3] if line_dict["generation"].endswith("```") else line_dict["generation"])
                             )
                     else:
                         if "predicted_answer" not in line_dict:

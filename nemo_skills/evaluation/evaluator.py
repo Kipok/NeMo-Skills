@@ -21,6 +21,7 @@ from dataclasses import asdict, field
 from pathlib import Path
 
 from nemo_skills.utils import nested_dataclass, unroll_files
+from nemo_skills.code_execution.sandbox import get_sandbox
 
 LOG = logging.getLogger(__file__)
 
@@ -45,7 +46,6 @@ class MathEvaluatorConfig:
 
 def eval_math(cfg):
     eval_config = MathEvaluatorConfig(**cfg.eval_config)
-    from nemo_skills.code_execution.sandbox import get_sandbox
 
     sandbox = get_sandbox(**eval_config.sandbox)
     eval_config = asdict(eval_config)
@@ -276,7 +276,6 @@ class LeanEvaluatorConfig:
 
 def eval_lean4(cfg):
     eval_config = LeanEvaluatorConfig(**cfg.eval_config)
-    from nemo_skills.code_execution.sandbox import get_sandbox
 
     sandbox = get_sandbox(**eval_config.sandbox)
     eval_config_dict = asdict(eval_config)
