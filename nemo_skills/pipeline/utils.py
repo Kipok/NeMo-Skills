@@ -61,12 +61,10 @@ def _get_latest_dir(path, expname, job_id) -> str:
 
 def get_exp_handles(expname):
     # TODO: remove this after we can properly use .from_title api
+    job_id = None
     if "_" in expname:
-        try:
-            job_id = int(expname.split("_")[-1])
-            expname = expname[: expname.rfind("_")]
-        except:
-            job_id = None
+        job_id = int(expname.split("_")[-1])
+        expname = expname[: expname.rfind("_")]
 
     parent_dir = os.path.join(NEMORUN_HOME, "experiments", expname)
     exp_dir = _get_latest_dir(parent_dir, expname, job_id)
