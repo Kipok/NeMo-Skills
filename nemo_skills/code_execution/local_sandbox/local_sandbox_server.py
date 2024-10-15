@@ -33,11 +33,12 @@ def execute_python(generated_code, timeout):
     process.start()
     process.join(timeout=timeout)
 
-    if process.is_alive():  #didn't finish successfully
+    if process.is_alive():  # didn't finish successfully
         process.kill()
         return {"process_status": "timeout", "stdout": "Timed out", "stderr": "Timed out"}
 
     return queue.get()
+
 
 def execute_lean4(generated_code, timeout):
     temp_file_name = None
@@ -95,7 +96,6 @@ def execute_code_subprocess(generated_code, queue):
         queue.put({"process_status": "error", "stdout": "", "stderr": str(e)})
 
 
-
 # Main Flask endpoint to handle execution requests
 @app.route("/execute", methods=["POST"])
 def execute():
@@ -107,5 +107,3 @@ def execute():
         return execute_python(generated_code, timeout)
     elif language == 'lean4':
         return execute_lean4(generated_code, timeout)
-
-

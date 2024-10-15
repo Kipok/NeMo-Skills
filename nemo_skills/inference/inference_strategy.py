@@ -17,7 +17,9 @@ from typing import Dict, List
 import torch
 from megatron.core import parallel_state
 from nemo.collections.nlp.modules.common.text_generation_strategy import GPTModelTextGenerationStrategy
+
 from nemo_skills.code_execution.sandbox import get_sandbox
+
 
 class CodeExecutionStrategy(GPTModelTextGenerationStrategy):
     def __init__(

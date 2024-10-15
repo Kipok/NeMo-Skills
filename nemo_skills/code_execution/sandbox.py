@@ -25,7 +25,6 @@ from typing import Dict, List, Optional, Tuple
 
 import backoff
 import requests
-
 import tqdm
 
 from nemo_skills.code_execution.math_grader import extract_answer
@@ -232,8 +231,7 @@ print(json.dumps(to_return))
             self.sessions[session_id] = self.sessions[session_id][:-1]
         return output, session_id
 
-    def is_output_correct(
-        self, pred_output, gt_output="", include_percentage=True, tolerance=1e-4, timeout=10.0):
+    def is_output_correct(self, pred_output, gt_output="", include_percentage=True, tolerance=1e-4, timeout=10.0):
         # embedding the full math grader code here to send to server for execution
         with open(Path(__file__).absolute().parent / "math_grader.py", "rt") as fin:
             math_grader_code = fin.read()
@@ -290,9 +288,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
 
         return output['result']
 
-    def is_proof_correct(
-        self, pred_output, timeout=30.0
-    ):
+    def is_proof_correct(self, pred_output, timeout=30.0):
 
         TO_EXECUTE = pred_output
 
@@ -329,10 +325,8 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                 line_dict["is_correct"] = map_to_future[
                     (line_dict["predicted_answer"], line_dict["expected_answer"])
                 ].result()
-            elif language == "lean4": 
-                line_dict["proof_status"] = map_to_future[
-                    (line_dict["predicted_answer"], "")
-                ].result()
+            elif language == "lean4":
+                line_dict["proof_status"] = map_to_future[(line_dict["predicted_answer"], "")].result()
 
         data = []
         with ThreadPoolExecutor(max_workers=num_parallel_requests) as executor:
@@ -353,7 +347,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     if not line_dict:  # can be empty for incomplete generations
                         continue
                     if language == "lean4":
-                        line_dict["expected_answer"] = ""        
+                        line_dict["expected_answer"] = ""
                     gt_answer = line_dict["expected_answer"]
                     if not use_predicted_answer_key:
                         if language == "python":
@@ -364,7 +358,13 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                             )
                         elif language == "lean4":
                             line_dict["predicted_answer"] = (
-                                line_dict["header"] + line_dict["formal_statement"] + (line_dict["generation"][:-3] if line_dict["generation"].endswith("```") else line_dict["generation"])
+                                line_dict["header"]
+                                + line_dict["formal_statement"]
+                                + (
+                                    line_dict["generation"][:-3]
+                                    if line_dict["generation"].endswith("```")
+                                    else line_dict["generation"]
+                                )
                             )
                     else:
                         if "predicted_answer" not in line_dict:
@@ -379,7 +379,11 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     if (predicted_answer, gt_answer) in map_to_future:
                         continue
 
-                    if ignore_cache or (line_dict.get("is_correct") is None and language == "pytohn") or (line_dict.get("proof_status") is None and language == "lean4"):
+                    if (
+                        ignore_cache
+                        or (line_dict.get("is_correct") is None and language == "pytohn")
+                        or (line_dict.get("proof_status") is None and language == "lean4")
+                    ):
                         if language == "python":
                             map_to_future[(predicted_answer, gt_answer)] = executor.submit(
                                 self.is_output_correct,
@@ -396,7 +400,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                 timeout=timeout,
                             )
                     else:
-                        if language == "python": 
+                        if language == "python":
                             map_to_future[(predicted_answer, gt_answer)] = DummyFuture(line_dict["is_correct"])
                         elif language == "lean4":
                             map_to_future[(predicted_answer, gt_answer)] = DummyFuture(line_dict["proof_status"])

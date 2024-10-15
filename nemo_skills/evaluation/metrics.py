@@ -20,8 +20,8 @@ from collections import Counter, defaultdict
 from itertools import zip_longest
 from pathlib import Path
 
-from nemo_skills.utils import unroll_files
 from nemo_skills.inference.server.model import get_model
+from nemo_skills.utils import unroll_files
 
 LOG = logging.getLogger(__file__)
 
@@ -467,6 +467,7 @@ class ArenaMetrics(BaseMetrics):
         self.lengths = 0
         self.total = 0
 
+
 class Lean4Metrics(BaseMetrics):
     def setup(self, input_files):
         pass
@@ -511,7 +512,6 @@ class Lean4Metrics(BaseMetrics):
             self.no_answer += predictions[0]['predicted_answer'] is None
         else:
             raise ValueError(f"Unsupported mode {aggregation_mode}")
-
 
     def get_metrics(self):
         metrics = {"num_entries": self.total}

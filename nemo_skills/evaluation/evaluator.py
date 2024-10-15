@@ -22,10 +22,10 @@ from pathlib import Path
 
 from tqdm import tqdm
 
+from nemo_skills.code_execution.sandbox import get_sandbox
 from nemo_skills.inference.server.model import get_model
 from nemo_skills.prompt.utils import Prompt, get_prompt
 from nemo_skills.utils import nested_dataclass, unroll_files
-from nemo_skills.code_execution.sandbox import get_sandbox
 
 LOG = logging.getLogger(__file__)
 
@@ -264,6 +264,7 @@ def eval_arena(cfg):
 def dummy_eval(cfg):
     return
 
+
 @nested_dataclass(kw_only=True)
 class LeanEvaluatorConfig:
     sandbox: dict = field(default_factory=lambda: {'sandbox_type': 'local'})
@@ -292,8 +293,7 @@ EVALUATOR_MAP = {
     'if': eval_if,
     'arena': eval_arena,
     'answer_judgement': dummy_eval,
-    'lean4' : eval_lean4,
-
+    'lean4': eval_lean4,
 }
 
 

@@ -18,4 +18,6 @@ from nemo_skills.prompt.few_shot_examples.minif2f import examples_map as example
 examples_map = examples_gsm8k.copy()
 examples_map.update(examples_math)
 examples_map.update(examples_minif2f)
-assert len(examples_map) == len(examples_gsm8k) + len(examples_math) + len(examples_minif2f), "Duplicate keys in examples!"
+assert len(examples_map) == len(examples_gsm8k) + len(examples_math) + len(
+    examples_minif2f
+), "Duplicate keys in examples!"
