@@ -20,13 +20,11 @@ few_shot_examples:
     ```lean4
     {header}{informal_prefix}{formal_statement}{formal_proof}```{assistant_end}\n{user_begin}
   suffix: ""
-  # examples_type: ""
-  examples_type: "minif2f_deepseek_fewshot"
+  examples_type: ""
 
 user: |-
   {examples}
   Complete the following Lean 4 code:
-  Give me the solution only without statement.
 
   ```lean4
   {header}{informal_prefix}{formal_statement}

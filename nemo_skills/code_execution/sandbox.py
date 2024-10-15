@@ -26,6 +26,8 @@ from typing import Dict, List, Optional, Tuple
 import backoff
 import requests
 
+import tqdm
+
 from nemo_skills.code_execution.math_grader import extract_answer
 from nemo_skills.utils import python_doc_to_cmd_help, unroll_files
 
@@ -231,8 +233,7 @@ print(json.dumps(to_return))
         return output, session_id
 
     def is_output_correct(
-        self, pred_output, gt_output="", include_percentage=True, tolerance=1e-4, timeout=10.0, language="python"
-    ):
+        self, pred_output, gt_output="", include_percentage=True, tolerance=1e-4, timeout=10.0):
         # embedding the full math grader code here to send to server for execution
         with open(Path(__file__).absolute().parent / "math_grader.py", "rt") as fin:
             math_grader_code = fin.read()
@@ -290,12 +291,12 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         return output['result']
 
     def is_proof_correct(
-        self, pred_output, timeout=30.0, language="lean4"
+        self, pred_output, timeout=30.0
     ):
 
         TO_EXECUTE = pred_output
 
-        request = self._prepare_request(TO_EXECUTE, timeout, language)
+        request = self._prepare_request(TO_EXECUTE, timeout, "lean4")
         try:
             output = self._send_request(request, timeout)
         except Exception as e:
@@ -319,7 +320,6 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         extract_regex: str = r"The final answer is (.+)$",
     ):
         """Will write if the results are correct back into the original files."""
-        import tqdm
 
         file_handles = [open(manifest, "rt", encoding="utf-8") for manifest in unroll_files(input_files)]
         cleanup_tmp_files(input_files)
@@ -385,7 +385,6 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                 self.is_output_correct,
                                 predicted_answer,
                                 gt_answer,
-                                language=language,
                                 include_percentage=include_percentage,
                                 tolerance=tolerance,
                                 timeout=timeout,
@@ -394,7 +393,6 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                             map_to_future[(predicted_answer, gt_answer)] = executor.submit(
                                 self.is_proof_correct,
                                 predicted_answer,
-                                language=language,
                                 timeout=timeout,
                             )
                     else:

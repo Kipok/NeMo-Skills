@@ -131,8 +131,11 @@ class Prompt:
             example_dict["solution"] = example_dict["solution"].replace(
                 "{code_output_end}", self.config.template.code_output_end
             )
-
-        return self.config.few_shot_examples.template.format(**example_dict, **asdict(self.config.template))
+        
+        if self.config.template: 
+            return self.config.few_shot_examples.template.format(**example_dict, **asdict(self.config.template))
+        else:
+            return self.config.few_shot_examples.template.format(**example_dict)
 
     def build_examples_dict(self, input_dict):
         if self.config.few_shot_examples.examples_type:
@@ -210,7 +213,7 @@ class Prompt:
                 generation=generation,
                 **asdict(self.config.template),
             )
-
+        
             return prompt
 
         else:

@@ -21,6 +21,7 @@ from itertools import zip_longest
 from pathlib import Path
 
 from nemo_skills.utils import unroll_files
+from nemo_skills.inference.server.model import get_model
 
 LOG = logging.getLogger(__file__)
 
@@ -66,7 +67,6 @@ class MathMetrics(BaseMetrics):
             if Path(jsonl_file + '-batch-request-id').exists():
                 with open(jsonl_file + '-batch-request-id', 'rt', encoding='utf-8') as fin:
                     request_id = json.load(fin)['request_id']
-                from nemo_skills.inference.server.model import get_model
 
                 llm = get_model(server_type='openai', model='gpt-4-1106-preview')
                 metadata, outputs = llm.get_batch_results(request_id)
@@ -360,7 +360,6 @@ class ArenaMetrics(BaseMetrics):
             if Path(jsonl_file + '-batch-request-id').exists():
                 with open(jsonl_file + '-batch-request-id', 'rt', encoding='utf-8') as fin:
                     request_id = json.load(fin)['request_id']
-                from nemo_skills.inference.server.model import get_model
 
                 llm = get_model(server_type='openai', model='gpt-4-1106-preview')
                 metadata, outputs = llm.get_batch_results(request_id)
@@ -503,14 +502,11 @@ class Lean4Metrics(BaseMetrics):
                 self.correct_proof += any([elem['proof_status'] == "completed" for elem in predictions])
             if all([elem['predicted_answer'] is None for elem in predictions]):
                 self.no_answer += 1
-            if all([elem['proof_status'] == "syntax" for elem in predictions]):
-                self.syntax_error += 1
             if all([elem['proof_status'] == "timeout" for elem in predictions]):
                 self.timeout_error += 1
         elif aggregation_mode == "first":
             if self.has_proof:
                 self.correct_proof += predictions[0]['proof_status'] == "completed"
-                self.syntax_error += predictions[0]['proof_status'] == "syntax"
                 self.timeout_error += predictions[0]['proof_status'] == "timeout"
             self.no_answer += predictions[0]['predicted_answer'] is None
         else:
@@ -521,7 +517,6 @@ class Lean4Metrics(BaseMetrics):
         metrics = {"num_entries": self.total}
         if self.has_proof:
             metrics["lean4_correct"] = self.correct_proof / self.total * 100.0
-            metrics["syntax_error"] = self.syntax_error / self.total * 100.0
             metrics["timeout_error"] = self.timeout_error / self.total * 100.0
         metrics["no_answer"] = self.no_answer / self.total * 100.0
         return metrics
@@ -529,7 +524,6 @@ class Lean4Metrics(BaseMetrics):
     def reset(self):
         self.correct_proof = 0
         self.timeout_error = 0
-        self.syntax_error = 0
         self.no_answer = 0
         self.total = 0
         self.has_proof = False
@@ -609,6 +603,10 @@ class AnswerJudgementMetrics(BaseMetrics):
 
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6e73f73 (fixes + tests)
 
 def read_predictions(predictions, evaluator, allow_incomplete=False):
     data = []

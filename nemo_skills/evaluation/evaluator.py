@@ -20,6 +20,10 @@ from argparse import Namespace
 from dataclasses import asdict, field
 from pathlib import Path
 
+from tqdm import tqdm
+
+from nemo_skills.inference.server.model import get_model
+from nemo_skills.prompt.utils import Prompt, get_prompt
 from nemo_skills.utils import nested_dataclass, unroll_files
 from nemo_skills.code_execution.sandbox import get_sandbox
 
@@ -146,11 +150,6 @@ class LlmEvaluatorConfig:
 
 # TODO: this needs to be moved into a separate job as we might need to host the server
 def eval_arena(cfg):
-    from tqdm import tqdm
-
-    from nemo_skills.inference.server.model import get_model
-    from nemo_skills.prompt.utils import Prompt, get_prompt_config
-
     eval_config = LlmEvaluatorConfig(**cfg.eval_config)
     assert eval_config.batch_size % 2 == 0  # required due to how everything is implement, can fix later
 
@@ -162,7 +161,7 @@ def eval_arena(cfg):
         base_url=eval_config.base_url,
         model=eval_config.judge_model,
     )
-    prompt = Prompt(config=get_prompt_config('openai/arena-judge'))
+    prompt = Prompt(config=get_prompt('openai/arena-judge'))
 
     # assuming everything fits in memory for simplicity
     for jsonl_file in unroll_files(cfg.input_files):
