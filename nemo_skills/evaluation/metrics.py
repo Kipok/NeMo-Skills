@@ -601,13 +601,6 @@ class AnswerJudgementMetrics(BaseMetrics):
         self.total = 0
 
 
-
-
-<<<<<<< HEAD
-=======
-
->>>>>>> 6e73f73 (fixes + tests)
-
 def read_predictions(predictions, evaluator, allow_incomplete=False):
     data = []
     for prediction in predictions:
