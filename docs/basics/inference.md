@@ -130,12 +130,12 @@ Click on :material-plus-circle: symbols in the snippet below to learn more detai
     sandbox = get_sandbox()  # localhost by default
     llm = get_code_execution_model(server_type="vllm", sandbox=sandbox)
     prompt = get_prompt('generic/default', 'llama3-instruct') # (1)!
-    prompt.config.system = (
+    prompt.config.system = ( # (2)!
         "Environment: ipython\n\n"
         "Use Python to solve this math problem."
     )
     prompts = [prompt.fill({'question': "What's 2 + 2?"})]
-    print(prompts[0]) # (2)!
+    print(prompts[0]) # (3)!
     code_tokens = {
         "code_begin": prompt.config.template.code_begin,
         "code_end": prompt.config.template.code_end,
@@ -143,7 +143,7 @@ Click on :material-plus-circle: symbols in the snippet below to learn more detai
         "code_output_end": prompt.config.template.code_output_end,
     }
     outputs = llm.generate(prompts=prompts, **code_tokens)
-    print(outputs[0]["generation"]) # (3)!
+    print(outputs[0]["generation"]) # (4)!
     ```
 
     1.   Here we use [generic/default](https://github.com/Kipok/NeMo-Skills/tree/main/nemo_skills/prompt/config/generic/default.yaml) config
@@ -154,8 +154,9 @@ Click on :material-plus-circle: symbols in the snippet below to learn more detai
          See [nemo_skills/prompt](https://github.com/Kipok/NeMo-Skills/tree/main/nemo_skills/prompt) for more config/template options
          or [create your own prompts](prompt-format.md)
 
+    2.   8B model doesn't always follow these instructions, so using 70B or 405B for code execution is recommended.
 
-    2.   This should print
+    3.   This should print
 
          ```python-console
          >>> print(prompts[0])
@@ -170,14 +171,29 @@ Click on :material-plus-circle: symbols in the snippet below to learn more detai
 
          If you don't want to use our prompt class, just create this string yourself
 
-    3.   This should print
+    4.   This should print
          ```python-console
          >>> print(outputs[0]["generation"])
-         2 + 2 = 4.
+         <|python_tag|>print(2 + 2)<|eom_id|><|start_header_id|>ipython<|end_header_id|>
+
+         completed
+         [stdout]
+         4
+         [/stdout]<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+
+         The answer is 4.
          ```
+
+         The "4" in the stdout is coming directly from Python interpreter running in the sandbox.
 
 Note that for self-hosted models we are explicitly adding all the special tokens before sending prompt to an LLM.
 This is necessary to retain flexibility. E.g. this way we can use base model format with
 instruct models that we found to work better with few-shot examples.
 
-You can learn more about how our prompt formatting works in [prompt format docs](../basics/prompt-format.md).
+You can learn more about how our prompt formatting works in the [prompt format docs](../basics/prompt-format.md).
+
+!!! note
+
+    You can also use slurm config when launching a server. If you do that, add `host=<slurm node hostname>`
+    to the `get_model/sandbox` calls and define `NEMO_SKILLS_SSH_KEY_PATH` and `NEMO_SKILLS_SSH_SERVER` env vars
+    to set the connection through ssh.
