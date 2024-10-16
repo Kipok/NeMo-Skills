@@ -166,14 +166,15 @@ class Sandbox(abc.ABC):
         max_output_characters: int = 1000,
         session_id: Optional[str] = None,
     ) -> Tuple[Dict, str]:
-        if session_id is None:  # creating a new session with empty state
+        if session_id is None and language == "python":  # creating a new session with empty state
             session_id = uuid.uuid4()
             self.sessions[session_id] = []
         generated_code = generated_code.replace('"""', r'\"\"\"')
         while generated_code.endswith('\\'):
             generated_code = generated_code[:-1]
 
-        self.sessions[session_id].append(generated_code)
+        if session_id is not None:
+            self.sessions[session_id].append(generated_code)
 
         if language == 'python':
             TO_EXECUTE = """
@@ -216,7 +217,7 @@ print(json.dumps(to_return))
 """
         elif language == 'lean4':
             if session_id is not None:
-                raise RuntimeError(f"Stateful execution for {language} is not supported. session_id is not None")
+                raise RuntimeError(f"Stateful execution for {language} is not supported. session_id is {session_id} but should be None")
             TO_EXECUTE = generated_code
         else:
             raise ValueError(f"Unsupported language: {language}")
@@ -227,8 +228,9 @@ print(json.dumps(to_return))
         except requests.exceptions.Timeout:
             output = {"process_status": "timeout", "stdout": "Timed out", "stderr": "Timed out"}
         # removing last state to not re-execute code with errors
-        if output['stderr'] or 'Traceback (most recent call last)' in output['stdout']:
-            self.sessions[session_id] = self.sessions[session_id][:-1]
+        if session_id is not None:
+            if output['stderr'] or 'Traceback (most recent call last)' in output['stdout']:
+                self.sessions[session_id] = self.sessions[session_id][:-1]
         return output, session_id
 
     def is_output_correct(self, pred_output, gt_output="", include_percentage=True, tolerance=1e-4, timeout=10.0):

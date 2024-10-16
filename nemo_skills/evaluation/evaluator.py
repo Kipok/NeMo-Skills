@@ -150,6 +150,7 @@ class LlmEvaluatorConfig:
 
 # TODO: this needs to be moved into a separate job as we might need to host the server
 def eval_arena(cfg):
+    print("\n\n\n\n\n\n\n\n\n\n STOP EVERYTHING I GOT HERE WTF? \n\n\n\n\n\n\n\n\n\n")
     eval_config = LlmEvaluatorConfig(**cfg.eval_config)
     assert eval_config.batch_size % 2 == 0  # required due to how everything is implement, can fix later
 
