@@ -79,7 +79,7 @@ all other parameters are directly passed into the underlying `nemo_skills/...` s
 ## Running pipelines
 
 All of the [pipeline scripts](https://github.com/Kipok/NeMo-Skills/tree/main/nemo_skills/pipeline) can be called in 3 equivalent ways.
-As an example let's see how to run [evaluation](/docs/evaluation.md) on 10 samples from gsm8k and math benchmarks
+As an example let's see how to run [evaluation](../pipelines/evaluation.md) on 10 samples from gsm8k and math benchmarks
 
 ```bash title="ns command-line entrypoint"
 ns eval \
@@ -122,7 +122,7 @@ eval(
 ```
 
 You can also chain multiple pipelines together to set proper slurm dependencies using `--run_after` parameter.
-See an example in [training documentation](../pipelines/training.md#python-api).
+See an example in [training documentation](../pipelines/training.md#chaining-pipelines-with-python).
 
 ## Local execution
 

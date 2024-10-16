@@ -14,6 +14,7 @@ theme:
     - navigation.indexes
     - toc.follow
 markdown_extensions:
+  - meta
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span

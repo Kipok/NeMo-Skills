@@ -1,3 +1,9 @@
+---
+hide:
+  - navigation
+  - toc
+---
+
 # How to reproduce our results
 
 This section has instructions for reproducing
