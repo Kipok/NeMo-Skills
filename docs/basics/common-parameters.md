@@ -22,7 +22,7 @@ All scripts inside pipeline folder have the following parameters.
 - **--partition**: Can be used to run in a specific slurm partition (e.g. commonly used
   to launch interactive jobs).
 
-# Generation parameters
+## Generation scripts
 
 All of the scripts that involve LLM data generation accept a common set of parameters.
 
