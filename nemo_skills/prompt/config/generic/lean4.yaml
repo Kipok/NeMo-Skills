@@ -18,19 +18,8 @@ few_shot_examples:
     Complete the following Lean 4 code:
     
     ```lean4
-    {header}{informal_prefix}{formal_statement}{formal_proof}```{assistant_end}\n{user_begin}
+    {header}{informal_prefix}{formal_statement}{formal_proof}```
   suffix: ""
-  examples_type: ""
-
-# few_shot_examples:
-#   prefix: ""
-#   template: |-
-#     Complete the following Lean 4 code:
-    
-#     ```lean4
-#     {header}{informal_prefix}{formal_statement}{formal_proof}```\n
-#   suffix: ""
-#   examples_type: "minif2f_deepseek_fewshot"
 
 user: |-
   {examples}

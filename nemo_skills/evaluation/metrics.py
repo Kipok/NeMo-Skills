@@ -490,7 +490,7 @@ class Lean4Metrics(BaseMetrics):
         Args:
             predictions (list[dict]): aggregated predictions across all generations.
                 The content of the file is benchmark specific.
-            aggregation_mode (str): "best", "majority", "first", etc. Might vary by benchmark.
+            aggregation_mode (str): "best", "first", etc. Might vary by benchmark.
         """
         # this shouldn't do any heavy calculation, but just read the metric from existing json entry
         # all the heavy lifting should be done in the evaluation script
@@ -501,15 +501,12 @@ class Lean4Metrics(BaseMetrics):
         if aggregation_mode == "best":
             if self.has_proof:
                 self.correct_proof += any([elem['proof_status'] == "completed" for elem in predictions])
-            if all([elem['predicted_answer'] is None for elem in predictions]):
-                self.no_answer += 1
             if all([elem['proof_status'] == "timeout" for elem in predictions]):
                 self.timeout_error += 1
         elif aggregation_mode == "first":
             if self.has_proof:
                 self.correct_proof += predictions[0]['proof_status'] == "completed"
                 self.timeout_error += predictions[0]['proof_status'] == "timeout"
-            self.no_answer += predictions[0]['predicted_answer'] is None
         else:
             raise ValueError(f"Unsupported mode {aggregation_mode}")
 
@@ -518,13 +515,11 @@ class Lean4Metrics(BaseMetrics):
         if self.has_proof:
             metrics["lean4_correct"] = self.correct_proof / self.total * 100.0
             metrics["timeout_error"] = self.timeout_error / self.total * 100.0
-        metrics["no_answer"] = self.no_answer / self.total * 100.0
         return metrics
 
     def reset(self):
         self.correct_proof = 0
         self.timeout_error = 0
-        self.no_answer = 0
         self.total = 0
         self.has_proof = False
 

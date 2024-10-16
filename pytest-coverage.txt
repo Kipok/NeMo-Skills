@@ -1,0 +1,161 @@
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-8.3.3, pluggy-1.5.0 -- /home/aayrapetyan/miniconda3/envs/autoform/bin/python
+cachedir: .pytest_cache
+rootdir: /home/aayrapetyan/Desktop/autoformalization/NeMo-Skills
+configfile: pyproject.toml
+plugins: cov-5.0.0, timeout-2.3.1, anyio-4.6.0, hydra-core-1.3.2
+collecting ... collected 13 items
+
+tests/test_prompts.py::test_generic_math_problem_augmentation_prompt PASSED [  7%]
+tests/test_prompts.py::test_generic_gsm8k_problem_augmentation_prompt PASSED [ 15%]
+tests/test_prompts.py::test_generic_codegen_prompt PASSED                [ 23%]
+tests/test_prompts.py::test_generic_default_prompt PASSED                [ 30%]
+tests/test_prompts.py::test_generic_math_prompt PASSED                   [ 38%]
+tests/test_prompts.py::test_generic_math_prompt_code_examples PASSED     [ 46%]
+tests/test_prompts.py::test_generic_multichoice_prompt PASSED            [ 53%]
+tests/test_prompts.py::test_llama3_instruct_math_prompt PASSED           [ 61%]
+tests/test_prompts.py::test_judge_arena PASSED                           [ 69%]
+tests/test_prompts.py::test_judge_math PASSED                            [ 76%]
+tests/test_prompts.py::test_judge_check_contamination PASSED             [ 84%]
+tests/test_prompts.py::test_generic_lean4_prompt PASSED                  [ 92%]
+tests/test_prompts.py::test_generic_lean4_fewshot_prompt PASSED          [100%]
+
+- generated xml file: /home/aayrapetyan/Desktop/autoformalization/NeMo-Skills/pytest.xml -
+
+---------- coverage: platform linux, python 3.10.12-final-0 ----------
+Name                                                              Stmts   Miss  Cover   Missing
+-----------------------------------------------------------------------------------------------
+nemo_skills/code_execution/__init__.py                                1      1     0%   15
+nemo_skills/code_execution/math_grader.py                           323    323     0%   84-611
+nemo_skills/code_execution/sandbox.py                               216    216     0%   15-483
+nemo_skills/code_execution/utils.py                                  20     20     0%   15-49
+nemo_skills/conversion/hf_to_nemo.py                                210    210     0%   18-339
+nemo_skills/conversion/hf_to_nemo_qwen.py                           198    198     0%   17-306
+nemo_skills/conversion/hf_to_trtllm.py                              202    202     0%   18-494
+nemo_skills/conversion/hf_to_trtllm_qwen.py                         118    118     0%   17-301
+nemo_skills/conversion/nemo_to_hf.py                                139    139     0%   19-246
+nemo_skills/dataset/aime24/__init__.py                                6      6     0%   14-21
+nemo_skills/dataset/aime24/prepare.py                                99     99     0%   16-166
+nemo_skills/dataset/algebra222/__init__.py                            6      6     0%   14-21
+nemo_skills/dataset/algebra222/prepare.py                            23     23     0%   15-46
+nemo_skills/dataset/amc23/__init__.py                                 6      6     0%   14-21
+nemo_skills/dataset/amc23/prepare.py                                 22     22     0%   15-43
+nemo_skills/dataset/answer-judge/__init__.py                          6      6     0%   14-21
+nemo_skills/dataset/answer-judge/prepare.py                           8      8     0%   14-62
+nemo_skills/dataset/arena-hard/__init__.py                            6      6     0%   14-21
+nemo_skills/dataset/arena-hard/prepare.py                            27     27     0%   15-51
+nemo_skills/dataset/asdiv/__init__.py                                 6      6     0%   14-21
+nemo_skills/dataset/asdiv/prepare.py                                 24     24     0%   15-50
+nemo_skills/dataset/gsm8k/__init__.py                                 6      6     0%   14-21
+nemo_skills/dataset/gsm8k/prepare.py                                 51     51     0%   15-103
+nemo_skills/dataset/gsm-hard/__init__.py                              6      6     0%   14-21
+nemo_skills/dataset/gsm-hard/prepare.py                              33     33     0%   15-61
+nemo_skills/dataset/gsm-ic-2step/__init__.py                          6      6     0%   14-21
+nemo_skills/dataset/gsm-ic-2step/prepare.py                          29     29     0%   15-74
+nemo_skills/dataset/gsm-ic-mstep/__init__.py                          6      6     0%   14-21
+nemo_skills/dataset/gsm-ic-mstep/prepare.py                          29     29     0%   15-74
+nemo_skills/dataset/gsm-plus/__init__.py                              6      6     0%   14-21
+nemo_skills/dataset/gsm-plus/prepare.py                              40     40     0%   15-98
+nemo_skills/dataset/human-eval/__init__.py                            6      6     0%   14-21
+nemo_skills/dataset/human-eval/prepare.py                            13     13     0%   15-33
+nemo_skills/dataset/ifeval/__init__.py                                6      6     0%   14-21
+nemo_skills/dataset/ifeval/prepare.py                                20     20     0%   15-41
+nemo_skills/dataset/math-odyssey/__init__.py                          6      6     0%   14-21
+nemo_skills/dataset/math-odyssey/prepare.py                          50     50     0%   15-91
+nemo_skills/dataset/math/__init__.py                                  6      6     0%   14-21
+nemo_skills/dataset/math/fix_ref_solns.py                            83     83     0%   1-158
+nemo_skills/dataset/math/prepare.py                                 116    116     0%   15-192
+nemo_skills/dataset/mawps/__init__.py                                 6      6     0%   14-21
+nemo_skills/dataset/mawps/prepare.py                                 25     25     0%   15-55
+nemo_skills/dataset/mbpp/__init__.py                                  6      6     0%   14-21
+nemo_skills/dataset/mbpp/prepare.py                                  13     13     0%   15-33
+nemo_skills/dataset/minif2f/__init__.py                               6      6     0%   15-22
+nemo_skills/dataset/minif2f/prepare.py                               47     47     0%   15-80
+nemo_skills/dataset/mmlu/__init__.py                                  6      6     0%   14-23
+nemo_skills/dataset/mmlu/prepare.py                                  53     53     0%   15-104
+nemo_skills/dataset/omni-math/__init__.py                             6      6     0%   14-21
+nemo_skills/dataset/omni-math/prepare.py                             22     22     0%   15-43
+nemo_skills/dataset/prepare.py                                       26     26     0%   14-51
+nemo_skills/dataset/proofnet/__init__.py                              6      6     0%   15-22
+nemo_skills/dataset/proofnet/prepare.py                              47     47     0%   15-80
+nemo_skills/dataset/svamp/__init__.py                                 6      6     0%   14-21
+nemo_skills/dataset/svamp/prepare.py                                 28     28     0%   15-51
+nemo_skills/dataset/tabmwp/__init__.py                                6      6     0%   14-21
+nemo_skills/dataset/tabmwp/prepare.py                                30     30     0%   15-87
+nemo_skills/dataset/utils.py                                         15     15     0%   15-32
+nemo_skills/evaluation/arena_utils.py                               121    121     0%   17-189
+nemo_skills/evaluation/code_utils.py                                 20     20     0%   1-23
+nemo_skills/evaluation/evaluate_results.py                           29     29     0%   15-68
+nemo_skills/evaluation/evaluator.py                                 170    170     0%   15-301
+nemo_skills/evaluation/fill_majority_answer.py                       59     59     0%   15-117
+nemo_skills/evaluation/metrics.py                                   377    377     0%   15-643
+nemo_skills/inference/check_contamination.py                        100    100     0%   15-179
+nemo_skills/inference/generate.py                                   115    115     0%   15-218
+nemo_skills/inference/inference_strategy.py                          59     59     0%   15-155
+nemo_skills/inference/llm_math_judge.py                             114    114     0%   15-212
+nemo_skills/inference/retrieve_similar.py                            62     62     0%   17-120
+nemo_skills/inference/server/code_execution_model.py                 84     84     0%   16-240
+nemo_skills/inference/server/model.py                               219    219     0%   16-579
+nemo_skills/inference/server/serve_nemo.py                           54     54     0%   17-152
+nemo_skills/inference/server/serve_trt.py                           238    238     0%   15-600
+nemo_skills/inference/server/serve_vllm.py                           15     15     0%   15-50
+nemo_skills/pipeline/__init__.py                                      2      2     0%   15-16
+nemo_skills/pipeline/app.py                                          99     99     0%   15-191
+nemo_skills/pipeline/check_contamination.py                          40     40     0%   15-135
+nemo_skills/pipeline/cli.py                                          13     13     0%   16-35
+nemo_skills/pipeline/compute_metrics.py                              31     31     0%   15-85
+nemo_skills/pipeline/convert.py                                      73     73     0%   14-232
+nemo_skills/pipeline/eval.py                                         60     60     0%   14-195
+nemo_skills/pipeline/generate.py                                     58     58     0%   15-179
+nemo_skills/pipeline/llm_math_judge.py                               46     46     0%   15-134
+nemo_skills/pipeline/start_server.py                                 28     28     0%   14-95
+nemo_skills/pipeline/summarize_results.py                            85     85     0%   15-162
+nemo_skills/pipeline/train.py                                        76     76     0%   15-265
+nemo_skills/pipeline/utils.py                                       224    224     0%   15-582
+nemo_skills/prompt/utils.py                                         143     34    76%   32-39, 42-43, 66, 69, 72-74, 77, 138, 147-176, 205, 225, 232-235, 238, 259, 261
+nemo_skills/training/average_checkpoints.py                          91     91     0%   15-184
+nemo_skills/training/code_generation_accuracy.py                     25     25     0%   15-48
+nemo_skills/training/data_preparation_utils/arithmetic_utils.py     108    108     0%   15-170
+nemo_skills/training/data_preparation_utils/filters.py              241    241     0%   15-374
+nemo_skills/training/data_preparation_utils/preprocessing.py        202    202     0%   15-316
+nemo_skills/training/prepare_sft_data.py                              9      9     0%   15-28
+nemo_skills/training/start_dpo.py                                    50     50     0%   15-162
+nemo_skills/training/start_sft.py                                   110    110     0%   16-244
+nemo_skills/utils.py                                                137    102    26%   37-38, 63-65, 69-79, 86-93, 98-119, 123-182, 186-188, 192-211, 219-232
+-----------------------------------------------------------------------------------------------
+TOTAL                                                              6352   6181     3%
+
+19 files skipped due to complete coverage.
+
+============================= slowest 30 durations =============================
+0.01s call     tests/test_prompts.py::test_generic_math_problem_augmentation_prompt
+0.00s call     tests/test_prompts.py::test_generic_lean4_fewshot_prompt
+0.00s call     tests/test_prompts.py::test_generic_lean4_prompt
+0.00s call     tests/test_prompts.py::test_generic_math_prompt_code_examples
+0.00s call     tests/test_prompts.py::test_generic_math_prompt
+0.00s call     tests/test_prompts.py::test_generic_gsm8k_problem_augmentation_prompt
+0.00s call     tests/test_prompts.py::test_llama3_instruct_math_prompt
+0.00s call     tests/test_prompts.py::test_generic_multichoice_prompt
+0.00s call     tests/test_prompts.py::test_judge_math
+0.00s call     tests/test_prompts.py::test_judge_arena
+0.00s call     tests/test_prompts.py::test_judge_check_contamination
+0.00s call     tests/test_prompts.py::test_generic_codegen_prompt
+0.00s call     tests/test_prompts.py::test_generic_default_prompt
+0.00s setup    tests/test_prompts.py::test_generic_math_problem_augmentation_prompt
+0.00s teardown tests/test_prompts.py::test_generic_math_problem_augmentation_prompt
+0.00s setup    tests/test_prompts.py::test_generic_gsm8k_problem_augmentation_prompt
+0.00s setup    tests/test_prompts.py::test_generic_lean4_fewshot_prompt
+0.00s setup    tests/test_prompts.py::test_generic_default_prompt
+0.00s teardown tests/test_prompts.py::test_generic_gsm8k_problem_augmentation_prompt
+0.00s teardown tests/test_prompts.py::test_llama3_instruct_math_prompt
+0.00s teardown tests/test_prompts.py::test_generic_lean4_prompt
+0.00s teardown tests/test_prompts.py::test_generic_math_prompt_code_examples
+0.00s teardown tests/test_prompts.py::test_generic_multichoice_prompt
+0.00s teardown tests/test_prompts.py::test_judge_arena
+0.00s teardown tests/test_prompts.py::test_generic_codegen_prompt
+0.00s teardown tests/test_prompts.py::test_generic_math_prompt
+0.00s setup    tests/test_prompts.py::test_judge_math
+0.00s setup    tests/test_prompts.py::test_generic_codegen_prompt
+0.00s setup    tests/test_prompts.py::test_generic_multichoice_prompt
+0.00s setup    tests/test_prompts.py::test_llama3_instruct_math_prompt
+============================== 13 passed in 0.55s ==============================

@@ -9,7 +9,7 @@
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
+# See the License for the specific answer_format governing permissions and
 # limitations under the License.
 
 import abc
@@ -56,7 +56,7 @@ def cleanup_tmp_files(input_files):
             pass
 
 
-def dump_data(input_files, data, map_to_future, update_fn, language="python"):
+def dump_data(input_files, data, map_to_future, update_fn, answer_format="natural_language"):
     LOG.info("Waiting for current results and dumping to tmp files")
     tmp_file_handles = [
         open(manifest + f"-tmp", "at", encoding="utf-8", buffering=1) for manifest in unroll_files(input_files)
@@ -70,7 +70,7 @@ def dump_data(input_files, data, map_to_future, update_fn, language="python"):
             if not line_dict:
                 file_handle.write("\n")
                 continue
-            update_fn(map_to_future, line_dict, language)
+            update_fn(map_to_future, line_dict, answer_format)
             file_handle.write(json.dumps(line_dict) + "\n")
 
     for file_handle in tmp_file_handles:
@@ -161,12 +161,12 @@ class Sandbox(abc.ABC):
     def execute_code(
         self,
         generated_code: str,
-        language: str = 'python',
+        answer_format: str = 'natural_language',
         timeout: float = 10.0,
         max_output_characters: int = 1000,
         session_id: Optional[str] = None,
     ) -> Tuple[Dict, str]:
-        if session_id is None and language == "python":  # creating a new session with empty state
+        if session_id is None and answer_format == "natural_language":  # creating a new session with empty state
             session_id = uuid.uuid4()
             self.sessions[session_id] = []
         generated_code = generated_code.replace('"""', r'\"\"\"')
@@ -176,7 +176,7 @@ class Sandbox(abc.ABC):
         if session_id is not None:
             self.sessions[session_id].append(generated_code)
 
-        if language == 'python':
+        if answer_format == 'natural_language':
             TO_EXECUTE = """
 import traceback
 import json
@@ -215,14 +215,16 @@ except Exception:
     }}
 print(json.dumps(to_return))
 """
-        elif language == 'lean4':
+        elif answer_format == 'lean':
             if session_id is not None:
-                raise RuntimeError(f"Stateful execution for {language} is not supported. session_id is {session_id} but should be None")
+                raise RuntimeError(
+                    f"Stateful execution for {answer_format} is not supported. session_id is {session_id} but should be None"
+                )
             TO_EXECUTE = generated_code
         else:
-            raise ValueError(f"Unsupported language: {language}")
+            raise ValueError(f"Unsupported answer_format: {answer_format}")
 
-        request = self._prepare_request(TO_EXECUTE, timeout, language)
+        request = self._prepare_request(TO_EXECUTE, timeout, answer_format)
         try:
             output = self._send_request(request, timeout)
         except requests.exceptions.Timeout:
@@ -233,7 +235,7 @@ print(json.dumps(to_return))
                 self.sessions[session_id] = self.sessions[session_id][:-1]
         return output, session_id
 
-    def is_output_correct(self, pred_output, gt_output="", include_percentage=True, tolerance=1e-4, timeout=10.0):
+    def is_output_correct(self, pred_output, gt_output, include_percentage=True, tolerance=1e-4, timeout=10.0):
         # embedding the full math grader code here to send to server for execution
         with open(Path(__file__).absolute().parent / "math_grader.py", "rt") as fin:
             math_grader_code = fin.read()
@@ -281,8 +283,9 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         request = self._prepare_request(TO_EXECUTE, timeout)
         try:
             output = self._send_request(request, timeout)
-        except Exception as e:
-            output = {'result': False, 'error_message': e}
+        except requests.exceptions.Timeout:
+            output = {'result': False, 'error_message': 'timeout'}
+        
 
         if output['error_message']:
             # logging the error
@@ -291,16 +294,13 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         return output['result']
 
     def is_proof_correct(self, pred_output, timeout=30.0):
-
         TO_EXECUTE = pred_output
 
-        request = self._prepare_request(TO_EXECUTE, timeout, "lean4")
+        request = self._prepare_request(TO_EXECUTE, timeout, "lean")
         try:
             output = self._send_request(request, timeout)
-        except Exception as e:
-            LOG.warning("Error during correctness check: %s", e)
-            return "failed"
-
+        except requests.exceptions.Timeout:
+            return "timeout"
         return output["process_status"]
 
     def batch_evaluate_results(
@@ -311,7 +311,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         include_percentage=True,
         tolerance=1e-4,
         timeout=10.0,
-        language="python",
+        answer_format="natural_language",
         ignore_cache: bool = False,
         use_predicted_answer_key: bool = False,
         extract_from_boxed: bool = True,
@@ -322,20 +322,20 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         file_handles = [open(manifest, "rt", encoding="utf-8") for manifest in unroll_files(input_files)]
         cleanup_tmp_files(input_files)
 
-        def update_fn(map_to_future, line_dict, language="python"):
-            if language == "python":
+        def update_fn(map_to_future, line_dict, answer_format="natural_language"):
+            if answer_format == "natural_language":
                 line_dict["is_correct"] = map_to_future[
                     (line_dict["predicted_answer"], line_dict["expected_answer"])
                 ].result()
-            elif language == "lean4":
-                line_dict["proof_status"] = map_to_future[(line_dict["predicted_answer"], "")].result()
+            elif answer_format == "lean":
+                line_dict["proof_status"] = map_to_future[(line_dict["predicted_answer"])].result()
 
         data = []
         with ThreadPoolExecutor(max_workers=num_parallel_requests) as executor:
             for line_idx, lines in tqdm.tqdm(enumerate(zip_longest(*file_handles))):
                 if line_idx % in_memory_lines == 0:
                     if line_idx > 0:  # dumping into tmp files
-                        dump_data(input_files, data, map_to_future, update_fn, language)
+                        dump_data(input_files, data, map_to_future, update_fn, answer_format)
                     # new in-memory buffer
                     data = []
                     map_to_future = {}
@@ -348,17 +348,17 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     line_dict = json.loads(file_line)
                     if not line_dict:  # can be empty for incomplete generations
                         continue
-                    if language == "lean4":
-                        line_dict["expected_answer"] = ""
-                    gt_answer = line_dict["expected_answer"]
+                    if answer_format == "natural_language":
+                        gt_answer = line_dict["expected_answer"]
+
                     if not use_predicted_answer_key:
-                        if language == "python":
+                        if answer_format == "natural_language":
                             line_dict["predicted_answer"] = extract_answer(
                                 line_dict["generation"],
                                 extract_from_boxed=extract_from_boxed,
                                 extract_regex=extract_regex,
                             )
-                        elif language == "lean4":
+                        elif answer_format == "lean":
                             line_dict["predicted_answer"] = (
                                 line_dict["header"]
                                 + line_dict["formal_statement"]
@@ -378,15 +378,17 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     data[-1][-1] = json.dumps(line_dict)
 
                     predicted_answer = line_dict["predicted_answer"]
-                    if (predicted_answer, gt_answer) in map_to_future:
+                    if answer_format == "natural_language" and (predicted_answer, gt_answer) in map_to_future:
+                        continue
+                    elif answer_format == "lean" and predicted_answer in map_to_future:
                         continue
 
                     if (
                         ignore_cache
-                        or (line_dict.get("is_correct") is None and language == "pytohn")
-                        or (line_dict.get("proof_status") is None and language == "lean4")
+                        or (line_dict.get("is_correct") is None and answer_format == "natural_language")
+                        or (line_dict.get("proof_status") is None and answer_format == "lean")
                     ):
-                        if language == "python":
+                        if answer_format == "natural_language":
                             map_to_future[(predicted_answer, gt_answer)] = executor.submit(
                                 self.is_output_correct,
                                 predicted_answer,
@@ -395,23 +397,23 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                 tolerance=tolerance,
                                 timeout=timeout,
                             )
-                        elif language == "lean4":
-                            map_to_future[(predicted_answer, gt_answer)] = executor.submit(
+                        elif answer_format == "lean":
+                            map_to_future[predicted_answer] = executor.submit(
                                 self.is_proof_correct,
                                 predicted_answer,
                                 timeout=timeout,
                             )
                     else:
-                        if language == "python":
+                        if answer_format == "natural_language":
                             map_to_future[(predicted_answer, gt_answer)] = DummyFuture(line_dict["is_correct"])
-                        elif language == "lean4":
-                            map_to_future[(predicted_answer, gt_answer)] = DummyFuture(line_dict["proof_status"])
+                        elif answer_format == "lean":
+                            map_to_future[predicted_answer] = DummyFuture(line_dict["proof_status"])
 
             for file_handle in file_handles:
                 file_handle.close()
 
             if len(data) > 0:
-                dump_data(input_files, data, map_to_future, update_fn, language)
+                dump_data(input_files, data, map_to_future, update_fn, answer_format)
 
         write_tmp_files_back(input_files)
 
@@ -425,11 +427,11 @@ class LocalSandbox(Sandbox):
     def _parse_request_output(self, output):
         return output.json()
 
-    def _prepare_request(self, generated_code, timeout, language='python'):
+    def _prepare_request(self, generated_code, timeout, answer_format='natural_language'):
         return {
             "generated_code": generated_code,
             "timeout": timeout,
-            "language": language,
+            "answer_format": answer_format,
         }
 
 
