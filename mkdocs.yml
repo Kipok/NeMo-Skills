@@ -7,6 +7,12 @@ theme:
   features:
     - content.code.copy
     - content.code.annotate
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.indexes
+    - toc.follow
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
@@ -45,8 +51,8 @@ nav:
     - Decontamination: pipelines/decontamination.md
   - Code execution:
     - Sandbox: code-execution/sandbox.md
-  - OpenMathInstruct-2:
-    - Intro: openmathinstruct2/intro.md
-    - Evaluation: openmathinstruct2/evaluation.md
+  - OpenMathInstruct:
+    - openmathinstruct2/index.md
+    - Model evaluation: openmathinstruct2/evaluation.md
     - Dataset construction: openmathinstruct2/dataset.md
     - Model training: openmathinstruct2/training.md
