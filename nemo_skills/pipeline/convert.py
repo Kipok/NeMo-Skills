@@ -29,11 +29,12 @@ LOG = logging.getLogger(__file__)
 def get_nemo_to_hf_cmd(
     input_model, output_model, model_type, hf_model_name, dtype, num_gpus, num_nodes, extra_arguments
 ):
+    script = "nemo_to_hf" if model_type == "llama" else "nemo_to_hf_qwen"
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"export HF_TOKEN={get_token()} && "
         f"cd /nemo_run/code && "
-        f"python -m nemo_skills.conversion.nemo_to_hf "
+        f"python -m nemo_skills.conversion.{script} "
         f"    --in-path {input_model} "
         f"    --out-path {output_model} "
         f"    --hf-model-name {hf_model_name} "
@@ -167,11 +168,6 @@ def convert(
         dtype = dtype.value
     except AttributeError:
         pass
-
-    # TODO: add support for qwen nemo conversion
-    if model_type == "qwen":
-        if convert_from == "nemo":
-            raise ValueError("NeMo conversion for Qwen models from nemo to hf format is not supported yet")
 
     # TODO: add support for conversion from NeMo to trtllm using nemo.export (need to test thoroughly)
     if convert_from == "nemo" and convert_to == "trtllm":
