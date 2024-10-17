@@ -101,9 +101,9 @@ def execute_code_subprocess(generated_code, queue):
 def execute():
     generated_code = request.json['generated_code']
     timeout = request.json['timeout']
-    answer_format = request.json.get('answer_format', 'natural_language')
+    language = request.json.get('language', 'python')
 
-    if answer_format == 'natural_language':
+    if language == 'python':
         return execute_python(generated_code, timeout)
-    elif answer_format == 'lean':
+    elif language == 'lean4':
         return execute_lean4(generated_code, timeout)

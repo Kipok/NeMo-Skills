@@ -13,19 +13,14 @@
 # limitations under the License.
 
 few_shot_examples:
-  prefix: ""
-  template: |-
-    Complete the following Lean 4 code:
-    
-    ```lean4
-    {header}{informal_prefix}{formal_statement}{formal_proof}```
-  suffix: ""
+  prefix: "Here are some examples of Lean4 statements and corresponding proofs you can refer to.\n\n"
+  template: "Lean 4 statement:\n```lean4\n{header}{informal_prefix}{formal_statement}\nExpected response with the proof:\n{formal_proof}```\n\n\n\n\n\n"
+  suffix: "Here is the the statement that you need to complete with the proof. Start with the Lean code right away and DO NOT repeat the given statement.\n\n"
 
 user: |-
-  {examples}
-  Complete the following Lean 4 code:
-  
-  ```lean4
+  Complete the proof of the following Lean 4 statement. Start with the proof code right away and DO NOT repeat the given statement.
+
+  {examples}```lean4
   {header}{informal_prefix}{formal_statement}
 
   
