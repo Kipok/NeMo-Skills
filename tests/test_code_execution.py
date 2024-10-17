@@ -272,6 +272,7 @@ def test_lean4_mathlib_code_execution(sandbox_type):
     assert expected_output in output["stdout"], f"Expected the output to include '{expected_output}'"
     assert output["stderr"] == "", "Expected no error output"
 
+
 @pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
 def test_lean4_code_execution_failure(sandbox_type):
     sandbox = _get_sandbox(sandbox_type)
@@ -284,11 +285,13 @@ def test_lean4_code_execution_failure(sandbox_type):
 
     #eval add 3 4
     """
-    
+
     error_output, session_id = sandbox.execute_code(incorrect_code, answer_format="lean")
 
     # Assertions for the error case
     assert session_id == None
     print(error_output)
     assert error_output["process_status"] == 'failed', "Expected the process to fail due to syntax error"
-    assert "unexpected token '#eval" in error_output["stdout"].lower(), "Expected the error output to mention an unexpected token '#eval"
+    assert (
+        "unexpected token '#eval" in error_output["stdout"].lower()
+    ), "Expected the error output to mention an unexpected token '#eval"
