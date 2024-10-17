@@ -11,13 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from nemo_skills.prompt.few_shot_examples.gsm8k import examples_map as examples_gsm8k
-from nemo_skills.prompt.few_shot_examples.math import examples_map as examples_math
-from nemo_skills.prompt.few_shot_examples.minif2f import examples_map as examples_minif2f
 
-examples_map = examples_gsm8k.copy()
-examples_map.update(examples_math)
-examples_map.update(examples_minif2f)
-assert len(examples_map) == len(examples_gsm8k) + len(examples_math) + len(
-    examples_minif2f
-), "Duplicate keys in examples!"
+few_shot_examples:
+  prefix: ""
+  template: |-
+    Complete the following Lean 4 code:
+    
+    ```lean4
+    {header}{informal_prefix}{formal_statement}{formal_proof}```
+  suffix: ""
+
+user: |-
+  {examples}
+  Complete the following Lean 4 code:
+  
+  ```lean4
+  {header}{informal_prefix}{formal_statement}
+
+  
