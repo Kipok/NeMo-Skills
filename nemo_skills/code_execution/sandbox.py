@@ -9,7 +9,7 @@
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific answer_format governing permissions and
+# See the License for the specific language governing permissions and
 # limitations under the License.
 
 import abc
@@ -161,12 +161,12 @@ class Sandbox(abc.ABC):
     def execute_code(
         self,
         generated_code: str,
-        answer_format: str = 'natural_language',
+        language: str = 'python',
         timeout: float = 10.0,
         max_output_characters: int = 1000,
         session_id: Optional[str] = None,
     ) -> Tuple[Dict, str]:
-        if session_id is None and answer_format == "natural_language":  # creating a new session with empty state
+        if session_id is None and language == "python":  # creating a new session with empty state
             session_id = uuid.uuid4()
             self.sessions[session_id] = []
         generated_code = generated_code.replace('"""', r'\"\"\"')
@@ -176,7 +176,7 @@ class Sandbox(abc.ABC):
         if session_id is not None:
             self.sessions[session_id].append(generated_code)
 
-        if answer_format == 'natural_language':
+        if language == 'python':
             TO_EXECUTE = """
 import traceback
 import json
@@ -215,16 +215,16 @@ except Exception:
     }}
 print(json.dumps(to_return))
 """
-        elif answer_format == 'lean':
+        elif language == 'lean4':
             if session_id is not None:
                 raise RuntimeError(
-                    f"Stateful execution for {answer_format} is not supported. session_id is {session_id} but should be None"
+                    f"Stateful execution for {language} is not supported. session_id is {session_id} but should be None"
                 )
             TO_EXECUTE = generated_code
         else:
-            raise ValueError(f"Unsupported answer_format: {answer_format}")
+            raise ValueError(f"Unsupported language: {language}")
 
-        request = self._prepare_request(TO_EXECUTE, timeout, answer_format)
+        request = self._prepare_request(TO_EXECUTE, timeout, language)
         try:
             output = self._send_request(request, timeout)
         except requests.exceptions.Timeout:
@@ -285,7 +285,6 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
             output = self._send_request(request, timeout)
         except requests.exceptions.Timeout:
             output = {'result': False, 'error_message': 'timeout'}
-        
 
         if output['error_message']:
             # logging the error
@@ -296,7 +295,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
     def is_proof_correct(self, pred_output, timeout=30.0):
         TO_EXECUTE = pred_output
 
-        request = self._prepare_request(TO_EXECUTE, timeout, "lean")
+        request = self._prepare_request(TO_EXECUTE, timeout, "lean4")
         try:
             output = self._send_request(request, timeout)
         except requests.exceptions.Timeout:
@@ -427,11 +426,11 @@ class LocalSandbox(Sandbox):
     def _parse_request_output(self, output):
         return output.json()
 
-    def _prepare_request(self, generated_code, timeout, answer_format='natural_language'):
+    def _prepare_request(self, generated_code, timeout, language='python'):
         return {
             "generated_code": generated_code,
             "timeout": timeout,
-            "answer_format": answer_format,
+            "language": language,
         }
 
 

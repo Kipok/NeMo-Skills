@@ -13,16 +13,15 @@
 # limitations under the License.
 
 few_shot_examples:
-  prefix: ""
+  prefix: "Here are some examples of problems and proofs you can refer to.\n\n"
   template: |-
-    Complete the following Lean 4 code:
-    
     ```lean4
     {header}{informal_prefix}{formal_statement}{formal_proof}```\n\n\n\n\n\n
-  suffix: ""
+  suffix: "Here is the problem you need to proof:\n"
 
 user: |-
-  {examples}Complete the following Lean 4 code:
+  Complete the following Lean 4 code:
+  {examples}
   
   ```lean4
   {header}{informal_prefix}{formal_statement}

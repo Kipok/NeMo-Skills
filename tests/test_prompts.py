@@ -679,11 +679,11 @@ Respond with only "True" (problems are the same) or "False" (problems are differ
         == expected_prompt
     )
 
+
 def test_generic_lean4_prompt():
     prompt = get_prompt('generic/lean4', 'deepseek-prover')
 
-    expected_prompt = """<｜begin▁of▁sentence｜>
-Complete the following Lean 4 code:
+    expected_prompt = """<｜begin▁of▁sentence｜>Complete the following Lean 4 code:
 
 ```lean4
 import Mathlib
@@ -728,7 +728,7 @@ theorem mathd_algebra_182 (y : ℂ) : 7 * (3 * y + 2) = 21 * y + 14 := by
   &= 21y+14.
   \end{align*}
   -/
-  ring```Complete the following Lean 4 code:
+  ring```\\n\\n\\n\\n\\n\\nComplete the following Lean 4 code:
 
 ```lean4
 import Mathlib
@@ -751,7 +751,7 @@ theorem mathd_algebra_116 (k x : ℝ) (h₀ : x = (13 - Real.sqrt 131) / 4)
   rw [sub_mul, sub_mul]
   rw [Real.mul_self_sqrt _]
   ring
-  linarith```Complete the following Lean 4 code:
+  linarith```\\n\\n\\n\\n\\n\\nComplete the following Lean 4 code:
 
 ```lean4
 import Mathlib
@@ -763,7 +763,7 @@ open scoped BigOperators Topology
 theorem mathd_numbertheory_169 : Nat.gcd 20! 200000 = 40000 := by
   /- The prime factorization of $200,000$ is $2^6 \cdot 5^5$. Then count the number of factors of $2$ and $5$ in $20!$. Since there are $10$ even numbers, there are more than $6$ factors of $2$. There are $4$ factors of $5$. So the greatest common factor is $2^6 \cdot 5^4=40,\!000$.
   -/
-  apply Eq.refl```Complete the following Lean 4 code:
+  apply Eq.refl```\\n\\n\\n\\n\\n\\nComplete the following Lean 4 code:
 
 ```lean4
 import Mathlib
@@ -776,7 +776,7 @@ theorem mathd_numbertheory_149 :
   (∑ k in Finset.filter (fun x => x % 8 = 5 ∧ x % 6 = 3) (Finset.range 50), k) = 66 := by
   /- We are given that $N\equiv 5\pmod{8}$ and $N\equiv 3\pmod{6}$.  We begin checking numbers which are 5 more than a multiple of 8, and we find that 5 and 13 are not 3 more than a multiple of 6, but 21 is 3 more than a multiple of 6. Thus 21 is one possible value of $N$. By the Chinese Remainder Theorem, the integers $x$ satisfying $x\equiv 5\pmod{8}$ and $x\equiv 3\pmod{6}$ are those of the form $x=21+\\text{lcm}(6,8)k = 21 + 24 k$, where $k$ is an integer. Thus the 2 solutions less than $50$ are 21 and $21+24(1) = 45$, and their sum is $21+45=66$.
   -/
-  apply Eq.refl```Complete the following Lean 4 code:
+  apply Eq.refl```\\n\\n\\n\\n\\n\\nComplete the following Lean 4 code:
 
 ```lean4
 import Mathlib
@@ -794,8 +794,7 @@ theorem mathd_algebra_462 : ((1 : ℚ) / 2 + 1 / 3) * (1 / 2 - 1 / 3) = 5 / 36 :
   \end{align*}
   -/
   simp_all only [one_div]
-  norm_num```
-Complete the following Lean 4 code:
+  norm_num```\\n\\n\\n\\n\\n\\nComplete the following Lean 4 code:
 
 ```lean4
 import Mathlib
@@ -809,7 +808,6 @@ open BigOperators Real Nat Topology Rat
 theorem mathd_algebra_478 (b h v : ℝ) (h₀ : 0 < b ∧ 0 < h ∧ 0 < v) (h₁ : v = 1 / 3 * (b * h))
     (h₂ : b = 30) (h₃ : h = 13 / 2) : v = 65 := by
 """
-
 
     assert (
         prompt.fill(
