@@ -13,13 +13,16 @@
 # limitations under the License.
 # largely copied from https://github.com/NVIDIA/NeMo/blob/main/scripts/nlp_language_modeling/convert_nemo_qwen2_nemo_to_hf.py
 
+import os
 from argparse import ArgumentParser
 from collections import OrderedDict
+from pathlib import Path
 
 import torch
 from nemo.collections.nlp.models.language_modeling.megatron_gpt_model import MegatronGPTModel
 from nemo.collections.nlp.parts.nlp_overrides import NLPDDPStrategy
 from nemo.utils import logging
+from omegaconf import OmegaConf
 from pytorch_lightning import Trainer
 from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
@@ -65,8 +68,10 @@ def convert(
     """
     Convert NeMo weights to HF weights
     """
+    input_nemo_path = os.path.abspath(input_nemo_path)
+    output_hf_path = os.path.abspath(output_hf_path)
     dummy_trainer = Trainer(devices=1, accelerator='cpu', strategy=NLPDDPStrategy())
-    model_config = MegatronGPTModel.restore_from(input_nemo_path, trainer=dummy_trainer, return_config=True)
+    model_config = OmegaConf.load(str(Path(input_nemo_path) / "model_config.yaml"))
     model_config.tensor_model_parallel_size = 1
     model_config.pipeline_model_parallel_size = 1
     if cpu_only:
@@ -75,11 +80,6 @@ def convert(
     else:
         map_location = None
 
-    if cpu_only:
-        logging.info("******** Loading model on CPU. This will take a significant amount of time.")
-    model = MegatronGPTModel.restore_from(
-        input_nemo_path, trainer=dummy_trainer, override_config_path=model_config, map_location=map_location
-    )
     if precision is None:
         precision = model.cfg.precision
     if precision in [32, "32"]:
@@ -91,136 +91,143 @@ def convert(
     else:
         logging.warning(f"Precision string {precision} is not recognized, falling back to fp32")
         dtype = torch.float32  # fallback
-    logging.info(f"Using precision {dtype}")
 
-    param_to_weights = lambda param: param.to(dtype)
-    checkpoint = OrderedDict()
+    checkpoint_in_memory = False
+    if tmp_out_path is None or not Path(tmp_out_path).exists():
+        checkpoint_in_memory = True
 
-    hidden_size = model.cfg.hidden_size
-    head_num = model.cfg.num_attention_heads
-    num_layers = model.cfg.num_layers
-    ffn_hidden_size = model.cfg.ffn_hidden_size
-    num_query_groups = model.cfg.get("num_query_groups", head_num)
+        if cpu_only:
+            logging.info("******** Loading model on CPU. This will take a significant amount of time.")
+        model = MegatronGPTModel.restore_from(
+            input_nemo_path, trainer=dummy_trainer, override_config_path=model_config, map_location=map_location
+        )
 
-    head_size = hidden_size // head_num
-    heads_per_group = head_num // num_query_groups
-    qkv_total_dim = head_num + 2 * num_query_groups
+        param_to_weights = lambda param: param.to(dtype)
+        checkpoint = OrderedDict()
 
-    # Embedding
-    embed_weight = model.state_dict()[f'model.embedding.word_embeddings.weight']
-    embed_weights_base_name = f'model.embed_tokens.weight'
-    checkpoint[embed_weights_base_name] = param_to_weights(embed_weight)
+        hidden_size = model.cfg.hidden_size
+        head_num = model.cfg.num_attention_heads
+        num_layers = model.cfg.num_layers
+        ffn_hidden_size = model.cfg.ffn_hidden_size
+        num_query_groups = model.cfg.get("num_query_groups", head_num)
 
-    for l in range(int(num_layers)):
-        print(f"converting layer {l}")
-        # qkv weight
-        qkv_weights = model.state_dict()[f'model.decoder.layers.{l}.self_attention.linear_qkv.weight']
-        qkv_weights = qkv_weights.reshape([qkv_total_dim, head_size, hidden_size])
+        head_size = hidden_size // head_num
+        heads_per_group = head_num // num_query_groups
+        qkv_total_dim = head_num + 2 * num_query_groups
 
-        q_slice = torch.cat(
-            [
-                torch.arange((heads_per_group + 2) * i, (heads_per_group + 2) * i + heads_per_group)
-                for i in range(num_query_groups)
+        # Embedding
+        embed_weight = model.state_dict()[f'model.embedding.word_embeddings.weight']
+        embed_weights_base_name = f'model.embed_tokens.weight'
+        checkpoint[embed_weights_base_name] = param_to_weights(embed_weight)
+
+        for l in range(int(num_layers)):
+            print(f"converting layer {l}")
+            # qkv weight
+            qkv_weights = model.state_dict()[f'model.decoder.layers.{l}.self_attention.linear_qkv.weight']
+            qkv_weights = qkv_weights.reshape([qkv_total_dim, head_size, hidden_size])
+
+            q_slice = torch.cat(
+                [
+                    torch.arange((heads_per_group + 2) * i, (heads_per_group + 2) * i + heads_per_group)
+                    for i in range(num_query_groups)
+                ]
+            )
+            k_slice = torch.arange(heads_per_group, qkv_total_dim, (heads_per_group + 2))
+            v_slice = torch.arange(heads_per_group + 1, qkv_total_dim, (heads_per_group + 2))
+
+            q_weights_base_name = f'model.layers.{l}.self_attn.q_proj.weight'
+            k_weights_base_name = f'model.layers.{l}.self_attn.k_proj.weight'
+            v_weights_base_name = f'model.layers.{l}.self_attn.v_proj.weight'
+
+            checkpoint[q_weights_base_name] = param_to_weights(qkv_weights[q_slice].reshape(-1, hidden_size))
+            checkpoint[k_weights_base_name] = param_to_weights(qkv_weights[k_slice].reshape(-1, hidden_size))
+            checkpoint[v_weights_base_name] = param_to_weights(qkv_weights[v_slice].reshape(-1, hidden_size))
+
+            # qkv bias
+            qkv_bias = model.state_dict()[f'model.decoder.layers.{l}.self_attention.linear_qkv.bias']
+            qkv_bias = qkv_bias.reshape([qkv_total_dim, head_size])
+
+            q_slice = torch.cat(
+                [
+                    torch.arange((heads_per_group + 2) * i, (heads_per_group + 2) * i + heads_per_group)
+                    for i in range(num_query_groups)
+                ]
+            )
+            k_slice = torch.arange(heads_per_group, qkv_total_dim, (heads_per_group + 2))
+            v_slice = torch.arange(heads_per_group + 1, qkv_total_dim, (heads_per_group + 2))
+
+            q_bias_base_name = f'model.layers.{l}.self_attn.q_proj.bias'
+            k_bias_base_name = f'model.layers.{l}.self_attn.k_proj.bias'
+            v_bias_base_name = f'model.layers.{l}.self_attn.v_proj.bias'
+
+            checkpoint[q_bias_base_name] = param_to_weights(
+                qkv_bias[q_slice].reshape(
+                    -1,
+                )
+            )
+            checkpoint[k_bias_base_name] = param_to_weights(
+                qkv_bias[k_slice].reshape(
+                    -1,
+                )
+            )
+            checkpoint[v_bias_base_name] = param_to_weights(
+                qkv_bias[v_slice].reshape(
+                    -1,
+                )
+            )
+
+            # attention dense
+            o_weight = model.state_dict()[f'model.decoder.layers.{l}.self_attention.linear_proj.weight']
+            o_weight_base_name = f'model.layers.{l}.self_attn.o_proj.weight'
+            checkpoint[o_weight_base_name] = param_to_weights(o_weight)
+
+            # mlp
+            mlp_weights = model.state_dict()[f'model.decoder.layers.{l}.mlp.linear_fc1.weight']
+            mlp_down_proj_weight = mlp_weights[:ffn_hidden_size, :]
+            mlp_gate_proj_weight = mlp_weights[ffn_hidden_size:, :]
+
+            mlp_down_proj_base_name = f'model.layers.{l}.mlp.gate_proj.weight'
+            mlp_gate_proj_base_name = f'model.layers.{l}.mlp.up_proj.weight'
+
+            checkpoint[mlp_down_proj_base_name] = param_to_weights(mlp_down_proj_weight)
+            checkpoint[mlp_gate_proj_base_name] = param_to_weights(mlp_gate_proj_weight)
+
+            mlp_up_proj_weight = model.state_dict()[f'model.decoder.layers.{l}.mlp.linear_fc2.weight']
+            mlp_up_proj_base_name = f'model.layers.{l}.mlp.down_proj.weight'
+            checkpoint[mlp_up_proj_base_name] = param_to_weights(mlp_up_proj_weight)
+
+            # layernorm
+            input_ln_weight = model.state_dict()[
+                f'model.decoder.layers.{l}.self_attention.linear_qkv.layer_norm_weight'
             ]
-        )
-        k_slice = torch.arange(heads_per_group, qkv_total_dim, (heads_per_group + 2))
-        v_slice = torch.arange(heads_per_group + 1, qkv_total_dim, (heads_per_group + 2))
+            input_ln_base_name = f'model.layers.{l}.input_layernorm.weight'
+            checkpoint[input_ln_base_name] = param_to_weights(input_ln_weight)
 
-        q_weights_base_name = f'model.layers.{l}.self_attn.q_proj.weight'
-        k_weights_base_name = f'model.layers.{l}.self_attn.k_proj.weight'
-        v_weights_base_name = f'model.layers.{l}.self_attn.v_proj.weight'
+            post_attn_ln_weight = model.state_dict()[f'model.decoder.layers.{l}.mlp.linear_fc1.layer_norm_weight']
+            post_attn_ln_base_name = f'model.layers.{l}.post_attention_layernorm.weight'
+            checkpoint[post_attn_ln_base_name] = param_to_weights(post_attn_ln_weight)
 
-        checkpoint[q_weights_base_name] = param_to_weights(qkv_weights[q_slice].reshape(-1, hidden_size))
-        checkpoint[k_weights_base_name] = param_to_weights(qkv_weights[k_slice].reshape(-1, hidden_size))
-        checkpoint[v_weights_base_name] = param_to_weights(qkv_weights[v_slice].reshape(-1, hidden_size))
+            print(f"done layer {l}")
 
-        # qkv bias
-        qkv_bias = model.state_dict()[f'model.decoder.layers.{l}.self_attention.linear_qkv.bias']
-        qkv_bias = qkv_bias.reshape([qkv_total_dim, head_size])
+        final_ln_weight = model.state_dict()[f'model.decoder.final_layernorm.weight']
+        final_ln_base_name = f'model.norm.weight'
+        checkpoint[final_ln_base_name] = param_to_weights(final_ln_weight)
 
-        q_slice = torch.cat(
-            [
-                torch.arange((heads_per_group + 2) * i, (heads_per_group + 2) * i + heads_per_group)
-                for i in range(num_query_groups)
-            ]
-        )
-        k_slice = torch.arange(heads_per_group, qkv_total_dim, (heads_per_group + 2))
-        v_slice = torch.arange(heads_per_group + 1, qkv_total_dim, (heads_per_group + 2))
+        output_layer_weight = model.state_dict()[f'model.output_layer.weight']
+        output_layer_base_name = f'lm_head.weight'
+        checkpoint[output_layer_base_name] = param_to_weights(output_layer_weight)
 
-        q_bias_base_name = f'model.layers.{l}.self_attn.q_proj.bias'
-        k_bias_base_name = f'model.layers.{l}.self_attn.k_proj.bias'
-        v_bias_base_name = f'model.layers.{l}.self_attn.v_proj.bias'
+        if tmp_out_path is not None:
+            torch.save(checkpoint, tmp_out_path)
 
-        checkpoint[q_bias_base_name] = param_to_weights(
-            qkv_bias[q_slice].reshape(
-                -1,
-            )
-        )
-        checkpoint[k_bias_base_name] = param_to_weights(
-            qkv_bias[k_slice].reshape(
-                -1,
-            )
-        )
-        checkpoint[v_bias_base_name] = param_to_weights(
-            qkv_bias[v_slice].reshape(
-                -1,
-            )
-        )
-
-        # attention dense
-        o_weight = model.state_dict()[f'model.decoder.layers.{l}.self_attention.linear_proj.weight']
-        o_weight_base_name = f'model.layers.{l}.self_attn.o_proj.weight'
-        checkpoint[o_weight_base_name] = param_to_weights(o_weight)
-
-        # mlp
-        mlp_weights = model.state_dict()[f'model.decoder.layers.{l}.mlp.linear_fc1.weight']
-        mlp_down_proj_weight = mlp_weights[:ffn_hidden_size, :]
-        mlp_gate_proj_weight = mlp_weights[ffn_hidden_size:, :]
-
-        mlp_down_proj_base_name = f'model.layers.{l}.mlp.gate_proj.weight'
-        mlp_gate_proj_base_name = f'model.layers.{l}.mlp.up_proj.weight'
-
-        checkpoint[mlp_down_proj_base_name] = param_to_weights(mlp_down_proj_weight)
-        checkpoint[mlp_gate_proj_base_name] = param_to_weights(mlp_gate_proj_weight)
-
-        mlp_up_proj_weight = model.state_dict()[f'model.decoder.layers.{l}.mlp.linear_fc2.weight']
-        mlp_up_proj_base_name = f'model.layers.{l}.mlp.down_proj.weight'
-        checkpoint[mlp_up_proj_base_name] = param_to_weights(mlp_up_proj_weight)
-
-        # layernorm
-        input_ln_weight = model.state_dict()[f'model.decoder.layers.{l}.self_attention.linear_qkv.layer_norm_weight']
-        input_ln_base_name = f'model.layers.{l}.input_layernorm.weight'
-        checkpoint[input_ln_base_name] = param_to_weights(input_ln_weight)
-
-        post_attn_ln_weight = model.state_dict()[f'model.decoder.layers.{l}.mlp.linear_fc1.layer_norm_weight']
-        post_attn_ln_base_name = f'model.layers.{l}.post_attention_layernorm.weight'
-        checkpoint[post_attn_ln_base_name] = param_to_weights(post_attn_ln_weight)
-
-        print(f"done layer {l}")
-
-    final_ln_weight = model.state_dict()[f'model.decoder.final_layernorm.weight']
-    final_ln_base_name = f'model.norm.weight'
-    checkpoint[final_ln_base_name] = param_to_weights(final_ln_weight)
-
-    output_layer_weight = model.state_dict()[f'model.output_layer.weight']
-    output_layer_base_name = f'lm_head.weight'
-    checkpoint[output_layer_base_name] = param_to_weights(output_layer_weight)
-
-    if tmp_out_path is not None:
-        torch.save(checkpoint, tmp_out_path)
-
-    print("here", flush=True)
-    config = AutoConfig.from_pretrained(hf_model_name)
-    print(config, flush=True)
-    model = AutoModelForCausalLM.from_config(
-        config,
-        # torch_dtype=dtype,
-    )
-    print("there", flush=True)
+    if not checkpoint_in_memory:
+        checkpoint = torch.load(tmp_out_path, map_location=map_location)
+    model = AutoModelForCausalLM.from_config(AutoConfig.from_pretrained(hf_model_name))
     model.load_state_dict(checkpoint)
+    model.to(dtype)
     model.save_pretrained(output_hf_path, max_shard_size=max_shard_size)
-    # hf_tokenizer = AutoTokenizer.from_pretrained(hf_model_name)
-    # hf_tokenizer.save_pretrained(output_hf_path)
+    hf_tokenizer = AutoTokenizer.from_pretrained(hf_model_name)
+    hf_tokenizer.save_pretrained(output_hf_path)
     logging.info(f'HF checkpoint saved to: {output_hf_path}')
 
 
