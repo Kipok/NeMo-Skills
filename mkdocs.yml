@@ -4,6 +4,10 @@ extra_css:
   - css/extra.css
 theme:
   name: material
+  logo: favicon.ico
+  favicon: favicon.ico
+  palette:
+    primary: blue grey
   features:
     - content.code.copy
     - content.code.annotate
