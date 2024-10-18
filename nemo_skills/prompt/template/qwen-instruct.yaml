@@ -23,10 +23,10 @@ stop_phrases: ["<|im_end|>"]
 
 # TODO: need to figure the right format for code execution
 # used to execute code within these tags
-code_begin: "```python"
+code_begin: "```python\n"
 code_end: "```\n"
 # used to extract the code output
-code_output_begin: "```output"
+code_output_begin: "```output\n"
 code_output_end: "```\n"
 # used to post-process code output
 # choices: openmathinstruct, llama, qwen

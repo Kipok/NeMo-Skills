@@ -98,7 +98,7 @@ class PromptTemplate:
     # used to extract the code output
     code_output_begin: str = '<llm-code-output>'
     code_output_end: str = '</llm-code-output>'
-    code_output_format: str = 'llama'
+    code_output_format: str = 'qwen'
 
 
 @nested_dataclass(kw_only=True)
@@ -142,7 +142,7 @@ class Prompt:
                 "{code_begin}", self.config.template.code_begin
             )
             example_dict["solution"] = example_dict["solution"].replace(
-                "{code_end}", self.config.template.code_end.strip()
+                "{code_end}", self.config.template.code_end
             )
             example_dict["solution"] = example_dict["solution"].replace("{code_output_begin}", "")
             example_dict["solution"] = example_dict["solution"].replace("{code_output_end}", "")

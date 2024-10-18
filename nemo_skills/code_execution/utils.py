@@ -27,12 +27,13 @@ def format_code_output(
         if execution_dict['stderr']:
             output += f"\n[stderr]\n{execution_dict['stderr']}\n[/stderr]"
         output = f"{code_output_begin}\n\n{output}{code_output_end}\n\n"
-    elif code_output_format == 'openmathinstruct':
-        output = f"\n{execution_dict['stdout']}\n" if execution_dict['stdout'] else f"\n{execution_dict['stderr']}\n"
-        output = f"{code_output_begin}{output}{code_output_end}\n"
     elif code_output_format == 'qwen':
-        output = execution_dict['stdout'] if execution_dict['stdout'] else execution_dict['stderr']
-        output = f"{code_output_begin}\n{output}\n{code_output_end}"
+        output = ""
+        if execution_dict['stdout']:
+            output += f"\n[stdout]\n{execution_dict['stdout']}\n[/stdout]"
+        if execution_dict['stderr']:
+            output += f"\n[stderr]\n{execution_dict['stderr']}\n[/stderr]"
+        output = f"{code_output_begin}{output}\n{code_output_end}"
     else:
         raise ValueError(f"Unknown code_output_format: {code_output_format}")
 
