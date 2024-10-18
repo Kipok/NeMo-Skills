@@ -485,7 +485,6 @@ def add_task(
     task_name,
     cluster_config,
     container,
-    # TODO: these are good defaults for generation jobs, but probably not the best overall?
     num_tasks=1,
     num_gpus=1,
     num_nodes=1,
@@ -493,8 +492,22 @@ def add_task(
     partition=None,
     with_sandbox=False,
     server_config=None,
+    task_dependencies: list[str] = None,
     run_after=None,
 ):
+    """Wrapper for nemo-run exp.add to help setting up executors and dependencies.
+
+    Note that there are two parameters that control dependencies.
+        - task_dependencies: list of tasks that this task depends on **within the same experiment**
+        - run_after: a single **experiment name** that this task should run after. Will schedule
+          dependencies on all tasks inside `run_after` experiment. It needs to already be launched and running.
+
+    Example of how to set task_dependencies:
+
+    with run.Experiment(expname) as exp:
+        task1 = add_task(exp, ...)
+        task2 = add_task(exp, ..., task_dependencies=[task1])
+    """
     if run_after is not None and cluster_config["executor"] == "slurm":
         dependencies = tuple(get_exp_handles(run_after))
     else:
@@ -563,12 +576,18 @@ def add_task(
 
     if len(commands) == 1:
         # to keep sbatch script simpler, we don't wrap in a list in this case
-        exp.add(run.Script(inline=commands[0]), executor=executors[0], name="nemo-run")
+        return exp.add(
+            run.Script(inline=commands[0]),
+            executor=executors[0],
+            name="nemo-run",
+            dependencies=task_dependencies,
+        )
     else:
-        exp.add(
+        return exp.add(
             [run.Script(inline=command) for command in commands],
             executor=executors,
             name="nemo-run",
+            dependencies=task_dependencies,
         )
 
 
