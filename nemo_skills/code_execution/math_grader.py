@@ -84,24 +84,31 @@ This logic is largely copied from the Hendrycks' MATH release (math_equivalence)
 import contextlib
 import re
 import signal
+import sys
 from math import isclose
 from typing import Union
 from rich import print as rprint
 
 from importlib.metadata import version, PackageNotFoundError
 
-# Check antlr version
-PACKAGE_NAME = 'antlr4-python3-runtime'
-REQUIRED_VERSION = '4.11.0'
 
-try:
-    installed_version = version(PACKAGE_NAME)
-    if installed_version != REQUIRED_VERSION:
-        rprint(f"[bold red]Package version mismatch: {installed_version} (required: {REQUIRED_VERSION})[/bold red]")
-except PackageNotFoundError:
-    rprint(f"[bold red]Package {PACKAGE_NAME} not found[/bold red]")
-except Exception as e:
-    rprint(f"[bold red]Error checking version: {e}[/bold red]")
+def _check_antlr_version():
+    "Function for checking the antlr package version."
+    # Check antlr version
+    PACKAGE_NAME = 'antlr4-python3-runtime'
+    REQUIRED_VERSION = '4.11.0'
+
+    try:
+        installed_version = version(PACKAGE_NAME)
+        if installed_version != REQUIRED_VERSION:
+            rprint(f"[bold red]Package version mismatch: {installed_version} (required: {REQUIRED_VERSION})[/bold red]")
+            sys.exit(1)
+    except PackageNotFoundError:
+        rprint(f"[bold red]Package {PACKAGE_NAME} not found[/bold red]")
+        sys.exit(1)
+    except Exception as e:
+        rprint(f"[bold red]Error checking version: {e}[/bold red]")
+        sys.exit(1)
 
 
 def _fix_fracs(string):
@@ -378,6 +385,10 @@ def math_equal(
     1. numerical equal: both can convert to float and are equal
     2. symbolic equal: both can convert to sympy expression and are equal
     """
+
+    # Check that the right antlr version is installed.
+    _check_antlr_version()
+
     from sympy.parsing.sympy_parser import parse_expr
 
     prediction = normalize(prediction)
