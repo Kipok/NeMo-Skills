@@ -117,6 +117,7 @@ def get_server_command(
 
     if server_type == 'nemo' or server_type == "nemo_openai":
         server_start_cmd = (
+            f"export PYTHONPATH=/NeMo/:/opt/megatron-lm/:$PYTHONPATH && "
             f"echo $PYTHONPATH && "
             f"python -m nemo_skills.inference.server.serve_nemo "
             f"    gpt_model_file={model_path} "
