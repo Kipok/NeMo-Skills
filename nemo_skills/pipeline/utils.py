@@ -518,8 +518,6 @@ def add_task(
     if server_config is not None:
         server_cmd, num_server_tasks = get_server_command(**server_config, cluster_config=cluster_config)
         if 'container' not in server_config:
-            import pdb
-            pdb.set_trace()
             server_container = cluster_config["containers"][server_config['server_type']]
         server_executor = get_executor(
             cluster_config=cluster_config,
