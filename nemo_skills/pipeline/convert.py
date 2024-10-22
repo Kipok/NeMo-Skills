@@ -78,7 +78,7 @@ def get_hf_to_trtllm_cmd(
         f"    --dtype {dtype} "
         f"    --tp_size {num_gpus} "
         f"    --pp_size {num_nodes} "
-        f"    {trt_prepare_args} && "
+        f"    {trt_prepare_args} "
     )
 
     trtllm_build_cmd = (
@@ -95,12 +95,10 @@ def get_hf_to_trtllm_cmd(
         f"cp {input_model}/tokenizer* {output_model} "
     )
 
-    if not trt_reuse_tmp_engine:
-        cmd = setup_cmd + (
-            f"if [ ! -d {tmp_engine_dir} ]; then " f"{hf_to_trtllm_cmd} " f"fi && " f"{trtllm_build_cmd}"
-        )
+    if trt_reuse_tmp_engine:
+        cmd = setup_cmd + f"if [ ! -d {tmp_engine_dir} ]; then {hf_to_trtllm_cmd}; fi && {trtllm_build_cmd}"
     else:
-        cmd = setup_cmd + trtllm_build_cmd
+        cmd = setup_cmd + hf_to_trtllm_cmd + " && " + trtllm_build_cmd
 
     return cmd
 
