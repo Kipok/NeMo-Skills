@@ -86,15 +86,22 @@ import re
 import signal
 from math import isclose
 from typing import Union
+from rich import print as rprint
 
-from pkg_resources import DistributionNotFound, VersionConflict, require
+from importlib.metadata import version, PackageNotFoundError
+
+# Check antlr version
+PACKAGE_NAME = 'antlr4-python3-runtime'
+REQUIRED_VERSION = '4.11.0'
 
 try:
-    require('antlr4-python3-runtime==4.11.0')
-except VersionConflict as e:
-    print(f"Wrong version is installed: {e.dist} (required: {e.req})")
-except DistributionNotFound as e:
-    print(f"Package not installed: {e}")
+    installed_version = version(PACKAGE_NAME)
+    if installed_version != REQUIRED_VERSION:
+        rprint(f"[bold red]Package version mismatch: {installed_version} (required: {REQUIRED_VERSION})[/bold red]")
+except PackageNotFoundError:
+    rprint(f"[bold red]Package {PACKAGE_NAME} not found[/bold red]")
+except Exception as e:
+    rprint(f"[bold red]Error checking version: {e}[/bold red]")
 
 
 def _fix_fracs(string):
