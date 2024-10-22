@@ -115,7 +115,7 @@ def get_server_command(
     elif server_type == "vllm" and model_path.startswith("/"):
         check_if_mounted(cluster_config, model_path)
 
-    if server_type == 'nemo':
+    if server_type == 'nemo' or server_type == "nemo_openai":
         server_start_cmd = (
             f"python -m nemo_skills.inference.server.serve_nemo "
             f"    gpt_model_file={model_path} "

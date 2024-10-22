@@ -568,6 +568,7 @@ class VLLMModel(BaseModel):
 models = {
     'trtllm': TRTLLMModel,
     'nemo': NemoModel,
+    'nemo_openai': OpenAIModel,
     'openai': OpenAIModel,
     'vllm': VLLMModel,
 }
