@@ -84,12 +84,11 @@ This logic is largely copied from the Hendrycks' MATH release (math_equivalence)
 import contextlib
 import re
 import signal
-import sys
+from importlib.metadata import PackageNotFoundError, version
 from math import isclose
 from typing import Union
-from rich import print as rprint
 
-from importlib.metadata import version, PackageNotFoundError
+from rich import print as rprint
 
 
 def _check_antlr_version():
