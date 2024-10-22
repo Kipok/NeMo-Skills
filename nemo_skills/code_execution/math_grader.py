@@ -100,7 +100,9 @@ def _check_antlr_version():
     try:
         installed_version = version(PACKAGE_NAME)
         if installed_version != REQUIRED_VERSION:
-            rprint(f"[bold red]Package version mismatch: {installed_version} (required: {REQUIRED_VERSION})[/bold red]")
+            rprint(
+                f"[bold red]Package version mismatch: {installed_version} (required: {REQUIRED_VERSION})[/bold red]"
+            )
             sys.exit(1)
     except PackageNotFoundError:
         rprint(f"[bold red]Package {PACKAGE_NAME} not found[/bold red]")
