@@ -87,6 +87,15 @@ import signal
 from math import isclose
 from typing import Union
 
+from pkg_resources import VersionConflict, DistributionNotFound, require
+
+try:
+    require('antlr4-python3-runtime==4.11.0')
+except VersionConflict as e:
+    print(f"Wrong version is installed: {e.dist} (required: {e.req})")
+except DistributionNotFound as e:
+    print(f"Package not installed: {e}")
+
 
 def _fix_fracs(string):
     # replacing all extra spaces
