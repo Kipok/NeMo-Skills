@@ -87,7 +87,7 @@ import signal
 from math import isclose
 from typing import Union
 
-from pkg_resources import VersionConflict, DistributionNotFound, require
+from pkg_resources import DistributionNotFound, VersionConflict, require
 
 try:
     require('antlr4-python3-runtime==4.11.0')
