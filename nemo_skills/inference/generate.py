@@ -74,6 +74,14 @@ class GenerateSolutionsConfig:
     offset: int = 0
 
     generation_key: str = "generation"
+    # if specified, we will have a loop over that key in the data file and
+    # treat each element as a new turn of conversation
+    # E.g. if multi_turn_key="turns" and a line in your data file has
+    # turns: ['Hey how are you?', 'And where do you live?']
+    # the generations will also be a list with the first entry corresponding to prompt
+    # with the first question, second entry to both first question, first answer and second question
+    # and so on
+    multi_turn_key: str | None = None
 
     # can add this flag to just print the first prompt instead of running generation
     # useful to double check that your data can be loaded and prompt has what you expect
