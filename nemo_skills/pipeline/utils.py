@@ -93,7 +93,7 @@ def get_generation_command(server_address, generation_commands):
         # might be required if we are not hosting server ourselves
         f"export NVIDIA_API_KEY={os.getenv('NVIDIA_API_KEY', '')} && "
         f"export OPENAI_API_KEY='dummy_key' && "
-        f"export NEMO_SKILLS_OPENAI_BASE_URL={server_address} && " 
+        f"export NEMO_SKILLS_OPENAI_BASE_URL={server_address} && "
         # this will try to handshake in a loop and unblock when the server responds
         f"echo 'Waiting for the server to start' && "
         f"while [ $(curl -X PUT {server_address} >/dev/null 2>&1; echo $?) -ne 0 ]; do sleep 3; done && "
