@@ -19,7 +19,7 @@ user_end: "<|eot_id|>"
 assistant_begin: "<|start_header_id|>assistant<|end_header_id|>\n\n"
 assistant_end: "<|eot_id|>"
 
-stop_phrases: ["<|eot_id|>"]
+stop_phrases: []
 
 # used to execute code within these tags
 code_begin: "```python\n"
