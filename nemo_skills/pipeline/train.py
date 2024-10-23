@@ -202,6 +202,9 @@ def train(
     if validation_data:
         check_if_mounted(cluster_config, validation_data)
 
+    if " " in str(average_steps):
+        raise ValueError("average steps should be separated with commas")
+
     train_cmd = get_training_cmd(
         cluster_config=cluster_config,
         partition=partition,
