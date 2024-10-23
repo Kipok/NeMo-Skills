@@ -240,7 +240,7 @@ class OpenAIModel(BaseModel):
         from openai import OpenAI
 
         if model is None:
-            model = "nemo_model" #os.getenv("NEMO_SKILLS_OPENAI_MODEL")
+            model = "nemo_model"  # os.getenv("NEMO_SKILLS_OPENAI_MODEL")
             if model is None:
                 raise ValueError("model argument is required for OpenAI model.")
 
