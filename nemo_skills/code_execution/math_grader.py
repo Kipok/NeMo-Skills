@@ -88,8 +88,6 @@ from importlib.metadata import PackageNotFoundError, version
 from math import isclose
 from typing import Union
 
-from rich import print as rprint
-
 
 def _check_antlr_version():
     "Function for checking the antlr package version."
@@ -100,14 +98,9 @@ def _check_antlr_version():
     try:
         installed_version = version(PACKAGE_NAME)
         if installed_version != REQUIRED_VERSION:
-            rprint(f"[bold red]Package version mismatch: {installed_version} (required: {REQUIRED_VERSION})[/bold red]")
-            sys.exit(1)
+            raise Exception(f"Package version mismatch: {installed_version} (required: {REQUIRED_VERSION})")
     except PackageNotFoundError:
-        rprint(f"[bold red]Package {PACKAGE_NAME} not found[/bold red]")
-        sys.exit(1)
-    except Exception as e:
-        rprint(f"[bold red]Error checking version: {e}[/bold red]")
-        sys.exit(1)
+        raise Exception(f"Package {PACKAGE_NAME} not found. Please install antlr4-python3-runtime==4.11.0.")
 
 
 def _fix_fracs(string):
