@@ -133,6 +133,21 @@ def get_server_command(
         # somehow on slurm nemo needs multiple tasks, but locally only 1
         if cluster_config["executor"] == "local":
             num_tasks = 1
+    elif server_type == 'mamba' or server_type == "mamba_openai":
+        server_start_cmd = (
+            f"export PYTHONPATH=/NeMo/:/opt/megatron-lm/:$PYTHONPATH && "
+            f"echo $PYTHONPATH && "
+            f"python -m nemo_skills.inference.server.serve_mamba "
+            f"    mamba_model_file={model_path} "
+            f"    trainer.devices={num_gpus} "
+            f"    trainer.num_nodes={num_nodes} "
+            f"    tensor_model_parallel_size={num_gpus} "
+            f"    pipeline_model_parallel_size={num_nodes} "
+            f"    {server_args} "
+        )
+        # somehow on slurm nemo needs multiple tasks, but locally only 1
+        if cluster_config["executor"] == "local":
+            num_tasks = 1
     elif server_type == 'vllm':
         if num_nodes > 1:
             raise ValueError("VLLM server does not support multi-node execution")

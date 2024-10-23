@@ -569,6 +569,8 @@ models = {
     'trtllm': TRTLLMModel,
     'nemo': NemoModel,
     'nemo_openai': OpenAIModel,
+    'mamba': NemoModel,
+    'mamba_openai': OpenAIModel,
     'openai': OpenAIModel,
     'vllm': VLLMModel,
 }
