@@ -160,7 +160,9 @@ def train(
     disable_wandb: bool = typer.Option(False, help="Disable wandb logging"),
     with_sandbox: bool = typer.Option(False, help="If sandbox is required for code generation"),
     partition: str = typer.Option(None, help="Specify partition for jobs"),
-    average_steps: list[int] = typer.Option(None, help="List of checkpoint steps to average"),
+    average_steps: str = typer.Option(
+        None, help="List of commas separated checkpoint steps to average. E.g 1000,5000"
+    ),
     run_after: str = typer.Option(None, help="Experiment to run after"),
     config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
     log_dir: str = typer.Option(None, help="Can specify a custom location for slurm logs. "),
@@ -200,6 +202,9 @@ def train(
     if validation_data:
         check_if_mounted(cluster_config, validation_data)
 
+    if " " in str(average_steps):
+        raise ValueError("average steps should be separated with commas")
+
     train_cmd = get_training_cmd(
         cluster_config=cluster_config,
         partition=partition,
@@ -219,8 +224,9 @@ def train(
     )
 
     with run.Experiment(expname) as exp:
+        prev_task = None
         for job_id in range(num_training_jobs):
-            add_task(
+            prev_task = add_task(
                 exp,
                 cmd=train_cmd,
                 task_name=f'{training_algo}-{job_id}',
@@ -233,13 +239,14 @@ def train(
                 partition=partition,
                 with_sandbox=with_sandbox,
                 run_after=run_after,
+                task_dependencies=[prev_task] if prev_task is not None else None,
             )
 
         cmd = get_avg_checkpoints_cmd(
             nemo_model=nemo_model,
             output_dir=output_dir,
             final_nemo_path=final_nemo_path,
-            average_steps=f"--steps {' '.join(map(str, average_steps))} " if average_steps else "",
+            average_steps=f"--steps {' '.join(average_steps.split(','))} " if average_steps else "",
         )
 
         add_task(
@@ -254,9 +261,10 @@ def train(
             num_tasks=1,
             num_gpus=num_gpus,
             run_after=run_after,
+            task_dependencies=[prev_task] if prev_task is not None else None,
         )
 
-        run_exp(exp, cluster_config, sequential=True)
+        run_exp(exp, cluster_config)
 
 
 if __name__ == "__main__":
