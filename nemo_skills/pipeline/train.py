@@ -256,7 +256,7 @@ def train(
             num_tasks=1,
             num_gpus=num_gpus,
             run_after=run_after,
-            task_dependencies=[prev_job_id]
+            task_dependencies=[prev_job_id],
         )
 
         run_exp(exp, cluster_config)
