@@ -32,4 +32,5 @@ docker run --rm \
 export NEMO_SKILLS_TEST_HF_MODEL=/tmp/nemo-skills-tests/tiny-llama-hf
 pytest tests/gpu-tests/test_convert.py -k test_hf_nemo_conversion -s -x
 # training tests
+export NEMO_SKILLS_TEST_NEMO_MODEL=/tmp/nemo-skills-tests/conversion/hf-to-nemo/model
 pytest tests/gpu-tests/test_train.py -s -x
