@@ -580,14 +580,14 @@ def add_task(
             run.Script(inline=commands[0]),
             executor=executors[0],
             name="nemo-run",
-            dependencies=task_dependencies,
+            # dependencies=task_dependencies,
         )
     else:
         return exp.add(
             [run.Script(inline=command) for command in commands],
             executor=executors,
             name="nemo-run",
-            dependencies=task_dependencies,
+            # dependencies=task_dependencies,
         )
 
 
