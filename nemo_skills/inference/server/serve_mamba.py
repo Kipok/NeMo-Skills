@@ -112,8 +112,8 @@ def main(cfg) -> None:
         pretrained_cfg.activations_checkpoint_granularity = None
         pretrained_cfg.activations_checkpoint_method = None
         pretrained_cfg.precision = trainer.precision
-        pretrained_cfg["use_flash_attention"] = cfg.inference.get("use_flash_attention", False)
-        pretrained_cfg["apply_rope_fusion"] = False
+        pretrained_cfg["use_flash_attention"] = cfg.get("use_flash_attention", False)
+        pretrained_cfg["apply_rope_fusion"] = cfg.get("apply_rope_fusion", False)
         if pretrained_cfg.get('mcore_gpt', False):
             # with dist checkpointing we can use the model parallel config specified by the user
             pretrained_cfg.tensor_model_parallel_size = cfg.tensor_model_parallel_size
@@ -124,7 +124,6 @@ def main(cfg) -> None:
             pretrained_cfg.megatron_amp_O2 = False
         elif trainer.precision in ['bf16', 'bf16-mixed'] and cfg.get('megatron_amp_O2', False):
             pretrained_cfg.megatron_amp_O2 = True
-
     model = MegatronMambaModel.restore_from(
         restore_path=cfg.mamba_model_file,
         trainer=trainer,
@@ -132,7 +131,6 @@ def main(cfg) -> None:
         save_restore_connector=save_restore_connector,
         map_location=f'cuda:{trainer.local_rank}',  # map_location is needed for converted models
     )
-
     model.freeze()
 
     # Have to turn off activations_checkpoint_method for inference

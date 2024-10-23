@@ -28,6 +28,7 @@ mamba_model_file: null  # GPT nemo file path
 server: True  # whether launch the API server
 port: 5000 # the port number for the inference server
 use_flash_attention: True
+apply_rope_fusion: True
 
 sandbox:
   sandbox_type: local
