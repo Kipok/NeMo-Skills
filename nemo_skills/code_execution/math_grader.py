@@ -98,7 +98,7 @@ def _check_antlr_version():
     try:
         installed_version = version(PACKAGE_NAME)
         if installed_version != REQUIRED_VERSION:
-            raise Exception(f"Package version mismatch: {installed_version} (required: {REQUIRED_VERSION})")
+            raise RuntimeError(f"Package {PACKAGE_NAME} version mismatch: {installed_version} (required: {REQUIRED_VERSION})")
     except PackageNotFoundError:
         raise Exception(f"Package {PACKAGE_NAME} not found. Please install antlr4-python3-runtime==4.11.0.")
 
