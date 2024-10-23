@@ -67,8 +67,6 @@ def summarize_results(
     elif cluster is not None:
         tunnel = get_tunnel(cluster_config)
         temp_dir = tempfile.mkdtemp()
-
-        print("Hello")
         print(f"Copying results from {results_dir} on cluster {cluster} to {temp_dir}")
         os.makedirs(temp_dir, exist_ok=True)
         cluster_download(tunnel, get_unmounted_path(cluster_config, results_dir), temp_dir, remote_tar_dir=get_unmounted_path(cluster_config, remote_tar_dir))

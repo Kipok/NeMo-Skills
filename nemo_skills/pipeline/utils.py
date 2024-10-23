@@ -243,7 +243,7 @@ def get_tunnel(cluster_config):
     return run.SSHTunnel(**cluster_config["ssh_tunnel"])
 
 
-def cluster_download(tunnel, remote_dir, local_dir, remote_tar_dir="/lustre/fsw/portfolios/llmservice/users/stoshniwal/projects/llm_reasoning"):
+def cluster_download(tunnel, remote_dir, local_dir, remote_tar_dir=None):
     remote_dir = remote_dir.rstrip('/')
     remote_dir_parent, remote_dir_name = os.path.split(remote_dir)
     
