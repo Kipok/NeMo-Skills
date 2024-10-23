@@ -243,14 +243,21 @@ def get_tunnel(cluster_config):
     return run.SSHTunnel(**cluster_config["ssh_tunnel"])
 
 
-def cluster_download(tunnel, remote_dir, local_dir):
+def cluster_download(tunnel, remote_dir, local_dir, remote_tar_dir="/lustre/fsw/portfolios/llmservice/users/stoshniwal/projects/llm_reasoning"):
     remote_dir = remote_dir.rstrip('/')
-    remote_tar = f"{remote_dir}.tar.gz"
-    local_tar = os.path.join(local_dir, os.path.basename(remote_tar))
+    remote_dir_parent, remote_dir_name = os.path.split(remote_dir)
+    
+    # Directory where the remote tarball is written
+    remote_tar_dir = remote_tar_dir if remote_tar_dir else remote_dir_parent
+    # Path of the remote tar file 
+    remote_tar_filename = f"{remote_dir_name}.tar.gz"
+    
+    # Remote and local tar files
+    remote_tar = f"{os.path.join(remote_tar_dir, remote_tar_filename)}"
+    local_tar = os.path.join(local_dir, remote_tar_filename)
 
-    # Create tarball of the remote directory
     tunnel.run(
-        f"cd {os.path.dirname(remote_dir)} && tar -czf {remote_tar} {os.path.basename(remote_dir)}",
+        f"cd {remote_dir_parent} && tar -czf {remote_tar} {remote_dir_name}",
         hide=True,
     )
 
