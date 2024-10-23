@@ -61,8 +61,10 @@ class SupportedServers(str, Enum):
     trtllm = "trtllm"
     vllm = "vllm"
     nemo = "nemo"
+    mamba = "mamba"
     openai = "openai"
     nemo_openai = "nemo_openai"
+    mamba_openai = "mamba_openai"
 
 
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
