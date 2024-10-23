@@ -62,7 +62,7 @@ RUN pip install --upgrade-strategy only-if-needed nvidia-pytriton==$PYTRITON_VER
 RUN pip install -U --no-deps protobuf==$PROTOBUF_VERSION
 RUN pip install --upgrade-strategy only-if-needed jsonlines
 
-# NeMo
+# NeMo (with cherry-picked https://github.com/NVIDIA/NeMo/pull/10785)
 RUN git clone https://github.com/NVIDIA/NeMo.git && \
     cd NeMo && \
     git pull && \
@@ -70,6 +70,7 @@ RUN git clone https://github.com/NVIDIA/NeMo.git && \
         git fetch origin $NEMO_TAG && \
         git checkout FETCH_HEAD; \
     fi && \
+    git cherry-pick 8949924d7e28dacfa5a573ee1e92c64cf8beb7c9 && \
     pip uninstall -y nemo_toolkit sacrebleu && \
     pip install -e ".[nlp]" && \
     cd nemo/collections/nlp/data/language_modeling/megatron && make
