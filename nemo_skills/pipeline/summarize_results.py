@@ -77,8 +77,7 @@ def summarize_results(
     for a in ctx.args:
         if a.startswith("++max_samples="):
             max_samples = int(a.split('=')[1].strip())
-   
-    
+
     # running compute_metrics.py to get greedy, majority and pass @k results for all benchmarks available
     # Check if there is an eval-results dir inside the results_dir
     eval_results_dir = Path(results_dir) / 'eval-results'
