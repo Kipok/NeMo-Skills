@@ -57,8 +57,8 @@ def postprocess_code_fim(generation_dict: dict, truncation_type: str):
     if truncation_type == "single-line":
         completion = truncate_num_lines(completion, 1) + "\n"
     elif truncation_type == "multi-line":
-        max_num_lines = len(
-            generation_dict['canonical_solution'].strip().split("\n"))
+        max_num_lines = len(stripped_line_split(
+            generation_dict['canonical_solution']))
         completion = truncate_num_lines(
             completion, max_num_lines) + "\n"
     elif truncation_type == "random-span":
@@ -66,7 +66,22 @@ def postprocess_code_fim(generation_dict: dict, truncation_type: str):
         # print(completion)
         # print("**"*20)
         # print(suffix)
-        completion = truncate_overlapped_characters(completion, suffix)
+        completion = truncate_overlapped_characters(
+            completion, suffix)
+        # if truncated_completion == completion:
+        #     max_num_lines = len(stripped_line_split(
+        #         generation_dict['canonical_solution']))
+        #     completion = truncate_num_lines(
+        #         completion, max_num_lines) + "\n"
+        #     # then we check overlap with the first line in the suffix
+        #     suffix_first_line = suffix.split("\n")[0]
+        #     completion_last_line = completion.split("\n")[-1]
+        #     truncated_completion_last_line = truncate_overlapped_characters(
+        #         completion_last_line, suffix_first_line)
+        #     completion = "\n".join(completion.split(
+        #         "\n")[:-1]) + truncated_completion_last_line
+        # else:
+        #     completion = truncated_completion
         # print("==============================")
         # print("After truncation:")
         # print("==============================")
