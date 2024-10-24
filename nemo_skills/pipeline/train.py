@@ -141,7 +141,7 @@ class TrainingCmdDirector:
         return str(command)
 
 
-class SFTTrainignCmdBuilder(TrainingCmdBuilder):
+class SFTTrainingCmdBuilder(TrainingCmdBuilder):
     def add_training_script(self, cmd: BashCommand, **kwargs):
         new_cmd = cmd.add_command(
            f"python -m nemo_skills.training.start_{self.training_algo}  "
@@ -200,7 +200,7 @@ class RMTrainingCmdBuilder(TrainingCmdBuilder):
         )
 
 builder_classes = {
-    TrainingAlgo.sft: SFTTrainignCmdBuilder,
+    TrainingAlgo.sft: SFTTrainingCmdBuilder,
     TrainingAlgo.dpo: DPOTrainingCmdBuilder,
     TrainingAlgo.rm: RMTrainingCmdBuilder,
 }
