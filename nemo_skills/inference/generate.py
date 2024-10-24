@@ -186,12 +186,51 @@ def generate(cfg: GenerateSolutionsConfig):
             data_points.append(data_point)
 
             if len(data_points) == cfg.batch_size or idx == cfg.max_samples - 1:
-                prompts = [prompt.fill(dp) for dp in data_points]
-                stop_phrases = prompt.stop_phrases
+                if cfg.multi_turn_key is None:
+                    outputs = llm.generate(
+                        prompts=[prompt.fill(dp) for dp in data_points],
+                        stop_phrases=prompt.stop_phrases,
+                        **asdict(cfg.inference),
+                        **extra_generate_params,
+                    )
+                else:
+                    # TODO: this will not be efficient if different elements have different number of turns
+                    # (effective batch size gets smaller). Need to rewrite it to ensure batch size is filled
+                    # no matter the turns. Also even the below implementation can probably be simplified
+                    turn_data_points = data_points.copy()
+                    dp_indices = list(range(len(turn_data_points)))
+                    cur_turn = 1
+                    outputs = [[] for _ in range(data_points)]
+                    while dp_indices:
+                        # updating the turns to only have data up-to the current turn
+                        # and adding any generated assistant messages
+                        for dp_index in dp_indices:
+                            turn_data_points[dp_index][cfg.multi_turn_key] = data_points[[dp_index]][
+                                cfg.multi_turn_key
+                            ][:cur_turn]
+                            for turn_idx in range(cur_turn - 1):
+                                turn_data_points[dp_index][cfg.multi_turn_key][turn_idx]['assistant'] = outputs[
+                                    dp_index
+                                ][turn_idx]
+                        # getting a new set of generations
+                        turn_outputs = llm.generate(
+                            prompts=[
+                                prompt.fill(turn_data_points[dp_index], multi_turn_key=cfg.multi_turn_key)
+                                for dp_index in dp_indices
+                            ],
+                            stop_phrases=prompt.stop_phrases,
+                            **asdict(cfg.inference),
+                            **extra_generate_params,
+                        )
+                        # adding assistant answers to the generations
+                        for pos_index, dp_index in enumerate(dp_indices):
+                            outputs[dp_index].append(turn_outputs[pos_index])
 
-                outputs = llm.generate(
-                    prompts=prompts, stop_phrases=stop_phrases, **asdict(cfg.inference), **extra_generate_params
-                )
+                        # removing any indices that got through all turns
+                        dp_indices = []
+                        for output, dp in zip(outputs, data_points):
+                            if len(output) < len(dp[cfg.multi_turn_key]):
+                                dp_indices.append(dp)
 
                 for output, original_data_point in zip(outputs, data_points):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
