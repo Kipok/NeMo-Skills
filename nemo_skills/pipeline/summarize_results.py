@@ -30,9 +30,10 @@ from nemo_skills.pipeline.compute_metrics import compute_metrics
 from nemo_skills.utils import setup_logging
 
 
-@app.command()
+@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 @typer_unpacker
 def summarize_results(
+    ctx: typer.Context,
     results_dir: str = typer.Argument(
         ...,
         help="Path to the dir with results. Needs to contain <benchmark> dirs inside. "
@@ -72,6 +73,12 @@ def summarize_results(
         tunnel.cleanup()
         results_dir = Path(temp_dir) / Path(results_dir).name
 
+    max_samples = -1
+    for a in ctx.args:
+        if a.startswith("++max_samples="):
+            max_samples = int(a.split('=')[1].strip())
+   
+    
     # running compute_metrics.py to get greedy, majority and pass @k results for all benchmarks available
     # Check if there is an eval-results dir inside the results_dir
     eval_results_dir = Path(results_dir) / 'eval-results'
@@ -97,6 +104,7 @@ def summarize_results(
                     results[benchmark]['greedy'] = compute_metrics(
                         input_files=[f"{benchmark_path}/output-greedy.jsonl"],
                         metrics_calculator=metrics_calculator,
+                        max_samples=max_samples,
                     )
                 sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
                 if len(sampling_outputs) > 0:
@@ -104,6 +112,7 @@ def summarize_results(
                         input_files=sampling_outputs,
                         metrics_calculator=metrics_calculator,
                         aggregation_mode="best",
+                        max_samples=max_samples,
                     )
             else:
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
