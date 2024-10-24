@@ -591,9 +591,12 @@ def add_task(
         )
 
 
-def run_exp(exp, cluster_config, sequential=False):
+def run_exp(exp, cluster_config, sequential=None):
+    """If sequential is not specified, using True locally and False otherwise.
+
+    If it is specified, it will be used as is.
+    """
     if cluster_config['executor'] == 'local':
-        # locally we are always running sequentially - does that need to be changed?
-        exp.run(detach=False, tail_logs=True, sequential=True)
+        exp.run(detach=False, tail_logs=True, sequential=True if sequential is None else sequential)
     else:
-        exp.run(detach=True, sequential=sequential)
+        exp.run(detach=True, sequential=False if sequential is None else sequential)
