@@ -209,7 +209,7 @@ def generate(cfg: GenerateSolutionsConfig):
                     turn_data_points = data_points.copy()
                     dp_indices = list(range(len(turn_data_points)))
                     cur_turn = 1
-                    outputs = [[] for _ in range(len(data_points))]
+                    outputs = [{"generation": []} for _ in range(len(data_points))]
                     while dp_indices:
                         # updating the turns to only have data up-to the current turn
                         # and adding any generated assistant messages
@@ -220,7 +220,7 @@ def generate(cfg: GenerateSolutionsConfig):
                             for turn_idx in range(cur_turn - 1):
                                 turn_data_points[dp_index][cfg.multi_turn_key][turn_idx]['assistant'] = outputs[
                                     dp_index
-                                ][turn_idx]
+                                ]["generation"][turn_idx]
                         # getting a new set of generations
                         turn_outputs = llm.generate(
                             prompts=[
@@ -233,12 +233,12 @@ def generate(cfg: GenerateSolutionsConfig):
                         )
                         # adding assistant answers to the generations
                         for pos_index, dp_index in enumerate(dp_indices):
-                            outputs[dp_index].append(turn_outputs[pos_index])
+                            outputs[dp_index]["generation"].append(turn_outputs[pos_index])
 
                         # removing any indices that got through all turns
                         dp_indices = []
                         for output, dp in zip(outputs, data_points):
-                            if len(output) < len(dp[cfg.multi_turn_key]):
+                            if len(output["generation"]) < len(dp[cfg.multi_turn_key]):
                                 dp_indices.append(dp)
 
                 for output, original_data_point in zip(outputs, data_points):

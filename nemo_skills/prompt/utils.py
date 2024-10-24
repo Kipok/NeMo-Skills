@@ -223,8 +223,6 @@ class Prompt:
                     generation=generation,
                     **asdict(self.config.template),
                 )
-
-                return prompt_string
             else:
                 prompt_string = self.SYSTEM_FORMAT.format(system=self.config.system, **asdict(self.config.template))
                 for turn in input_dict[multi_turn_key][:-1]:
@@ -238,6 +236,7 @@ class Prompt:
                     user=self.build_user_message(input_dict[multi_turn_key][-1]), **asdict(self.config.template)
                 )
                 prompt_string += generation
+            return prompt_string
         else:
             if multi_turn_key is None:
                 messages = [
