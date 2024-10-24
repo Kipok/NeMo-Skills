@@ -72,6 +72,7 @@ class TrainingCmdBuilder(abc.ABC):
     disable_wandb: bool
     wandb_project: str
     extra_arguments: str
+    timeout: str
 
     def base_command(self):
         return BashCommand(
@@ -255,6 +256,7 @@ def get_training_cmd(
         disable_wandb=disable_wandb,
         wandb_project=wandb_project,
         extra_arguments=extra_arguments,
+        timeout=timeout,
     )
     cmd = TrainingCmdDirector(builder).build_command()
 
