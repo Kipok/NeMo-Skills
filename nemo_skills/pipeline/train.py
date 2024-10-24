@@ -73,7 +73,7 @@ class TrainingCmdBuilder(abc.ABC):
     wandb_project: str
     extra_arguments: str
 
-    def base_command():
+    def base_command(self):
         return BashCommand(
             f"export WANDB_API_KEY={os.getenv('WANDB_API_KEY', '')} && "
             f"export HF_TOKEN={get_token()} && "
@@ -132,7 +132,7 @@ class TrainingCmdDirector:
         self.builder = builder
 
     def build_command(self) -> str:
-        command = self.builder.base_command(command)
+        command = self.builder.base_command()
         command = self.builder.add_training_script(command)
         command = self.builder.add_config(command)
         command = self.builder.add_parallel_device_configs(command)
