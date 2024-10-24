@@ -16,6 +16,7 @@ import importlib
 import json
 import logging
 import sys
+from copy import deepcopy
 from dataclasses import asdict, field
 from pathlib import Path
 
@@ -163,7 +164,7 @@ def generate(cfg: GenerateSolutionsConfig):
     if cfg.multi_turn_key is None:
         LOG.info("Example prompt:\nData dictionary: %s\nPrompt: %s", data[0], prompt.fill(data[0]))
     else:
-        first_sample = data[0].copy()
+        first_sample = deepcopy(data[0])
         first_sample[cfg.multi_turn_key] = first_sample[cfg.multi_turn_key][:1]
         LOG.info(
             "Example prompt (first turn only):\nData dictionary: %s\nPrompt: %s",
@@ -206,7 +207,7 @@ def generate(cfg: GenerateSolutionsConfig):
                     # TODO: this will not be efficient if different elements have different number of turns
                     # (effective batch size gets smaller). Need to rewrite it to ensure batch size is filled
                     # no matter the turns. Also even the below implementation can probably be simplified
-                    turn_data_points = data_points.copy()
+                    turn_data_points = deepcopy(data_points)
                     dp_indices = list(range(len(turn_data_points)))
                     cur_turn = 1
                     outputs = [{"generation": []} for _ in range(len(data_points))]
@@ -233,13 +234,14 @@ def generate(cfg: GenerateSolutionsConfig):
                         )
                         # adding assistant answers to the generations
                         for pos_index, dp_index in enumerate(dp_indices):
-                            outputs[dp_index]["generation"].append(turn_outputs[pos_index])
+                            outputs[dp_index]["generation"].append(turn_outputs[pos_index]["generation"])
 
                         # removing any indices that got through all turns
                         dp_indices = []
-                        for output, dp in zip(outputs, data_points):
+                        for dp_index, (output, dp) in enumerate(zip(outputs, data_points)):
                             if len(output["generation"]) < len(dp[cfg.multi_turn_key]):
-                                dp_indices.append(dp)
+                                dp_indices.append(dp_index)
+                        cur_turn += 1
 
                 for output, original_data_point in zip(outputs, data_points):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
