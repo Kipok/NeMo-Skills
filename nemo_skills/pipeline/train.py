@@ -34,6 +34,7 @@ LOG = logging.getLogger(__file__)
 class TrainingAlgo(str, Enum):
     sft = "sft"
     dpo = "dpo"
+    rm = "rm"
 
 
 class BashCommand:
@@ -198,6 +199,11 @@ class RMTrainingCmdBuilder(TrainingCmdBuilder):
             f" {self.extra_arguments}"
         )
 
+builder_classes = {
+    TrainingAlgo.sft: SFTTrainignCmdBuilder,
+    TrainingAlgo.dpo: DPOTrainingCmdBuilder,
+    TrainingAlgo.rm: RMTrainingCmdBuilder,
+}
 
 def get_training_cmd(
     cluster_config,
@@ -231,12 +237,8 @@ def get_training_cmd(
             f'00:{time_diff.seconds // 3600:02d}:{(time_diff.seconds % 3600) // 60:02d}:{time_diff.seconds % 60:02d}'
         )
 
-    builder_cls: CmdBuilderType
-    if training_algo == TrainingAlgo.sft:
-        builder_cls = SFTTrainignCmdBuilder
-    elif training_algo == TrainingAlgo.dpo:
-        builder_cls = DPOTrainingCmdBuilder
-    else:
+    builder_cls: CmdBuilderType = builder_classes.get(training_algo)
+    if builder_cls is None:
         raise ValueError(f"Unsupported training algorithm: {training_algo}")
 
     builder = builder_cls(
