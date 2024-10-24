@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+import os
 import urllib.request
 from pathlib import Path
 
@@ -22,6 +24,24 @@ URL = (
 
 if __name__ == "__main__":
     data_dir = Path(__file__).absolute().parent
+    original_file = str(data_dir / "original_test.json")
     data_dir.mkdir(exist_ok=True)
     output_file = str(data_dir / "test.jsonl")
-    urllib.request.urlretrieve(URL, output_file)
+
+    if not os.path.exists(original_file):
+        urllib.request.urlretrieve(URL, original_file)
+
+    data = []
+
+    with open(original_file, "rt", encoding="utf-8") as fin:
+        for index, line in enumerate(fin):
+            entry = json.loads(line)
+            turns = []
+            for turn in entry["turns"]:
+                turns.append({"question": turn})
+            entry["turns"] = turns
+            data.append(entry)
+
+    with open(output_file, "wt", encoding="utf-8") as fout:
+        for entry in data:
+            fout.write(json.dumps(entry) + "\n")
