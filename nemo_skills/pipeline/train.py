@@ -15,9 +15,9 @@
 import abc
 import logging
 import os
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from dataclasses import dataclass
 from typing import TypeVar
 
 import nemo_run as run
@@ -86,7 +86,8 @@ class TrainingCmdBuilder(abc.ABC):
             f"export HYDRA_FULL_ERROR=1 && "
             f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
             f"cd /nemo_run/code && "
-            f"echo 'Starting training' ")
+            f"echo 'Starting training' "
+        )
 
     def add_parallel_device_configs(self, cmd: BashCommand, **kwargs):
         return cmd.extend_command(
@@ -110,10 +111,10 @@ class TrainingCmdBuilder(abc.ABC):
             logging_params = "exp_manager.create_wandb_logger=False +exp_manager.create_tensorboard_logger=True"
 
         logging_params = BashCommand(logging_params).extend_command(
-                f"    exp_manager.name={self.expname} "
-                f"    exp_manager.explicit_log_dir={self.output_dir}/training "
-                f"    exp_manager.exp_dir={self.output_dir}/training "
-                f"    ++exp_manager.max_time_per_run={self.timeout} "
+            f"    exp_manager.name={self.expname} "
+            f"    exp_manager.explicit_log_dir={self.output_dir}/training "
+            f"    exp_manager.exp_dir={self.output_dir}/training "
+            f"    ++exp_manager.max_time_per_run={self.timeout} "
         )
         return cmd.extend_command(logging_params)
 
@@ -132,6 +133,7 @@ class TrainingCmdBuilder(abc.ABC):
 
 CmdBuilderType = TypeVar("CmdBuilderType", bound=TrainingCmdBuilder)
 
+
 class TrainingCmdDirector:
 
     def __init__(self, builder: TrainingCmdBuilder):
@@ -149,15 +151,11 @@ class TrainingCmdDirector:
 
 class SFTTrainingCmdBuilder(TrainingCmdBuilder):
     def add_training_script(self, cmd: BashCommand, **kwargs):
-        new_cmd = cmd.add_command(
-           f"python -m nemo_skills.training.start_{self.training_algo}  "
-        )
+        new_cmd = cmd.add_command(f"python -m nemo_skills.training.start_{self.training_algo}  ")
         return new_cmd
 
     def add_config(self, cmd: BashCommand, **kwargs):
-        return cmd.extend_command(
-            f"--config-name=sft_config --config-path={self.config_path}"
-        )
+        return cmd.extend_command(f"--config-name=sft_config --config-path={self.config_path}")
 
     def add_extra_arguments(self, cmd: BashCommand, **kwargs):
         return cmd.extend_command(
@@ -166,17 +164,14 @@ class SFTTrainingCmdBuilder(TrainingCmdBuilder):
             f" model.restore_from_path={self.nemo_model} " + self.extra_arguments
         )
 
+
 class DPOTrainingCmdBuilder(TrainingCmdBuilder):
     def add_training_script(self, cmd: BashCommand, **kwargs):
-        new_cmd = cmd.add_command(
-           f"python -m nemo_skills.training.start_{self.training_algo}  "
-        )
+        new_cmd = cmd.add_command(f"python -m nemo_skills.training.start_{self.training_algo}  ")
         return new_cmd
 
     def add_config(self, cmd: BashCommand, **kwargs):
-        return cmd.extend_command(
-            f"--config-name=dpo_config --config-path={self.config_path}"
-        )
+        return cmd.extend_command(f"--config-name=dpo_config --config-path={self.config_path}")
 
     def add_extra_arguments(self, cmd: BashCommand, **kwargs):
         return cmd.extend_command(
@@ -189,9 +184,7 @@ class DPOTrainingCmdBuilder(TrainingCmdBuilder):
 
 class RMTrainingCmdBuilder(TrainingCmdBuilder):
     def add_training_script(self, cmd, **kwargs):
-        return cmd.add_command(
-            "python -u /opt/NeMo-Aligner/examples/nlp/gpt/train_reward_model.py"
-        )
+        return cmd.add_command("python -u /opt/NeMo-Aligner/examples/nlp/gpt/train_reward_model.py")
 
     def add_config(self, cmd, **kwargs):
         return cmd
@@ -205,11 +198,13 @@ class RMTrainingCmdBuilder(TrainingCmdBuilder):
             f" {self.extra_arguments}"
         )
 
+
 builder_classes = {
     TrainingAlgo.sft: SFTTrainingCmdBuilder,
     TrainingAlgo.dpo: DPOTrainingCmdBuilder,
     TrainingAlgo.rm: RMTrainingCmdBuilder,
 }
+
 
 def get_training_cmd(
     cluster_config,
