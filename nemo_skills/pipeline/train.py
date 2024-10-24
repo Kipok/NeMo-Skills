@@ -46,9 +46,14 @@ class BashCommand:
         self.commands.append(command)
         return self
 
+    @staticmethod
+    def join(commands: list['BashCommand'], separator: str = ' && ') -> str:
+        """Join multiple commands into a single string."""
+        return separator.join(map(str, commands))
+
     def extend_command(self, *args):
         """Extend the last command with additional arguments."""
-        self.commands[-1] += ' ' + ' '.join(args)
+        self.commands[-1] += ' ' + self.join(args, ' ')
         return self
 
     def __str__(self):
