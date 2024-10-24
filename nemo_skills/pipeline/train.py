@@ -179,6 +179,26 @@ class DPOTrainingCmdBuilder(TrainingCmdBuilder):
             f" pretrained_checkpoint.restore_from_path={self.nemo_model} " + self.extra_arguments
         )
 
+
+class RMTrainingCmdBuilder(TrainingCmdBuilder):
+    def add_training_script(self, cmd, **kwargs):
+        return cmd.add_command(
+            "python -u /opt/NeMo-Aligner/examples/nlp/gpt/train_reward_model.py"
+        )
+
+    def add_config(self, cmd, **kwargs):
+        return cmd
+
+    def add_extra_arguments(self, cmd, **kwargs):
+        return cmd.extend_command(
+            f" ++model.data.data_prefix.train='[{self.training_data}]' "
+            f" ++model.data.data_prefix.validation='[{self.validation_data}]' "
+            f" ++model.data.data_prefix.test='[{self.validation_data}]' "
+            f" pretrained_checkpoint.restore_from_path={self.nemo_model} "
+            f" {self.extra_arguments}"
+        )
+
+
 def get_training_cmd(
     cluster_config,
     partition,
