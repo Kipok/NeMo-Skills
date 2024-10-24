@@ -209,14 +209,14 @@ def generate(cfg: GenerateSolutionsConfig):
                     turn_data_points = data_points.copy()
                     dp_indices = list(range(len(turn_data_points)))
                     cur_turn = 1
-                    outputs = [[] for _ in range(data_points)]
+                    outputs = [[] for _ in range(len(data_points))]
                     while dp_indices:
                         # updating the turns to only have data up-to the current turn
                         # and adding any generated assistant messages
                         for dp_index in dp_indices:
-                            turn_data_points[dp_index][cfg.multi_turn_key] = data_points[[dp_index]][
-                                cfg.multi_turn_key
-                            ][:cur_turn]
+                            turn_data_points[dp_index][cfg.multi_turn_key] = data_points[dp_index][cfg.multi_turn_key][
+                                :cur_turn
+                            ]
                             for turn_idx in range(cur_turn - 1):
                                 turn_data_points[dp_index][cfg.multi_turn_key][turn_idx]['assistant'] = outputs[
                                     dp_index
