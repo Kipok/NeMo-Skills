@@ -160,7 +160,16 @@ def generate(cfg: GenerateSolutionsConfig):
     if len(data) == 0:  # we might not have any examples if skip_filled=True
         return
 
-    LOG.info("Example prompt:\nData dictionary: %s\nPrompt: %s", data[0], prompt.fill(data[0]))
+    if cfg.multi_turn_key is None:
+        LOG.info("Example prompt:\nData dictionary: %s\nPrompt: %s", data[0], prompt.fill(data[0]))
+    else:
+        first_sample = data[0].copy()
+        first_sample[cfg.multi_turn_key] = first_sample[cfg.multi_turn_key][:1]
+        LOG.info(
+            "Example prompt (first turn only):\nData dictionary: %s\nPrompt: %s",
+            first_sample,
+            prompt.fill(first_sample, multi_turn_key=cfg.multi_turn_key),
+        )
 
     if cfg.dry_run:
         return
