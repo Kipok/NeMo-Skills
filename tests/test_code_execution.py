@@ -314,7 +314,7 @@ def test_lean4_few_shots(sandbox_type):
 
         output, session_id = sandbox.execute_code(code, language="lean4")
 
-        if session_id != None:
+        if session_id is not None:
             session_id_list.append(i)
         if output["process_status"] != 'completed':
             process_status_list.append(i)
