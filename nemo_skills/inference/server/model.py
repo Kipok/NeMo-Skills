@@ -240,7 +240,7 @@ class OpenAIModel(BaseModel):
         from openai import OpenAI
 
         if model is None:
-            model = os.getenv("NEMO_SKILLS_OPENAI_MODEL")
+            model = "nemo_model"  # os.getenv("NEMO_SKILLS_OPENAI_MODEL")
             if model is None:
                 raise ValueError("model argument is required for OpenAI model.")
 
@@ -568,6 +568,9 @@ class VLLMModel(BaseModel):
 models = {
     'trtllm': TRTLLMModel,
     'nemo': NemoModel,
+    'nemo_openai': OpenAIModel,
+    'mamba': NemoModel,
+    'mamba_openai': OpenAIModel,
     'openai': OpenAIModel,
     'vllm': VLLMModel,
 }

@@ -86,18 +86,21 @@ def get_exp_handles(expname):
 
 
 def get_generation_command(server_address, generation_commands):
+    server_address = os.environ['OPENAI_BASE_URL']
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"cd /nemo_run/code && "
         # might be required if we are not hosting server ourselves
         f"export NVIDIA_API_KEY={os.getenv('NVIDIA_API_KEY', '')} && "
-        f"export OPENAI_API_KEY={os.getenv('OPENAI_API_KEY', '')} && "
+        f"export OPENAI_API_KEY='dummy_key' && "
+        f"export NEMO_SKILLS_OPENAI_BASE_URL={server_address} && "
         # this will try to handshake in a loop and unblock when the server responds
         f"echo 'Waiting for the server to start at {server_address}' && "
         f"while [ $(curl -X PUT {server_address} >/dev/null 2>&1; echo $?) -ne 0 ]; do sleep 3; done && "
         # will run in a single task always (no need to check mpi env vars)
         f"{generation_commands}"
     )
+    print("generation cmd:\n{cmd}")
     return cmd
 
 
@@ -115,10 +118,27 @@ def get_server_command(
     elif server_type == "vllm" and model_path.startswith("/"):
         check_if_mounted(cluster_config, model_path)
 
-    if server_type == 'nemo':
+    if server_type == 'nemo' or server_type == "nemo_openai":
         server_start_cmd = (
+            f"export PYTHONPATH=/NeMo/:/opt/megatron-lm/:$PYTHONPATH && "
+            f"echo $PYTHONPATH && "
             f"python -m nemo_skills.inference.server.serve_nemo "
             f"    gpt_model_file={model_path} "
+            f"    trainer.devices={num_gpus} "
+            f"    trainer.num_nodes={num_nodes} "
+            f"    tensor_model_parallel_size={num_gpus} "
+            f"    pipeline_model_parallel_size={num_nodes} "
+            f"    {server_args} "
+        )
+        # somehow on slurm nemo needs multiple tasks, but locally only 1
+        if cluster_config["executor"] == "local":
+            num_tasks = 1
+    elif server_type == 'mamba' or server_type == "mamba_openai":
+        server_start_cmd = (
+            f"export PYTHONPATH=/NeMo/:/opt/megatron-lm/:$PYTHONPATH && "
+            f"echo $PYTHONPATH && "
+            f"python -m nemo_skills.inference.server.serve_mamba "
+            f"    mamba_model_file={model_path} "
             f"    trainer.devices={num_gpus} "
             f"    trainer.num_nodes={num_nodes} "
             f"    tensor_model_parallel_size={num_gpus} "
