@@ -30,10 +30,9 @@ from nemo_skills.pipeline.compute_metrics import compute_metrics
 from nemo_skills.utils import setup_logging
 
 
-@app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+@app.command()
 @typer_unpacker
 def summarize_results(
-    ctx: typer.Context,
     results_dir: str = typer.Argument(
         ...,
         help="Path to the dir with results. Needs to contain <benchmark> dirs inside. "
@@ -52,6 +51,7 @@ def summarize_results(
         "If not specified, all benchmarks in the results_dir will be used.",
     ),
     debug: bool = typer.Option(False, help="Print debug information"),
+    max_samples: int = typer.Option(-1, help="limit metric computation only to first `max_samples`"),
 ):
     """Summarize results of an evaluation job."""
     setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not debug else logging.DEBUG)
@@ -73,12 +73,6 @@ def summarize_results(
         tunnel.cleanup()
         results_dir = Path(temp_dir) / Path(results_dir).name
 
-    max_samples = -1
-    for a in ctx.args:
-        if a.startswith("++max_samples="):
-            max_samples = int(a.split('=')[1].strip())
-   
-    
     # running compute_metrics.py to get greedy, majority and pass @k results for all benchmarks available
     # Check if there is an eval-results dir inside the results_dir
     eval_results_dir = Path(results_dir) / 'eval-results'
