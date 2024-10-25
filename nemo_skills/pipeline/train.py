@@ -63,7 +63,7 @@ def train_sft(params: TrainingParams) -> str:
     extra_arguments = (
         f" ++model.data.train_ds.file_path='{params.training_data}' "
         f" ++model.data.validation_ds.file_path='{params.validation_data}' "
-        f" model.restore_from_path={params.nemo_model} " + extra_arguments
+        f" model.restore_from_path={params.nemo_model} " + params.extra_arguments
     )
     cmd = (
         f"export WANDB_API_KEY={os.getenv('WANDB_API_KEY', '')} && "
@@ -97,7 +97,7 @@ def train_dpo(params: TrainingParams) -> str:
         f" ++model.data.data_prefix.train='[{params.training_data}]' "
         f" ++model.data.data_prefix.validation='[{params.validation_data}]' "
         f" ++model.data.data_prefix.test='[{params.validation_data}]' "
-        f" pretrained_checkpoint.restore_from_path={params.nemo_model} " + extra_arguments
+        f" pretrained_checkpoint.restore_from_path={params.nemo_model} " + params.extra_arguments
     )
     cmd = (
         f"export WANDB_API_KEY={os.getenv('WANDB_API_KEY', '')} && "
@@ -129,7 +129,7 @@ def train_rm(params: TrainingParams) -> str:
         f" ++model.data.data_prefix.train='[{params.training_data}]' "
         f" ++model.data.data_prefix.validation='[{params.validation_data}]' "
         f" ++model.data.data_prefix.test='[{params.validation_data}]' "
-        f" pretrained_checkpoint.restore_from_path={params.nemo_model} " + extra_arguments
+        f" pretrained_checkpoint.restore_from_path={params.nemo_model} " + params.extra_arguments
     )
     cmd = (
         f"export WANDB_API_KEY={os.getenv('WANDB_API_KEY', '')} && "
