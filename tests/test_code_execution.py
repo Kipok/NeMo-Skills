@@ -194,7 +194,7 @@ x
 @pytest.mark.parametrize(
     "code_begin,code_end,code_output_begin,code_output_end",
     [
-        # ('<llm-code>', '</llm-code>', '<llm-code-output>', '</llm-code-output>'),
+        # ('<llm-code>\n', '</llm-code>\n', '<llm-code-output>\n', '</llm-code-output>\n'),
         (
             '<|python_tag|>',
             '<|eom_id|>',
@@ -223,10 +223,10 @@ def test_few_shots(sandbox_type, code_begin, code_end, code_output_begin, code_o
                 session_id = None
                 for code_snippet, expected_output in zip(code_snippets, expected_outputs):
                     output, session_id = sandbox.execute_code(code_snippet, session_id=session_id)
+                    execution_dict = {"process_status": "completed", "stdout": expected_output.strip(), "stderr": None}
                     generated_output = format_code_output(output, code_output_begin, code_output_end)
-                    assert (
-                        generated_output == code_output_begin + expected_output + code_output_end + '\n\n'
-                    ), f"{example_name} few shots are failing"
+                    extracted_output = format_code_output(execution_dict, code_output_begin, code_output_end)
+                    assert generated_output == extracted_output, f"{example_name} few shots are failing"
 
 
 @pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
