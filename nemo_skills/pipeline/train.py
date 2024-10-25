@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import abc
 import logging
 import os
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import TypeVar
 
 import nemo_run as run
 import typer
@@ -37,33 +35,8 @@ class TrainingAlgo(str, Enum):
     rm = "rm"
 
 
-class BashCommand:
-    def __init__(self, base_command):
-        self.commands = [base_command]
-
-    def add_command(self, command):
-        """Add a new command to be executed after the current commands using '&&'."""
-        self.commands.append(command)
-        return self
-
-    @staticmethod
-    def join(commands: list['BashCommand'], separator: str = ' && ') -> str:
-        """Join multiple commands into a single string."""
-        return separator.join(map(str, commands))
-
-    def extend_command(self, *args):
-        """Extend the last command with additional arguments."""
-        self.commands[-1] += ' ' + self.join(args, ' ')
-        return self
-
-    def __str__(self):
-        """Return the full command string with commands joined by '&&'."""
-        return ' && '.join(self.commands)
-
-
 @dataclass
-class TrainingCmdBuilder(abc.ABC):
-
+class TrainingParams:
     config_name: str
     config_path: str
     nemo_model: str
@@ -76,135 +49,114 @@ class TrainingCmdBuilder(abc.ABC):
     training_algo: str
     disable_wandb: bool
     wandb_project: str
-    extra_arguments: str
     timeout: str
+    extra_arguments: str = ""
+    logging_params: str = ""
 
-    def base_command(self):
-        return BashCommand(
-            f"export WANDB_API_KEY={os.getenv('WANDB_API_KEY', '')} && "
-            f"export HF_TOKEN={get_token()} && "
-            f"export HYDRA_FULL_ERROR=1 && "
-            f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-            f"cd /nemo_run/code && "
-            f"echo 'Starting training' "
-        )
+def train_sft(params: TrainingParams) -> str:
+    if params.config_name is None:
+        config_name = "sft_config"
+    else:
+        config_name = params.config
+    config_params = f"--config-name={config_name} --config-path={params.config_path} "
+    training_script = "python -m nemo_skills.training.start_sft"
+    extra_arguments = (
+        f" ++model.data.train_ds.file_path='{params.training_data}' "
+        f" ++model.data.validation_ds.file_path='{params.validation_data}' "
+        f" model.restore_from_path={params.nemo_model} " + extra_arguments
+    )
+    cmd = (
+        f"export WANDB_API_KEY={os.getenv('WANDB_API_KEY', '')} && "
+        f"export HF_TOKEN={get_token()} && "
+        f"export HYDRA_FULL_ERROR=1 && "
+        f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
+        f"cd /nemo_run/code && "
+        f"echo 'Starting training' && "
+        f"{training_script} "
+        f"    {config_params}"
+        f"    ++model.tensor_model_parallel_size={params.num_gpus} "
+        f"    trainer.devices={params.num_gpus} "
+        f"    trainer.num_nodes={params.num_nodes} "
+        f"    {params.logging_params} "
+        f"    exp_manager.name={params.expname} "
+        f"    exp_manager.explicit_log_dir={params.output_dir}/training "
+        f"    exp_manager.exp_dir={params.output_dir}/training "
+        f"    ++exp_manager.max_time_per_run={params.timeout} "
+        f"    {extra_arguments} "
+    )
+    return cmd
 
-    def add_parallel_device_configs(self, cmd: BashCommand, **kwargs):
-        return cmd.extend_command(
-            f"++model.tensor_model_parallel_size={self.num_gpus} "
-            f"trainer.devices={self.num_gpus} "
-            f"trainer.num_nodes={self.num_nodes} "
-        )
+def train_dpo(params: TrainingParams) -> str:
+    if params.config_name is None:
+        config_name = "dpo_config"
+    else:
+        config_name = params.config
+    config_params = f"--config-name={config_name} --config-path={params.config_path} "
+    training_script = "python -m nemo_skills.training.start_dpo"
+    extra_arguments = (
+        f" ++model.data.data_prefix.train='[{params.training_data}]' "
+        f" ++model.data.data_prefix.validation='[{params.validation_data}]' "
+        f" ++model.data.data_prefix.test='[{params.validation_data}]' "
+        f" pretrained_checkpoint.restore_from_path={params.nemo_model} " + extra_arguments
+    )
+    cmd = (
+        f"export WANDB_API_KEY={os.getenv('WANDB_API_KEY', '')} && "
+        f"export HF_TOKEN={get_token()} && "
+        f"export HYDRA_FULL_ERROR=1 && "
+        f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
+        f"cd /nemo_run/code && "
+        f"echo 'Starting training' && "
+        f"{training_script} "
+        f"    {config_params}"
+        f"    ++model.tensor_model_parallel_size={params.num_gpus} "
+        f"    trainer.devices={params.num_gpus} "
+        f"    trainer.num_nodes={params.num_nodes} "
+        f"    {params.logging_params} "
+        f"    exp_manager.name={params.expname} "
+        f"    exp_manager.explicit_log_dir={params.output_dir}/training "
+        f"    exp_manager.exp_dir={params.output_dir}/training "
+        f"    ++exp_manager.max_time_per_run={params.timeout} "
+        f"    {extra_arguments} "
+    )
+    return cmd
 
-    def add_logging_params(self, cmd: BashCommand, **kwargs) -> BashCommand:
-        if not self.disable_wandb:
-            if os.getenv('WANDB_API_KEY') is None:
-                raise ValueError("WANDB_API_KEY is not set. Use --disable_wandb to disable wandb logging")
-            logging_params = (
-                f"exp_manager.create_wandb_logger=True "
-                f"exp_manager.wandb_logger_kwargs.name={self.expname} "
-                f"exp_manager.wandb_logger_kwargs.project={self.wandb_project} "
-                f"+exp_manager.wandb_logger_kwargs.id={self.expname} "
-                f"+exp_manager.wandb_logger_kwargs.resume=True "
-            )
-        else:
-            logging_params = "exp_manager.create_wandb_logger=False +exp_manager.create_tensorboard_logger=True"
+def train_rm(params: TrainingParams) -> str:
+    if params.config_name is None:
+        config_name = "dpo_config"
+    config_params = f""
+    training_script = "python -u /opt/NeMo-Aligner/examples/nlp/gpt/train_reward_model.py"
+    extra_arguments = (
+        f" ++model.data.data_prefix.train='[{params.training_data}]' "
+        f" ++model.data.data_prefix.validation='[{params.validation_data}]' "
+        f" ++model.data.data_prefix.test='[{params.validation_data}]' "
+        f" pretrained_checkpoint.restore_from_path={params.nemo_model} " + extra_arguments
+    )
+    cmd = (
+        f"export WANDB_API_KEY={os.getenv('WANDB_API_KEY', '')} && "
+        f"export HF_TOKEN={get_token()} && "
+        f"export HYDRA_FULL_ERROR=1 && "
+        f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
+        f"cd /nemo_run/code && "
+        f"echo 'Starting training' && "
+        f"{training_script} "
+        f"    {config_params}"
+        f"    ++model.tensor_model_parallel_size={params.num_gpus} "
+        f"    trainer.devices={params.num_gpus} "
+        f"    trainer.num_nodes={params.num_nodes} "
+        f"    {params.logging_params} "
+        f"    exp_manager.name={params.expname} "
+        f"    exp_manager.explicit_log_dir={params.output_dir}/training "
+        f"    exp_manager.exp_dir={params.output_dir}/training "
+        f"    ++exp_manager.max_time_per_run={params.timeout} "
+        f"    {extra_arguments} "
+    )
+    return cmd
 
-        logging_params = BashCommand(logging_params).extend_command(
-            f"    exp_manager.name={self.expname} "
-            f"    exp_manager.explicit_log_dir={self.output_dir}/training "
-            f"    exp_manager.exp_dir={self.output_dir}/training "
-            f"    ++exp_manager.max_time_per_run={self.timeout} "
-        )
-        return cmd.extend_command(logging_params)
-
-    @abc.abstractmethod
-    def add_training_script(self, cmd: BashCommand, **kwargs) -> BashCommand:
-        pass
-
-    @abc.abstractmethod
-    def add_config(self, cmd: BashCommand, **kwargs) -> BashCommand:
-        pass
-
-    @abc.abstractmethod
-    def add_extra_arguments(self, cmd: BashCommand, **kwargs) -> BashCommand:
-        pass
-
-
-CmdBuilderType = TypeVar("CmdBuilderType", bound=TrainingCmdBuilder)
-
-
-class TrainingCmdDirector:
-
-    def __init__(self, builder: TrainingCmdBuilder):
-        self.builder = builder
-
-    def build_command(self) -> str:
-        command = self.builder.base_command()
-        command = self.builder.add_training_script(command)
-        command = self.builder.add_config(command)
-        command = self.builder.add_parallel_device_configs(command)
-        command = self.builder.add_logging_params(command)
-        command = self.builder.add_extra_arguments(command)
-        return str(command)
-
-
-class SFTTrainingCmdBuilder(TrainingCmdBuilder):
-    def add_training_script(self, cmd: BashCommand, **kwargs):
-        new_cmd = cmd.add_command(f"python -m nemo_skills.training.start_{self.training_algo}  ")
-        return new_cmd
-
-    def add_config(self, cmd: BashCommand, **kwargs):
-        return cmd.extend_command(f"--config-name=sft_config --config-path={self.config_path}")
-
-    def add_extra_arguments(self, cmd: BashCommand, **kwargs):
-        return cmd.extend_command(
-            f" ++model.data.train_ds.file_path='{self.training_data}' "
-            f" ++model.data.validation_ds.file_path='{self.validation_data}' "
-            f" model.restore_from_path={self.nemo_model} " + self.extra_arguments
-        )
-
-
-class DPOTrainingCmdBuilder(TrainingCmdBuilder):
-    def add_training_script(self, cmd: BashCommand, **kwargs):
-        new_cmd = cmd.add_command(f"python -m nemo_skills.training.start_{self.training_algo}  ")
-        return new_cmd
-
-    def add_config(self, cmd: BashCommand, **kwargs):
-        return cmd.extend_command(f"--config-name=dpo_config --config-path={self.config_path}")
-
-    def add_extra_arguments(self, cmd: BashCommand, **kwargs):
-        return cmd.extend_command(
-            f" ++model.data.data_prefix.train='[{self.training_data}]' "
-            f" ++model.data.data_prefix.validation='[{self.validation_data}]' "
-            f" ++model.data.data_prefix.test='[{self.validation_data}]' "
-            f" pretrained_checkpoint.restore_from_path={self.nemo_model} " + self.extra_arguments
-        )
-
-
-class RMTrainingCmdBuilder(TrainingCmdBuilder):
-    def add_training_script(self, cmd, **kwargs):
-        return cmd.add_command("python -u /opt/NeMo-Aligner/examples/nlp/gpt/train_reward_model.py")
-
-    def add_config(self, cmd, **kwargs):
-        return cmd
-
-    def add_extra_arguments(self, cmd, **kwargs):
-        return cmd.extend_command(
-            f" ++model.data.data_prefix.train='[{self.training_data}]' "
-            f" ++model.data.data_prefix.validation='[{self.validation_data}]' "
-            f" ++model.data.data_prefix.test='[{self.validation_data}]' "
-            f" pretrained_checkpoint.restore_from_path={self.nemo_model} "
-            f" {self.extra_arguments}"
-        )
-
-
-builder_classes = {
-    TrainingAlgo.sft: SFTTrainingCmdBuilder,
-    TrainingAlgo.dpo: DPOTrainingCmdBuilder,
-    TrainingAlgo.rm: RMTrainingCmdBuilder,
+command_getters = {
+    TrainingAlgo.sft: train_sft,
+    TrainingAlgo.dpo: train_dpo,
+    TrainingAlgo.rm: train_rm,
 }
-
 
 def get_training_cmd(
     cluster_config,
@@ -238,11 +190,14 @@ def get_training_cmd(
             f'00:{time_diff.seconds // 3600:02d}:{(time_diff.seconds % 3600) // 60:02d}:{time_diff.seconds % 60:02d}'
         )
 
-    builder_cls: CmdBuilderType = builder_classes.get(training_algo)
-    if builder_cls is None:
-        raise ValueError(f"Unsupported training algorithm: {training_algo}")
+    logging_params = get_logging_params(expname, disable_wandb, wandb_project)
 
-    builder = builder_cls(
+    get_cmd: callable[[TrainingParams], str] = command_getters.get(training_algo)
+
+    if get_cmd is None:
+        raise ValueError(f"Training algorithm {training_algo} not supported")
+
+    return  get_cmd(TrainingParams(
         config_name=config_name,
         config_path=config_path,
         nemo_model=nemo_model,
@@ -255,12 +210,25 @@ def get_training_cmd(
         training_algo=training_algo,
         disable_wandb=disable_wandb,
         wandb_project=wandb_project,
-        extra_arguments=extra_arguments,
         timeout=timeout,
-    )
-    cmd = TrainingCmdDirector(builder).build_command()
+        extra_arguments=extra_arguments,
+        logging_params=logging_params,
+    ))
 
-    return cmd
+def get_logging_params(expname, disable_wandb, wandb_project):
+    if not disable_wandb:
+        if os.getenv('WANDB_API_KEY') is None:
+            raise ValueError("WANDB_API_KEY is not set. Use --disable_wandb to disable wandb logging")
+        logging_params = (
+            f"exp_manager.create_wandb_logger=True "
+            f"exp_manager.wandb_logger_kwargs.name={expname} "
+            f"exp_manager.wandb_logger_kwargs.project={wandb_project} "
+            f"+exp_manager.wandb_logger_kwargs.id={expname} "
+            f"+exp_manager.wandb_logger_kwargs.resume=True "
+        )
+    else:
+        logging_params = "exp_manager.create_wandb_logger=False +exp_manager.create_tensorboard_logger=True"
+    return logging_params
 
 
 def get_avg_checkpoints_cmd(nemo_model, output_dir, final_nemo_path, average_steps):
