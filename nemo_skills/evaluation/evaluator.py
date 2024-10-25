@@ -24,7 +24,7 @@ from tqdm import tqdm
 
 from nemo_skills.code_execution.sandbox import get_sandbox
 from nemo_skills.inference.server.model import get_model
-from nemo_skills.prompt.utils import Prompt, get_prompt
+from nemo_skills.prompt.utils import get_prompt
 from nemo_skills.utils import nested_dataclass, unroll_files
 
 LOG = logging.getLogger(__file__)
@@ -161,7 +161,7 @@ def eval_arena(cfg):
         base_url=eval_config.base_url,
         model=eval_config.judge_model,
     )
-    prompt = Prompt(config=get_prompt('openai/arena-judge'))
+    prompt = get_prompt('judge/arena')
 
     # assuming everything fits in memory for simplicity
     for jsonl_file in unroll_files(cfg.input_files):
