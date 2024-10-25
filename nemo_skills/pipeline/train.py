@@ -53,6 +53,7 @@ class TrainingParams:
     extra_arguments: str = ""
     logging_params: str = ""
 
+
 def train_sft(params: TrainingParams) -> str:
     if params.config_name is None:
         config_name = "sft_config"
@@ -85,6 +86,7 @@ def train_sft(params: TrainingParams) -> str:
         f"    {extra_arguments} "
     )
     return cmd
+
 
 def train_dpo(params: TrainingParams) -> str:
     if params.config_name is None:
@@ -120,6 +122,7 @@ def train_dpo(params: TrainingParams) -> str:
     )
     return cmd
 
+
 def train_rm(params: TrainingParams) -> str:
     if params.config_name is None:
         config_name = "dpo_config"
@@ -152,11 +155,13 @@ def train_rm(params: TrainingParams) -> str:
     )
     return cmd
 
+
 command_getters = {
     TrainingAlgo.sft: train_sft,
     TrainingAlgo.dpo: train_dpo,
     TrainingAlgo.rm: train_rm,
 }
+
 
 def get_training_cmd(
     cluster_config,
@@ -197,23 +202,26 @@ def get_training_cmd(
     if get_cmd is None:
         raise ValueError(f"Training algorithm {training_algo} not supported")
 
-    return  get_cmd(TrainingParams(
-        config_name=config_name,
-        config_path=config_path,
-        nemo_model=nemo_model,
-        output_dir=output_dir,
-        training_data=training_data,
-        validation_data=validation_data,
-        num_gpus=num_gpus,
-        num_nodes=num_nodes,
-        expname=expname,
-        training_algo=training_algo,
-        disable_wandb=disable_wandb,
-        wandb_project=wandb_project,
-        timeout=timeout,
-        extra_arguments=extra_arguments,
-        logging_params=logging_params,
-    ))
+    return get_cmd(
+        TrainingParams(
+            config_name=config_name,
+            config_path=config_path,
+            nemo_model=nemo_model,
+            output_dir=output_dir,
+            training_data=training_data,
+            validation_data=validation_data,
+            num_gpus=num_gpus,
+            num_nodes=num_nodes,
+            expname=expname,
+            training_algo=training_algo,
+            disable_wandb=disable_wandb,
+            wandb_project=wandb_project,
+            timeout=timeout,
+            extra_arguments=extra_arguments,
+            logging_params=logging_params,
+        )
+    )
+
 
 def get_logging_params(expname, disable_wandb, wandb_project):
     if not disable_wandb:
