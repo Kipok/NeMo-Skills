@@ -1,0 +1,14 @@
+# default prompt for all multi-choice benchmarks (e.g. mmlu)
+
+system: ""
+
+user: |-
+    Answer the following multiple choice question.
+    Start your response with '$LETTER' (without quotes) where LETTER is one of the options: A, B, C or D.
+
+    Question: {question}
+
+    A. {A}
+    B. {B}
+    C. {C}
+    D. {D}
