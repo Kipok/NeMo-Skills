@@ -141,6 +141,7 @@ def test_dpo():
     # only checking the total, since model is tiny
     assert metrics['num_entries'] == 10
 
+
 @pytest.mark.gpu
 def test_rm():
     model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
