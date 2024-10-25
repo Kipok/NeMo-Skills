@@ -56,6 +56,9 @@ def summarize_results(
     """Summarize results of an evaluation job."""
     setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not debug else logging.DEBUG)
 
+    if " " in str(benchmarks):
+        raise ValueError("benchmarks should be separated with commas")
+
     cluster = cluster or os.environ.get("NEMO_SKILLS_CONFIG")
 
     # copying results from the cluster if necessary
@@ -99,7 +102,6 @@ def summarize_results(
                         input_files=[f"{benchmark_path}/output-greedy.jsonl"],
                         metrics_calculator=metrics_calculator,
                         max_samples=max_samples,
-                        allow_incomplete=max_samples != -1,
                     )
                 sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
                 if len(sampling_outputs) > 0:
@@ -108,7 +110,6 @@ def summarize_results(
                         metrics_calculator=metrics_calculator,
                         aggregation_mode="best",
                         max_samples=max_samples,
-                        allow_incomplete=max_samples != -1,
                     )
             else:
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
@@ -116,7 +117,6 @@ def summarize_results(
                         input_files=[f"{benchmark_path}/output-greedy.jsonl"],
                         metrics_calculator=metrics_calculator,
                         max_samples=max_samples,
-                        allow_incomplete=max_samples != -1,
                     )
 
                 sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
@@ -126,14 +126,12 @@ def summarize_results(
                         metrics_calculator=metrics_calculator,
                         aggregation_mode="majority",
                         max_samples=max_samples,
-                        allow_incomplete=max_samples != -1,
                     )
                     results[benchmark][f'pass@{len(sampling_outputs)}'] = compute_metrics(
                         input_files=sampling_outputs,
                         metrics_calculator=metrics_calculator,
                         aggregation_mode="best",
                         max_samples=max_samples,
-                        allow_incomplete=max_samples != -1,
                     )
         except Exception as e:
             print(f"Error running compute_metrics.py for {benchmark}: {e}")
