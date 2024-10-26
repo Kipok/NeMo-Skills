@@ -21,6 +21,7 @@ from dataclasses import asdict, field
 from pathlib import Path
 
 from tqdm import tqdm
+from typing import Any, Callable, Dict
 
 from nemo_skills.code_execution.sandbox import get_sandbox
 from nemo_skills.inference.server.model import get_model
@@ -297,5 +298,19 @@ EVALUATOR_MAP = {
 }
 
 
+def is_evaluator_registered(eval_type: str):
+    return eval_type in EVALUATOR_MAP
+
+
+def register_evaluator(eval_type: str, eval_fn: Callable[[Dict[str, Any]], None]):
+    if is_evaluator_registered(eval_type):
+        raise ValueError(f"Evaluator for {eval_type} already registered")
+
+    EVALUATOR_MAP[eval_type] = eval_fn
+
+
 def evaluate(cfg):
+    if cfg.eval_type not in EVALUATOR_MAP:
+        raise ValueError(f"Evaluator not found for type: {cfg.eval_type}.\n"
+                         f"Supported types: {str(EVALUATOR_MAP.keys())}")
     return EVALUATOR_MAP[cfg.eval_type](cfg)

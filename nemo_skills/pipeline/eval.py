@@ -26,26 +26,37 @@ LOG = logging.getLogger(__file__)
 
 
 def get_greedy_cmd(
-    benchmark, split, output_dir, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments=""
+    benchmark, split, output_dir, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments="", 
+    inference_cmd: str = None,
 ):
-    benchmark_module = importlib.import_module(f"nemo_skills.dataset.{benchmark}")
-
-    extra_eval_args = f"{benchmark_module.DEFAULT_EVAL_ARGS} {extra_eval_args}"
-    extra_arguments = f"{benchmark_module.DEFAULT_GENERATION_ARGS} {extra_arguments}"
+    if not inference_cmd:
+        benchmark_module = importlib.import_module(f"nemo_skills.dataset.{benchmark}")
+    
+        extra_eval_args = f"{benchmark_module.DEFAULT_EVAL_ARGS} {extra_eval_args}"
+        extra_arguments = f"{benchmark_module.DEFAULT_GENERATION_ARGS} {extra_arguments}"
+        
+        inference_cmd = (
+            f'python -m nemo_skills.inference.generate '
+            f'    ++dataset={benchmark} '
+            f'    ++split={split} '
+            f'    ++output_file={output_dir}/eval-results/{benchmark}/{output_name} '
+        )
+        
+    else:
+        inference_cmd = inference_cmd.format(benchmark=benchmark, split=split, output_dir=output_dir, output_name=output_name)
+        LOG.info(f"Resolved custom generation command below for benchmark {benchmark}:\n{inference_cmd}")
+        LOG.info(f"Please note that extra eval arguments for this benchmark must be explicitly passed by the user.")
+    
     cmd = (
         f'echo "Evaluating benchmark {benchmark}" && '
-        f'python -m nemo_skills.inference.generate '
-        f'    ++dataset={benchmark} '
-        f'    ++split={split} '
-        f'    ++output_file={output_dir}/eval-results/{benchmark}/{output_name} '
-        f'    {extra_arguments} && '
+        f'{inference_cmd} {extra_arguments} && '
         f'python -m nemo_skills.evaluation.evaluate_results '
         f'    ++input_files={output_dir}/eval-results/{benchmark}/{output_name} {extra_eval_args}'
     )
     return cmd
 
 
-def get_sampling_cmd(benchmark, split, output_dir, random_seed, extra_eval_args="", extra_arguments=""):
+def get_sampling_cmd(benchmark, split, output_dir, random_seed, extra_eval_args="", extra_arguments="", inference_cmd=None):
     extra_arguments = f" inference.random_seed={random_seed} inference.temperature=0.7 {extra_arguments}"
     return get_greedy_cmd(
         benchmark=benchmark,
@@ -93,6 +104,7 @@ def eval(
     partition: str = typer.Option(None, help="Cluster partition to use"),
     extra_eval_args: str = typer.Option("", help="Additional arguments for evaluation"),
     skip_greedy: bool = typer.Option(False, help="Whether to skip greedy evaluation"),
+    inference_cmd: str = typer.Option(None, help="Command to execute inference on samples"),
     run_after: str = typer.Option(None, help="Task to run after the evaluation"),
     config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
     log_dir: str = typer.Option(None, help="Can specify a custom location for slurm logs. "),
@@ -150,6 +162,7 @@ def eval(
                 output_dir,
                 extra_eval_args=extra_eval_args,
                 extra_arguments=extra_arguments,
+                inference_cmd=inference_cmd,
             )
             for benchmark in benchmarks.keys()
         ]
@@ -164,6 +177,7 @@ def eval(
             rs,
             extra_eval_args=extra_eval_args,
             extra_arguments=extra_arguments,
+            inference_cmd=inference_cmd,
         )
         for benchmark, rs_num in benchmarks.items()
         for rs in range(starting_seed, starting_seed + rs_num)
