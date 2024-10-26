@@ -47,7 +47,34 @@ class MathEvaluatorConfig:
     # only used if extract_from_boxed is False
     extract_regex: str = r"The final answer is (.+)$"
 
+@nested_dataclass(kw_only=True)
+class MMLUEvaluatorConfig:
+    # Sandbox configuration {sandbox_params}
+    sandbox: dict = field(default_factory=lambda: {'sandbox_type': 'local'})
+    num_parallel_requests: int = 100
+    in_memory_lines: int = 1500
+    include_percentage: bool = True
+    tolerance: float = 1e-4
+    timeout: float = 10.0
+    ignore_cache: bool = False
+    # if True will not attempt to re-extract based on \boxed or regex
+    use_predicted_answer_key: bool = False
 
+    extract_from_boxed: bool = False
+    # only used if extract_from_boxed is False
+    extract_regex: str = r"[ABCD]"
+
+def eval_mmlu(cfg):
+    eval_config = MMLUEvaluatorConfig(**cfg.eval_config)
+
+    sandbox = get_sandbox(**eval_config.sandbox)
+    eval_config = asdict(eval_config)
+    eval_config.pop('sandbox')
+    sandbox.batch_evaluate_results(
+        input_files=cfg.input_files,
+        **eval_config,
+    )
+    
 def eval_math(cfg):
     eval_config = MathEvaluatorConfig(**cfg.eval_config)
 
@@ -294,6 +321,7 @@ EVALUATOR_MAP = {
     'arena': eval_arena,
     'answer_judgement': dummy_eval,
     'lean4': eval_lean4,
+    "mmlu": eval_mmlu,
 }
 
 
