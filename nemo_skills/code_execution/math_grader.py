@@ -546,12 +546,11 @@ def symbolic_equal(a, b, tolerance, timeout=10.0):
 def extract_answer(string: str, extract_from_boxed: bool = True, extract_regex: str = r"The final answer is (.+)$"):
     """Extract Answer String from \\boxed expression or based on regex"""
     if not extract_from_boxed:
-        #match = re.search(extract_regex, string)
-        #print(extract_regex, "is the regex--", string, "is the answer--", match, "is the match")
-        #if match:
-        #    return match.group(1)
-        #return None
-        return string.strip()[0]
+        print(extract_regex, "is the regex")
+        match = re.search(extract_regex, string)
+        if match:
+            return match.group(0)
+        return None
 
     if "\\boxed" not in string:
         return None
