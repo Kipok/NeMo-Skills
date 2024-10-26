@@ -21,17 +21,17 @@ import sys
 import tarfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 import nemo_run as run
 import yaml
 from huggingface_hub import get_token
 from invoke import StreamWatcher
-from typing import Optional
 from nemo_run.config import NEMORUN_HOME
-from nemo_run.core.tunnel import SSHTunnel
 from nemo_run.core.execution.docker import DockerExecutor
 from nemo_run.core.execution.slurm import SlurmJobDetails
 from nemo_run.core.serialization.zlib_json import ZlibJSONSerializer
+from nemo_run.core.tunnel import SSHTunnel
 
 LOG = logging.getLogger(__file__)
 
