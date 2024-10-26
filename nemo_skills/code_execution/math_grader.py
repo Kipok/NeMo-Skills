@@ -547,7 +547,7 @@ def extract_answer(string: str, extract_from_boxed: bool = True, extract_regex: 
     """Extract Answer String from \\boxed expression or based on regex"""
     if not extract_from_boxed:
         match = re.search(extract_regex, string)
-        print(extract_regex, "is the regex--", string, "is the answer--", match, "is the match"
+        print(extract_regex, "is the regex--", string, "is the answer--", match, "is the match")
         if match:
             return match.group(1)
         return None
