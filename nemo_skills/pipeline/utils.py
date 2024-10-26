@@ -247,20 +247,21 @@ def get_tunnel(cluster_config):
     return run.SSHTunnel(**cluster_config["ssh_tunnel"])
 
 
-def cluster_download(tunnel: SSHTunnel, remote_dir: str, local_dir: str, remote_tar_dir: Optional[str] =None):
+def cluster_download(tunnel: SSHTunnel, remote_dir: str, local_dir: str, remote_tar_dir: Optional[str] = None):
     """
     Downloads a directory from a remote cluster by creating a tar archive and transferring it.
-    
+
     Args:
         tunnel: SSHTunnel connection
         remote_dir: Path to the directory on remote server
         local_dir: Local path to save the downloaded directory
         remote_tar_dir: Optional directory for temporary tar file creation
     """
-    
+
     # Helper class and function to support streaming updates
     class OutputWatcher(StreamWatcher):
         """Class for streaming remote tar/compression process."""
+
         def submit(self, stream):
             print(stream)
             return []
@@ -268,22 +269,21 @@ def cluster_download(tunnel: SSHTunnel, remote_dir: str, local_dir: str, remote_
     def progress_callback(transferred: int, total: int) -> None:
         """Display SFTP transfer progress."""
         percent = (transferred / total) * 100
-        bar = '=' * int(percent/2) + '>'
+        bar = '=' * int(percent / 2) + '>'
         sys.stdout.write(
             f'\rFile Transfer Progress: [{bar:<50}] {percent:.1f}% '
             f'({transferred/1024/1024:.1f}MB/{total/1024/1024:.1f}MB)'
         )
         sys.stdout.flush()
 
-
     remote_dir = remote_dir.rstrip('/')
     remote_dir_parent, remote_dir_name = os.path.split(remote_dir)
-    
+
     # Directory where the remote tarball is written
     remote_tar_dir = remote_tar_dir if remote_tar_dir else remote_dir_parent
-    # Path of the remote tar file 
+    # Path of the remote tar file
     remote_tar_filename = f"{remote_dir_name}.tar.gz"
-    
+
     # Remote and local tar files
     remote_tar = f"{os.path.join(remote_tar_dir, remote_tar_filename)}"
     local_tar = os.path.join(local_dir, remote_tar_filename)
@@ -294,7 +294,7 @@ def cluster_download(tunnel: SSHTunnel, remote_dir: str, local_dir: str, remote_
     # Command for streaming the compression progress
     command = f'cd {remote_dir_parent} && tar -cf - {remote_dir_name} | pv -s {total_size} -p -t -e -b -F "Compressing Remote Directory: %b %t %p" | gzip > {remote_tar}'
 
-    # Run the remote compression command and stream the progress 
+    # Run the remote compression command and stream the progress
     result = tunnel.run(command, watchers=[OutputWatcher()], pty=True, hide=False)
 
     # Get SFTP client from tunnel's session's underlying client
