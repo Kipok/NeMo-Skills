@@ -17,6 +17,7 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from typing import Callable
 
 import nemo_run as run
 import typer
@@ -81,7 +82,7 @@ configs = {
     TrainingAlgo.rm: "training_rm",
 }
 
-get_extra_arguments: dict[TrainingAlgo, callable[[TrainingParams], str]] = {
+get_extra_arguments: dict[TrainingAlgo, Callable[[TrainingParams], str]] = {
     TrainingAlgo.sft: lambda params: (
         f" ++model.data.train_ds.file_path='{params.training_data}' "
         f" ++model.data.validation_ds.file_path='{params.validation_data}' "
