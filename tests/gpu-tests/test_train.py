@@ -148,10 +148,6 @@ def test_rm():
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
 
-    model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
-    if not model_path:
-        pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
-
     train(
         ctx=wrap_arguments(
             "++trainer.rm.val_check_interval=1 "
@@ -179,3 +175,5 @@ def test_rm():
         training_data="/nemo_run/code/tests/data/small-rm-data.test",
         disable_wandb=True,
     )
+
+    assert os.path.exists("/tmp/nemo-skills-tests/test-rm/training/checkpoints/model-averaged-nemo")

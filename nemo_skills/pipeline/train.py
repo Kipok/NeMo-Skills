@@ -124,10 +124,11 @@ def train_dpo(params: TrainingParams) -> str:
 
 
 def train_rm(params: TrainingParams) -> str:
-    if params.config_name is None:
-        config_name = "dpo_config"
+    # if params.config_name is None:
+    #     config_name = "dpo_config"
     config_params = f""
-    training_script = "python -u /opt/NeMo-Aligner/examples/nlp/gpt/train_reward_model.py"
+    training_script = "python -m nemo_skills.training.start_rm"
+    # training_script = "python -u /opt/NeMo-Aligner/examples/nlp/gpt/train_reward_model.py"
     extra_arguments = (
         f" ++model.data.data_prefix.train='[{params.training_data}]' "
         f" ++model.data.data_prefix.validation='[{params.validation_data}]' "
