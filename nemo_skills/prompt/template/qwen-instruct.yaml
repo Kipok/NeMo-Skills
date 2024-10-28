@@ -29,5 +29,5 @@ code_end: "```\n"
 code_output_begin: "```output\n"
 code_output_end: "```\n"
 # used to post-process code output
-# choices: openmathinstruct, llama, qwen
+# choices: llama, qwen
 code_output_format: "qwen"

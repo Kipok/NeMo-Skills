@@ -118,7 +118,7 @@ class CodeExecutionWrapper:
                 # checking if any of the outputs need code execution and submitting requests in parallel
                 futures = [None] * len(prompts)
                 for idx, output in zip(remaining_ids, outputs):
-                    # .rfind(code_end, 0, -1) searches for the previous occurrence of code_end and checks
+                    # .rfind(code_end, 0, -1) searches for the second-to-last occurrence of code_end and checks
                     # that the last code_begin is not closed to ensure that we are inside the code block
                     if output.endswith(code_end) and output.rfind(code_begin) > output.rfind(code_end, 0, -1):
                         futures[idx] = executor.submit(
@@ -129,7 +129,7 @@ class CodeExecutionWrapper:
                             session_id=new_outputs[idx]['session_id'],
                         )
                 for idx, output in zip(remaining_ids, outputs):
-                    # .rfind(code_end, 0, -1) searches for the previous occurrence of code_end and checks
+                    # .rfind(code_end, 0, -1) searches for the second-to-last occurrence of code_end and checks
                     # that the last code_begin is not closed to ensure that we are inside the code block
                     if output.endswith(code_end) and output.rfind(code_begin) > output.rfind(code_end, 0, -1):
                         execution_dict, new_outputs[idx]['session_id'] = futures[idx].result()
