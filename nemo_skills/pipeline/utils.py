@@ -261,7 +261,8 @@ def cluster_download(tunnel: SSHTunnel, remote_dir: str, local_dir: str, remote_
     # Helper class and function to support streaming updates
     class OutputWatcher(StreamWatcher):
         """Class for streaming remote tar/compression process."""
-        # TODO: Current solution prints the progress on a new line. Can we make it in place? 
+
+        # TODO: Current solution prints the progress on a new line. Can we make it in place?
         def submit(self, stream):
             print(stream)
             return []
