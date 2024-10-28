@@ -334,10 +334,7 @@ def cluster_upload(tunnel: SSHTunnel, local_file: str, remote_dir: str):
         local_file: Path to the local file to upload
         remote_dir: Cluster path where to save the file
     """
-    # Get SFTP client from tunnel's session's underlying client
     sftp = tunnel.session.client.open_sftp()
-
-    # Use SFTP's get with callback
     sftp.put(str(local_file), str(remote_dir), callback=progress_callback)
     print(f"\nTransfer complete")
 
