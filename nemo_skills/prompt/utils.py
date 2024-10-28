@@ -135,7 +135,7 @@ class Prompt:
                 )
                 return formatted_output
 
-            pattern = r'({code_output_begin}\n)(.*?)(\n{code_output_end})'
+            pattern = r'({code_output_begin}\n)(.*?)({code_output_end})'
             example_dict["solution"] = re.sub(pattern, replace_code_output, example_dict["solution"], flags=re.DOTALL)
 
             example_dict["solution"] = example_dict["solution"].replace(

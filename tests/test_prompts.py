@@ -618,6 +618,186 @@ Here is the problem you need to solve:
     assert prompt.fill({'problem': '2 + 2 = ?'}) == expected_prompt
 
 
+def test_qwen_code_output_format_examples():
+    prompt = get_prompt('generic/math', 'qwen-instruct', 'math_text_with_code')
+
+    expected_prompt = """<|im_start|>system
+<|im_end|>
+<|im_start|>user
+Solve the following math problem. Make sure to put the answer (and only answer) inside \\boxed{}.
+
+Here are some examples of problems and solutions you can refer to.
+
+Problem:
+A parabola with equation $y=x^2+bx+c$ passes through the points $(-1,-11)$ and $(3,17)$. What is $c$?
+
+Solution:
+Let's write down an equation for the parabola and solve for $c$ using sympy.
+```python
+import sympy as sp
+
+# define the symbols
+x, y, b, c = sp.symbols('x y b c')
+
+# define the parabola equation
+parabola_eq = sp.Eq(y, x**2 + b*x + c)
+
+# the parabola passes through the points (-1,-11) and (3,17)
+# so we substitute these points into the parabola equation
+point_1 = parabola_eq.subs({x: -1, y: -11})
+point_2 = parabola_eq.subs({x: 3, y: 17})
+
+# we now have two equations and two unknowns (b and c)
+# we will solve for b and c
+solutions = sp.solve((point_1,point_2), (b, c))
+solutions[c]
+```
+```output
+-7
+```
+
+So c is \\boxed{-7}
+
+
+
+
+
+Problem:
+Let $f(x)$ be an odd function.  Is $f(f(x))$ even, odd, or neither?
+
+Enter "odd", "even", or "neither".
+
+Solution:
+The definition of an odd function is that $f(-x) = -f(x)$.
+Applying this to $f(f(-x))$ we get $f(f(-x)) = f(-f(x)) = -f(f(x))$.
+Thus, $f(f(x))$ is an \\boxed{odd} function.
+
+
+
+
+
+Problem:
+At the 2007 Math Olympics, Team Canada won $17$ out of a possible $100$ medals. Which one of the following is closest to the fraction of medals that they won? $$
+\\frac{1}{4} \\qquad \\frac{1}{5} \\qquad \\frac{1}{6} \\qquad \\frac{1}{7} \\qquad \\frac{1}{8}
+$$
+
+Solution:
+Let's use sympy to print out the differences between the fraction of medals that Canada won and each of the options.
+```python
+from sympy import Rational, Abs
+
+# team Canada won 17 out of 100 medals
+medal_frac = Rational(17, 100)
+
+# list of options
+options = [Rational(1, 4), Rational(1, 5), Rational(1, 6), Rational(1, 7), Rational(1, 8)]
+
+# let's print out the differences
+[Abs(medal_frac - frac_option) for frac_option in options]
+```
+```output
+[2/25, 3/100, 1/300, 19/700, 9/200]
+```
+
+Let's now check which difference is the smallest.
+```python
+import numpy as np
+
+# Calculate the idx of the closest option
+min_idx = np.argmin([2/25, 3/100, 1/300, 19/700, 9/200])
+
+# Print the closest option
+print(options[min_idx])
+```
+```output
+1/6
+```
+
+So the answer is \\boxed{1/6}.
+
+
+
+
+
+Problem:
+A rectangular box $P$ is inscribed in a sphere of radius $r$. The surface area of $P$ is 384, and the sum of the lengths of its 12 edges is 112. What is $r$?
+
+Solution:
+Let the dimensions of $P$ be $x$, $y$, and $z$.
+The sum of the box's edges is $4(x + y + z)$ and the surface area is $2xy + 2yz + 2xz$.
+The diameter of the sphere is $2r$ and it's equal to the diagonal of the box.
+Let's now write down the equations based on the above information and solve them using sympy.
+```python
+from sympy import symbols, Eq, solve
+
+# define the variables
+x, y, z, r = symbols('x y z r')
+
+# equations based on the given information
+eq1 = Eq(2 * (x*y + x*z + y*z), 384)
+eq2 = Eq(4 * (x + y + z), 112)
+
+# the diagonal of the box is the diameter of the sphere
+diagonal_eq = Eq(x**2 + y**2 + z**2, (2*r)**2)
+
+# solve the equations
+solutions = solve((eq1, eq2, diagonal_eq), (x, y, z, r))
+
+# let's see which values of r we get
+[solution[-1] for solution in solutions]
+```
+```output
+[-10, -10, 10, 10]
+```
+
+Since the radius of the sphere is positive, we get $r = \\boxed{10}$.
+
+
+
+
+
+Problem:
+A bee starts flying from point $P_0$. She flies $1$ inch due east to point $P_1$. For $j \\ge 1$, once the bee reaches point $P_j$, she turns $30^{\\circ}$ counterclockwise and then flies $j+1$ inches straight to point $P_{j+1}$. When the bee reaches $P_{2015},$ how far from $P_0$ is she, in inches?
+
+Solution:
+We can represent the rotation action via $\\omega = e^{\\pi i/6}$.
+Let's assume the bee starts at the origin, so $P_{2015}$ is at the point \\[z = 1 + 2 \\omega + 3 \\omega^2 + 4 \\omega^3 + \\dots + 2015 \\omega^{2014}.\\]
+This is an arithmetic-geometric series which we can solve by simplifying the expression.
+Alternatively, we can solve for |z| using sympy using the following code.
+```python
+from sympy import I, pi, exp, sqrt
+
+# rotation action of 30 degrees
+omega = exp(I * pi/6)
+
+position = 0
+
+for i in range(2015):
+    delta = (i + 1) * omega**(i)
+    position += delta
+
+real, img = (position.as_real_imag())
+# Distance from origin i.e. starting point
+dist = sqrt(real**2 + img**2)
+print(dist)
+```
+```output
+sqrt(2)*(1008 + 1008*sqrt(3))
+```
+
+So the bee is $\\boxed{1008\\sqrt{2} + 1008\\sqrt{6}}$ far from the starting point.
+
+
+
+
+
+Here is the problem you need to solve:
+2 + 2 = ?<|im_end|>
+<|im_start|>assistant
+"""
+    assert prompt.fill({'problem': '2 + 2 = ?'}) == expected_prompt
+
+
 def test_generic_multichoice_prompt():
     prompt = get_prompt('generic/multichoice', 'default-base')
 

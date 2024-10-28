@@ -196,6 +196,13 @@ x
     "code_begin,code_end,code_output_begin,code_output_end,code_output_format",
     [
         ('<llm-code>\n', '</llm-code>\n', '<llm-code-output>\n', '</llm-code-output>\n', 'qwen'),
+        (
+            '<|python_tag|>',
+            '<|eom_id|>',
+            '<|start_header_id|>ipython<|end_header_id|>',
+            '<|eot_id|><|start_header_id|>assistant<|end_header_id|>',
+            'llama',
+        ),
     ],
 )
 def test_few_shots(sandbox_type, code_begin, code_end, code_output_begin, code_output_end, code_output_format):
@@ -226,13 +233,24 @@ def test_few_shots(sandbox_type, code_begin, code_end, code_output_begin, code_o
 
             if len(extract_code_to_execute(example['solution'], code_begin, code_end, extract_all=True)) > 0:
                 code_snippets = extract_code_to_execute(example['solution'], code_begin, code_end, extract_all=True)
-                expected_outputs = extract_code_output(
-                    example['solution'], code_output_begin, code_output_end, extract_all=True
-                )
+                if code_output_format == 'qwen':
+                    expected_outputs = extract_code_output(
+                        example['solution'], code_output_begin, code_output_end, extract_all=True
+                    )
+                    expected_outputs = [(output, None) for output in expected_outputs]
+                elif code_output_format == 'llama':
+                    pattern = r'\[stdout\]\n(.*?)\[/stdout\]|\[stderr\]\n(.*?)\[/stderr\]'
+                    expected_outputs = re.findall(pattern, example['solution'], re.DOTALL)
                 session_id = None
-                for code_snippet, expected_output in zip(code_snippets, expected_outputs):
+                for code_snippet, (expected_output, expected_error) in zip(code_snippets, expected_outputs):
+                    if not expected_error:
+                        expected_error = None
                     output, session_id = sandbox.execute_code(code_snippet, session_id=session_id)
-                    execution_dict = {"process_status": "completed", "stdout": expected_output.strip(), "stderr": None}
+                    execution_dict = {
+                        "process_status": "completed",
+                        "stdout": expected_output,
+                        "stderr": expected_error,
+                    }
                     generated_output = format_code_output(
                         output, code_output_begin, code_output_end, code_output_format
                     )
