@@ -37,8 +37,8 @@ class TrainingAlgo(str, Enum):
 
 @dataclass
 class TrainingParams:
-    config_name: str
-    config_path: str
+    training_script: str
+    config_params: str
     nemo_model: str
     output_dir: str
     training_data: str
@@ -53,114 +53,52 @@ class TrainingParams:
     extra_arguments: str = ""
     logging_params: str = ""
 
+def get_cmd(params: TrainingParams, extra_arguments: str) -> str:
+    cmd = (
+        f"export WANDB_API_KEY={os.getenv('WANDB_API_KEY', '')} && "
+        f"export HF_TOKEN={get_token()} && "
+        f"export HYDRA_FULL_ERROR=1 && "
+        f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
+        f"cd /nemo_run/code && "
+        f"echo 'Starting training' && "
+        f"{params.training_script} "
+        f"    {params.config_params}"
+        f"    ++model.tensor_model_parallel_size={params.num_gpus} "
+        f"    trainer.devices={params.num_gpus} "
+        f"    trainer.num_nodes={params.num_nodes} "
+        f"    {params.logging_params} "
+        f"    exp_manager.name={params.expname} "
+        f"    exp_manager.explicit_log_dir={params.output_dir}/training "
+        f"    exp_manager.exp_dir={params.output_dir}/training "
+        f"    ++exp_manager.max_time_per_run={params.timeout} "
+        f"    {extra_arguments} "
+    )
+    return cmd
 
-def train_sft(params: TrainingParams) -> str:
-    if params.config_name is None:
-        config_name = "sft_config"
-    else:
-        config_name = params.config
-    config_params = f"--config-name={config_name} --config-path={params.config_path} "
-    training_script = "python -m nemo_skills.training.start_sft"
-    extra_arguments = (
+configs = {
+    TrainingAlgo.sft: "sft_config",
+    TrainingAlgo.dpo: "dpo_config",
+    TrainingAlgo.rm: "training_rm",
+}
+
+get_extra_arguments: dict[TrainingAlgo, callable[[TrainingParams], str]] = {
+    TrainingAlgo.sft: lambda params: (
         f" ++model.data.train_ds.file_path='{params.training_data}' "
         f" ++model.data.validation_ds.file_path='{params.validation_data}' "
         f" model.restore_from_path={params.nemo_model} " + params.extra_arguments
-    )
-    cmd = (
-        f"export WANDB_API_KEY={os.getenv('WANDB_API_KEY', '')} && "
-        f"export HF_TOKEN={get_token()} && "
-        f"export HYDRA_FULL_ERROR=1 && "
-        f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"cd /nemo_run/code && "
-        f"echo 'Starting training' && "
-        f"{training_script} "
-        f"    {config_params}"
-        f"    ++model.tensor_model_parallel_size={params.num_gpus} "
-        f"    trainer.devices={params.num_gpus} "
-        f"    trainer.num_nodes={params.num_nodes} "
-        f"    {params.logging_params} "
-        f"    exp_manager.name={params.expname} "
-        f"    exp_manager.explicit_log_dir={params.output_dir}/training "
-        f"    exp_manager.exp_dir={params.output_dir}/training "
-        f"    ++exp_manager.max_time_per_run={params.timeout} "
-        f"    {extra_arguments} "
-    )
-    return cmd
-
-
-def train_dpo(params: TrainingParams) -> str:
-    if params.config_name is None:
-        config_name = "dpo_config"
-    else:
-        config_name = params.config
-    config_params = f"--config-name={config_name} --config-path={params.config_path} "
-    training_script = "python -m nemo_skills.training.start_dpo"
-    extra_arguments = (
+    ),
+    TrainingAlgo.dpo: lambda params: (
         f" ++model.data.data_prefix.train='[{params.training_data}]' "
         f" ++model.data.data_prefix.validation='[{params.validation_data}]' "
         f" ++model.data.data_prefix.test='[{params.validation_data}]' "
         f" pretrained_checkpoint.restore_from_path={params.nemo_model} " + params.extra_arguments
-    )
-    cmd = (
-        f"export WANDB_API_KEY={os.getenv('WANDB_API_KEY', '')} && "
-        f"export HF_TOKEN={get_token()} && "
-        f"export HYDRA_FULL_ERROR=1 && "
-        f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"cd /nemo_run/code && "
-        f"echo 'Starting training' && "
-        f"{training_script} "
-        f"    {config_params}"
-        f"    ++model.tensor_model_parallel_size={params.num_gpus} "
-        f"    trainer.devices={params.num_gpus} "
-        f"    trainer.num_nodes={params.num_nodes} "
-        f"    {params.logging_params} "
-        f"    exp_manager.name={params.expname} "
-        f"    exp_manager.explicit_log_dir={params.output_dir}/training "
-        f"    exp_manager.exp_dir={params.output_dir}/training "
-        f"    ++exp_manager.max_time_per_run={params.timeout} "
-        f"    {extra_arguments} "
-    )
-    return cmd
-
-
-def train_rm(params: TrainingParams) -> str:
-    # if params.config_name is None:
-    #     config_name = "dpo_config"
-    config_params = f""
-    training_script = "python -m nemo_skills.training.start_rm"
-    # training_script = "python -u /opt/NeMo-Aligner/examples/nlp/gpt/train_reward_model.py"
-    extra_arguments = (
+    ),
+    TrainingAlgo.rm: lambda params: (
         f" ++model.data.data_prefix.train='[{params.training_data}]' "
         f" ++model.data.data_prefix.validation='[{params.validation_data}]' "
         f" ++model.data.data_prefix.test='[{params.validation_data}]' "
         f" pretrained_checkpoint.restore_from_path={params.nemo_model} " + params.extra_arguments
-    )
-    cmd = (
-        f"export WANDB_API_KEY={os.getenv('WANDB_API_KEY', '')} && "
-        f"export HF_TOKEN={get_token()} && "
-        f"export HYDRA_FULL_ERROR=1 && "
-        f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"cd /nemo_run/code && "
-        f"echo 'Starting training' && "
-        f"{training_script} "
-        f"    {config_params}"
-        f"    ++model.tensor_model_parallel_size={params.num_gpus} "
-        f"    trainer.devices={params.num_gpus} "
-        f"    trainer.num_nodes={params.num_nodes} "
-        f"    {params.logging_params} "
-        f"    exp_manager.name={params.expname} "
-        f"    exp_manager.explicit_log_dir={params.output_dir}/training "
-        f"    exp_manager.exp_dir={params.output_dir}/training "
-        f"    ++exp_manager.max_time_per_run={params.timeout} "
-        f"    {extra_arguments} "
-    )
-    return cmd
-
-
-command_getters = {
-    TrainingAlgo.sft: train_sft,
-    TrainingAlgo.dpo: train_dpo,
-    TrainingAlgo.rm: train_rm,
+    ),
 }
 
 
@@ -198,30 +136,32 @@ def get_training_cmd(
 
     logging_params = get_logging_params(expname, disable_wandb, wandb_project)
 
-    get_cmd: callable[[TrainingParams], str] = command_getters.get(training_algo)
+    if config_name is None:
+        config_name = configs[training_algo]
+    config_params = f"--config-name={config_name} --config-path={config_path} "
 
-    if get_cmd is None:
-        raise ValueError(f"Training algorithm {training_algo} not supported")
+    training_script = f"python -m nemo_skills.training.start_{training_algo}"
 
-    return get_cmd(
-        TrainingParams(
-            config_name=config_name,
-            config_path=config_path,
-            nemo_model=nemo_model,
-            output_dir=output_dir,
-            training_data=training_data,
-            validation_data=validation_data,
-            num_gpus=num_gpus,
-            num_nodes=num_nodes,
-            expname=expname,
-            training_algo=training_algo,
-            disable_wandb=disable_wandb,
-            wandb_project=wandb_project,
-            timeout=timeout,
-            extra_arguments=extra_arguments,
-            logging_params=logging_params,
-        )
+    training_params = TrainingParams(
+        training_script=training_script,
+        config_params=config_params,
+        nemo_model=nemo_model,
+        output_dir=output_dir,
+        training_data=training_data,
+        validation_data=validation_data,
+        num_gpus=num_gpus,
+        num_nodes=num_nodes,
+        expname=expname,
+        training_algo=training_algo,
+        disable_wandb=disable_wandb,
+        wandb_project=wandb_project,
+        timeout=timeout,
+        extra_arguments=extra_arguments,
+        logging_params=logging_params,
     )
+    extra_arguments = get_extra_arguments[training_algo](training_params)
+
+    return get_cmd(training_params, extra_arguments)
 
 
 def get_logging_params(expname, disable_wandb, wandb_project):
