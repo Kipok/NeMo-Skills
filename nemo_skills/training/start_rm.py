@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import torch.multiprocessing as mp
-from omegaconf.omegaconf import OmegaConf
-
 from nemo.core.config import hydra_runner
 from nemo.utils import logging
 from nemo.utils.exp_manager import exp_manager
@@ -36,6 +34,7 @@ from nemo_aligner.utils.train_script_utils import (
     retrieve_custom_trainer_state_dict,
 )
 from nemo_aligner.utils.utils import load_and_override_model_config, load_from_nemo
+from omegaconf.omegaconf import OmegaConf
 
 """Script to start Reward Model training"""
 

@@ -54,6 +54,7 @@ class TrainingParams:
     extra_arguments: str = ""
     logging_params: str = ""
 
+
 def get_cmd(params: TrainingParams, extra_arguments: str) -> str:
     cmd = (
         f"export WANDB_API_KEY={os.getenv('WANDB_API_KEY', '')} && "
@@ -75,6 +76,7 @@ def get_cmd(params: TrainingParams, extra_arguments: str) -> str:
         f"    {extra_arguments} "
     )
     return cmd
+
 
 configs = {
     TrainingAlgo.sft: "sft_config",
