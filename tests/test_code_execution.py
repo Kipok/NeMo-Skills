@@ -301,7 +301,7 @@ def test_lean4_code_execution_failure(sandbox_type):
 def test_lean4_few_shots(sandbox_type):
     sandbox = _get_sandbox(sandbox_type)
 
-    from nemo_skills.prompt.few_shot_examples.minif2f import minif2f_deepseek_fewshot
+    from nemo_skills.prompt.few_shot_examples.lean4 import minif2f_deepseek_fewshot
 
     # Test case for Lean4 code with syntax error
     session_id_list = []

@@ -286,6 +286,18 @@ def eval_lean4(cfg):
         **eval_config_dict,
     )
 
+def eval_lean4_stat(cfg):
+    eval_config = LeanEvaluatorConfig(**cfg.eval_config)
+
+    sandbox = get_sandbox(**eval_config.sandbox)
+    eval_config_dict = asdict(eval_config)
+    eval_config_dict.pop('sandbox')
+    sandbox.batch_evaluate_results(
+        input_files=cfg.input_files,
+        answer_format='lean-stat',
+        **eval_config_dict,
+    )
+
 
 EVALUATOR_MAP = {
     'math': eval_math,
@@ -294,6 +306,8 @@ EVALUATOR_MAP = {
     'arena': eval_arena,
     'answer_judgement': dummy_eval,
     'lean4': eval_lean4,
+    'lean4-stat': eval_lean4_stat
+
 }
 
 

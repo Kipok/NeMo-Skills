@@ -11,13 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from nemo_skills.prompt.few_shot_examples.gsm8k import examples_map as examples_gsm8k
-from nemo_skills.prompt.few_shot_examples.math import examples_map as examples_math
-from nemo_skills.prompt.few_shot_examples.lean4 import examples_map as examples_lean4
+from nemo_skills.evaluation.metrics import Lean4Metrics
 
-examples_map = examples_gsm8k.copy()
-examples_map.update(examples_math)
-examples_map.update(examples_lean4)
-assert len(examples_map) == len(examples_gsm8k) + len(examples_math) + len(
-    examples_lean4
-), "Duplicate keys in examples!"
+# settings that define how evaluation should be done by default (all can be changed from cmdline)
+PROMPT_CONFIG = 'generic/nat-to-lean4'
+DATASET_GROUP = 'lean4'
+METRICS_CLASS = Lean4Metrics
+DEFAULT_EVAL_ARGS = "++eval_type=lean4-stat"
+DEFAULT_GENERATION_ARGS = ""

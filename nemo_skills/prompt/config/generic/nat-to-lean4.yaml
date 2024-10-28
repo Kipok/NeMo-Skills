@@ -1,0 +1,96 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# few_shot_examples:
+#   prefix: "Here are some examples of Lean4 statements and corresponding proofs you can refer to.\n\n"
+#   template: "Lean 4 statement:\n```lean4\n{header}{informal_prefix}{formal_statement}\nExpected response with the proof:\n{formal_proof}```\n\n\n\n\n\n"
+#   suffix: "Here is the the statement that you need to complete with the proof. Start with the Lean code right away and DO NOT repeat the given statement.\n\n"
+
+# user: |-
+#   Complete the proof of the following Lean 4 statement. Start with the proof code right away and DO NOT repeat the given statement.
+
+#   {examples}```lean4
+#   {header}{informal_prefix}{formal_statement}
+
+
+
+# import Mathlib
+
+# -- Core mathematical structures and commonly used mathematical fields
+# open Complex Real Nat Int Rat Filter Function Set Metric Finset
+# open Algebra Group Theory Ring Field LinearAlgebra Matrix NumberTheory 
+# open CategoryTheory
+
+# -- Scoped notations for readability in expressions and proofs
+# open scoped BigOperators Topology Classical RealInnerProductSpace 
+# open scoped ConvexAnalysis
+
+# -- Importing basic set-theoretic, logical, and proof tools
+# open scoped SetTheory Logic ClassicalPropositional Logic.Basic
+
+# -- Enabling specific types and tools for commonly used mathematical constructions
+# open scoped Pointwise Affine Cardinal Ordinal Divisibility
+
+# -- Additional specific notations, if often used in broader mathematical contexts
+# open scoped MeasureTheory NormedSpace Probability Theory
+
+
+    # {
+    #     "header": "import Mathlib\n\nopen Complex Filter Function Metric Finset\nopen scoped BigOperators Topology\n\n",
+    #     "problem": "Two standard six-faced dice are rolled. Jean wins if the product of the two numbers rolled is odd or a multiple of three, otherwise Allen wins. What is the probability that Jean wins? Express your answer as a common fraction.",
+    #     "predicted_answer": "\\frac{2}{3}",
+    #     "formal_statement": "theorem test_counting_and_probability_551 : \n  (Finset.filter (fun x => (x.1 * x.2) % 2 = 1 ∨ (x.1 * x.2) % 3 = 0) \n    (Finset.product (Finset.Icc 1 6) (Finset.Icc 1 6))).card / \n  (Finset.product (Finset.Icc 1 6) (Finset.Icc 1 6)).card = 2 / 3 := by\n",        
+    #     "id": "test_counting_and_probability/551.json",
+    #     "formal_proof": "sorry",
+    # },
+
+few_shot_examples:
+    prefix: "Here are some examples of problems and their corresponding Lean 4 translation, including theorem placeholders using `sorry` and problem ids as theorem names. Use them as a guide.\n\n"
+    template: "Problem:\n{problem}\nAnswer is: {predicted_answer}\nid:{id}\nExpected Lean 4 translation:\n```lean4\n{header}{formal_statement}{formal_proof}```\n\n\n\n\n\n"
+    suffix: "Here is the problem you need to transkate into a Lean 4 theorem (only the core declaration). Use `sorry` as a placeholder for the proof and problem id as theorem name.\n\n"
+
+# user: |-
+#   Translate the problem to Lean 4 theorem (only the core declaration). Use `sorry` as a placeholder for the proof and problem id as theorem name.
+
+#   {examples}{problem}
+#   Answer is: {expected_answer}
+#   id: {id}
+#   ```lean4
+#   import Mathlib
+  
+#   open Complex Filter Function Metric Finset
+#   nopen scoped BigOperators Topology
+
+
+user: |-
+  Translate the problem to Lean 4 theorem (only the core declaration). Use `sorry` as a placeholder for the proof and problem id as theorem name.
+
+  {examples}{problem}
+  Answer is: {predicted_answer}
+  id: {new_id}
+  ```lean4
+  import Mathlib
+  
+  open Complex Filter Function Metric Finset
+  nopen scoped BigOperators Topology
+
+
+
+
+
+
+
+
+
+  
