@@ -188,7 +188,10 @@ def summarize_results(
             Path(results_dir) / 'metrics.json',
             Path(get_unmounted_path(cluster_config, upload_path)) / 'metrics.json',
         )
+        print("Metrics are saved to", str(Path(get_unmounted_path(cluster_config, upload_path)) / 'metrics.json'))
         tunnel.cleanup()
+    else:
+        print("Metrics are saved to", str(Path(results_dir) / 'metrics.json'))
 
 
 if __name__ == "__main__":
