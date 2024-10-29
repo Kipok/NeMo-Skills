@@ -16,13 +16,14 @@ import importlib
 import os
 import sys
 from pathlib import Path
+import json
 
 import pytest
 
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 from nemo_skills.evaluation.metrics import compute_metrics
 from nemo_skills.pipeline import wrap_arguments
-from nemo_skills.pipeline.cli import eval, train
+from nemo_skills.pipeline.cli import eval, train, score_rm
 
 
 @pytest.mark.gpu
@@ -148,6 +149,8 @@ def test_rm():
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
 
+    os.makedirs("/tmp/nemo-skills-tests/test-rm/score", exist_ok=True)
+
     train(
         ctx=wrap_arguments(
             "++trainer.rm.val_check_interval=1 "
@@ -177,3 +180,41 @@ def test_rm():
     )
 
     assert os.path.exists("/tmp/nemo-skills-tests/test-rm/model-averaged-nemo")
+
+    score_rm(
+        ctx=wrap_arguments("++batch_size=8 " "++max_samples=10"),
+        cluster="test-local",
+        config_dir=Path(__file__).absolute().parent,
+        input_dir="/nemo_run/code/tests/data/score_rm_inputs",
+        output_dir="/tmp/nemo-skills-tests/test-rm/score",
+        server_type="nemo",
+        expname="test-rm",
+        model="/tmp/nemo-skills-tests/test-rm/model-averaged-nemo",
+        server_gpus=1,
+        server_nodes=1,
+        partition="interactive",
+        num_random_seeds=None,
+    )
+
+    assert os.path.exists("/tmp/nemo-skills-tests/test-rm/score/output-greedy.jsonl")
+    rm_output = [json.loads(line) for line in open("/tmp/nemo-skills-tests/test-rm/score/output-greedy.jsonl")]
+    assert len(rm_output) == 50
+
+    score_rm(
+        ctx=wrap_arguments("++batch_size=8 " "++max_samples=10"),
+        cluster="test-local",
+        config_dir=Path(__file__).absolute().parent,
+        input_dir="/nemo_run/code/tests/data",
+        output_dir="/tmp/nemo-skills-tests/test-rm/score",
+        server_type="nemo",
+        expname="test-rm",
+        model="/tmp/nemo-skills-tests/test-rm/model-averaged-nemo",
+        server_gpus=1,
+        server_nodes=1,
+        partition="interactive",
+        num_random_seeds=3,
+    )
+
+    # assert os.path.exists("/tmp/nemo-skills-tests/test-rm/score/output-rs0.jsonl")
+    # assert sum(1 for _ in open("/tmp/nemo-skills-tests/test-rm/score/output-rs0.jsonl")) == 50
+    # assert 'reward_model_score' in next(open("/tmp/nemo-skills-tests/test-rm/score/output-rs0.jsonl"))
