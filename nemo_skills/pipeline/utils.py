@@ -104,9 +104,19 @@ def get_generation_command(server_address, generation_commands):
     )
     return cmd
 
+nemo_server_start_template = \
+    "python -m nemo_skills.inference.server.serve_nemo "  \
+    "    gpt_model_file={model_path} " \
+    "    trainer.devices={num_gpus} " \
+    "    trainer.num_nodes={num_nodes} " \
+    "    tensor_model_parallel_size={num_gpus} " \
+    "    pipeline_model_parallel_size={num_nodes} " \
+    "    {server_args} "
+
 
 def get_server_command(
-    server_type: str, num_gpus: int, num_nodes: int, model_path: str, cluster_config: dict, server_args: str = ""
+    server_type: str, num_gpus: int, num_nodes: int, model_path: str, cluster_config: dict, server_args: str = "",
+    nemo_server_start_template: str = nemo_server_start_template,
 ):
     num_tasks = num_gpus
 
@@ -121,13 +131,13 @@ def get_server_command(
 
     if server_type == 'nemo':
         server_start_cmd = (
-            f"python -m nemo_skills.inference.server.serve_nemo "
-            f"    gpt_model_file={model_path} "
-            f"    trainer.devices={num_gpus} "
-            f"    trainer.num_nodes={num_nodes} "
-            f"    tensor_model_parallel_size={num_gpus} "
-            f"    pipeline_model_parallel_size={num_nodes} "
-            f"    {server_args} "
+            nemo_server_start_template.format(
+                model_path=model_path,
+                num_gpus=num_gpus,
+                num_nodes=num_nodes,
+                server_args=server_args,
+                extra_array_args="",
+            )
         )
         # somehow on slurm nemo needs multiple tasks, but locally only 1
         if cluster_config["executor"] == "local":
@@ -564,6 +574,7 @@ def add_task(
     server_config=None,
     task_dependencies: list[str] = None,
     run_after=None,
+    get_server_command=get_server_command,
 ):
     """Wrapper for nemo-run exp.add to help setting up executors and dependencies.
 
