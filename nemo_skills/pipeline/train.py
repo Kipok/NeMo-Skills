@@ -81,7 +81,7 @@ def get_cmd(params: TrainingParams, extra_arguments: str) -> str:
 configs = {
     TrainingAlgo.sft: "sft_config",
     TrainingAlgo.dpo: "dpo_config",
-    TrainingAlgo.rm: "training_rm",
+    TrainingAlgo.rm: "rm_config",
 }
 
 get_extra_arguments: dict[TrainingAlgo, Callable[[TrainingParams], str]] = {

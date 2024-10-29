@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# copied from https://github.com/NVIDIA/NeMo-Aligner/blob/main/examples/nlp/gpt/train_reward_model.py
+
 import torch.multiprocessing as mp
 from nemo.core.config import hydra_runner
 from nemo.utils import logging
