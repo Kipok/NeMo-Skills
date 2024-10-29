@@ -24,17 +24,19 @@ args = parser.parse_args()
 
 if args.model_type == 'qwen':
     model_name = "Qwen/Qwen2.5-Math-7B"
-    output_dir = "/tmp/nemo-skills-tests/tiny-qwen-hf"
+    output_dir = "/tmp/nemo-skills-tests/qwen/tiny-model-hf"
+    hidden_dim = 56
 else:
     model_name = "meta-llama/Meta-Llama-3.1-8B-Instruct"
-    output_dir = "/tmp/nemo-skills-tests/tiny-llama-hf"
+    output_dir = "/tmp/nemo-skills-tests/llama/tiny-model-hf"
+    hidden_dim = 64
 
 config = AutoConfig.from_pretrained(model_name)
 config.update(
     dict(
-        hidden_size=56,
+        hidden_size=hidden_dim,
         head_dim=2,
-        intermediate_size=56,
+        intermediate_size=hidden_dim,
         num_hidden_layers=2,
         max_position_embeddings=256,
     )
