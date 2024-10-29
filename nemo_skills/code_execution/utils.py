@@ -31,10 +31,10 @@ def format_code_output(
         output = ""
         if execution_dict['stdout']:
             output += f"{execution_dict['stdout']}"
+        if execution_dict['stderr'] and execution_dict['stdout']:
+            output += "\n"
         if execution_dict['stderr']:
             output += f"{execution_dict['stderr']}"
-        if execution_dict['stderr'] and execution_dict['stdout']:
-            raise ValueError("Both stdout and stderr are not empty.")
         output = f"{code_output_begin}{output}{code_output_end}"
     else:
         raise ValueError(f"Unknown code_output_format: {code_output_format}")
