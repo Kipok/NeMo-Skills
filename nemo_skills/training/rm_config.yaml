@@ -18,8 +18,8 @@ defaults:
   - optional tp_overlap@model.ub_tp_comm_overlap_cfg:
 
 trainer:
-  num_nodes: 8
-  devices: 8
+  num_nodes: 1
+  devices: 1
   accelerator: gpu
   precision: bf16
 
@@ -51,18 +51,18 @@ exp_manager:
   max_time_per_run: ${trainer.max_time}
   create_wandb_logger: False
   wandb_logger_kwargs:
-    project: nemo_aligner_rm
-    name: rlhf_gpt3_rm_2b
+    project: null
+    name: null
   resume_from_checkpoint: null # The path to a checkpoint file to continue the training, restores the whole state including the epoch, step, LR schedulers, apex, etc.
   resume_if_exists: True
   resume_ignore_no_checkpoint: True
   create_checkpoint_callback: True
   checkpoint_callback_params:
     monitor: val_loss
-    save_top_k: 3
+    save_top_k: 50
     mode: min
     always_save_nemo: False # saves nemo file during validation, not implemented for model parallel
-    save_nemo_on_train_end: True # not recommended when training large models on clusters with short time limits
+    save_nemo_on_train_end: False # not recommended when training large models on clusters with short time limits
     filename: 'megatron_gpt--{${.monitor}:.3f}-{step}-{consumed_samples}-{epoch}'
     model_parallel_size: ${multiply:${model.tensor_model_parallel_size}, ${model.pipeline_model_parallel_size}}
 
@@ -83,7 +83,7 @@ model:
   use_avg_pool: False  # Whether to use avg pool to sum across the sequence dim in reward model
   force_head_dtype: float32  # enforce specific dtype for the final projection in the model head
   micro_batch_size: 1
-  global_batch_size: 64
+  global_batch_size: 512
   megatron_amp_O2: True
 
   # if there is ever a need to run inference
@@ -111,9 +111,9 @@ model:
     - 0.98
     sched:
       name: CosineAnnealing
-      warmup_steps: 10
-      constant_steps: 1000
-      min_lr: 9e-7
+      warmup_steps: 0
+      constant_steps: 0
+      min_lr: ${model.optim.lr} # No interpolation happening if the min_lr is not set to be different from lr
 
   data:
     data_impl: jsonl
