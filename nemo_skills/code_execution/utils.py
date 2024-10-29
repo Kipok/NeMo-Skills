@@ -32,6 +32,9 @@ def format_code_output(
         if execution_dict['stdout']:
             output += f"{execution_dict['stdout']}"
         if execution_dict['stderr'] and execution_dict['stdout']:
+            print("Both stdout and stderr are present in the output.")
+            print(f"stdout: {execution_dict['stdout']}")
+            print(f"stderr: {execution_dict['stderr']}")
             output += "\n"
         if execution_dict['stderr']:
             output += f"{execution_dict['stderr']}"
