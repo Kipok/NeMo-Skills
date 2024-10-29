@@ -193,6 +193,7 @@ code_snippets = []
             for code_snippet in self.sessions[session_id]:
                 TO_EXECUTE += f'\ncode_snippets.append("""{code_snippet}""")\n'
 
+            # we do `strip() + \\n` below to ensure that `print(res)` and `res` return the same output
             TO_EXECUTE += f"""
 try:
     shell = InteractiveShell()
@@ -201,6 +202,10 @@ try:
             exec_result = shell.run_cell(code)
     stdout = captured.stdout.replace("Out[1]: ", "").strip()
     stderr = captured.stderr.replace("Out[1]: ", "").strip()
+    if stdout:
+        stdout += "\\n"
+    if stderr:
+        stderr += "\\n"
     if len(stdout) > {max_output_characters}:
         stdout = stdout[:{max_output_characters}] + "<output cut>"
     if len(stderr) > {max_output_characters}:

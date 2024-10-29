@@ -224,7 +224,7 @@ def test_few_shots(sandbox_type, code_begin, code_end, code_output_begin, code_o
                 continue
             example = example.copy()
 
-            pattern = r'({code_output_begin}\n)(.*?)(\n{code_output_end})'
+            pattern = r'({code_output_begin}\n)(.*?)({code_output_end})'
             example["solution"] = re.sub(pattern, replace_code_output, example["solution"], flags=re.DOTALL)
             example["solution"] = example["solution"].replace("{code_begin}", code_begin)
             example["solution"] = example["solution"].replace("{code_end}", code_end)
