@@ -369,7 +369,7 @@ def get_packager():
         return run.GitArchivePackager(
             include_pattern=include_pattern,
             include_pattern_relative_path=include_pattern_relative_path,
-            check_uncommitted_changes=False,
+            check_uncommitted_changes=True,
         )
     except subprocess.CalledProcessError:
         logging.warning(
