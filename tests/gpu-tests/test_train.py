@@ -176,4 +176,4 @@ def test_rm():
         disable_wandb=True,
     )
 
-    assert os.path.exists("/tmp/nemo-skills-tests/test-rm/training/checkpoints/model-averaged-nemo")
+    assert os.path.exists("/tmp/nemo-skills-tests/test-rm/training/checkpoints/model-averaged")
