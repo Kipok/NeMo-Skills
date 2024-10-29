@@ -22,7 +22,8 @@ FROM ${BASE_IMAGE} AS vllm-deps
 # install vllm dependencies
 WORKDIR /opt
 
-ARG VLLM_HASH=v0.6.3.post1
+ARG VLLM_HASH=bc2ef1f77c1578612198f60ec392731efb3847c5
+#v0.6.3.post1
 
 RUN git clone https://github.com/vllm-project/vllm.git && \
   cd vllm && \
