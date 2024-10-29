@@ -166,7 +166,7 @@ def get_training_cmd(
         logging_params=logging_params,
     )
 
-    return get_cmd(training_params, extra_arguments)
+    return get_cmd(training_params)
 
 
 def get_logging_params(expname, disable_wandb, wandb_project):
