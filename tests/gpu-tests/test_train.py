@@ -30,6 +30,10 @@ def test_sft():
     model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
+    model_type = os.getenv('NEMO_SKILLS_TEST_MODEL_TYPE')
+    if not model_type:
+        pytest.skip("Define NEMO_SKILLS_TEST_MODEL_TYPE to run this test")
+    prompt_template = 'llama3-instruct' if model_type == 'llama' else 'qwen-instruct'
 
     train(
         ctx=wrap_arguments(
@@ -48,7 +52,7 @@ def test_sft():
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
         expname="test-sft",
-        output_dir="/tmp/nemo-skills-tests/test-sft",
+        output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-sft",
         nemo_model=model_path,
         num_nodes=1,
         num_gpus=1,
@@ -59,12 +63,12 @@ def test_sft():
 
     # checking that the final model can be used for evaluation
     eval(
-        ctx=wrap_arguments("++prompt_template=llama3-instruct " "++split=test " "++batch_size=8 " "++max_samples=10"),
+        ctx=wrap_arguments(f"++prompt_template={prompt_template} ++split=test ++batch_size=8 ++max_samples=10"),
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
-        model="/tmp/nemo-skills-tests/test-sft/model-averaged-nemo",
+        model=f"/tmp/nemo-skills-tests/{model_type}/test-sft/model-averaged-nemo",
         server_type="nemo",
-        output_dir="/tmp/nemo-skills-tests/test-sft/evaluation",
+        output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-sft/evaluation",
         benchmarks="gsm8k:0",
         server_gpus=1,
         server_nodes=1,
@@ -73,7 +77,7 @@ def test_sft():
     )
 
     metrics = compute_metrics(
-        [f"/tmp/nemo-skills-tests/test-sft/evaluation/eval-results/gsm8k/output-greedy.jsonl"],
+        [f"/tmp/nemo-skills-tests/{model_type}/test-sft/evaluation/eval-results/gsm8k/output-greedy.jsonl"],
         importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS(),
     )
     # only checking the total, since model is tiny
@@ -85,10 +89,10 @@ def test_dpo():
     model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
-
-    model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
-    if not model_path:
-        pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
+    model_type = os.getenv('NEMO_SKILLS_TEST_MODEL_TYPE')
+    if not model_type:
+        pytest.skip("Define NEMO_SKILLS_TEST_MODEL_TYPE to run this test")
+    prompt_template = 'llama3-instruct' if model_type == 'llama' else 'qwen-instruct'
 
     train(
         ctx=wrap_arguments(
@@ -109,7 +113,7 @@ def test_dpo():
         config_dir=Path(__file__).absolute().parent,
         expname="test-dpo",
         training_algo="dpo",
-        output_dir="/tmp/nemo-skills-tests/test-dpo",
+        output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-dpo",
         nemo_model=model_path,
         num_nodes=1,
         num_gpus=1,
@@ -120,12 +124,12 @@ def test_dpo():
 
     # checking that the final model can be used for evaluation
     eval(
-        ctx=wrap_arguments("++prompt_template=llama3-instruct " "++split=test " "++batch_size=8 " "++max_samples=10"),
+        ctx=wrap_arguments(f"++prompt_template={prompt_template} ++split=test ++batch_size=8 ++max_samples=10"),
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
-        model="/tmp/nemo-skills-tests/test-dpo/model-averaged-nemo",
+        model=f"/tmp/nemo-skills-tests/{model_type}/test-dpo/model-averaged-nemo",
         server_type="nemo",
-        output_dir="/tmp/nemo-skills-tests/test-dpo/evaluation",
+        output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-dpo/evaluation",
         benchmarks="gsm8k:0",
         server_gpus=1,
         server_nodes=1,
@@ -134,7 +138,7 @@ def test_dpo():
     )
 
     metrics = compute_metrics(
-        [f"/tmp/nemo-skills-tests/test-dpo/evaluation/eval-results/gsm8k/output-greedy.jsonl"],
+        [f"/tmp/nemo-skills-tests/{model_type}/test-dpo/evaluation/eval-results/gsm8k/output-greedy.jsonl"],
         importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS(),
     )
     # only checking the total, since model is tiny
@@ -146,6 +150,9 @@ def test_rm():
     model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
+    model_type = os.getenv('NEMO_SKILLS_TEST_MODEL_TYPE')
+    if not model_type:
+        pytest.skip("Define NEMO_SKILLS_TEST_MODEL_TYPE to run this test")
 
     train(
         ctx=wrap_arguments(
@@ -166,7 +173,7 @@ def test_rm():
         config_dir=Path(__file__).absolute().parent,
         expname="test-rm",
         training_algo="rm",
-        output_dir="/tmp/nemo-skills-tests/test-rm",
+        output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-rm",
         nemo_model=model_path,
         num_nodes=1,
         num_gpus=1,
@@ -175,4 +182,4 @@ def test_rm():
         disable_wandb=True,
     )
 
-    assert os.path.exists("/tmp/nemo-skills-tests/test-rm/model-averaged-nemo")
+    assert os.path.exists(f"/tmp/nemo-skills-tests/{model_type}/test-rm/model-averaged-nemo")
