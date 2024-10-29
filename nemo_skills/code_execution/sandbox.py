@@ -233,7 +233,7 @@ print(json.dumps(to_return))
         try:
             output = self._send_request(request, timeout)
         except requests.exceptions.Timeout:
-            output = {"process_status": "timeout", "stdout": "Timed out", "stderr": "Timed out"}
+            output = {"process_status": "timeout", "stdout": "", "stderr": "Timed out\n"}
         # removing last state to not re-execute code with errors
         if session_id is not None:
             if output['stderr'] or 'Traceback (most recent call last)' in output['stdout']:
