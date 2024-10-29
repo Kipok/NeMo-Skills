@@ -22,15 +22,15 @@ import typer
 
 from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, get_generation_command, run_exp
 from nemo_skills.pipeline.app import app, typer_unpacker
-from nemo_skills.utils import setup_logging
 from nemo_skills.pipeline.utils import get_server_command
-
+from nemo_skills.utils import setup_logging
 
 LOG = logging.getLogger(__file__)
 
 
 class SupportedServers(str, Enum):
     nemo = "nemo"
+
 
 def get_rm_cmd(input_dir, output_dir, extra_arguments, random_seed=None, eval_args=None):
     if random_seed is not None:
@@ -39,22 +39,27 @@ def get_rm_cmd(input_dir, output_dir, extra_arguments, random_seed=None, eval_ar
     else:
         input_file = f"{input_dir}/output-greedy.jsonl"
         output_file = f"{output_dir}/output-greedy.jsonl"
-    cmd = f"python -m nemo_skills.inference.score_rm ++input_file={input_file} ++output_file={output_file} " \
-            f"++server_address=localhost:5000 ++batch_size=32" \
-            f""
-            # f" {extra_arguments} "
+    cmd = (
+        f"python -m nemo_skills.inference.score_rm ++input_file={input_file} ++output_file={output_file} "
+        f"++server_address=localhost:5000 ++batch_size=32"
+        f""
+    )
+    # f" {extra_arguments} "
     return cmd
 
-nemo_rm_server_start_template = \
-    f"export HF_TOKEN={os.getenv('HF_TOKEN', '')} &&" \
-    "python -m nemo_skills.inference.server.serve_nemo_reward_model "  \
-    "    ++rm_model_file={model_path} " \
-    "    trainer.devices={num_gpus} " \
-    "    trainer.num_nodes={num_nodes} " \
-    "    +tensor_model_parallel_size={num_gpus} " \
-    "    +pipeline_model_parallel_size={num_nodes} " \
-    "    inference.port=5000 " \
+
+nemo_rm_server_start_template = (
+    f"export HF_TOKEN={os.getenv('HF_TOKEN', '')} &&"
+    "python -m nemo_skills.inference.server.serve_nemo_reward_model "
+    "    ++rm_model_file={model_path} "
+    "    trainer.devices={num_gpus} "
+    "    trainer.num_nodes={num_nodes} "
+    "    +tensor_model_parallel_size={num_gpus} "
+    "    +pipeline_model_parallel_size={num_nodes} "
+    "    inference.port=5000 "
     "    {server_args} "
+)
+
 
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 @typer_unpacker
@@ -115,7 +120,7 @@ def score_rm(
 
     if server_address is None:  # we need to host the model
         assert server_gpus is not None, "Need to specify server_gpus if hosting the model"
-        server_address = "localhost:5000" # TODO this should correspond with the port specified in the args
+        server_address = "localhost:5000"  # TODO this should correspond with the port specified in the args
 
         server_config = {
             "model_path": model,
@@ -150,7 +155,9 @@ def score_rm(
                     cmd=get_generation_command(server_address=server_address, generation_commands=cmd),
                     task_name=f'generate-rs{seed}',
                     log_dir=log_dir,
-                    container=cluster_config["containers"]["nemo"], # TODO eventually this should be nemo-skills, but for now we want to use nemo because it has pytriton
+                    container=cluster_config["containers"][
+                        "nemo"
+                    ],  # TODO eventually this should be nemo-skills, but for now we want to use nemo because it has pytriton
                     cluster_config=cluster_config,
                     partition=partition,
                     server_config=server_config,
@@ -173,7 +180,9 @@ def score_rm(
                 cmd=get_generation_command(server_address=server_address, generation_commands=cmd),
                 task_name="score_rm",
                 log_dir=log_dir,
-                container=cluster_config["containers"]["nemo"], # TODO eventually this should be nemo-skills, but for now we want to use nemo because it has pytriton
+                container=cluster_config["containers"][
+                    "nemo"
+                ],  # TODO eventually this should be nemo-skills, but for now we want to use nemo because it has pytriton
                 cluster_config=cluster_config,
                 partition=partition,
                 server_config=server_config,

@@ -13,17 +13,17 @@
 # limitations under the License.
 
 import importlib
+import json
 import os
 import sys
 from pathlib import Path
-import json
 
 import pytest
 
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 from nemo_skills.evaluation.metrics import compute_metrics
 from nemo_skills.pipeline import wrap_arguments
-from nemo_skills.pipeline.cli import eval, train, score_rm
+from nemo_skills.pipeline.cli import eval, score_rm, train
 
 
 @pytest.mark.gpu

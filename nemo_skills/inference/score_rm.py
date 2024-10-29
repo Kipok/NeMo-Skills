@@ -12,23 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import sys
-from dataclasses import asdict, field
-
-import hydra
 
 # from nemo_skills.code_execution.sandbox import sandbox_params
 # from nemo_skills.inference.server.code_execution_model import (
 #     ErrorRecoveryConfig,
 #     server_params,
-#)
+# )
 # from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dataclass, setup_logging
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, field
+
+import hydra
 import numpy as np
-import json
 from pytriton.client import ModelClient
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 LOG = logging.getLogger(__file__)
 
@@ -44,8 +43,10 @@ class RewardModelGenerationConfig:
         # TODO: input validations
         pass
 
+
 cs = hydra.core.config_store.ConfigStore.instance()
 cs.store(name="base_reward_model_generation_config", node=RewardModelGenerationConfig)
+
 
 class JSONLDataset(Dataset):
     def __init__(self, file_path):
@@ -64,6 +65,7 @@ class JSONLDataset(Dataset):
     def __getitem__(self, idx):
         return {'idx': idx, **self.data[idx]}
 
+
 def query_reward_model(input_file, output_file, batch_size=32, server_url="localhost:5555"):
     client = ModelClient(server_url, "reward_model")
     # Create dataset and dataloader
@@ -80,15 +82,17 @@ def query_reward_model(input_file, output_file, batch_size=32, server_url="local
                 out_obj.update({'reward_model_score': result['rewards'][i].item()})
                 writer.write(json.dumps(out_obj) + '\n')
 
+
 @hydra.main(version_base=None, config_name='base_reward_model_generation_config')
 def score_rm(cfg: RewardModelGenerationConfig):
-    cfg = RewardModelGenerationConfig(**cfg) #_init_nested=True, **cfg)
+    cfg = RewardModelGenerationConfig(**cfg)  # _init_nested=True, **cfg)
 
     LOG.info("Config used: %s", cfg)
 
     # TODO this should probably look more like generate at some point with per-server clients
     # encapsulated, however, that complexity is not needed quite yet.
     query_reward_model(cfg.input_file, cfg.output_file, cfg.batch_size, cfg.server_address)
+
 
 # error_recovery_params = '\n' + get_fields_docstring(
 #     ErrorRecoveryConfig,
@@ -97,11 +101,11 @@ def score_rm(cfg: RewardModelGenerationConfig):
 # )
 
 # TODO: just avoiding this right now so I can run this script in nemo container isntead of nemo skills container
-HELP_MESSAGE = "help" # get_help_message(
-    # RewardModelGenerationConfig,
-    # server_params=server_params(),
-    # sandbox_params=sandbox_params(),
-    # error_recovery_params=error_recovery_params,
+HELP_MESSAGE = "help"  # get_help_message(
+# RewardModelGenerationConfig,
+# server_params=server_params(),
+# sandbox_params=sandbox_params(),
+# error_recovery_params=error_recovery_params,
 # )
 
 if __name__ == "__main__":
