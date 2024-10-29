@@ -58,7 +58,7 @@ class TrainingParams:
         self.extra_arguments = get_extra_arguments[self.training_algo](self)
 
 
-def get_cmd(params: TrainingParams, extra_arguments: str) -> str:
+def get_cmd(params: TrainingParams) -> str:
     cmd = (
         f"export WANDB_API_KEY={os.getenv('WANDB_API_KEY', '')} && "
         f"export HF_TOKEN={get_token()} && "
@@ -76,7 +76,7 @@ def get_cmd(params: TrainingParams, extra_arguments: str) -> str:
         f"    exp_manager.explicit_log_dir={params.output_dir}/training "
         f"    exp_manager.exp_dir={params.output_dir}/training "
         f"    ++exp_manager.max_time_per_run={params.timeout} "
-        f"    {extra_arguments} "
+        f"    {params.extra_arguments} "
     )
     return cmd
 
