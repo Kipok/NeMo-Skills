@@ -47,12 +47,15 @@ class TrainingParams:
     num_gpus: int
     num_nodes: int
     expname: str
-    training_algo: str
+    training_algo: TrainingAlgo
     disable_wandb: bool
     wandb_project: str
     timeout: str
     extra_arguments: str = ""
     logging_params: str = ""
+
+    def __post_init__(self):
+        self.extra_arguments = get_extra_arguments[self.training_algo](self)
 
 
 def get_cmd(params: TrainingParams, extra_arguments: str) -> str:
@@ -162,7 +165,6 @@ def get_training_cmd(
         extra_arguments=extra_arguments,
         logging_params=logging_params,
     )
-    extra_arguments = get_extra_arguments[training_algo](training_params)
 
     return get_cmd(training_params, extra_arguments)
 
