@@ -54,9 +54,9 @@ def test_hf_nemo_conversion():
         f"    --output_model /tmp/nemo-skills-tests/conversion/hf-to-nemo/model "
         f"    --convert_from hf "
         f"    --convert_to nemo "
-        f"    --model_type llama "
+        f"    --model_type qwen "
         f"    --num_gpus 1 "
-        f"    --hf_model_name meta-llama/Meta-Llama-3.1-8B-Instruct "
+        f"    --hf_model_name Qwen/Qwen2.5-Math-7B "
         f"    --override "
     )
 

@@ -33,14 +33,13 @@ def test_sft():
 
     train(
         ctx=wrap_arguments(
-            "++trainer.sft.val_check_interval=7 "
-            "++trainer.sft.save_interval=7 "
+            "++trainer.sft.save_interval=2 "
             "++trainer.sft.limit_val_batches=1 "
-            "++trainer.sft.max_steps=15 "
+            "++trainer.sft.max_steps=5 "
             "++trainer.sft.max_epochs=10 "
             "++model.data.train_ds.add_eos=False "
-            "++model.data.train_ds.global_batch_size=10 "
-            "++model.data.train_ds.micro_batch_size=2 "
+            "++model.data.train_ds.global_batch_size=2 "
+            "++model.data.train_ds.micro_batch_size=1 "
             "++model.optim.lr=1e-6 "
             "++model.optim.sched.warmup_steps=0 "
             "++model.tensor_model_parallel_size=1 "

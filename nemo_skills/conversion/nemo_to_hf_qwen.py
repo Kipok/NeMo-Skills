@@ -226,8 +226,8 @@ def convert(
     model.load_state_dict(checkpoint)
     model.to(dtype)
     model.save_pretrained(output_hf_path, max_shard_size=max_shard_size)
-    hf_tokenizer = AutoTokenizer.from_pretrained(hf_model_name)
-    hf_tokenizer.save_pretrained(output_hf_path)
+    # hf_tokenizer = AutoTokenizer.from_pretrained(hf_model_name)
+    # hf_tokenizer.save_pretrained(output_hf_path)
     logging.info(f'HF checkpoint saved to: {output_hf_path}')
 
 
