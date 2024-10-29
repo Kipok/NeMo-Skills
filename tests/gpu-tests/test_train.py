@@ -199,12 +199,13 @@ def test_rm():
     assert os.path.exists("/tmp/nemo-skills-tests/test-rm/score/output-greedy.jsonl")
     rm_output = [json.loads(line) for line in open("/tmp/nemo-skills-tests/test-rm/score/output-greedy.jsonl")]
     assert len(rm_output) == 50
+    assert all("reward_model_score" in line for line in rm_output)
 
     score_rm(
         ctx=wrap_arguments("++batch_size=8 " "++max_samples=10"),
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
-        input_dir="/nemo_run/code/tests/data",
+        input_dir="/nemo_run/code/tests/data/score_rm_inputs",
         output_dir="/tmp/nemo-skills-tests/test-rm/score",
         server_type="nemo",
         expname="test-rm",
@@ -215,6 +216,8 @@ def test_rm():
         num_random_seeds=3,
     )
 
-    # assert os.path.exists("/tmp/nemo-skills-tests/test-rm/score/output-rs0.jsonl")
-    # assert sum(1 for _ in open("/tmp/nemo-skills-tests/test-rm/score/output-rs0.jsonl")) == 50
-    # assert 'reward_model_score' in next(open("/tmp/nemo-skills-tests/test-rm/score/output-rs0.jsonl"))
+    for rs in range(3):
+        assert os.path.exists(f"/tmp/nemo-skills-tests/test-rm/score/output-rs{rs}.jsonl")
+        rm_output = [json.loads(line) for line in open(f"/tmp/nemo-skills-tests/test-rm/score/output-rs{rs}.jsonl")]
+        assert len(rm_output) == 50
+        assert all("reward_model_score" in line for line in rm_output)
