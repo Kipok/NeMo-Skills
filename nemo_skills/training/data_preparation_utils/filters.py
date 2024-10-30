@@ -148,6 +148,38 @@ class RemoveContaminated(BaseFilter):
         return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
 
 
+class RemoveLenOutlierProblems(BaseFilter):
+    """Remove problems based on minimum/maximum length thresholds."""
+
+    def __init__(
+        self,
+        problem_key: str = "problem",
+        min_length: int = 0,
+        max_length: int = None,
+        hf_model_name: str = None,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.problem_key = problem_key
+        self.max_length = max_length
+        self.min_length = min_length
+
+        from transformers import AutoTokenizer
+
+        self.tokenizer = AutoTokenizer.from_pretrained(hf_model_name)
+
+    def process_dataset_entry(self, data_entry):
+        problem = data_entry[self.problem_key]
+        problem_len = len(self.tokenizer.encode(problem, add_special_tokens=False))
+
+        if problem_len < self.min_length:
+            return [DataEntry(data=None, metrics=dict(num_removed=1))]
+        if problem_len > self.max_length:
+            return [DataEntry(data=None, metrics=dict(num_removed=1))]
+
+        return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]
+
+
 class RemoveLenOutlierSolutions(BaseFilter):
     """Remove solutions based on minimum and maximum lengths."""
 
