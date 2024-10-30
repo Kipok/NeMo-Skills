@@ -159,6 +159,9 @@ def generate(cfg: GenerateSolutionsConfig):
     if 0 <= cfg.max_samples <= starting_idx:
         cfg.max_samples = 0
 
+    if starting_idx < cfg.max_samples:
+        cfg.max_samples -= starting_idx
+
     if cfg.max_samples < 0 or cfg.max_samples > len(data):
         cfg.max_samples = len(data)
 
