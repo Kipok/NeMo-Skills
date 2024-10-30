@@ -23,7 +23,7 @@ URL = (
 
 # corrected references are from https://github.com/lm-sys/FastChat/pull/3158
 REF_URL = (
-    "https://raw.githubusercontent.com/Zhilin123/FastChat/blob/main"
+    "https://raw.githubusercontent.com/Zhilin123/FastChat/refs/heads/main"
     "/fastchat/llm_judge/data/mt_bench/reference_answer/gpt-4-0125-preview.jsonl"
 )
 
@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     ref_data = {}
 
-    with open(original_file, "rt", encoding="utf-8") as fin:
+    with open(original_file_ref, "rt", encoding="utf-8") as fin:
         for index, line in enumerate(fin):
             entry = json.loads(line)
             ref_data[entry['question_id']] = entry
@@ -57,12 +57,13 @@ if __name__ == "__main__":
                 turns.append({"question": turn})
             entry["turns"] = turns
             # adding reference answers to be used in llm-as-a-judge eval
-            ref_entry = ref_data[entry['question_id']]
-            assert len(ref_entry['choices']) == 1
-            assert len(ref_entry['choices'][0]['turns']) == 2
+            if entry['question_id'] in ref_data:
+                ref_entry = ref_data[entry['question_id']]
+                assert len(ref_entry['choices']) == 1
+                assert len(ref_entry['choices'][0]['turns']) == 2
 
-            entry['ref_answer_1'] = ref_entry['choices'][0]['turns'][0]
-            entry['ref_answer_2'] = ref_entry['choices'][0]['turns'][1]
+                entry['ref_answer_1'] = ref_entry['choices'][0]['turns'][0]
+                entry['ref_answer_2'] = ref_entry['choices'][0]['turns'][1]
 
             data.append(entry)
 
