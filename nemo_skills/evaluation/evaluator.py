@@ -19,9 +19,9 @@ import subprocess
 from argparse import Namespace
 from dataclasses import asdict, field
 from pathlib import Path
+from typing import Any, Callable, Dict
 
 from tqdm import tqdm
-from typing import Any, Callable, Dict
 
 from nemo_skills.code_execution.sandbox import get_sandbox
 from nemo_skills.inference.server.model import get_model
@@ -311,6 +311,7 @@ def register_evaluator(eval_type: str, eval_fn: Callable[[Dict[str, Any]], None]
 
 def evaluate(cfg):
     if cfg.eval_type not in EVALUATOR_MAP:
-        raise ValueError(f"Evaluator not found for type: {cfg.eval_type}.\n"
-                         f"Supported types: {str(EVALUATOR_MAP.keys())}")
+        raise ValueError(
+            f"Evaluator not found for type: {cfg.eval_type}.\n" f"Supported types: {str(EVALUATOR_MAP.keys())}"
+        )
     return EVALUATOR_MAP[cfg.eval_type](cfg)

@@ -26,27 +26,34 @@ LOG = logging.getLogger(__file__)
 
 
 def get_greedy_cmd(
-    benchmark, split, output_dir, output_name='output-greedy.jsonl', extra_eval_args="", extra_arguments="", 
+    benchmark,
+    split,
+    output_dir,
+    output_name='output-greedy.jsonl',
+    extra_eval_args="",
+    extra_arguments="",
     inference_cmd: str = None,
 ):
     if not inference_cmd:
         benchmark_module = importlib.import_module(f"nemo_skills.dataset.{benchmark}")
-    
+
         extra_eval_args = f"{benchmark_module.DEFAULT_EVAL_ARGS} {extra_eval_args}"
         extra_arguments = f"{benchmark_module.DEFAULT_GENERATION_ARGS} {extra_arguments}"
-        
+
         inference_cmd = (
             f'python -m nemo_skills.inference.generate '
             f'    ++dataset={benchmark} '
             f'    ++split={split} '
             f'    ++output_file={output_dir}/eval-results/{benchmark}/{output_name} '
         )
-        
+
     else:
-        inference_cmd = inference_cmd.format(benchmark=benchmark, split=split, output_dir=output_dir, output_name=output_name)
+        inference_cmd = inference_cmd.format(
+            benchmark=benchmark, split=split, output_dir=output_dir, output_name=output_name
+        )
         LOG.info(f"Resolved custom generation command below for benchmark {benchmark}:\n{inference_cmd}")
         LOG.info(f"Please note that extra eval arguments for this benchmark must be explicitly passed by the user.")
-    
+
     cmd = (
         f'echo "Evaluating benchmark {benchmark}" && '
         f'{inference_cmd} {extra_arguments} && '
@@ -56,7 +63,9 @@ def get_greedy_cmd(
     return cmd
 
 
-def get_sampling_cmd(benchmark, split, output_dir, random_seed, extra_eval_args="", extra_arguments="", inference_cmd=None):
+def get_sampling_cmd(
+    benchmark, split, output_dir, random_seed, extra_eval_args="", extra_arguments="", inference_cmd=None
+):
     extra_arguments = f" inference.random_seed={random_seed} inference.temperature=0.7 {extra_arguments}"
     return get_greedy_cmd(
         benchmark=benchmark,
