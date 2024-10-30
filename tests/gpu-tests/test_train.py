@@ -203,7 +203,9 @@ def test_rm():
     )
 
     assert os.path.exists(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-greedy.jsonl")
-    rm_output = [json.loads(line) for line in open(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-greedy.jsonl")]
+    rm_output = [
+        json.loads(line) for line in open(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-greedy.jsonl")
+    ]
     assert len(rm_output) == 50
     assert all("reward_model_score" in line for line in rm_output)
 
@@ -224,6 +226,8 @@ def test_rm():
 
     for rs in range(3):
         assert os.path.exists(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-rs{rs}.jsonl")
-        rm_output = [json.loads(line) for line in open(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-rs{rs}.jsonl")]
+        rm_output = [
+            json.loads(line) for line in open(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-rs{rs}.jsonl")
+        ]
         assert len(rm_output) == 50
         assert all("reward_model_score" in line for line in rm_output)
