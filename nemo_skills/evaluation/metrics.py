@@ -52,7 +52,7 @@ class BaseMetrics(abc.ABC):
 
     def max_metrics_to_print(self):
         """No limit by default."""
-        return -1
+        return None
 
 
 def is_correct_judgement(judgement):

@@ -159,6 +159,8 @@ def summarize_results(
         max_widths = {}
         max_widths['evaluation_mode'] = len('evaluation_mode')
         for eval_mode, metrics in benchmark_results.items():
+            if max_metrics_to_print[benchmark] is None:
+                max_metrics_to_print[benchmark] = len(metrics)
             for metric_key, metric_value in list(metrics.items())[: max_metrics_to_print[benchmark]]:
                 max_widths[metric_key] = max(
                     max_widths.get(metric_key, len(metric_key)),
