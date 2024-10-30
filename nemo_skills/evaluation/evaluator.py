@@ -399,7 +399,7 @@ EVALUATOR_MAP = {
     'code': eval_code,
     'if': eval_if,
     'arena': eval_arena,
-    'mtbench': eval_mtbench,
+    'mt-bench': eval_mtbench,
     'answer_judgement': dummy_eval,
     'lean4': eval_lean4,
 }
