@@ -17,5 +17,5 @@ from nemo_skills.evaluation.metrics import MathMetrics
 PROMPT_CONFIG = 'generic/default'
 DATASET_GROUP = 'chat'
 METRICS_CLASS = MathMetrics  # TODO: update this?
-DEFAULT_EVAL_ARGS = "++eval_type=mt-bench"
+DEFAULT_EVAL_ARGS = "++eval_type=mt-bench ++eval_config.judge_model=gpt-4-0125-preview"
 DEFAULT_GENERATION_ARGS = "++multi_turn_key=turns"

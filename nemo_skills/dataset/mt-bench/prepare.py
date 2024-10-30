@@ -21,15 +21,31 @@ URL = (
     "https://raw.githubusercontent.com/lm-sys/FastChat/refs/heads/main/fastchat/llm_judge/data/mt_bench/question.jsonl"
 )
 
+# corrected references are from https://github.com/lm-sys/FastChat/pull/3158
+REF_URL = (
+    "https://raw.githubusercontent.com/Zhilin123/FastChat/blob/main"
+    "/fastchat/llm_judge/data/mt_bench/reference_answer/gpt-4-0125-preview.jsonl"
+)
+
 
 if __name__ == "__main__":
     data_dir = Path(__file__).absolute().parent
     original_file = str(data_dir / "original_test.json")
+    original_file_ref = str(data_dir / "original_test_ref.json")
     data_dir.mkdir(exist_ok=True)
     output_file = str(data_dir / "test.jsonl")
 
     if not os.path.exists(original_file):
         urllib.request.urlretrieve(URL, original_file)
+    if not os.path.exists(original_file_ref):
+        urllib.request.urlretrieve(REF_URL, original_file_ref)
+
+    ref_data = {}
+
+    with open(original_file, "rt", encoding="utf-8") as fin:
+        for index, line in enumerate(fin):
+            entry = json.loads(line)
+            ref_data[entry['question_id']] = entry
 
     data = []
 
@@ -40,6 +56,14 @@ if __name__ == "__main__":
             for turn in entry["turns"]:
                 turns.append({"question": turn})
             entry["turns"] = turns
+            # adding reference answers to be used in llm-as-a-judge eval
+            ref_entry = ref_data[entry['question_id']]
+            assert len(ref_entry['choices']) == 1
+            assert len(ref_entry['choices'][0]['turns']) == 2
+
+            entry['ref_answer_1'] = ref_entry['choices'][0]['turns'][0]
+            entry['ref_answer_2'] = ref_entry['choices'][0]['turns'][1]
+
             data.append(entry)
 
     with open(output_file, "wt", encoding="utf-8") as fout:
