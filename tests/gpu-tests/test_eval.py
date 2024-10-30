@@ -54,7 +54,7 @@ def test_trtllm_eval():
     # running compute_metrics to check that results are expected
     metrics_calculator = importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS()
     metrics = compute_metrics(
-        [f"/tmp/nemo-skills-tests{model_type}//trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
+        [f"/tmp/nemo-skills-tests/{model_type}/trtllm-eval/eval-results/gsm8k/output-greedy.jsonl"], metrics_calculator
     )
     # rough check, since exact accuracy varies depending on gpu type
     if model_type == 'llama':

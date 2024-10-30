@@ -8,9 +8,6 @@ set -e
 export NEMO_SKILLS_TEST_HF_MODEL=/mnt/datadrive/nemo-skills-test-data/Meta-Llama-3.1-8B-Instruct
 export NEMO_SKILLS_TEST_MODEL_TYPE=llama
 
-# cleaning up any old test results
-rm -rf /tmp/nemo-skills-tests/$NEMO_SKILLS_TEST_MODEL_TYPE
-
 # first running the conversion tests
 pytest tests/gpu-tests/test_convert.py -k test_hf_trtllm_conversion -s -x
 export NEMO_SKILLS_TEST_TRTLLM_MODEL=/tmp/nemo-skills-tests/$NEMO_SKILLS_TEST_MODEL_TYPE/conversion/hf-to-trtllm/model
