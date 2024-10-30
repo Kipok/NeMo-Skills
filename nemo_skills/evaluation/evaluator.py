@@ -312,6 +312,6 @@ def register_evaluator(eval_type: str, eval_fn: Callable[[Dict[str, Any]], None]
 def evaluate(cfg):
     if cfg.eval_type not in EVALUATOR_MAP:
         raise ValueError(
-            f"Evaluator not found for type: {cfg.eval_type}.\n" f"Supported types: {str(EVALUATOR_MAP.keys())}"
+            f"Evaluator not found for type: {cfg.eval_type}.\nSupported types: {str(EVALUATOR_MAP.keys())}"
         )
     return EVALUATOR_MAP[cfg.eval_type](cfg)
