@@ -11,17 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-text_begin: "<｜begin▁of▁sentence｜>"
-system_begin: ""
-system_end: ""
-user_begin: ""
-user_end: ""
-assistant_begin: ""
-assistant_end: ""
-code_begin: '<llm-code>\n'
-code_end: '</llm-code>\n'
-code_output_begin: '<llm-code-output>\n'
-code_output_end: '</llm-code-output>\n'
-code_output_format: "qwen"
-stop_phrases: ["<|EOT|>", "<｜end▁of▁sentence｜>"]

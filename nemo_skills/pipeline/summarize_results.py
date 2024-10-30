@@ -14,6 +14,7 @@
 
 import glob
 import importlib
+import json
 import logging
 import os
 import tempfile
@@ -24,7 +25,14 @@ from typing import List, Optional
 import typer
 
 from nemo_skills.evaluation.metrics import MathMetrics
-from nemo_skills.pipeline import check_if_mounted, cluster_download, get_cluster_config, get_tunnel, get_unmounted_path
+from nemo_skills.pipeline import (
+    check_if_mounted,
+    cluster_download,
+    cluster_upload,
+    get_cluster_config,
+    get_tunnel,
+    get_unmounted_path,
+)
 from nemo_skills.pipeline.app import app, typer_unpacker
 from nemo_skills.pipeline.compute_metrics import compute_metrics
 from nemo_skills.utils import setup_logging
@@ -50,7 +58,9 @@ def summarize_results(
         help="Specify benchmarks to run (comma separated). "
         "If not specified, all benchmarks in the results_dir will be used.",
     ),
+    remote_tar_dir: str = typer.Option(None, help="Directory where remote tar files are created on clusters"),
     debug: bool = typer.Option(False, help="Print debug information"),
+    max_samples: int = typer.Option(-1, help="Limit metric computation only to first `max_samples`"),
 ):
     """Summarize results of an evaluation job."""
     setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not debug else logging.DEBUG)
@@ -61,18 +71,24 @@ def summarize_results(
     cluster = cluster or os.environ.get("NEMO_SKILLS_CONFIG")
 
     # copying results from the cluster if necessary
+    upload_path = None
     if cluster is not None:
         cluster_config = get_cluster_config(cluster, config_dir)
         check_if_mounted(cluster_config, results_dir)
     if cluster == "local":
         results_dir = get_unmounted_path(cluster_config, results_dir)
     elif cluster is not None:
+        upload_path = results_dir
         tunnel = get_tunnel(cluster_config)
         temp_dir = tempfile.mkdtemp()
         print(f"Copying results from {results_dir} on cluster {cluster} to {temp_dir}")
         os.makedirs(temp_dir, exist_ok=True)
-        cluster_download(tunnel, get_unmounted_path(cluster_config, results_dir), temp_dir)
-        tunnel.cleanup()
+        cluster_download(
+            tunnel,
+            get_unmounted_path(cluster_config, results_dir),
+            temp_dir,
+            remote_tar_dir=get_unmounted_path(cluster_config, remote_tar_dir),
+        )
         results_dir = Path(temp_dir) / Path(results_dir).name
 
     # running compute_metrics.py to get greedy, majority and pass @k results for all benchmarks available
@@ -100,6 +116,7 @@ def summarize_results(
                     results[benchmark]['greedy'] = compute_metrics(
                         input_files=[f"{benchmark_path}/output-greedy.jsonl"],
                         metrics_calculator=metrics_calculator,
+                        max_samples=max_samples,
                     )
                 sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
                 if len(sampling_outputs) > 0:
@@ -107,12 +124,14 @@ def summarize_results(
                         input_files=sampling_outputs,
                         metrics_calculator=metrics_calculator,
                         aggregation_mode="best",
+                        max_samples=max_samples,
                     )
             else:
                 if Path(f'{benchmark_path}/output-greedy.jsonl').exists():
                     results[benchmark]['greedy'] = compute_metrics(
                         input_files=[f"{benchmark_path}/output-greedy.jsonl"],
                         metrics_calculator=metrics_calculator,
+                        max_samples=max_samples,
                     )
 
                 sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
@@ -121,11 +140,13 @@ def summarize_results(
                         input_files=sampling_outputs,
                         metrics_calculator=metrics_calculator,
                         aggregation_mode="majority",
+                        max_samples=max_samples,
                     )
                     results[benchmark][f'pass@{len(sampling_outputs)}'] = compute_metrics(
                         input_files=sampling_outputs,
                         metrics_calculator=metrics_calculator,
                         aggregation_mode="best",
+                        max_samples=max_samples,
                     )
         except Exception as e:
             print(f"Error running compute_metrics.py for {benchmark}: {e}")
@@ -157,6 +178,22 @@ def summarize_results(
             print(' | '.join(values))
 
         print('\n')
+
+    try:
+        with open(Path(results_dir) / 'metrics.json', 'wt', encoding='utf-8') as fout:
+            json.dump(results, fout, indent=2)
+        if upload_path is not None:
+            cluster_upload(
+                tunnel,
+                Path(results_dir) / 'metrics.json',
+                Path(get_unmounted_path(cluster_config, upload_path)) / 'metrics.json',
+            )
+            print("Metrics are saved to", str(Path(get_unmounted_path(cluster_config, upload_path)) / 'metrics.json'))
+            tunnel.cleanup()
+        else:
+            print("Metrics are saved to", str(Path(results_dir) / 'metrics.json'))
+    except PermissionError:
+        print(f"Could not save metrics.json to {Path(results_dir) / 'metrics.json'}. Please check the permissions.")
 
 
 if __name__ == "__main__":

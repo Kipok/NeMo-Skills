@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import re
 
 import pytest
 
@@ -46,12 +47,12 @@ def test_multiple_code_blocks(sandbox_type):
 
     output, session_id = sandbox.execute_code(code)
     print(output)
-    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': '1'}
+    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': '1\n'}
     assert session_id is not None
 
     code = "a + 5"
     output, session_id2 = sandbox.execute_code(code, session_id=session_id)
-    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': '6'}
+    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': '6\n'}
     assert session_id == session_id2
 
 
@@ -65,7 +66,7 @@ def test_triple_quotes(sandbox_type):
     my_func()
 '''
     output, session_id = sandbox.execute_code(code)
-    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': 'asdf'}
+    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': 'asdf\n'}
     assert session_id is not None
 
 
@@ -79,12 +80,12 @@ def test_multiple_prints(sandbox_type):
     """
 
     output, session_id = sandbox.execute_code(code)
-    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': '1\n2x3'}
+    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': '1\n2x3\n'}
     assert session_id is not None
 
     code = "print(2)\n15"
     output, session_id2 = sandbox.execute_code(code, session_id=session_id)
-    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': '2\n15'}
+    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': '2\n15\n'}
     assert session_id == session_id2
 
 
@@ -112,7 +113,7 @@ def test_execution_error(sandbox_type):
         'ZeroDivisionError\x1b[0m                         Traceback (most recent call last)\nFile \x1b[0;32m'
         '<ipython-input-1-bc757c3fda29>:1\x1b[0m\n\x1b[0;32m----> 1\x1b[0m \x1b[38;5;241;43m1\x1b[39;49m\x1b[43m '
         '\x1b[49m\x1b[38;5;241;43m/\x1b[39;49m\x1b[43m \x1b[49m\x1b[38;5;241;43m0\x1b[39;49m\n\n\x1b[0;31m'
-        'ZeroDivisionError\x1b[0m: division by zero'
+        'ZeroDivisionError\x1b[0m: division by zero\n'
     )
     assert output == {
         'process_status': 'completed',
@@ -131,7 +132,7 @@ def test_syntax_error(sandbox_type):
     output, session_id = sandbox.execute_code(code)
     error = (
         '\x1b[0;36m  File \x1b[0;32m<ipython-input-1-ff73a4eb1351>:2\x1b[0;36m\x1b[0m\n\x1b[0;31m    '
-        'b = 3\x1b[0m\n\x1b[0m    ^\x1b[0m\n\x1b[0;31mIndentationError\x1b[0m\x1b[0;31m:\x1b[0m unexpected indent'
+        'b = 3\x1b[0m\n\x1b[0m    ^\x1b[0m\n\x1b[0;31mIndentationError\x1b[0m\x1b[0;31m:\x1b[0m unexpected indent\n'
     )
     assert output == {
         'process_status': 'completed',
@@ -148,11 +149,11 @@ def test_timeout_error(sandbox_type):
     code = """import time\ntime.sleep(1)\nprint("done")"""
 
     output, session_id = sandbox.execute_code(code, timeout=1)
-    assert output == {"process_status": "timeout", "stdout": "Timed out", "stderr": "Timed out"}
+    assert output == {"process_status": "timeout", "stdout": "", "stderr": "Timed out\n"}
     assert session_id is not None
 
     output, session_id = sandbox.execute_code(code, timeout=2, session_id=session_id)
-    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': 'done'}
+    assert output == {'process_status': 'completed', 'stderr': '', 'stdout': 'done\n'}
     assert session_id is not None
 
 
@@ -179,7 +180,7 @@ x
         "\x1b[39m \x1b[38;5;241m*\x1b[39m \x1b[43mx\x1b[49m\n\x1b[1;32m      5\x1b[0m \x1b[38;5;66;03m"
         "# solve for x\x1b[39;00m\n\x1b[1;32m      6\x1b[0m x \x1b[38;5;241m=\x1b[39m (\x1b[38;5;241m600\x1b[39m "
         "\x1b[38;5;241m-\x1b[39m height_in_inches) \x1b[38;5;241m/\x1b[39m \x1b[38;5;241m30\x1b[39m\n\n\x1b[0;31m"
-        "NameError\x1b[0m: name 'x' is not defined"
+        "NameError\x1b[0m: name 'x' is not defined\n"
     )
     output, session_id = sandbox.execute_code(code)
     assert output == {
@@ -192,18 +193,29 @@ x
 
 @pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
 @pytest.mark.parametrize(
-    "code_begin,code_end,code_output_begin,code_output_end",
+    "code_begin,code_end,code_output_begin,code_output_end,code_output_format",
     [
-        # ('<llm-code>', '</llm-code>', '<llm-code-output>', '</llm-code-output>'),
+        ('<llm-code>\n', '</llm-code>\n', '<llm-code-output>\n', '</llm-code-output>\n', 'qwen'),
         (
             '<|python_tag|>',
             '<|eom_id|>',
             '<|start_header_id|>ipython<|end_header_id|>',
             '<|eot_id|><|start_header_id|>assistant<|end_header_id|>',
+            'llama',
         ),
     ],
 )
-def test_few_shots(sandbox_type, code_begin, code_end, code_output_begin, code_output_end):
+def test_few_shots(sandbox_type, code_begin, code_end, code_output_begin, code_output_end, code_output_format):
+    def replace_code_output(match):
+        code_output = match.group(2)
+        formatted_output = format_code_output(
+            execution_dict={"process_status": "completed", "stdout": code_output, "stderr": ""},
+            code_output_begin=code_output_begin,
+            code_output_end=code_output_end,
+            code_output_format=code_output_format,
+        )
+        return formatted_output
+
     sandbox = _get_sandbox(sandbox_type)
 
     for example_name, example_list in examples_map.items():
@@ -211,22 +223,41 @@ def test_few_shots(sandbox_type, code_begin, code_end, code_output_begin, code_o
             if 'solution' not in example:
                 continue
             example = example.copy()
+
+            pattern = r'({code_output_begin}\n)(.*?)({code_output_end})'
+            example["solution"] = re.sub(pattern, replace_code_output, example["solution"], flags=re.DOTALL)
             example["solution"] = example["solution"].replace("{code_begin}", code_begin)
             example["solution"] = example["solution"].replace("{code_end}", code_end)
-            example["solution"] = example["solution"].replace("{code_output_begin}", code_output_begin)
-            example["solution"] = example["solution"].replace("{code_output_end}", code_output_end)
+            example["solution"] = example["solution"].replace("{code_output_begin}", "")
+            example["solution"] = example["solution"].replace("{code_output_end}", "")
+
             if len(extract_code_to_execute(example['solution'], code_begin, code_end, extract_all=True)) > 0:
                 code_snippets = extract_code_to_execute(example['solution'], code_begin, code_end, extract_all=True)
-                expected_outputs = extract_code_output(
-                    example['solution'], code_output_begin, code_output_end, extract_all=True
-                )
+                if code_output_format == 'qwen':
+                    expected_outputs = extract_code_output(
+                        example['solution'], code_output_begin, code_output_end, extract_all=True
+                    )
+                    expected_outputs = [(output, None) for output in expected_outputs]
+                elif code_output_format == 'llama':
+                    pattern = r'\[stdout\]\n(.*?)\[/stdout\]|\[stderr\]\n(.*?)\[/stderr\]'
+                    expected_outputs = re.findall(pattern, example['solution'], re.DOTALL)
                 session_id = None
-                for code_snippet, expected_output in zip(code_snippets, expected_outputs):
+                for code_snippet, (expected_output, expected_error) in zip(code_snippets, expected_outputs):
+                    if not expected_error:
+                        expected_error = None
                     output, session_id = sandbox.execute_code(code_snippet, session_id=session_id)
-                    generated_output = format_code_output(output, code_output_begin, code_output_end)
-                    assert (
-                        generated_output == code_output_begin + expected_output + code_output_end + '\n\n'
-                    ), f"{example_name} few shots are failing"
+                    execution_dict = {
+                        "process_status": "completed",
+                        "stdout": expected_output,
+                        "stderr": expected_error,
+                    }
+                    generated_output = format_code_output(
+                        output, code_output_begin, code_output_end, code_output_format
+                    )
+                    extracted_output = format_code_output(
+                        execution_dict, code_output_begin, code_output_end, code_output_format
+                    )
+                    assert generated_output == extracted_output, f"{example_name} few shots are failing"
 
 
 @pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
