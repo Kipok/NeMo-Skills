@@ -296,9 +296,9 @@ def eval_mtbench(cfg):
                 to_add['answer_2'] = data_point['generation'][1]
                 if 'ref_answer_2' in data_point:
                     to_add['ref_answer_2'] = data_point['ref_answer_2']
-                    filled_prompts.append(prompt_turn1_with_ref.fill(to_add))
+                    filled_prompts.append(prompt_turn2_with_ref.fill(to_add))
                 else:
-                    filled_prompts.append(prompt_turn1.fill(to_add))
+                    filled_prompts.append(prompt_turn2.fill(to_add))
 
             request_metadata = llm.batch_generate(
                 prompts=filled_prompts,
@@ -340,9 +340,9 @@ def eval_mtbench(cfg):
                     to_add['answer_2'] = data_point['generation'][1]
                     if 'ref_answer_2' in data_point:
                         to_add['ref_answer_2'] = data_point['ref_answer_2']
-                        filled_prompts.append(prompt_turn1_with_ref.fill(to_add))
+                        filled_prompts.append(prompt_turn2_with_ref.fill(to_add))
                     else:
-                        filled_prompts.append(prompt_turn1.fill(to_add))
+                        filled_prompts.append(prompt_turn2.fill(to_add))
 
                     if len(filled_prompts) == eval_config.batch_size or data_idx == len(data) - 1:
                         outputs = llm.generate(
