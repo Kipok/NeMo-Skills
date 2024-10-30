@@ -31,17 +31,20 @@ def test_sft():
     model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
+    model_type = os.getenv('NEMO_SKILLS_TEST_MODEL_TYPE')
+    if not model_type:
+        pytest.skip("Define NEMO_SKILLS_TEST_MODEL_TYPE to run this test")
+    prompt_template = 'llama3-instruct' if model_type == 'llama' else 'qwen-instruct'
 
     train(
         ctx=wrap_arguments(
-            "++trainer.sft.val_check_interval=7 "
-            "++trainer.sft.save_interval=7 "
+            "++trainer.sft.save_interval=2 "
             "++trainer.sft.limit_val_batches=1 "
-            "++trainer.sft.max_steps=15 "
+            "++trainer.sft.max_steps=5 "
             "++trainer.sft.max_epochs=10 "
             "++model.data.train_ds.add_eos=False "
-            "++model.data.train_ds.global_batch_size=10 "
-            "++model.data.train_ds.micro_batch_size=2 "
+            "++model.data.train_ds.global_batch_size=2 "
+            "++model.data.train_ds.micro_batch_size=1 "
             "++model.optim.lr=1e-6 "
             "++model.optim.sched.warmup_steps=0 "
             "++model.tensor_model_parallel_size=1 "
@@ -50,7 +53,7 @@ def test_sft():
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
         expname="test-sft",
-        output_dir="/tmp/nemo-skills-tests/test-sft",
+        output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-sft",
         nemo_model=model_path,
         num_nodes=1,
         num_gpus=1,
@@ -61,12 +64,12 @@ def test_sft():
 
     # checking that the final model can be used for evaluation
     eval(
-        ctx=wrap_arguments("++prompt_template=llama3-instruct " "++split=test " "++batch_size=8 " "++max_samples=10"),
+        ctx=wrap_arguments(f"++prompt_template={prompt_template} ++split=test ++batch_size=8 ++max_samples=10"),
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
-        model="/tmp/nemo-skills-tests/test-sft/model-averaged-nemo",
+        model=f"/tmp/nemo-skills-tests/{model_type}/test-sft/model-averaged-nemo",
         server_type="nemo",
-        output_dir="/tmp/nemo-skills-tests/test-sft/evaluation",
+        output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-sft/evaluation",
         benchmarks="gsm8k:0",
         server_gpus=1,
         server_nodes=1,
@@ -75,7 +78,7 @@ def test_sft():
     )
 
     metrics = compute_metrics(
-        [f"/tmp/nemo-skills-tests/test-sft/evaluation/eval-results/gsm8k/output-greedy.jsonl"],
+        [f"/tmp/nemo-skills-tests/{model_type}/test-sft/evaluation/eval-results/gsm8k/output-greedy.jsonl"],
         importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS(),
     )
     # only checking the total, since model is tiny
@@ -87,10 +90,10 @@ def test_dpo():
     model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
-
-    model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
-    if not model_path:
-        pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
+    model_type = os.getenv('NEMO_SKILLS_TEST_MODEL_TYPE')
+    if not model_type:
+        pytest.skip("Define NEMO_SKILLS_TEST_MODEL_TYPE to run this test")
+    prompt_template = 'llama3-instruct' if model_type == 'llama' else 'qwen-instruct'
 
     train(
         ctx=wrap_arguments(
@@ -111,7 +114,7 @@ def test_dpo():
         config_dir=Path(__file__).absolute().parent,
         expname="test-dpo",
         training_algo="dpo",
-        output_dir="/tmp/nemo-skills-tests/test-dpo",
+        output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-dpo",
         nemo_model=model_path,
         num_nodes=1,
         num_gpus=1,
@@ -122,12 +125,12 @@ def test_dpo():
 
     # checking that the final model can be used for evaluation
     eval(
-        ctx=wrap_arguments("++prompt_template=llama3-instruct " "++split=test " "++batch_size=8 " "++max_samples=10"),
+        ctx=wrap_arguments(f"++prompt_template={prompt_template} ++split=test ++batch_size=8 ++max_samples=10"),
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
-        model="/tmp/nemo-skills-tests/test-dpo/model-averaged-nemo",
+        model=f"/tmp/nemo-skills-tests/{model_type}/test-dpo/model-averaged-nemo",
         server_type="nemo",
-        output_dir="/tmp/nemo-skills-tests/test-dpo/evaluation",
+        output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-dpo/evaluation",
         benchmarks="gsm8k:0",
         server_gpus=1,
         server_nodes=1,
@@ -136,7 +139,7 @@ def test_dpo():
     )
 
     metrics = compute_metrics(
-        [f"/tmp/nemo-skills-tests/test-dpo/evaluation/eval-results/gsm8k/output-greedy.jsonl"],
+        [f"/tmp/nemo-skills-tests/{model_type}/test-dpo/evaluation/eval-results/gsm8k/output-greedy.jsonl"],
         importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS(),
     )
     # only checking the total, since model is tiny
@@ -148,8 +151,11 @@ def test_rm():
     model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
+    model_type = os.getenv('NEMO_SKILLS_TEST_MODEL_TYPE')
+    if not model_type:
+        pytest.skip("Define NEMO_SKILLS_TEST_MODEL_TYPE to run this test")
 
-    os.makedirs("/tmp/nemo-skills-tests/test-rm/score", exist_ok=True)
+    os.makedirs(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score", exist_ok=True)
 
     train(
         ctx=wrap_arguments(
@@ -170,7 +176,7 @@ def test_rm():
         config_dir=Path(__file__).absolute().parent,
         expname="test-rm",
         training_algo="rm",
-        output_dir="/tmp/nemo-skills-tests/test-rm",
+        output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-rm",
         nemo_model=model_path,
         num_nodes=1,
         num_gpus=1,
@@ -179,25 +185,25 @@ def test_rm():
         disable_wandb=True,
     )
 
-    assert os.path.exists("/tmp/nemo-skills-tests/test-rm/model-averaged-nemo")
+    assert os.path.exists(f"/tmp/nemo-skills-tests/{model_type}/test-rm/model-averaged-nemo")
 
     score_rm(
         ctx=wrap_arguments("++batch_size=8 " "++max_samples=10"),
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
         input_dir="/nemo_run/code/tests/data/score_rm_inputs",
-        output_dir="/tmp/nemo-skills-tests/test-rm/score",
+        output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-rm/score",
         server_type="nemo",
         expname="test-rm",
-        model="/tmp/nemo-skills-tests/test-rm/model-averaged-nemo",
+        model=f"/tmp/nemo-skills-tests/{model_type}/test-rm/model-averaged-nemo",
         server_gpus=1,
         server_nodes=1,
         partition="interactive",
         num_random_seeds=None,
     )
 
-    assert os.path.exists("/tmp/nemo-skills-tests/test-rm/score/output-greedy.jsonl")
-    rm_output = [json.loads(line) for line in open("/tmp/nemo-skills-tests/test-rm/score/output-greedy.jsonl")]
+    assert os.path.exists(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-greedy.jsonl")
+    rm_output = [json.loads(line) for line in open(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-greedy.jsonl")]
     assert len(rm_output) == 50
     assert all("reward_model_score" in line for line in rm_output)
 
@@ -206,10 +212,10 @@ def test_rm():
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
         input_dir="/nemo_run/code/tests/data/score_rm_inputs",
-        output_dir="/tmp/nemo-skills-tests/test-rm/score",
+        output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-rm/score",
         server_type="nemo",
         expname="test-rm",
-        model="/tmp/nemo-skills-tests/test-rm/model-averaged-nemo",
+        model=f"/tmp/nemo-skills-tests/{model_type}/test-rm/model-averaged-nemo",
         server_gpus=1,
         server_nodes=1,
         partition="interactive",
@@ -217,7 +223,7 @@ def test_rm():
     )
 
     for rs in range(3):
-        assert os.path.exists(f"/tmp/nemo-skills-tests/test-rm/score/output-rs{rs}.jsonl")
-        rm_output = [json.loads(line) for line in open(f"/tmp/nemo-skills-tests/test-rm/score/output-rs{rs}.jsonl")]
+        assert os.path.exists(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-rs{rs}.jsonl")
+        rm_output = [json.loads(line) for line in open(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-rs{rs}.jsonl")]
         assert len(rm_output) == 50
         assert all("reward_model_score" in line for line in rm_output)
