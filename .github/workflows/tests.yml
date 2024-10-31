@@ -30,6 +30,8 @@ jobs:
         pip install -e .
         pip install -r requirements/common-tests.txt
     - name: Run all tests
+      env:
+        NVIDIA_API_KEY: ${{ secrets.NVIDIA_API_KEY }}
       run: |
         docker run --rm --name=local-sandbox igitman/nemo-skills-sandbox:0.4.2 &
         sleep 120
