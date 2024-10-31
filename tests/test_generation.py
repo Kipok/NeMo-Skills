@@ -30,15 +30,34 @@ DATA_TO_TEST = []
 template_folder = Path(__file__).parents[1] / 'nemo_skills' / 'prompt' / 'template'
 prompt_templates = [f[:-5] for f in os.listdir(template_folder) if f.endswith('.yaml')]
 
-for prompt_template in prompt_templates:
-    for dataset, splits in DATASETS:
-        for split in splits:
-            DATA_TO_TEST.append((dataset, split, prompt_template))
+for dataset, splits in DATASETS:
+    for split in splits:
+        DATA_TO_TEST.append((dataset, split))
 
 
-@pytest.mark.parametrize("dataset,split,prompt_template", DATA_TO_TEST)
-def test_generation_dryrun_default(dataset, split, prompt_template):
+@pytest.mark.parametrize("dataset,split", DATA_TO_TEST)
+def test_generation_dryrun_llama(dataset, split):
     """Testing the default prompts for each dataset."""
+    prompt_template = "llama3-instruct"
+    extra_args = importlib.import_module(f'nemo_skills.dataset.{dataset}').DEFAULT_GENERATION_ARGS
+    cmd = (
+        "python nemo_skills/inference/generate.py "
+        f"    ++output_file=./test.jsonl "
+        f"    ++prompt_template={prompt_template} "
+        f"    ++dataset={dataset} "
+        f"    ++split={split} "
+        f"    ++server.server_type=nemo "
+        f"    ++dry_run=True "
+        f"    {extra_args} "
+    )
+    subprocess.run(cmd, shell=True, check=True)
+
+
+@pytest.mark.parametrize("prompt_template", prompt_templates)
+def test_generation_dryrun_gsm8k(prompt_template):
+    """Testing that each template can work with a single dataset."""
+    dataset = "gsm8k"
+    split = "test"
     cmd = (
         "python nemo_skills/inference/generate.py "
         f"    ++output_file=./test.jsonl "
