@@ -494,7 +494,6 @@ class VLLMModel(BaseModel):
                 raise ValueError(f"Length of {key} should match the number of prompts.")
             if not is_list:
                 kwargs[key] = [value for _ in range(len(prompts))]
-                continue
 
         futures = []
         with ThreadPoolExecutor(max_workers=len(prompts)) as executor:
