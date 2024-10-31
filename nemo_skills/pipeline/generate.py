@@ -56,7 +56,7 @@ def get_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
     return cmd
 
 class GenerationType(str, Enum):
-    generation = "generation"
+    generate = "generate"
     reward = "reward"
 
 server_command_factories = {
