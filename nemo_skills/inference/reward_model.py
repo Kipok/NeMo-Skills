@@ -30,6 +30,7 @@ from nemo_skills.inference.server.code_execution_model import (
 )
 from nemo_skills.inference.server.reward_model import (
     get_reward_model,
+    RequestException,
 )
 from nemo_skills.prompt.utils import get_prompt
 from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dataclass, setup_logging
@@ -76,12 +77,12 @@ class RewardModelConfig:
     def __post_init__(self):
         if self.input_dir is None and self.input_file is None:
             if self.dataset is None or self.split is None:
-                raise ValueError("Either `input_file`, `input_directory` or `dataset` and `split` should be provided")
+                raise ValueError("Either `input_file`, `input_dir` or `dataset` and `split` should be provided")
             self.input_file = Path(__file__).parents[1] / "dataset" / self.dataset / f"{self.split}.jsonl"
             if self.output_file is None:
                 raise ValueError("Output file should be provided if using `dataset` and `split`")
         elif self.input_file is None and self.input_dir is not None:
-            self.check_dataset_and_split_none(against='`input_directory`')
+            self.check_dataset_and_split_none(against='`input_dir`')
             seed = f'rs{self.random_seed}' if self.random_seed is not None else 'greedy'
             self.input_file = Path(self.input_dir) / f"output-{seed}.jsonl"
             self.output_file = Path(self.output_dir) / f"output-{seed}.jsonl"
@@ -90,7 +91,7 @@ class RewardModelConfig:
             if self.output_file is None:
                 raise ValueError("Output file should be provided if providing `input_file`")
         else:
-            raise ValueError("`input_file` and `input_directory` cannot be provided at the same time")
+            raise ValueError("`input_file` and `input_dir` cannot be provided at the same time")
 
 
         if self.dataset is None and self.prompt_config is None:
@@ -172,20 +173,17 @@ def generate(cfg: RewardModelConfig):
         for idx, data_point in tqdm(enumerate(data), initial=starting_idx, total=len(data) + starting_idx):
             if idx >= cfg.max_samples:
                 break
-            data_point.pop(cfg.generation_key, None)
             data_points.append(data_point)
 
             if len(data_points) == cfg.batch_size or idx == cfg.max_samples - 1:
                 outputs = llm.score(
-                    prompts=[prompt.fill(dp) for dp in data_points],
+                    prompts=[prompt.fill(dp, include_generation=True) for dp in data_points],
                 )
 
                 for output, original_data_point in zip(outputs, data_points):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
                     # all of the ground-truth data to the output file alongside the generated solutions
-                    output[cfg.generation_key] = output.pop("generation")
                     output.update(original_data_point)
-
                     fout.write(json.dumps(output) + "\n")
                 data_points = []
 
