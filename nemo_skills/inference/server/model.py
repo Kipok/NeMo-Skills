@@ -488,25 +488,25 @@ class VLLMModel(BaseModel):
             is_list = False
             if key == 'stop_phrases' and (value and isinstance(value[0], list)):
                 is_list = True
-            elif isinstance(value, list):
+            if key != 'stop_phrases' and isinstance(value, list):
                 is_list = True
-            if not is_list:
-                kwargs[key] = [value for _ in len(prompts)]
-                continue
-            if len(value) != len(prompts):
+            if is_list and len(value) != len(prompts):
                 raise ValueError(f"Length of {key} should match the number of prompts.")
+            if not is_list:
+                kwargs[key] = [value for _ in range(len(prompts))]
+                continue
 
         futures = []
         with ThreadPoolExecutor(max_workers=len(prompts)) as executor:
             for request_idx in range(len(prompts)):
                 request = {
-                    'prompt': prompts[request_idx],
+                    'prompt': [prompts[request_idx]],
                     'max_tokens': kwargs['tokens_to_generate'][request_idx],
                     'temperature': kwargs['temperature'][request_idx],
                     'top_p': kwargs['top_p'][request_idx],
                     'top_k': kwargs['top_k'][request_idx],
                     'repetition_penalty': kwargs['repetition_penalty'][request_idx],
-                    'random_seed': kwargs['random_seed'][request_idx],
+                    'seed': kwargs['random_seed'][request_idx],
                     'stop': kwargs['stop_phrases'][request_idx],
                     # setting other parameters that we don't support
                     'echo': False,
@@ -518,7 +518,7 @@ class VLLMModel(BaseModel):
                 }
                 preprocess_request(request)
                 futures.append(executor.submit(self.prompt_api, **request))
-        outputs = [{'generation': future.result()} for future in futures]
+        outputs = [{'generation': future.result()[0]} for future in futures]
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
 
