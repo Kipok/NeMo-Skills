@@ -234,6 +234,8 @@ class NemoModel(BaseModel):
 class OpenAIModel(BaseModel):
     def __init__(
         self,
+        host: str = '127.0.0.1',
+        port: str = '5000',
         model=None,
         base_url=None,
         api_key=None,
@@ -249,7 +251,8 @@ class OpenAIModel(BaseModel):
                 raise ValueError("model argument is required for OpenAI model.")
 
         if base_url is None:
-            base_url = os.getenv("NEMO_SKILLS_OPENAI_BASE_URL")
+            # if not provided, we assume it's served on host/port
+            base_url = os.getenv("NEMO_SKILLS_OPENAI_BASE_URL", f"http://{host}:{port}/v1")
 
         if api_key is None:
             if base_url is not None and 'api.nvidia.com' in base_url:

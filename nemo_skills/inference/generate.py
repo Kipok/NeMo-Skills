@@ -21,6 +21,7 @@ from dataclasses import asdict, field
 from pathlib import Path
 
 import hydra
+from omegaconf import open_dict
 from tqdm import tqdm
 
 from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
@@ -130,9 +131,9 @@ def generate(cfg: GenerateSolutionsConfig):
     if cfg.prompt_template is None:
         # TODO: handle this explicitly in model.py clients
         # switching to OpenAI client always if prompt template is not provided
-        cfg.server.server_type = "openai"
-        cfg.server.base_url = f"{cfg.server.host}:{cfg.server.port}/v1"
-        cfg.server.model = "model"
+        with open_dict(cfg.server):
+            cfg.server["server_type"] = "openai"
+            cfg.server["model"] = "model"
         if cfg.code_execution:
             raise ValueError("Code execution is not supported for OpenAI server")
 
