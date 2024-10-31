@@ -125,6 +125,8 @@ def get_reward_server_command(
 
     if server_type == 'nemo':
         server_start_cmd = (
+            # Note: The order of the two commands is important as the reward model server
+            # needs to be the first command so it can get the HF_TOKEN from the environment
             f"python -m nemo_skills.inference.server.serve_nemo_aligner_reward_model "
             f"    ++rm_model_file={model_path} "
             f"    trainer.devices={num_gpus} "
@@ -136,6 +138,8 @@ def get_reward_server_command(
             f"    inference.port=5001 "
             f"    {server_args} & "
             f"python -m nemo_skills.inference.server.serve_nemo_reward_model "
+            # These ports could be configurable, but is hard coded to reduce
+            # the divergence of the server command parameters from pipeline/generate.py
             f" inference_port=5000  triton_server_address=localhost:5001 "
         )
 
