@@ -22,7 +22,7 @@ trainer:
   precision: bf16 # 16, 32, or bf16
 
 inference:
-  port: 5000 # the port number for the inference server
+  port: 5001 # the port number for the inference server
   model_name: "reward_model"
 
   # a PyTriton parameter to specify
