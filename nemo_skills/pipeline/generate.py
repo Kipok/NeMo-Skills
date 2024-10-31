@@ -55,6 +55,14 @@ def get_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
         )
     return cmd
 
+def get_rm_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
+    cmd = (
+        f"python -m nemo_skills.inference.reward_model ++skip_filled=True "
+        f"++output_dir={output_dir} ++random_seed={random_seed} "
+    )
+    cmd += f" {extra_arguments} "
+    return cmd
+
 class GenerationType(str, Enum):
     generate = "generate"
     reward = "reward"
@@ -62,6 +70,11 @@ class GenerationType(str, Enum):
 server_command_factories = {
     GenerationType.generate: get_server_command,
     GenerationType.reward: get_reward_server_command,
+}
+
+client_command_factories = {
+    GenerationType.generate: get_cmd,
+    GenerationType.reward: get_rm_cmd,
 }
 
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
@@ -142,6 +155,7 @@ def generate(
         )
 
     get_server_command = server_command_factories[generation_type]
+    get_cmd = client_command_factories[generation_type]
 
     with run.Experiment(expname) as exp:
         if num_random_seeds:
