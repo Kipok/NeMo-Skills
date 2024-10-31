@@ -72,6 +72,17 @@ defaults for an 8B model size
     ++model.tensor_model_parallel_size=4
 ```
 
+
+
+To enhance training efficiency for large-scale data, we strongly recommend adding a cache folder to store the dataset indexing cache, which will speed up the training process. Additionally, set hf_dataset=True to prevent CPU out-of-memory (OOM) issues. This is already the default setting in sft_config.yaml. Use the following configuration:
+
+```bash
+    ++model.data.train_ds.hf_dataset=True \
+    ++model.data.train_ds.index_mapping_dir=/data/your_data_cache/
+
+```
+
+
 You can customize any of the SFT parameters by directly providing them, e.g.
 to disable wandb logging and add dropout use
 
