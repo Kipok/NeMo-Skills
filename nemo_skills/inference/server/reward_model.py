@@ -57,7 +57,7 @@ class BaseModel(abc.ABC):
     def score(self, prompts: list[str]) -> list[dict]:
         pass
 
-class NemoRewardModel:
+class NemoRewardModel(BaseModel):
     def score(self, prompts: list[str]) -> list[float]:
         request = {
             "prompts": prompts,
