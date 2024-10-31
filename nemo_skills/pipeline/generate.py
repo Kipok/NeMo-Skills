@@ -20,7 +20,7 @@ import typer
 
 from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, get_generation_command, run_exp
 from nemo_skills.pipeline.app import app, typer_unpacker
-from nemo_skills.pipeline.utils import get_server_command, get_reward_server_command
+from nemo_skills.pipeline.utils import get_reward_server_command, get_server_command
 from nemo_skills.utils import setup_logging
 
 LOG = logging.getLogger(__file__)
@@ -55,6 +55,7 @@ def get_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
         )
     return cmd
 
+
 def get_rm_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
     cmd = (
         f"python -m nemo_skills.inference.reward_model ++skip_filled=True "
@@ -63,9 +64,11 @@ def get_rm_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
     cmd += f" {extra_arguments} "
     return cmd
 
+
 class GenerationType(str, Enum):
     generate = "generate"
     reward = "reward"
+
 
 server_command_factories = {
     GenerationType.generate: get_server_command,
@@ -76,6 +79,7 @@ client_command_factories = {
     GenerationType.generate: get_cmd,
     GenerationType.reward: get_rm_cmd,
 }
+
 
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 @typer_unpacker

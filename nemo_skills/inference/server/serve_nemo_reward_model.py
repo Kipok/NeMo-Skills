@@ -17,18 +17,21 @@ from dataclasses import dataclass
 
 import hydra
 import numpy as np
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 from pytriton.client import ModelClient
 
 LOG = logging.getLogger(__file__)
+
 
 @dataclass
 class RewardModelGenerationConfig:
     inference_port: int = 5000
     triton_server_address: str = "localhost:5001"
 
+
 cs = hydra.core.config_store.ConfigStore.instance()
 cs.store(name="base_reward_model_generation_config", node=RewardModelGenerationConfig)
+
 
 @hydra.main(version_base=None, config_name="base_reward_model_generation_config")
 def proxy_rm(cfg: RewardModelGenerationConfig) -> None:
@@ -39,9 +42,7 @@ def proxy_rm(cfg: RewardModelGenerationConfig) -> None:
     @app.route('/score', methods=['POST'])
     def infer():
         data = request.json
-        input_data = np.array(
-            [[obj.encode('utf-8')] for obj in data['prompts']],
-            dtype=np.bytes_)
+        input_data = np.array([[obj.encode('utf-8')] for obj in data['prompts']], dtype=np.bytes_)
 
         result = client.infer_batch(sentences=input_data)
 
@@ -49,6 +50,7 @@ def proxy_rm(cfg: RewardModelGenerationConfig) -> None:
         return json_output
 
     app.run(host='127.0.0.1', port=cfg.inference_port, threaded=False)
+
 
 if __name__ == "__main__":
     proxy_rm()

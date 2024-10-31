@@ -24,14 +24,8 @@ import hydra
 from tqdm import tqdm
 
 from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
-from nemo_skills.inference.server.code_execution_model import (
-    ErrorRecoveryConfig,
-    server_params,
-)
-from nemo_skills.inference.server.reward_model import (
-    get_reward_model,
-    RequestException,
-)
+from nemo_skills.inference.server.code_execution_model import ErrorRecoveryConfig, server_params
+from nemo_skills.inference.server.reward_model import RequestException, get_reward_model
 from nemo_skills.prompt.utils import get_prompt
 from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dataclass, setup_logging
 
@@ -56,7 +50,7 @@ class RewardModelConfig:
     dataset: str | None = None
     split: str | None = None  # Can be train, validation, test or train_full (train + validation)
     input_file: str | None = None  # Can directly specify an input file, if using a custom dataset
-    input_dir: str | None = None # Can specify an input direct
+    input_dir: str | None = None  # Can specify an input direct
     output_dir: str | None = None
     random_seed: str | None = None
 
@@ -92,7 +86,6 @@ class RewardModelConfig:
                 raise ValueError("Output file should be provided if providing `input_file`")
         else:
             raise ValueError("`input_file` and `input_dir` cannot be provided at the same time")
-
 
         if self.dataset is None and self.prompt_config is None:
             raise ValueError("If `dataset` is not provided, `prompt_config` is required")

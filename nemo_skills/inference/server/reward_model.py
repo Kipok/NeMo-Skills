@@ -17,6 +17,7 @@ import os
 
 import requests
 
+
 class BaseModel(abc.ABC):
     """Base model class for handling requests to the inference server.
 
@@ -57,17 +58,17 @@ class BaseModel(abc.ABC):
     def score(self, prompts: list[str]) -> list[dict]:
         pass
 
+
 class RequestException(RuntimeError):
     pass
+
 
 class NemoRewardModel(BaseModel):
     def score(self, prompts: list[str]) -> list[float]:
         request = {
             "prompts": prompts,
         }
-        response = self.requests_lib.post(
-            f"http://{self.server_host}:{self.server_port}/score", json=request
-        )
+        response = self.requests_lib.post(f"http://{self.server_host}:{self.server_port}/score", json=request)
 
         if response.status_code != 200:
             raise RequestException(f"Failed to score prompts: {response.text}")

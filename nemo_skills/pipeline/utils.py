@@ -104,6 +104,7 @@ def get_generation_command(server_address, generation_commands):
     )
     return cmd
 
+
 def get_reward_server_command(
     server_type: str,
     num_gpus: int,
@@ -157,6 +158,7 @@ def get_reward_server_command(
         f"{server_start_cmd} "
     )
     return server_cmd, num_tasks
+
 
 def get_server_command(
     server_type: str,
