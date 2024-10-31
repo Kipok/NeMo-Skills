@@ -131,6 +131,8 @@ def generate(cfg: GenerateSolutionsConfig):
         # TODO: handle this explicitly in model.py clients
         # switching to OpenAI client always if prompt template is not provided
         cfg.server.server_type = "openai"
+        cfg.server.base_url = "127.0.0.1:5000/v1"
+        cfg.server.model = "model"
         if cfg.code_execution:
             raise ValueError("Code execution is not supported for OpenAI server")
 
