@@ -60,7 +60,7 @@ class GenerationType(str, Enum):
     reward = "reward"
 
 server_command_factories = {
-    GenerationType.generation: get_server_command,
+    GenerationType.generate: get_server_command,
     GenerationType.reward: get_reward_server_command,
 }
 
