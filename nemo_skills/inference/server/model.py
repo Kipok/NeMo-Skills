@@ -239,7 +239,7 @@ class OpenAIModel(BaseModel):
         model=None,
         base_url=None,
         api_key=None,
-        max_parallel_requests: int = 100,  # can adjust to avoid rate-limiting
+        max_parallel_requests: int = 1000,  # can adjust to avoid rate-limiting
         **kwargs,
     ):
         super().__init__(**kwargs)

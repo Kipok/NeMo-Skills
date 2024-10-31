@@ -128,7 +128,7 @@ def generate(cfg: GenerateSolutionsConfig):
 
     LOG.info("Config used: %s", cfg)
 
-    if cfg.prompt_template is None:
+    if cfg.prompt_template is None and cfg.server["server_type"] != "openai":
         # TODO: handle this explicitly in model.py clients
         # switching to OpenAI client always if prompt template is not provided
         with open_dict(cfg.server):
