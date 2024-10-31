@@ -80,12 +80,12 @@ class RewardModelConfig:
             self.input_file = Path(__file__).parents[1] / "dataset" / self.dataset / f"{self.split}.jsonl"
             if self.output_file is None:
                 raise ValueError("Output file should be provided if using `dataset` and `split`")
-        elif self.input_file is None and self.input_directory is not None:
+        elif self.input_file is None and self.input_dir is not None:
             self.check_dataset_and_split_none(against='`input_directory`')
             seed = f'rs{self.random_seed}' if self.random_seed is not None else 'greedy'
-            self.input_file = Path(self.input_directory) / f"output-{seed}.jsonl"
-            self.output_file = Path(self.output_directory) / f"output-{seed}.jsonl"
-        elif self.input_file is not None and self.input_directory is None:
+            self.input_file = Path(self.input_dir) / f"output-{seed}.jsonl"
+            self.output_file = Path(self.output_dir) / f"output-{seed}.jsonl"
+        elif self.input_file is not None and self.input_dir is None:
             self.check_dataset_and_split_none(against='`input_file`')
             if self.output_file is None:
                 raise ValueError("Output file should be provided if providing `input_file`")
