@@ -125,8 +125,6 @@ def get_reward_server_command(
 
     if server_type == 'nemo':
         server_start_cmd = (
-            f"python -m nemo_skills.inference.server.serve_nemo_reward_model "
-            f" inference_port=5000  triton_server_address=localhost:5001 &"
             f"python -m nemo_skills.inference.server.serve_nemo_aligner_reward_model "
             f"    ++rm_model_file={model_path} "
             f"    trainer.devices={num_gpus} "
@@ -136,7 +134,9 @@ def get_reward_server_command(
             # This port could be configurable, but is hard coded to reduce
             # the divergence of the server command parameters from pipeline/generate.py
             f"    inference.port=5001 "
-            f"    {server_args} "
+            f"    {server_args} & "
+            f"python -m nemo_skills.inference.server.serve_nemo_reward_model "
+            f" inference_port=5000  triton_server_address=localhost:5001 "
         )
 
         # somehow on slurm nemo needs multiple tasks, but locally only 1
