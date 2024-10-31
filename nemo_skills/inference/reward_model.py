@@ -55,8 +55,8 @@ class RewardModelConfig:
     dataset: str | None = None
     split: str | None = None  # Can be train, validation, test or train_full (train + validation)
     input_file: str | None = None  # Can directly specify an input file, if using a custom dataset
-    input_directory: str | None = None # Can specify an input direct
-    output_directory: str | None = None
+    input_dir: str | None = None # Can specify an input direct
+    output_dir: str | None = None
     random_seed: str | None = None
 
     batch_size: int = 128
