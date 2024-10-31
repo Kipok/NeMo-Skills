@@ -41,7 +41,7 @@ LOG = logging.getLogger(__file__)
 class RewardModelConfig:
     """LLM reward model parameters."""
 
-    output_file: str  # Where to save the generations
+    output_file: str | None = None  # Where to save the generations
     # Inference server configuration {server_params} {error_recovery_params}
     server: dict = field(default_factory=dict)
     # Sandbox configuration {sandbox_params}
@@ -74,13 +74,24 @@ class RewardModelConfig:
     dry_run: bool = False
 
     def __post_init__(self):
-        if self.input_file is not None:
-            if self.dataset is not None or self.split is not None:
-                raise ValueError("Either `input_file` or `dataset` and `split` should be provided, but not both")
-        else:
+        if self.input_directory is None and self.input_file is None:
             if self.dataset is None or self.split is None:
-                raise ValueError("Either `input_file` or `dataset` and `split` should be provided")
+                raise ValueError("Either `input_file`, `input_directory` or `dataset` and `split` should be provided")
             self.input_file = Path(__file__).parents[1] / "dataset" / self.dataset / f"{self.split}.jsonl"
+            if self.output_file is None:
+                raise ValueError("Output file should be provided if using `dataset` and `split`")
+        elif self.input_file is None and self.input_directory is not None:
+            self.check_dataset_and_split_none(against='`input_directory`')
+            seed = f'rs{self.random_seed}' if self.random_seed is not None else 'greedy'
+            self.input_file = Path(self.input_directory) / f"output-{seed}.jsonl"
+            self.output_file = Path(self.output_directory) / f"output-{seed}.jsonl"
+        elif self.input_file is not None and self.input_directory is None:
+            self.check_dataset_and_split_none(against='`input_file`')
+            if self.output_file is None:
+                raise ValueError("Output file should be provided if providing `input_file`")
+        else:
+            raise ValueError("`input_file` and `input_directory` cannot be provided at the same time")
+
 
         if self.dataset is None and self.prompt_config is None:
             raise ValueError("If `dataset` is not provided, `prompt_config` is required")
@@ -90,6 +101,10 @@ class RewardModelConfig:
 
         if self.server["server_type"] == "openai" and self.prompt_template is not None:
             raise ValueError("Prompt template is not supported for OpenAI server")
+
+    def check_dataset_and_split_none(self, against):
+        if self.dataset is not None or self.split is not None:
+            raise ValueError(f"Either {against} or `dataset` and `split` should be provided, but not both")
 
 
 cs = hydra.core.config_store.ConfigStore.instance()
