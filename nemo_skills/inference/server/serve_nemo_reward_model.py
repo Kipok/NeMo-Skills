@@ -40,7 +40,7 @@ def proxy_rm(cfg: RewardModelGenerationConfig) -> None:
     def infer():
         data = request.json
         input_data = np.array(
-            [obj.encode('utf-8') for obj in data['prompts']],
+            [[obj.encode('utf-8')] for obj in data['prompts']],
             dtype=np.bytes_)
 
         result = client.infer_batch(sentences=input_data)
