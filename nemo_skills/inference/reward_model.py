@@ -74,7 +74,7 @@ class RewardModelConfig:
     dry_run: bool = False
 
     def __post_init__(self):
-        if self.input_directory is None and self.input_file is None:
+        if self.input_dir is None and self.input_file is None:
             if self.dataset is None or self.split is None:
                 raise ValueError("Either `input_file`, `input_directory` or `dataset` and `split` should be provided")
             self.input_file = Path(__file__).parents[1] / "dataset" / self.dataset / f"{self.split}.jsonl"
