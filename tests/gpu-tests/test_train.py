@@ -23,7 +23,7 @@ import pytest
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 from nemo_skills.evaluation.metrics import compute_metrics
 from nemo_skills.pipeline import wrap_arguments
-from nemo_skills.pipeline.cli import eval, train, generate
+from nemo_skills.pipeline.cli import eval, generate, train
 
 
 @pytest.mark.gpu
