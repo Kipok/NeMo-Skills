@@ -23,7 +23,7 @@ import pytest
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 from nemo_skills.evaluation.metrics import compute_metrics
 from nemo_skills.pipeline import wrap_arguments
-from nemo_skills.pipeline.cli import eval, score_rm, train
+from nemo_skills.pipeline.cli import eval, train, generate
 
 
 @pytest.mark.gpu
@@ -187,11 +187,12 @@ def test_rm():
 
     assert os.path.exists(f"/tmp/nemo-skills-tests/{model_type}/test-rm/model-averaged-nemo")
 
-    score_rm(
+    generate(
         ctx=wrap_arguments("++batch_size=8 " "++max_samples=10"),
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
-        input_dir="/nemo_run/code/tests/data/score_rm_inputs",
+        # input_dir="/nemo_run/code/tests/data/score_rm_inputs",
+        input_dir=f"/tmp/nemo-skills-tests/{model_type}/vllm-generate-seeds",
         output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-rm/score",
         server_type="nemo",
         expname="test-rm",
@@ -209,7 +210,7 @@ def test_rm():
     assert len(rm_output) == 50
     assert all("reward_model_score" in line for line in rm_output)
 
-    score_rm(
+    generate(
         ctx=wrap_arguments("++batch_size=8 " "++max_samples=10"),
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
