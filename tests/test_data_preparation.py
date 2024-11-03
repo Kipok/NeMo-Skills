@@ -33,7 +33,7 @@ def test_multiple_files():
         f"    ++prompt_config=generic/math "
         f"    ++prompt_template=llama3-instruct "
         f"    ++exclude_optional_keys=false "
-        f"    ++hf_model_name='Qwen/Qwen2.5-Math-7B-Instruct' "
+        f"    ++filters.remove_len_outlier_problems=false "
         f"    ++filters.drop_multi_boxed=true "
         f"    ++filters.trim_solutions=true "
         f"    ++filters.drop_incorrect_arithmetic=false "
@@ -62,7 +62,7 @@ def test_exclude_keys():
         f"    ++prompt_config=generic/math "
         f"    ++prompt_template=llama3-instruct "
         f"    ++exclude_optional_keys=true "
-        f"    ++hf_model_name='Qwen/Qwen2.5-Math-7B-Instruct' "
+        f"    ++filters.remove_len_outlier_problems=false "
         f"    ++filters.drop_multi_boxed=true "
         f"    ++filters.trim_solutions=true "
         f"    ++filters.drop_incorrect_arithmetic=false "
@@ -92,7 +92,6 @@ def test_code_sft_data():
         f"    ++prompt_config=generic/codegen "
         f"    ++prompt_template=llama3-instruct "
         f"    ++exclude_optional_keys=false "
-        f"    ++hf_model_name='Qwen/Qwen2.5-Math-7B-Instruct' "
         f"    ++filters.drop_incorrect_code_blocks=false "
         f"    ++generation_suffix='\"<|eot_id|>\"' ",
         check=True,
