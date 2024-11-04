@@ -135,7 +135,7 @@ def generate(cfg: RewardModelConfig):
         dataset_module = importlib.import_module(f"nemo_skills.dataset.{cfg.dataset}")
         cfg.prompt_config = dataset_module.PROMPT_CONFIG
 
-    prompt = get_prompt(cfg.prompt_config, cfg.prompt_template, examples_type=cfg.examples_type)
+    prompt = get_prompt(cfg.prompt_config, cfg.prompt_template)
     LOG.info("Prompt used: %s", prompt)
 
     # need to account for anything that's prefilled
@@ -181,17 +181,9 @@ def generate(cfg: RewardModelConfig):
                 data_points = []
 
 
-error_recovery_params = '\n' + get_fields_docstring(
-    ErrorRecoveryConfig,
-    prefix='server.error_recovery.',
-    level=2,
-)
-
-
 HELP_MESSAGE = get_help_message(
     RewardModelConfig,
     server_params=server_params(),
-    error_recovery_params=error_recovery_params,
 )
 
 
