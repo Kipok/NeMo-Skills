@@ -62,6 +62,8 @@ class RewardModelConfig:
     dry_run: bool = False
 
     def __post_init__(self):
+        if self.random_seed.strip() == 'None':
+            self.random_seed = None
         if self.input_file is None and self.input_dir is not None:
             seed = f'rs{self.random_seed}' if self.random_seed is not None else 'greedy'
             self.input_file = Path(self.input_dir) / f"output-{seed}.jsonl"
