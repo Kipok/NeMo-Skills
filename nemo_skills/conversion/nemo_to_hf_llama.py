@@ -82,7 +82,7 @@ def create_hf_config(hf_model_name, nemo_config):
     hf_config.num_key_value_heads = nemo_config.num_query_groups
     kv_channels = nemo_config.hidden_size // nemo_config.num_attention_heads
     hf_config.head_dim = kv_channels
-    hf_config.num_heads = nemo_config.num_attention_heads # 32
+    hf_config.num_heads = nemo_config.num_attention_heads  # 32
     if 'mistral' in hf_model_name.lower():
         if nemo_config.activation == 'fast-swiglu':
             hf_config.activation = 'silu'
