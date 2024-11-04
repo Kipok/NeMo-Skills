@@ -188,13 +188,17 @@ def test_rm():
     assert os.path.exists(f"/tmp/nemo-skills-tests/{model_type}/test-rm/model-averaged-nemo")
 
     generate(
-        ctx=wrap_arguments("++batch_size=8 " "++max_samples=10"),
+        ctx=wrap_arguments(
+            f"++batch_size=8 "
+            f"++input_dir=/nemo_run/code/tests/data/score_rm_inputs "
+            f"++prompt_config=generic/math-base "
+            f"++prompt_template=llama3-base "
+            ),
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
-        # input_dir="/nemo_run/code/tests/data/score_rm_inputs",
-        input_dir=f"/tmp/nemo-skills-tests/{model_type}/vllm-generate-seeds",
         output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-rm/score",
         server_type="nemo",
+        generation_type="reward",
         expname="test-rm",
         model=f"/tmp/nemo-skills-tests/{model_type}/test-rm/model-averaged-nemo",
         server_gpus=1,
@@ -211,12 +215,17 @@ def test_rm():
     assert all("reward_model_score" in line for line in rm_output)
 
     generate(
-        ctx=wrap_arguments("++batch_size=8 " "++max_samples=10"),
+        ctx=wrap_arguments(
+            f"++batch_size=8 "
+            f"++input_dir=/nemo_run/code/tests/data/score_rm_inputs "
+            f"++prompt_config=generic/math-base "
+            f"++prompt_template=llama3-base "
+            ),
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
-        input_dir="/nemo_run/code/tests/data/score_rm_inputs",
         output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-rm/score",
         server_type="nemo",
+        generation_type="reward",
         expname="test-rm",
         model=f"/tmp/nemo-skills-tests/{model_type}/test-rm/model-averaged-nemo",
         server_gpus=1,
