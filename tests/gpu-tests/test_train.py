@@ -161,7 +161,7 @@ def test_rm(test_mode):
         input_dir_seeds = "/nemo_run/code/tests/data/score_rm_inputs"
         input_dir_greedy = "/nemo_run/code/tests/data/score_rm_inputs"
         expected_scores_per_file = 50
-    else: # test_mode == "integration"
+    else:  # test_mode == "integration"
         input_dir_greedy = os.getenv('NEMO_SKILLS_TEST_RM_INPUTS_GREEDY')
         if not input_dir_greedy:
             pytest.skip("Define NEMO_SKILLS_TEST_RM_INPUTS_SEEDS_GREEDY to run this test")
