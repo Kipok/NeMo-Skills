@@ -15,8 +15,8 @@
 import importlib
 import json
 import os
-import sys
 import shutil
+import sys
 from pathlib import Path
 
 import pytest
@@ -196,7 +196,7 @@ def test_rm():
             f"++input_dir=/nemo_run/code/tests/data/score_rm_inputs "
             f"++prompt_config=generic/math-base "
             f"++prompt_template=llama3-base "
-            ),
+        ),
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
         output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-rm/score",
@@ -223,7 +223,7 @@ def test_rm():
             f"++input_dir=/nemo_run/code/tests/data/score_rm_inputs "
             f"++prompt_config=generic/math-base "
             f"++prompt_template=llama3-base "
-            ),
+        ),
         cluster="test-local",
         config_dir=Path(__file__).absolute().parent,
         output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-rm/score",
