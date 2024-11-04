@@ -1,0 +1,13 @@
+# Prompt used by Llama-instruct models for math benchmarks
+# https://huggingface.co/datasets/meta-llama/Meta-Llama-3.1-8B-Instruct-evals/viewer/Meta-Llama-3.1-8B-Instruct-evals__math__details?row=0
+
+user: |-
+  Context1: {text}
+
+  Context2: {generation}
+
+  Context3: {message}
+
+  ...
+  
+  Compare all texts.
