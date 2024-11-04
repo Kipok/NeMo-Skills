@@ -37,14 +37,11 @@ class RewardModelConfig:
     """LLM reward model parameters."""
 
     output_file: str | None = None  # Where to save the generations
-    # Inference server configuration {server_params} {error_recovery_params}
+    # Inference server configuration {server_params}
     server: dict = field(default_factory=dict)
-    # Sandbox configuration {sandbox_params}
-    sandbox: dict = field(default_factory=dict)
     # Prompt configuration - path to yaml files
     prompt_template: str | None = None  # not required for OpenAI server
     prompt_config: str | None = None  # we will fetch it from dataset dir if not provided
-    examples_type: str | None = None  # to be able to customize few-shot examples
 
     # Can specify one of the existing datasets.
     dataset: str | None = None
@@ -191,7 +188,6 @@ error_recovery_params = '\n' + get_fields_docstring(
 HELP_MESSAGE = get_help_message(
     RewardModelConfig,
     server_params=server_params(),
-    sandbox_params=sandbox_params(),
     error_recovery_params=error_recovery_params,
 )
 
