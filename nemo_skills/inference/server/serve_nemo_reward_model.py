@@ -56,7 +56,7 @@ def proxy_rm(cfg: RewardModelGenerationConfig) -> None:
 
         result = client.infer_batch(sentences=input_data)
 
-        json_output = jsonify({'rewards': result['rewards'][0].tolist()})
+        json_output = jsonify({'rewards': result['rewards'].tolist()})
         return json_output
 
     app.run(host='127.0.0.1', port=cfg.inference_port, threaded=False)
