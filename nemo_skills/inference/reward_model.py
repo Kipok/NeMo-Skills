@@ -23,9 +23,8 @@ from pathlib import Path
 import hydra
 from tqdm import tqdm
 
-from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
 from nemo_skills.inference.server.code_execution_model import ErrorRecoveryConfig, server_params
-from nemo_skills.inference.server.reward_model import RequestException, get_reward_model
+from nemo_skills.inference.server.reward_model import get_reward_model
 from nemo_skills.prompt.utils import get_prompt
 from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dataclass, setup_logging
 
@@ -59,7 +58,7 @@ class RewardModelConfig:
     # Useful if need to run multiple slurm jobs on the same data file
     offset: int = 0
 
-    generation_key: str = "generation"
+    reward_model_score_key: str = "reward_model_score"
 
     # can add this flag to just print the first prompt instead of running generation
     # useful to double check that your data can be loaded and prompt has what you expect
@@ -173,6 +172,10 @@ def generate(cfg: RewardModelConfig):
                 for output, original_data_point in zip(outputs, data_points):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
                     # all of the ground-truth data to the output file alongside the generated solutions
+                    result = output.pop('reward_model_score')
+                    output[cfg.reward_model_score_key] = result
+                    # Note: this implies that if the key is already present in the original data point, it will
+                    # not be overwritten.
                     output.update(original_data_point)
                     fout.write(json.dumps(output) + "\n")
                 data_points = []
