@@ -40,11 +40,8 @@ class RewardModelConfig:
     server: dict = field(default_factory=dict)
     # Prompt configuration - path to yaml files
     prompt_template: str | None = None  # not required for OpenAI server
-    prompt_config: str | None = None  # we will fetch it from dataset dir if not provided
+    prompt_config: str  # we will fetch it from dataset dir if not provided
 
-    # Can specify one of the existing datasets.
-    dataset: str | None = None
-    split: str | None = None  # Can be train, validation, test or train_full (train + validation)
     input_file: str | None = None  # Can directly specify an input file, if using a custom dataset
     input_dir: str | None = None  # Can specify an input direct
     output_dir: str | None = None
@@ -65,36 +62,21 @@ class RewardModelConfig:
     dry_run: bool = False
 
     def __post_init__(self):
-        if self.input_dir is None and self.input_file is None:
-            if self.dataset is None or self.split is None:
-                raise ValueError("Either `input_file`, `input_dir` or `dataset` and `split` should be provided")
-            self.input_file = Path(__file__).parents[1] / "dataset" / self.dataset / f"{self.split}.jsonl"
-            if self.output_file is None:
-                raise ValueError("Output file should be provided if using `dataset` and `split`")
-        elif self.input_file is None and self.input_dir is not None:
-            self.check_dataset_and_split_none(against='`input_dir`')
+        if self.input_file is None and self.input_dir is not None:
             seed = f'rs{self.random_seed}' if self.random_seed is not None else 'greedy'
             self.input_file = Path(self.input_dir) / f"output-{seed}.jsonl"
             self.output_file = Path(self.output_dir) / f"output-{seed}.jsonl"
         elif self.input_file is not None and self.input_dir is None:
-            self.check_dataset_and_split_none(against='`input_file`')
             if self.output_file is None:
                 raise ValueError("Output file should be provided if providing `input_file`")
         else:
             raise ValueError("`input_file` and `input_dir` cannot be provided at the same time")
-
-        if self.dataset is None and self.prompt_config is None:
-            raise ValueError("If `dataset` is not provided, `prompt_config` is required")
 
         if self.server["server_type"] != "openai" and self.prompt_template is None:
             raise ValueError("Prompt template is required for non-OpenAI servers")
 
         if self.server["server_type"] == "openai" and self.prompt_template is not None:
             raise ValueError("Prompt template is not supported for OpenAI server")
-
-    def check_dataset_and_split_none(self, against):
-        if self.dataset is not None or self.split is not None:
-            raise ValueError(f"Either {against} or `dataset` and `split` should be provided, but not both")
 
 
 cs = hydra.core.config_store.ConfigStore.instance()
@@ -130,10 +112,6 @@ def generate(cfg: RewardModelConfig):
 
     # additionally, skipping whatever is pre-filled, assuming offset didn't change
     data = data[starting_idx:]
-    if cfg.prompt_config is None:
-        # fetching from the default for corresponding dataset
-        dataset_module = importlib.import_module(f"nemo_skills.dataset.{cfg.dataset}")
-        cfg.prompt_config = dataset_module.PROMPT_CONFIG
 
     prompt = get_prompt(cfg.prompt_config, cfg.prompt_template)
     LOG.info("Prompt used: %s", prompt)
