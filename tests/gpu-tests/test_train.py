@@ -16,6 +16,7 @@ import importlib
 import json
 import os
 import sys
+import shutil
 from pathlib import Path
 
 import pytest
@@ -186,6 +187,8 @@ def test_rm():
     )
 
     assert os.path.exists(f"/tmp/nemo-skills-tests/{model_type}/test-rm/model-averaged-nemo")
+    shutil.rmtree(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score", ignore_errors=True)
+    os.makedirs(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score", exist_ok=False)
 
     generate(
         ctx=wrap_arguments(
