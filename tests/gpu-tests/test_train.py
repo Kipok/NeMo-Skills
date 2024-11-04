@@ -148,13 +148,29 @@ def test_dpo():
 
 
 @pytest.mark.gpu
-def test_rm():
+@pytest.mark.parametrize("test_mode", ["unit", "integration"])
+def test_rm(test_mode):
     model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
     model_type = os.getenv('NEMO_SKILLS_TEST_MODEL_TYPE')
     if not model_type:
         pytest.skip("Define NEMO_SKILLS_TEST_MODEL_TYPE to run this test")
+
+    if test_mode == "unit":
+        input_dir_seeds = "/nemo_run/code/tests/data/score_rm_inputs"
+        input_dir_greedy = "/nemo_run/code/tests/data/score_rm_inputs"
+        expected_scores_per_file = 50
+    else: # test_mode == "integration"
+        input_dir_greedy = os.getenv('NEMO_SKILLS_TEST_RM_INPUTS_GREEDY')
+        if not input_dir_greedy:
+            pytest.skip("Define NEMO_SKILLS_TEST_RM_INPUTS_SEEDS_GREEDY to run this test")
+        input_dir_seeds = os.getenv('NEMO_SKILLS_TEST_RM_INPUTS_SEEDS')
+        if not input_dir_seeds:
+            pytest.skip("Define NEMO_SKILLS_TEST_RM_INPUTS_SEEDS to run this test")
+        expected_scores_per_file = int(os.getenv('NEMO_SKILLS_TEST_RM_EXPECTED_SCORES_PER_FILE'))
+        if not expected_scores_per_file:
+            pytest.skip("Define NEMO_SKILLS_TEST_RM_EXPECTED_SCORES_PER_FILE to run this test")
 
     os.makedirs(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score", exist_ok=True)
 
@@ -193,7 +209,7 @@ def test_rm():
     generate(
         ctx=wrap_arguments(
             f"++batch_size=8 "
-            f"++input_dir=/nemo_run/code/tests/data/score_rm_inputs "
+            f"++input_dir={input_dir_greedy} "
             f"++prompt_config=generic/math-base "
             f"++prompt_template=llama3-base "
         ),
@@ -214,13 +230,13 @@ def test_rm():
     rm_output = [
         json.loads(line) for line in open(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-greedy.jsonl")
     ]
-    assert len(rm_output) == 50
+    assert len(rm_output) == expected_scores_per_file
     assert all("reward_model_score" in line for line in rm_output)
 
     generate(
         ctx=wrap_arguments(
             f"++batch_size=8 "
-            f"++input_dir=/nemo_run/code/tests/data/score_rm_inputs "
+            f"++input_dir={input_dir_seeds} "
             f"++prompt_config=generic/math-base "
             f"++prompt_template=llama3-base "
         ),
@@ -242,5 +258,5 @@ def test_rm():
         rm_output = [
             json.loads(line) for line in open(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-rs{rs}.jsonl")
         ]
-        assert len(rm_output) == 50
+        assert len(rm_output) == expected_scores_per_file
         assert all("reward_model_score" in line for line in rm_output)
