@@ -12,6 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This is a lightweight proxy to the reward model served by:
+# nemo_skills/inference/server/serve_nemo_aligner_reward_model.py
+# This proxy is used to serve the reward model to the generation pipeline
+# by providing a REST API that can be called by the generation pipeline.
+# The version in nemo_skills/inference/server/serve_nemo_aligner_reward_model.py
+# is a triton server, and that interface is not friendly to users.
+# In order to avoid installing the pytriton client, which is more freindly, in
+# the nemo-skills container, we use this proxy to isolate the dependency to
+# the nemo container and provide a more user-friendly interface.
+
 import logging
 from dataclasses import dataclass
 
