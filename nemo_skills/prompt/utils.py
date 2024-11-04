@@ -198,6 +198,9 @@ class Prompt:
             examples = ""
         else:
             examples = f"{self.config.few_shot_examples.prefix}{filled_examples}{self.config.few_shot_examples.suffix}"
+        print(examples)
+        print(input_dict)
+        print(self.config.user)
         user = self.config.user.format(examples=examples, **input_dict)
         return user
 
