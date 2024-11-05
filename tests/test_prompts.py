@@ -681,7 +681,7 @@ Respond with only "True" (problems are the same) or "False" (problems are differ
 
 
 def test_generic_lean4_prompt():
-    prompt = get_prompt('generic/lean4', 'deepseek-prover')
+    prompt = get_prompt('lean/lean4', 'deepseek-prover')
 
     expected_prompt = """<｜begin▁of▁sentence｜>Complete the proof of the following Lean 4 statement. Start with the proof code right away and DO NOT repeat the given statement.
 
@@ -711,7 +711,7 @@ theorem mathd_algebra_478 (b h v : \u211d) (h\u2080 : 0 < b \u2227 0 < h \u2227 
 
 
 def test_generic_lean4_fewshot_prompt():
-    prompt = get_prompt('generic/lean4', 'deepseek-prover', 'minif2f_deepseek_fewshot')
+    prompt = get_prompt('lean/lean4', 'deepseek-prover', 'minif2f_deepseek_fewshot')
 
     expected_prompt = """<｜begin▁of▁sentence｜>Complete the proof of the following Lean 4 statement. Start with the proof code right away and DO NOT repeat the given statement.
 

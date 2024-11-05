@@ -58,7 +58,7 @@
 few_shot_examples:
     prefix: "Here are some examples of problems and their corresponding Lean 4 translation, including theorem placeholders using `sorry` and problem ids as theorem names. Use them as a guide.\n\n"
     template: "Problem:\n{problem}\nAnswer is: {predicted_answer}\nid:{id}\nExpected Lean 4 translation:\n```lean4\n{header}{formal_statement}{formal_proof}```\n\n\n\n\n\n"
-    suffix: "Here is the problem you need to transkate into a Lean 4 theorem (only the core declaration). Use `sorry` as a placeholder for the proof and problem id as theorem name.\n\n"
+    suffix: "Here is the problem you need to translate into a Lean 4 theorem (only the core declaration). Use `sorry` as a placeholder for the proof and problem id as theorem name.\n\n"
 
 # user: |-
 #   Translate the problem to Lean 4 theorem (only the core declaration). Use `sorry` as a placeholder for the proof and problem id as theorem name.
