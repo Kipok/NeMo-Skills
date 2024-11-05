@@ -250,10 +250,14 @@ class WriteFinalSftManifest(BaseProcessor):
         self.generation_suffix = generation_suffix
         if self.generation_suffix and self.chat_format:
             raise ValueError("generation_suffix can only be used with chat_format=False")
-        if self.prompt_config is None:
-            raise ValueError("`prompt_config` should be provided")
-        if self.prompt_template is None:
-            raise ValueError("`prompt_template` should be provided")
+        if self.prompt_config is None or self.prompt_template is None:
+            self.prompt = None
+        else:
+            self.prompt = get_prompt(self.prompt_config, self.prompt_template)
+
+        #     raise ValueError("`prompt_config` should be provided")
+        # if self.prompt_template is None:
+        #     raise ValueError("`prompt_template` should be provided")
         if not self.metadata:
             self.metadata = {}
 
@@ -264,7 +268,7 @@ class WriteFinalSftManifest(BaseProcessor):
             open(self.input_manifest_file, "rt", encoding="utf-8") as fin,
             open(self.output_manifest_file, "wt", encoding="utf-8") as fout,
         ):
-            prompt = get_prompt(self.prompt_config, self.prompt_template)
+            # prompt = get_prompt(self.prompt_config, self.prompt_template)
             # only looping over the correct samples (unless asked for incorrect)
             for line in fin:
                 elem = json.loads(line)
@@ -284,7 +288,10 @@ class WriteFinalSftManifest(BaseProcessor):
 
                 if self.chat_format is None:
                     generation = elem.pop(self.output_key)
-                    output_sample["input"] = prompt.fill(input_dict=elem)
+                    if self.prompt is None:
+                        output_sample["input"] = elem.pop(self.input_key)
+                    else:
+                        output_sample["input"] = self.prompt.fill(input_dict=elem)
                     output_sample["output"] = generation + self.generation_suffix
                 elif self.chat_format.lower() == "nemotron":
                     output_sample['conversations'] = [
