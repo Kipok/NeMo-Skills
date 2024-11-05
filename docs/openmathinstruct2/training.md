@@ -40,6 +40,7 @@ python -m nemo_skills.training.prepare_sft_data \
     ++preprocessed_dataset_files=<path to workspace>/openmathinstruct2.jsonl \
     ++output_key=generated_solution \
     ++output_path=<path to workspace>/openmathinstruct2-sft.jsonl \
+    ++hf_model_name="meta-llama/Meta-Llama-3.1-8B" \
     ++filters.drop_multi_boxed=false \
     ++filters.trim_prefix=false \
     ++filters.trim_solutions=false \
@@ -83,7 +84,7 @@ ns train \
     --num_gpus=8 \
     --average_steps=10000,20000,30000,40000,50000,60000 \
     --training_data=/workspace/openmathinstruct2-sft.jsonl \
-    ++model.data.train_ds.micro_batch_size=4 \
+    ++model.data.train_ds.micro_batch_size=8 \
     ++model.tensor_model_parallel_size=4 \
     ++model.pipeline_model_parallel_size=1 \
     ++model.optim.lr=2e-5 \
