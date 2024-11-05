@@ -255,9 +255,6 @@ class WriteFinalSftManifest(BaseProcessor):
         else:
             self.prompt = get_prompt(self.prompt_config, self.prompt_template)
 
-        #     raise ValueError("`prompt_config` should be provided")
-        # if self.prompt_template is None:
-        #     raise ValueError("`prompt_template` should be provided")
         if not self.metadata:
             self.metadata = {}
 
@@ -268,7 +265,6 @@ class WriteFinalSftManifest(BaseProcessor):
             open(self.input_manifest_file, "rt", encoding="utf-8") as fin,
             open(self.output_manifest_file, "wt", encoding="utf-8") as fout,
         ):
-            # prompt = get_prompt(self.prompt_config, self.prompt_template)
             # only looping over the correct samples (unless asked for incorrect)
             for line in fin:
                 elem = json.loads(line)
