@@ -16,16 +16,17 @@ import importlib
 import json
 import os
 import sys
-import yaml
 from pathlib import Path
 
-import pytest
-
 import docker
+import pytest
+import yaml
+
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 from nemo_skills.evaluation.metrics import compute_metrics
 from nemo_skills.pipeline import wrap_arguments
 from nemo_skills.pipeline.cli import eval, generate, train
+
 
 def docker_run(image_name, volume_paths, command):
     client = docker.from_env()
@@ -212,12 +213,12 @@ def test_rm(test_mode):
     docker_run(
         image_name=container,
         volume_paths=volumes,
-        command=f'rm -rf /tmp/nemo-skills-tests/{model_type}/test-rm/{{training,score,model-averaged-nemo}}'
+        command=f'rm -rf /tmp/nemo-skills-tests/{model_type}/test-rm/{{training,score,model-averaged-nemo}}',
     )
     docker_run(
         image_name=container,
         volume_paths=volumes,
-        command=f'mkdir -p /tmp/nemo-skills-tests/{model_type}/test-rm/score'
+        command=f'mkdir -p /tmp/nemo-skills-tests/{model_type}/test-rm/score',
     )
 
     train(
