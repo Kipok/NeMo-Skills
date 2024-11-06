@@ -15,16 +15,49 @@
 import importlib
 import json
 import os
-import shutil
 import sys
+import yaml
 from pathlib import Path
 
 import pytest
 
+import docker
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 from nemo_skills.evaluation.metrics import compute_metrics
 from nemo_skills.pipeline import wrap_arguments
 from nemo_skills.pipeline.cli import eval, generate, train
+
+def docker_run(image_name, volume_paths, command):
+    client = docker.from_env()
+
+    try:
+        # Process volume paths
+        volumes = {}
+        for path in volume_paths:
+            src, dst = path.split(':')
+            volumes[os.path.abspath(src)] = {'bind': dst, 'mode': 'rw'}
+
+        # Run the container
+        full_command = f"/bin/bash -c '{command}'"
+        result = client.containers.run(
+            image_name,
+            command=full_command,
+            volumes=volumes,
+            remove=True,
+            detach=False,
+        )
+        logs = result.decode('utf-8')
+        print("Operation completed.")
+        print("Container logs:", logs)
+    except docker.errors.ContainerError as e:
+        print(f"Container exited with non-zero status code: {e.exit_status}")
+        print(f"Container logs: {e.stderr.decode('utf-8')}")
+        raise
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        raise  # Re-raise the exception after printing
+    finally:
+        client.close()
 
 
 @pytest.mark.gpu
@@ -172,7 +205,20 @@ def test_rm(test_mode):
         if not expected_scores_per_file:
             pytest.skip("Define NEMO_SKILLS_TEST_RM_EXPECTED_SCORES_PER_FILE to run this test")
 
-    os.makedirs(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score", exist_ok=True)
+    test_config_path = Path(__file__).absolute().parent / "test-local.yaml"
+    config = yaml.safe_load(open(test_config_path).read())
+    volumes = config['mounts']
+    container = config['containers']['nemo-skills']
+    docker_run(
+        image_name=container,
+        volume_paths=volumes,
+        command=f'rm -rf /tmp/nemo-skills-tests/{model_type}/test-rm/{{training,score,model-averaged-nemo}}'
+    )
+    docker_run(
+        image_name=container,
+        volume_paths=volumes,
+        command=f'mkdir -p /tmp/nemo-skills-tests/{model_type}/test-rm/score'
+    )
 
     train(
         ctx=wrap_arguments(
@@ -203,8 +249,6 @@ def test_rm(test_mode):
     )
 
     assert os.path.exists(f"/tmp/nemo-skills-tests/{model_type}/test-rm/model-averaged-nemo")
-    shutil.rmtree(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score", ignore_errors=True)
-    os.makedirs(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score", exist_ok=False)
 
     generate(
         ctx=wrap_arguments(
