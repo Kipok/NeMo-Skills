@@ -215,11 +215,6 @@ def test_rm(test_mode):
         volume_paths=volumes,
         command=f'rm -rf /tmp/nemo-skills-tests/{model_type}/test-rm/{{training,score,model-averaged-nemo}}',
     )
-    docker_run(
-        image_name=container,
-        volume_paths=volumes,
-        command=f'mkdir -p /tmp/nemo-skills-tests/{model_type}/test-rm/score',
-    )
 
     train(
         ctx=wrap_arguments(
