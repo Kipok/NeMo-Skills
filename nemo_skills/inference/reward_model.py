@@ -35,7 +35,6 @@ LOG = logging.getLogger(__file__)
 class RewardModelConfig:
     """LLM reward model parameters."""
 
-    output_file: str | None = None  # Where to save the generations
     # Inference server configuration {server_params}
     server: dict = field(default_factory=dict)
     # Prompt configuration - path to yaml files
@@ -43,9 +42,10 @@ class RewardModelConfig:
     prompt_config: str  # we will fetch it from dataset dir if not provided
 
     input_file: str | None = None  # Can directly specify an input file, if using a custom dataset
-    input_dir: str | None = None  # Can specify an input direct
-    output_dir: str | None = None
-    random_seed: str | None = None
+    output_file: str | None = None  # Where to save the generations if `input_file` is provided
+    input_dir: str | None = None  # Can specify an input directory, where the file will be inferred output-greedy.jsonl if no seed is provided, and output-rs{seed}.jsonl. This pattern is used to match the output files from the `generate` pipeline
+    output_dir: str | None = None # Where to save the generations (with the identical file name) if `input_dir` is provided
+    random_seed: str | None = None # Used to identify the input file if `input_dir` is provided. If `random_seed` is not provided, the input will be assumed to be from 'greedy' generation
 
     batch_size: int = 128
     max_samples: int = -1  # If > 0, will stop after generating this many samples. Useful for debugging
