@@ -94,15 +94,19 @@ class BaseModel(abc.ABC):
     def generate(
         self,
         prompts: list[str | dict],
-        tokens_to_generate: int = 512,
-        temperature: float = 0.0,
-        top_p: float = 0.95,
-        top_k: int = 0,
-        repetition_penalty: float = 1.0,
-        random_seed: int = 0,
-        stop_phrases: list[str] | None = None,
+        tokens_to_generate: int | list[int] = 512,
+        temperature: float | list[float] = 0.0,
+        top_p: float | list[float] = 0.95,
+        top_k: int | list[int] = 0,
+        repetition_penalty: float | list[float] = 1.0,
+        random_seed: int | list[int] = 0,
+        stop_phrases: list[str] | list[list[str]] | None = None,
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
+        """For any generation parameter you can specify a list of values that needs to match the number of prompts.
+
+        Not every server supports that, so we will raise an error if that's the case.
+        """
         pass
 
 
@@ -230,10 +234,12 @@ class NemoModel(BaseModel):
 class OpenAIModel(BaseModel):
     def __init__(
         self,
+        host: str = '127.0.0.1',
+        port: str = '5000',
         model=None,
         base_url=None,
         api_key=None,
-        max_parallel_requests: int = 100,  # can adjust to avoid rate-limiting
+        max_parallel_requests: int = 1000,  # can adjust to avoid rate-limiting
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -245,14 +251,15 @@ class OpenAIModel(BaseModel):
                 raise ValueError("model argument is required for OpenAI model.")
 
         if base_url is None:
-            base_url = os.getenv("NEMO_SKILLS_OPENAI_BASE_URL")
+            # if not provided, we assume it's served on host/port
+            base_url = os.getenv("NEMO_SKILLS_OPENAI_BASE_URL", f"http://{host}:{port}/v1")
 
         if api_key is None:
             if base_url is not None and 'api.nvidia.com' in base_url:
                 api_key = os.getenv("NVIDIA_API_KEY", api_key)
                 if not api_key:
                     raise ValueError("NVIDIA_API_KEY is required for Nvidia-hosted models.")
-            else:
+            elif base_url is not None and 'api.openai.com' in base_url:
                 api_key = os.getenv("OPENAI_API_KEY", api_key)
                 if not api_key:
                     raise ValueError("OPENAI_API_KEY is required for OpenAI models.")
@@ -380,7 +387,7 @@ class OpenAIModel(BaseModel):
 
     def _send_request(
         self,
-        prompt: str,
+        prompt: dict,
         tokens_to_generate: int,
         temperature: float,
         top_p: float,
@@ -457,44 +464,71 @@ class VLLMModel(BaseModel):
     def generate(
         self,
         prompts: list[str | dict],
-        tokens_to_generate: int = 512,
-        temperature: float = 0.0,
-        top_p: float = 0.95,
-        top_k: int = -1,
-        repetition_penalty: float = 1.0,
-        random_seed: int = 0,
-        stop_phrases: list[str] | None = None,
+        tokens_to_generate: int | list[int] = 512,
+        temperature: float | list[float] = 0.0,
+        top_p: float | list[float] = 0.95,
+        top_k: int | list[int] = 0,
+        repetition_penalty: float | list[float] = 1.0,
+        random_seed: int | list[int] = 0,
+        stop_phrases: list[str] | list[list[str]] | None = None,
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
         if isinstance(prompts[0], dict):
             raise NotImplementedError("TODO: need to add this support, but not implemented yet.")
         if stop_phrases is None:
             stop_phrases = []
-        request = {
-            'prompt': prompts,
-            'max_tokens': tokens_to_generate,
+
+        kwargs = {
+            'tokens_to_generate': tokens_to_generate,
             'temperature': temperature,
             'top_p': top_p,
             'top_k': top_k,
-            'num_generations': 1,  # VLLM provides 1 generation per prompt, duplicate prompts if you want more
-            'stop': stop_phrases,
-            'echo': False,
             'repetition_penalty': repetition_penalty,
-            'frequency_penalty': 0.0,
-            'presence_penalty': 0.0,
-            'logprobs': None,
-            'logit_bias': None,
-            'seed': random_seed,
+            'random_seed': random_seed,
+            'stop_phrases': stop_phrases,
         }
-        preprocess_request(request)
-        outputs = [{'generation': output} for output in self.prompt_api(**request, parse_response=True)]
+        for key, value in kwargs.items():
+            is_list = False
+            if key == 'stop_phrases' and (value and isinstance(value[0], list)):
+                is_list = True
+            if key != 'stop_phrases' and isinstance(value, list):
+                is_list = True
+            if is_list and len(value) != len(prompts):
+                raise ValueError(f"Length of {key} should match the number of prompts.")
+            if not is_list:
+                kwargs[key] = [value for _ in range(len(prompts))]
+
+        futures = []
+        with ThreadPoolExecutor(max_workers=len(prompts)) as executor:
+            for request_idx in range(len(prompts)):
+                request = {
+                    'prompt': [prompts[request_idx]],
+                    'max_tokens': kwargs['tokens_to_generate'][request_idx],
+                    'temperature': kwargs['temperature'][request_idx],
+                    'top_p': kwargs['top_p'][request_idx],
+                    'top_k': kwargs['top_k'][request_idx],
+                    'repetition_penalty': kwargs['repetition_penalty'][request_idx],
+                    'seed': kwargs['random_seed'][request_idx],
+                    'stop': kwargs['stop_phrases'][request_idx],
+                    # setting other parameters that we don't support
+                    'echo': False,
+                    'frequency_penalty': 0.0,
+                    'presence_penalty': 0.0,
+                    'logprobs': None,
+                    'logit_bias': None,
+                    'num_generations': 1,
+                }
+                preprocess_request(request)
+                futures.append(executor.submit(self.prompt_api, **request))
+        outputs = [{'generation': future.result()[0]} for future in futures]
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
+
         return outputs
 
     def prompt_api(
         self,
-        prompt: str,
+        prompt: list[str],
         max_tokens: int,
         temperature: float,
         top_p: float,
