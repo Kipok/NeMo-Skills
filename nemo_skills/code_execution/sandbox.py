@@ -367,13 +367,24 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                     "predicted_answer key not found in the line_dict. "
                                     "Set use_predicted_answer_key=False to re-extract"
                                 )
-                       
+                       #TODO manually removing <｜begin▁of▁sentence｜> for trtllm 
                     elif answer_format == "lean":
                         if not use_predicted_proof_key:
                             # line_dict["predicted_proof"] = line_dict["header"] + line_dict["formal_statement"] + line_dict["generation"][:-3] if line_dict["generation"].endswith("```") else line_dict["generation"]
                             ## TODO temp changes, need to add header to autoformalization step
                             header = "import Mathlib\n\nopen Complex Filter Function Metric Finset\nopen scoped BigOperators Topology\n\n"
-                            line_dict["predicted_proof"] = header + line_dict["formal_statement"] + line_dict["generation"][:-3] if line_dict["generation"].endswith("```") else line_dict["generation"]
+
+
+                            # Extract generation, removing trailing ``` if present
+                            if line_dict["generation"].endswith("```"):
+                                generation = line_dict["generation"][:-3]
+                            else:
+                                generation = line_dict["generation"]
+                                
+                            generation = re.sub(r"^<｜begin▁of▁sentence｜>", "", generation)
+
+                            # Always include header and formal_statement
+                            line_dict["predicted_proof"] = header + line_dict["formal_statement"] + generation
 
                         else:
                             if "predicted_proof" not in line_dict:
@@ -383,8 +394,10 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                 )
                     elif answer_format == "lean-stat":
                         if not use_predicted_proof_key:
+                            generation = line_dict["generation"]
+                            generation = re.sub(r"^<｜begin▁of▁sentence｜>", "", generation)
                             header = "import Mathlib\n\nopen Complex Filter Function Metric Finset\nopen scoped BigOperators Topology\n\n"
-                            line_dict["predicted_proof"] = header + re.sub(r"^```(lean4)?\s*|\s*```$", "", line_dict["generation"]) + "sorry"
+                            line_dict["predicted_proof"] = header + re.sub(r"^```(lean4)?\s*|\s*```$", "", generation) + "sorry"
                         else:
                             if "predicted_proof" not in line_dict:
                                 raise ValueError(

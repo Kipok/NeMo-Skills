@@ -77,9 +77,7 @@ def get_formal_validate_cmd(
     )
 
     # Remove the temporary file
-    # cmd_cleanup = f"rm {temp_output_file} {con_output_file} {output_file}"
     cmd_cleanup = f"rm {temp_output_file}"
-
 
     # Generate commands on the processed files and run evaluations
     # For con-output
@@ -126,14 +124,12 @@ def get_formal_validate_cmd(
     final_con_output_file_clean = f"{generation_dir}/con-output{seed_suffix}.jsonl"
     final_output_file_clean = f"{generation_dir}/output{seed_suffix}.jsonl"
 
-
     cmd4 = (
         f"python nemo_skills/inference/lean4/drop_trivials.py "
         f"{final_output_file} {final_con_output_file} {final_output_file_clean} {final_con_output_file_clean}"
     )
 
     cmd_cleanup = f"rm {temp_output_file} {con_output_file} {output_file} {final_output_file} {final_con_output_file}"
-
 
     # Combine all commands
     cmd = (
@@ -176,8 +172,11 @@ def formal_validate(
     ),
     config_dir: str = typer.Option(None, help="Directory for cluster configs"),
     log_dir: str = typer.Option(None, help="Directory for logs"),
+    dataset: str = typer.Option(None, help="Dataset for the generate script"),
+    split: str = typer.Option(None, help="Split of the dataset for the generate script"),
+    input_file: str = typer.Option(None, help="Input file for the generate script"),
     extra_arguments_first: str = typer.Option(
-        "++dataset=math-translate ++split=test ++prompt_config=lean/nat-to-lean4 "
+        "++prompt_config=lean/nat-to-lean4 "
         "++examples_type=math_to_lean4_fewshot ++prompt_template=deepseek-prover-translation "
         "++inference.tokens_to_generate=512",
         help="Extra arguments for the first generate command",
@@ -196,6 +195,16 @@ def formal_validate(
     """Pipeline to generate translations with proof "sorry" and then attempt to prove statements."""
     setup_logging(disable_hydra_logs=False)
     extra_arguments = " ".join(ctx.args)
+
+    # Validate that either input_file is provided, or dataset and split, but not both
+    if input_file is not None:
+        if dataset is not None or split is not None:
+            raise ValueError("Either input_file or dataset and split should be provided, but not both")
+        data_arguments = f"++input_file={input_file}"
+    elif dataset is not None and split is not None:
+        data_arguments = f"++dataset={dataset} ++split={split}"
+    else:
+        raise ValueError("Either input_file or dataset and split should be provided")
 
     try:
         server_type = server_type.value
@@ -229,18 +238,16 @@ def formal_validate(
             f" ++server.server_type={server_type} ++server.base_url={server_address} ++server.model={model} "
         )
 
-    # Remove ++dataset and ++split from extra_arguments for the second generate command
-    extra_arguments_second_filtered = " ".join(
+    # Remove ++dataset, ++split, and ++input_file from extra_arguments
+    extra_arguments_filtered = " ".join(
         arg
         for arg in extra_arguments.split()
-        if not arg.startswith("++dataset=") and not arg.startswith("++split=")
+        if not arg.startswith("++dataset=") and not arg.startswith("++split=") and not arg.startswith("++input_file=")
     )
 
-    # Combine server configurations with extra arguments
-    extra_arguments_first = f"{extra_arguments} {extra_arguments_first}"
-    extra_arguments_second = (
-        f"{extra_arguments_second_filtered} {extra_arguments_second}"
-    )
+    # Combine data_arguments with extra_arguments_filtered
+    extra_arguments_first = f"{extra_arguments_filtered} {data_arguments} {extra_arguments_first}"
+    extra_arguments_second = f"{extra_arguments_filtered} {extra_arguments_second}"
 
     with run.Experiment(expname) as exp:
         # Generate outputs without random seeds
