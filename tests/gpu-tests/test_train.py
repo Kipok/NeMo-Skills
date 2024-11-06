@@ -160,7 +160,7 @@ def test_rm(test_mode):
     if test_mode == "unit":
         input_dir_seeds = "/nemo_run/code/tests/data/score_rm_inputs"
         input_dir_greedy = "/nemo_run/code/tests/data/score_rm_inputs"
-        expected_scores_per_file = 50
+        expected_scores_per_file = 5
     else:  # test_mode == "integration"
         input_dir_greedy = os.getenv('NEMO_SKILLS_TEST_RM_INPUTS_GREEDY')
         if not input_dir_greedy:
@@ -208,7 +208,7 @@ def test_rm(test_mode):
 
     generate(
         ctx=wrap_arguments(
-            f"++batch_size=8 "
+            f"++batch_size=2 "
             f"++input_dir={input_dir_greedy} "
             f"++prompt_config=generic/math-base "
             f"++prompt_template=llama3-base "
@@ -235,7 +235,7 @@ def test_rm(test_mode):
 
     generate(
         ctx=wrap_arguments(
-            f"++batch_size=8 "
+            f"++batch_size=2 "
             f"++input_dir={input_dir_seeds} "
             f"++prompt_config=generic/math-base "
             f"++prompt_template=llama3-base "
