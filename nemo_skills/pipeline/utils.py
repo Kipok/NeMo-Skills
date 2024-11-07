@@ -296,8 +296,16 @@ def cluster_download(tunnel: SSHTunnel, remote_dir: str, local_dir: str, remote_
     result = tunnel.run(f'du -sb {remote_dir} | cut -f1')
     total_size = int(result.stdout.strip())
     
-    # Certain systems may not have the `pv` command
-    streaming_possible = (shutil.which("pv") is not None)
+    # Check if result directory compression is streamable
+    streaming_possible = False
+    try:
+        # Check whether the command pv is present on the remote system or not.
+        # Certain systems may not have the `pv` command
+        result = tunnel.run('which pv', warn=True)
+        streaming_possible = (result.exited == 0)
+    except Exception:
+        streaming_possible = False
+
     if streaming_possible:
         # We can do streaming compression 
         # Command for streaming the compression progress
