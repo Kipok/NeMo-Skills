@@ -307,7 +307,7 @@ def cluster_download(tunnel: SSHTunnel, remote_dir: str, local_dir: str, remote_
         streaming_possible = False
 
     if streaming_possible:
-        # We can do streaming compression 
+        # We can do streaming compression
         # Command for streaming the compression progress
         command = (
             f'cd {remote_dir_parent} && '
