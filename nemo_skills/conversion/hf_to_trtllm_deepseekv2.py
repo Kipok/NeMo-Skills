@@ -46,102 +46,83 @@ from tensorrt_llm.models.deepseek_v2.convert import load_hf_deepseek
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_dir', type=str, default=None, required=True)
-    parser.add_argument('--tp_size',
-                        type=int,
-                        default=1,
-                        help='N-way tensor parallelism size')
-    parser.add_argument('--pp_size',
-                        type=int,
-                        default=1,
-                        help='N-way pipeline parallelism size')
+    parser.add_argument('--tp_size', type=int, default=1, help='N-way tensor parallelism size')
+    parser.add_argument('--pp_size', type=int, default=1, help='N-way pipeline parallelism size')
     parser.add_argument(
         '--moe_tp_size',
         type=int,
         default=-1,
-        help=
-        'N-way tensor parallelism size for MoE, default is tp_size, which will do tp-only for MoE'
+        help='N-way tensor parallelism size for MoE, default is tp_size, which will do tp-only for MoE',
     )
     parser.add_argument(
         '--moe_ep_size',
         type=int,
         default=-1,
-        help=
-        'N-way expert parallelism size for MoE, default is 1, which will do tp-only for MoE'
+        help='N-way expert parallelism size for MoE, default is 1, which will do tp-only for MoE',
     )
-    parser.add_argument('--dtype',
-                        type=str,
-                        default='float16',
-                        choices=['float32', 'bfloat16', 'float16'])
-    parser.add_argument('--load_model_on_cpu',
-                        default=False,
-                        action="store_true",
-                        help='Choose to load HF cpkt into GPU')
+    parser.add_argument('--dtype', type=str, default='float16', choices=['float32', 'bfloat16', 'float16'])
+    parser.add_argument(
+        '--load_model_on_cpu', default=False, action="store_true", help='Choose to load HF cpkt into GPU'
+    )
     parser.add_argument(
         '--use_parallel_embedding',
         action="store_true",
         default=False,
-        help=
-        'By default embedding parallelism is disabled. By setting this flag, embedding parallelism is enabled'
+        help='By default embedding parallelism is disabled. By setting this flag, embedding parallelism is enabled',
     )
     parser.add_argument(
         '--embedding_sharding_dim',
         type=int,
         default=0,
         choices=[0, 1],
-        help=
-        'By default the embedding lookup table is sharded along vocab dimension (embedding_sharding_dim=0)'
+        help='By default the embedding lookup table is sharded along vocab dimension (embedding_sharding_dim=0)'
         'To shard it along hidden dimension, set embedding_sharding_dim=1'
-        'Note: embedding sharing is only enabled when embedding_sharding_dim=0')
+        'Note: embedding sharing is only enabled when embedding_sharding_dim=0',
+    )
     parser.add_argument(
         '--use_embedding_sharing',
         action="store_true",
         default=False,
-        help=
-        'Try to reduce the engine size by sharing the embedding lookup table between two layers'
-        'Note: the flag might not take effect when the criteria are not met')
-    parser.add_argument('--output_dir',
-                        type=str,
-                        default='trtllm_checkpoint',
-                        required=True,
-                        help='The path to save the TensorRT-LLM checkpoint')
+        help='Try to reduce the engine size by sharing the embedding lookup table between two layers'
+        'Note: the flag might not take effect when the criteria are not met',
+    )
     parser.add_argument(
-        '--workers',
-        type=int,
-        default=1,
-        help='The number of workers for converting checkpoint in parallel')
+        '--output_dir',
+        type=str,
+        default='trtllm_checkpoint',
+        required=True,
+        help='The path to save the TensorRT-LLM checkpoint',
+    )
     parser.add_argument(
-        '--moe_num_experts',
-        type=int,
-        default=0,
-        help='Specify the number of experts to use for MOE layers')
+        '--workers', type=int, default=1, help='The number of workers for converting checkpoint in parallel'
+    )
+    parser.add_argument(
+        '--moe_num_experts', type=int, default=0, help='Specify the number of experts to use for MOE layers'
+    )
     parser.add_argument(
         '--moe_top_k',
         type=int,
         default=0,
-        help=
-        'Specify the top_k value to use for MOE layers. Default to 1 if --moe_num_experts is set'
+        help='Specify the top_k value to use for MOE layers. Default to 1 if --moe_num_experts is set',
     )
     parser.add_argument(
         '--moe_renorm_mode',
         type=int,
         default=MoeConfig.ExpertScaleNormalizationMode.RENORMALIZE,
-        help=
-        'Controls renormalization after gate logits. Check layers/moe.py for accepted values'
+        help='Controls renormalization after gate logits. Check layers/moe.py for accepted values',
     )
     parser.add_argument(
         '--save_config_only',
         action="store_true",
         default=False,
-        help=
-        'Only save the model config w/o read and converting weights, be careful, this is for debug only'
+        help='Only save the model config w/o read and converting weights, be careful, this is for debug only',
     )
     parser.add_argument(
         '--disable_weight_only_quant_plugin',
         default=False,
         action="store_true",
-        help=
-        'By default, using plugin implementation for weight quantization. Enabling disable_weight_only_quant_plugin flag will use ootb implementation instead of plugin.'
-        'You must also use --use_weight_only for that argument to have an impact'
+        help='By default, using plugin implementation for weight quantization. Enabling disable_weight_only_quant_plugin flag will use ootb implementation instead of plugin.'
+        'You must also use --use_weight_only for that argument to have an impact',
     )
     # Add quantization related feature later
     args = parser.parse_args()
@@ -154,9 +135,8 @@ def args_to_build_options(args):
         'use_parallel_embedding': args.use_parallel_embedding,
         'embedding_sharding_dim': args.embedding_sharding_dim,
         'share_embedding_table': args.use_embedding_sharing,
-        'disable_weight_only_quant_plugin':
-        args.disable_weight_only_quant_plugin,
-        'load_model_on_cpu': args.load_model_on_cpu
+        'disable_weight_only_quant_plugin': args.disable_weight_only_quant_plugin,
+        'load_model_on_cpu': args.load_model_on_cpu,
     }
 
 
@@ -174,9 +154,7 @@ def execute(workers, func, args):
                 except Exception as e:
                     traceback.print_exc()
                     exceptions.append(e)
-            assert len(
-                exceptions
-            ) == 0, "Checkpoint conversion failed, please check error log."
+            assert len(exceptions) == 0, "Checkpoint conversion failed, please check error log."
 
 
 def convert_and_save_hf(args):
@@ -192,15 +170,18 @@ def convert_and_save_hf(args):
     hf_model = load_hf_deepseek(model_dir, load_model_on_cpu)
 
     def convert_and_save_rank(args, rank):
-        mapping = Mapping(world_size=world_size,
-                          rank=rank,
-                          tp_size=args.tp_size,
-                          pp_size=args.pp_size,
-                          moe_tp_size=args.moe_tp_size,
-                          moe_ep_size=args.moe_ep_size)
+        mapping = Mapping(
+            world_size=world_size,
+            rank=rank,
+            tp_size=args.tp_size,
+            pp_size=args.pp_size,
+            moe_tp_size=args.moe_tp_size,
+            moe_ep_size=args.moe_ep_size,
+        )
 
         deepseekv2 = DeepseekV2ForCausalLM.from_hugging_face(
-            hf_model, args.model_dir, args.dtype, mapping, **override_fields)
+            hf_model, args.model_dir, args.dtype, mapping, **override_fields
+        )
         deepseekv2.save_checkpoint(args.output_dir, save_config=(rank == 0))
         del deepseekv2
 
@@ -213,16 +194,15 @@ def main():
     args = parse_arguments()
 
     args.tp_size * args.pp_size
-    if (args.moe_tp_size == -1 and args.moe_ep_size == -1):
+    if args.moe_tp_size == -1 and args.moe_ep_size == -1:
         # moe default to tp-only
         args.moe_tp_size = args.tp_size
         args.moe_ep_size = 1
-    elif (args.moe_tp_size == -1):
+    elif args.moe_tp_size == -1:
         args.moe_tp_size = args.tp_size // args.moe_ep_size
-    elif (args.moe_ep_size == -1):
+    elif args.moe_ep_size == -1:
         args.moe_ep_size = args.tp_size // args.moe_tp_size
-    assert (args.moe_tp_size * args.moe_ep_size == args.tp_size
-            ), "moe_tp_size * moe_ep_size must equal to tp_size"
+    assert args.moe_tp_size * args.moe_ep_size == args.tp_size, "moe_tp_size * moe_ep_size must equal to tp_size"
 
     tik = time.time()
     if not os.path.exists(args.output_dir):
