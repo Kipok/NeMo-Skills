@@ -114,6 +114,8 @@ def _modify_config(gpt_cfg, cfg, add_cfg_to_tree=False):
         if add_cfg_to_tree:
             OmegaConf.resolve(gpt_cfg)
             gpt_cfg.cfg = gpt_cfg
+
+        # OVERRRIDE: set the dist_ckpt_format to zarr explicitly unless specified in the config
         gpt_cfg.dist_ckpt_format = cfg.model.get("dist_ckpt_format", "zarr")
     return gpt_cfg
 
