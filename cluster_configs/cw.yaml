@@ -3,8 +3,8 @@ executor: slurm
 ssh_tunnel:
   host: cw-dfw-cs-001-login-01.cw-dfw-cs-001.hpc.nvidia.com
   # ------------------------------- Fill this up! -------------------------------
-  user: <YOUR_CW_USERNAME> #adithyare
-  job_dir: <YOUR_CW_WORKING_DIR_FOR_SKILLS> #/lustre/fsw/portfolios/llmservice/users/adithyare/nemo-skils-cluster-mgmt-tmp-test
+  user: adithyare
+  job_dir: /lustre/fsw/portfolios/llmservice/users/adithyare/nemo-skils-cluster-mgmt-tmp-test
   #identity: #<path to the ssh key. You can skip but will have to enter your password all the time>
   # -----------------------------------------------------------------------------
 
@@ -23,7 +23,7 @@ containers:
   nemo-skills: igitman/nemo-skills:0.4.1
 
 mounts:
-  - <SOMEPATH_ON_CW_WHICH_WILL_HAVE_EVAL_RESULTS>:/experiments
+  - /lustre/fsw/portfolios/llmservice/users/adithyare/experiments:/experiments
   - /lustre/fsw/portfolios/llmservice/users/adithyare/code/NeMo:/opt/NeMo
   - /lustre/fsw/portfolios/llmservice/users/jiaqiz/results/:/results
   # you also need to mount your own workspace folder (or any other folder you need)
