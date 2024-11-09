@@ -26,6 +26,7 @@ from nemo_skills.pipeline.llm_math_judge import llm_math_judge
 from nemo_skills.pipeline.start_server import start_server
 from nemo_skills.pipeline.summarize_results import summarize_results
 from nemo_skills.pipeline.train import train
+from nemo_skills.pipeline.preprocessing import prepare_sft_data
 
 typer.main.get_command_name = lambda name: name
 

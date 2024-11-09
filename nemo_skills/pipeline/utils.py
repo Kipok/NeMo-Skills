@@ -485,6 +485,7 @@ def get_executor(
     mounts=None,
     partition=None,
     dependencies=None,
+    extra_srun_args=(),
 ):
     env_vars = get_env_variables(cluster_config)
     config_mounts = get_mounts_from_config(cluster_config, env_vars)
@@ -533,6 +534,7 @@ def get_executor(
             # we need to be explicit about this in srun as commands might need to run in parallel
             f"--ntasks={tasks_per_node * num_nodes}",
             f"--nodes={num_nodes}",
+            *extra_srun_args,
         ],
         # TODO: can we relax this to allow partial node allocation?
         exclusive=True,
@@ -565,6 +567,7 @@ def add_task(
     server_config=None,
     task_dependencies: list[str] = None,
     run_after=None,
+    extra_srun_args=(),
 ):
     """Wrapper for nemo-run exp.add to help setting up executors and dependencies.
 
@@ -601,6 +604,7 @@ def add_task(
             job_name=task_name,
             log_dir=log_dir,
             log_prefix="server",
+            extra_srun_args=extra_srun_args,
         )
         if cluster_config["executor"] == "local" and num_server_tasks > 1:
             server_cmd = f"mpirun --allow-run-as-root -np {num_server_tasks} bash -c {shlex.quote(server_cmd)}"
@@ -624,6 +628,7 @@ def add_task(
                 job_name=task_name,
                 log_dir=log_dir,
                 log_prefix="main",
+                extra_srun_args=extra_srun_args,
             )
         )
 
@@ -641,6 +646,7 @@ def add_task(
             job_name=task_name,
             log_dir=log_dir,
             log_prefix="sandbox",
+            extra_srun_args=extra_srun_args,
         )
         commands.append(get_sandox_command())
         executors.append(sandbox_executor)
