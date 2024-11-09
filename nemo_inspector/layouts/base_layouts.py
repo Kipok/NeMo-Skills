@@ -19,11 +19,63 @@ import dash_bootstrap_components as dbc
 from dash import dcc, html
 from flask import current_app
 from settings.constants import ANSI, CODE, COMPARE, LATEX, MARKDOWN, SEPARATOR_DISPLAY, SEPARATOR_ID, UNDEFINED
+from settings.ui_config import UIConfig
 from utils.common import parse_model_answer
 from utils.decoration import color_text_diff, design_text_output, highlight_code
 
 
+
+# def get_main_page_layout() -> html.Div:
+#     nav_items = [
+#         dbc.NavItem(
+#             dbc.NavLink(
+#                 "Inference",
+#                 id="run_mode_link",
+#                 href="/",
+#                 active=True,
+#                 # color=UIConfig.COLORS["text"],
+#             )
+#         ),
+#         dbc.NavItem(dbc.NavLink("Analyze", id="analyze_link", href="/analyze", style=UIConfig.COLORS["text"])),
+#     ]
+#     return html.Div(
+#         [
+#             dcc.Location(id="url", refresh=False),
+#             dbc.NavbarSimple(
+#                 children=nav_items,
+#                 brand="NeMo Inspector",
+#                 # brand_style={'font-weight': '600', 'letter-spacing': '0.5px', "font-size": "1.2rem"},
+#                 sticky="top",
+#                 # color="primary",  # Using Bootstrap's primary instead of plain "blue"
+#                 dark=True,
+#                 style=UIConfig.STYLES["nav"],
+#                 class_name="mb-2 shadow-sm",  # Added subtle shadow
+#                 # padding="1rem",  # More comfortable padding
+#             ),
+#             #     children=nav_items,
+#             #     brand="NeMo Inspector",
+#             #     sticky="top",
+#             #     color="blue",
+#             #     dark=True,
+#             #     class_name="mb-2",
+#             # ),
+#             dbc.Container(id="page_content"),
+#             dbc.Container(id="js_trigger", style={'display': 'none'}, children=""),
+#             dbc.Container(id="js_container"),
+#             dbc.Container(id='dummy_output', style={'display': 'none'}, children=""),
+#         ]
+#     )
+
 def get_main_page_layout() -> html.Div:
+    # Define modern dark theme colors and styles
+    THEME = {
+        "background": "#000000",
+        "surface": "#1A1A1A",
+        "primary": "#9D5CFF",
+        "text": "#FFFFFF",
+    }
+    
+    # Navigation items with modern styling
     nav_items = [
         dbc.NavItem(
             dbc.NavLink(
@@ -31,28 +83,85 @@ def get_main_page_layout() -> html.Div:
                 id="run_mode_link",
                 href="/",
                 active=True,
+                style={
+                    "color": THEME["text"],
+                    # "padding": "0.5rem 1rem",
+                    "margin": "0 0.5rem",
+                    "transition": "all 0.2s ease-in-out",
+                    "border-radius": "6px",
+                }
             )
         ),
-        dbc.NavItem(dbc.NavLink("Analyze", id="analyze_link", href="/analyze")),
+        dbc.NavItem(
+            dbc.NavLink(
+                "Analyze",
+                id="analyze_link",
+                href="/analyze",
+                style={
+                    # "padding": "0.5rem 1rem",
+                    "margin": "0 0.5rem",
+                    "transition": "all 0.2s ease-in-out",
+                    "border-radius": "6px",
+                }
+            )
+        ),
     ]
+
     return html.Div(
         [
             dcc.Location(id="url", refresh=False),
+            # Modern navbar with gradient background
             dbc.NavbarSimple(
                 children=nav_items,
                 brand="NeMo Inspector",
+                brand_style={
+                    "fontSize": "1.25rem",
+                    "fontWeight": "600",
+                    "letterSpacing": "0.5px",
+                    "color": THEME["text"]
+                },
                 sticky="top",
-                color="blue",
+                style={
+                    "background": f"linear-gradient(to right, {THEME['surface']}, {THEME['background']})",
+                    "borderBottom": "1px solid rgba(255,255,255,0.1)",
+                    "padding": "1rem 0",
+                },
                 dark=True,
-                class_name="mb-2",
+                class_name="mb-4",
             ),
-            dbc.Container(id="page_content"),
-            dbc.Container(id="js_trigger", style={'display': 'none'}, children=""),
-            dbc.Container(id="js_container"),
-            dbc.Container(id='dummy_output', style={'display': 'none'}, children=""),
-        ]
+            # Main content container with proper spacing
+            dbc.Container(
+                id="page_content",
+                style={
+                    "minHeight": "calc(100vh - 80px)",  # Full height minus navbar
+                    "padding": "2rem 0",
+                },
+                class_name="px-4",
+            ),
+            # Hidden containers with consistent styling
+            dbc.Container(
+                id="js_trigger",
+                style={'display': 'none'},
+                children="",
+                class_name="p-0"
+            ),
+            dbc.Container(
+                id="js_container",
+                class_name="p-0"
+            ),
+            dbc.Container(
+                id='dummy_output',
+                style={'display': 'none'},
+                children="",
+                class_name="p-0"
+            ),
+        ],
+        style={
+            "backgroundColor": THEME["background"],
+            "color": THEME["text"],
+            "minHeight": "100vh",
+        }
     )
-
 
 def get_switch_layout(
     id: Union[Dict, str],

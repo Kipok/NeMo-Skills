@@ -19,6 +19,7 @@ from dash import dcc, html
 from flask import current_app
 from layouts.base_layouts import get_text_area_layout
 from settings.constants import CHAT_MODE, FEW_SHOTS_INPUT, ONE_SAMPLE_MODE
+from settings.ui_config import UIConfig
 from utils.strategies.strategy_maker import RunPromptStrategyMaker
 
 from nemo_skills.prompt.few_shot_examples import examples_map
@@ -87,15 +88,18 @@ def get_run_test_layout() -> html.Div:
                 "preview",
                 id="preview_button",
                 outline=True,
-                color="primary",
-                className="me-1 mb-2",
+                # color="primary",
+                # className="me-1 mb-2",
+                className="me-2",
+                style={**UIConfig.STYLES["button_secondary"], "padding": "8px 16px"},
             ),
             dbc.Button(
                 "run",
                 id="run_button",
                 outline=True,
-                color="primary",
-                className="me-1 mb-2",
+                # color="primary",
+                # className="me-2",
+                style={**UIConfig.STYLES["button_secondary"], "padding": "8px 16px"},
             ),
             dcc.Loading(
                 children=dbc.Container(id="loading_container", style={'display': 'none'}, children=""),

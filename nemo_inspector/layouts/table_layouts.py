@@ -16,6 +16,7 @@ import json
 import logging
 import math
 from typing import Dict, List
+from settings.ui_config import UIConfig
 
 import dash_bootstrap_components as dbc
 from dash import dash_table, html
@@ -132,52 +133,106 @@ def get_filter_layout(id: int = -1, available_filters: List[str] = [], mode: str
         else []
     )
 
+# def get_filter_modal(id: int, text: str, filter_mode: List) -> html.Div:
     header = dbc.ModalHeader(
-        (
-            [
-                dbc.ModalTitle(
-                    "Set Up Your Filter",
-                ),
-            ]
-            + filter_mode
-        ),
+        [
+            dbc.ModalTitle(
+                "Set Up Your Filter",
+                style={"color": UIConfig.THEME["text"]}
+            ),
+            *filter_mode  # Spread the filter mode components
+        ],
         close_button=True,
+        style={
+            "border-bottom": f"1px solid {UIConfig.THEME['border']}",
+            "background-color": UIConfig.THEME["surface"]
+        }
     )
+    
     body = dbc.ModalBody(
         html.Div(
             [
-                html.Pre(text, id={"type": "filter_text", "id": id}),
+                html.Pre(
+                    text,
+                    id={"type": "filter_text", "id": id},
+                    style={
+                        "color": UIConfig.THEME["text_secondary"],
+                        "background-color": UIConfig.THEME["background"],
+                        "padding": "1rem",
+                        "border-radius": "6px",
+                        "border": f"1px solid {UIConfig.THEME['border']}",
+                        "font-family": "monospace",
+                        "margin-bottom": "1rem",
+                        "white-space": "pre-wrap"
+                    }
+                ),
                 dbc.Textarea(
                     id={
                         "type": "filter_function_input",
                         "id": id,
                     },
+                    style={
+                        "background-color": UIConfig.THEME["background"],
+                        "color": UIConfig.THEME["text"],
+                        "border": f"1px solid {UIConfig.THEME['border']}",
+                        "border-radius": "6px",
+                        "padding": "0.75rem",
+                        "font-family": "monospace",
+                        "min-height": "150px",
+                        "resize": "vertical"
+                    }
                 ),
             ]
         )
     )
-    switch = get_switch_layout(
-        {
-            "type": "apply_on_filtered_data",
-            "id": id,
-        },
-        ["Apply for filtered data"],
-        additional_params={"style": {"margin-left": "10px"}},
+    
+    switch = html.Div(
+        get_switch_layout(
+            id={
+                "type": "apply_on_filtered_data",
+                "id": id,
+            },
+            labels=["Apply for filtered data"],
+            additional_params={
+                "style": {
+                    "margin": "1rem",
+                    "color": UIConfig.THEME["text"],
+                    "display": "flex",
+                    "align-items": "center"
+                }
+            },
+        ),
+        style={
+            "border-top": f"1px solid {UIConfig.THEME['border']}",
+            "border-bottom": f"1px solid {UIConfig.THEME['border']}",
+            "background-color": UIConfig.THEME["surface"]
+        }
     )
+    
     footer = dbc.ModalFooter(
         dbc.Button(
             "Apply",
             id={"type": "apply_filter_button", "id": id},
             className="ms-auto",
             n_clicks=0,
-        )
+            style=UIConfig.STYLES["button_primary"]
+        ),
+        style={
+            "background-color": UIConfig.THEME["surface"],
+            "border-top": f"1px solid {UIConfig.THEME['border']}"
+        }
     )
+    
     return html.Div(
         [
             dbc.Button(
                 "Filters",
                 id={"type": "set_filter_button", "id": id},
-                class_name='button-class',
+                # style=UIConfig.STYLES["button_secondary"],
+                # className='button-class',
+                color="primary",
+                className="me-1",
+
             ),
             dbc.Modal(
                 [
@@ -190,10 +245,76 @@ def get_filter_layout(id: int = -1, available_filters: List[str] = [], mode: str
                 id={"type": "filter", "id": id},
                 centered=True,
                 is_open=False,
+                style={
+                    **UIConfig.STYLES["modal"],
+                    "max-width": "800px"
+                }
             ),
         ],
         style={'display': 'inline-block'},
     )
+    # header = dbc.ModalHeader(
+    #     (
+    #         [
+    #             dbc.ModalTitle(
+    #                 "Set Up Your Filter",
+    #             ),
+    #         ]
+    #         + filter_mode
+    #     ),
+    #     close_button=True,
+    # )
+    # body = dbc.ModalBody(
+    #     html.Div(
+    #         [
+    #             html.Pre(text, id={"type": "filter_text", "id": id}),
+    #             dbc.Textarea(
+    #                 id={
+    #                     "type": "filter_function_input",
+    #                     "id": id,
+    #                 },
+    #             ),
+    #         ]
+    #     )
+    # )
+    # switch = get_switch_layout(
+    #     {
+    #         "type": "apply_on_filtered_data",
+    #         "id": id,
+    #     },
+    #     ["Apply for filtered data"],
+    #     additional_params={"style": {"margin-left": "10px"}},
+    # )
+    # footer = dbc.ModalFooter(
+    #     dbc.Button(
+    #         "Apply",
+    #         id={"type": "apply_filter_button", "id": id},
+    #         className="ms-auto",
+    #         n_clicks=0,
+    #     )
+    # )
+    # return html.Div(
+    #     [
+    #         dbc.Button(
+    #             "Filters",
+    #             id={"type": "set_filter_button", "id": id},
+    #             class_name='button-class',
+    #         ),
+    #         dbc.Modal(
+    #             [
+    #                 header,
+    #                 body,
+    #                 switch,
+    #                 footer,
+    #             ],
+    #             size="lg",
+    #             id={"type": "filter", "id": id},
+    #             centered=True,
+    #             is_open=False,
+    #         ),
+    #     ],
+    #     style={'display': 'inline-block'},
+    # )
 
 
 def get_sorting_layout(id: int = -1, available_params: List[str] = []) -> html.Div:
@@ -216,30 +337,56 @@ def get_sorting_layout(id: int = -1, available_params: List[str] = []) -> html.D
     body = dbc.ModalBody(
         html.Div(
             [
-                html.Pre(text),
+                html.Pre(
+                    text,
+                    style={
+                        "color": UIConfig.THEME["text_secondary"],
+                        "background-color": UIConfig.THEME["background"],
+                        "padding": "1rem",
+                        "border-radius": "6px",
+                        "border": f"1px solid {UIConfig.THEME['border']}",
+                        "font-family": "monospace",
+                        "margin-bottom": "1rem"
+                    }
+                ),
                 dbc.Textarea(
                     id={
                         "type": "sorting_function_input",
                         "id": id,
                     },
+                    style={
+                        "background-color": UIConfig.THEME["background"],
+                        "color": UIConfig.THEME["text"],
+                        "border": f"1px solid {UIConfig.THEME['border']}",
+                        "border-radius": "6px",
+                        "padding": "0.75rem",
+                        "font-family": "monospace",
+                        "min-height": "150px"
+                    }
                 ),
-            ],
+            ]
         )
     )
+    
     footer = dbc.ModalFooter(
         dbc.Button(
             "Apply",
             id={"type": "apply_sorting_button", "id": id},
             className="ms-auto",
             n_clicks=0,
+            style=UIConfig.STYLES["button_primary"]
         )
     )
+    
     return html.Div(
         [
             dbc.Button(
                 "Sort",
                 id={"type": "set_sorting_button", "id": id},
-                class_name='button-class',
+                # style=UIConfig.STYLES["button_secondary"],
+                color="primary",
+                className="me-1",
+                # className='button-class',
             ),
             dbc.Modal(
                 [
@@ -251,6 +398,10 @@ def get_sorting_layout(id: int = -1, available_params: List[str] = []) -> html.D
                 id={"type": "sorting", "id": id},
                 centered=True,
                 is_open=False,
+                style={
+                    **UIConfig.STYLES["modal"],
+                    "max-width": "800px"
+                }
             ),
         ],
         style={'display': 'inline-block'},
@@ -276,14 +427,17 @@ def get_change_label_layout(id: int = -1, apply_for_all_files: bool = True) -> h
         if apply_for_all_files
         else []
     )
+# def get_labels_modal(id: int, labels: List[str], switch_layout: List, header: dbc.ModalHeader) -> html.Div:
     body = dbc.ModalBody(
         html.Div(
             [
+                # Label selector
                 get_selector_layout(
                     options=labels,
                     id={"type": "label_selector", "id": id},
                     value="choose label",
                 ),
+                # New label input group
                 dbc.InputGroup(
                     [
                         dbc.Input(
@@ -293,6 +447,7 @@ def get_change_label_layout(id: int = -1, apply_for_all_files: bool = True) -> h
                             },
                             placeholder="Enter new label",
                             type="text",
+                            style=UIConfig.STYLES["input"]
                         ),
                         dbc.Button(
                             "Add",
@@ -300,14 +455,36 @@ def get_change_label_layout(id: int = -1, apply_for_all_files: bool = True) -> h
                                 "type": "add_new_label_button",
                                 "id": id,
                             },
+                            style=UIConfig.STYLES["button_primary"]
                         ),
-                    ]
+                    ],
+                    className="mb-3"
                 ),
-                *switch_layout,
-                html.Pre("", id={"type": "chosen_label", "id": id}),
+                # Switch layout
+                html.Div(
+                    switch_layout,
+                    style={
+                        "margin-bottom": "1rem",
+                        "color": UIConfig.THEME["text"]
+                    }
+                ),
+                # Chosen label display
+                html.Pre(
+                    "",
+                    id={"type": "chosen_label", "id": id},
+                    style={
+                        "color": UIConfig.THEME["text"],
+                        "background-color": UIConfig.THEME["background"],
+                        "padding": "0.75rem",
+                        "border-radius": "6px",
+                        "border": f"1px solid {UIConfig.THEME['border']}",
+                        "margin-top": "1rem"
+                    }
+                ),
             ],
         )
     )
+    
     footer = dbc.ModalFooter(
         html.Div(
             [
@@ -317,29 +494,38 @@ def get_change_label_layout(id: int = -1, apply_for_all_files: bool = True) -> h
                         "type": "delete_label_button",
                         "id": id,
                     },
-                    className="ms-auto",
+                    style={
+                        **UIConfig.STYLES["button_danger"],
+                        "margin-right": "0.5rem"
+                    },
                     n_clicks=0,
-                ),
-                html.Pre(
-                    " ",
-                    style={'display': 'inline-block', 'font-size': '5px'},
                 ),
                 dbc.Button(
                     children="Apply",
                     id={"type": "apply_label_button", "id": id},
-                    className="ms-auto",
+                    style=UIConfig.STYLES["button_primary"],
                     n_clicks=0,
                 ),
             ],
+            style={
+                "display": "flex",
+                "justify-content": "flex-end",
+                "gap": "0.5rem",
+                "width": "100%"
+            }
         ),
-        style={'display': 'inline-block'},
     )
+    
     return html.Div(
         [
             dbc.Button(
                 "Labels",
                 id={"type": "set_file_label_button", "id": id},
-                class_name='button-class',
+                # style=UIConfig.STYLES["button_secondary"],
+                # className='button-class',
+                color="primary",
+                className="me-1",
+
             ),
             dbc.Modal(
                 [header, body, footer],
@@ -347,6 +533,7 @@ def get_change_label_layout(id: int = -1, apply_for_all_files: bool = True) -> h
                 id={"type": "label", "id": id},
                 centered=True,
                 is_open=False,
+                style=UIConfig.STYLES["modal"]
             ),
         ],
         style={'display': 'inline-block'},
@@ -411,7 +598,7 @@ def get_models_selector_table_cell(models: List[str], name: str, id: int, add_de
             dbc.Button(
                 "-",
                 id={"type": "del_model", "id": id},
-                outline=True,
+                # outline=True,
                 color="primary",
                 className="me-1",
                 style={"height": "40px"},
@@ -488,71 +675,78 @@ def get_detailed_answers_rows(keys: List[str], colums_number: int) -> List[dbc.R
                     html.Div(
                         html.Div(
                             [
+                                # Key name
                                 html.Div(
                                     key,
                                     id={"type": "row_name", "id": i},
-                                    style={"display": "inline-block"},
+                                    style={
+                                        "display": "inline-block",
+                                        "color": UIConfig.THEME["text"],
+                                        "margin-right": "0.5rem"
+                                    },
                                 ),
+                                # Edit button
                                 dbc.Button(
                                     html.Img(
                                         src=EDIT_ICON_PATH,
                                         id={"type": "edit_row_image", "id": i},
                                         style={
                                             "height": "15px",
-                                            "display": "inline-block",
+                                            "filter": "brightness(0) invert(1)",  # Makes icon white
                                         },
                                     ),
                                     id={"type": "edit_row_button", "id": i},
-                                    outline=True,
-                                    color="primary",
-                                    className="me-1",
                                     style={
-                                        "border": "none",
-                                        "line-height": "1.2",
-                                        "display": "inline-block",
-                                        "margin-left": "1px",
+                                        **UIConfig.STYLES["icon_button"],
                                         "display": "none" if key in (FILE_NAME, LABEL) else "inline-block",
                                     },
                                 ),
+                                # Compare button
                                 dbc.Button(
                                     html.Img(
                                         src=COMPARE_ICON_PATH,
                                         id={"type": "compare_texts", "id": i},
                                         style={
                                             "height": "15px",
-                                            "display": "inline-block",
+                                            "filter": "brightness(0) invert(1)",  # Makes icon white
                                         },
                                     ),
                                     id={"type": "compare_texts_button", "id": i},
-                                    outline=True,
-                                    color="primary",
-                                    className="me-1",
                                     style={
-                                        "border": "none",
-                                        "line-height": "1.2",
-                                        "display": "inline-block",
-                                        "margin-left": "-10px" if key != LABEL else "1px",
+                                        **UIConfig.STYLES["icon_button"],
+                                        "margin-left": "-10px" if key != LABEL else "4px",
                                         "display": "none" if key == FILE_NAME else "inline-block",
                                     },
                                 ),
+                                # Delete button
                                 dbc.Button(
                                     "-",
                                     id={"type": "del_row", "id": i},
-                                    outline=True,
-                                    color="primary",
-                                    className="me-1",
                                     style={
-                                        "border": "none",
-                                        "display": "inline-block",
-                                        "margin-left": "-9px" if key != FILE_NAME else "1px",
+                                        **UIConfig.STYLES["icon_button"],
+                                        "margin-left": "-9px" if key != FILE_NAME else "4px",
+                                        "color": UIConfig.THEME["text"],
+                                        "font-weight": "bold",
                                     },
                                 ),
                             ],
-                            style={"display": "inline-block"},
+                            style={
+                                "display": "flex",
+                                "align-items": "center",
+                                "gap": "4px"
+                            },
                         ),
                     ),
                     width=2,
-                    class_name='mt-1 bg-light font-monospace text-break small rounded border',
+                    style={
+                        "background-color": UIConfig.THEME["surface"],
+                        "border": f"1px solid {UIConfig.THEME['border']}",
+                        "border-radius": "6px",
+                        "padding": "0.5rem",
+                        "margin-top": "0.25rem",
+                        "font-family": "monospace",
+                        "font-size": "0.875rem",
+                    },
                 )
             ]
             + [get_detailed_answer_column(j * len(keys) + i) for j in range(colums_number)],
@@ -560,6 +754,87 @@ def get_detailed_answers_rows(keys: List[str], colums_number: int) -> List[dbc.R
         )
         for i, key in enumerate(keys)
     ]
+
+# def get_detailed_answers_rows(keys: List[str], colums_number: int) -> List[dbc.Row]:
+#     return [
+#         dbc.Row(
+#             [
+#                 dbc.Col(
+#                     html.Div(
+#                         html.Div(
+#                             [
+#                                 html.Div(
+#                                     key,
+#                                     id={"type": "row_name", "id": i},
+#                                     style={"display": "inline-block"},
+#                                 ),
+#                                 dbc.Button(
+#                                     html.Img(
+#                                         src=EDIT_ICON_PATH,
+#                                         id={"type": "edit_row_image", "id": i},
+#                                         style={
+#                                             "height": "15px",
+#                                             "display": "inline-block",
+#                                         },
+#                                     ),
+#                                     id={"type": "edit_row_button", "id": i},
+#                                     outline=True,
+#                                     color="primary",
+#                                     className="me-1",
+#                                     style={
+#                                         "border": "none",
+#                                         "line-height": "1.2",
+#                                         "display": "inline-block",
+#                                         "margin-left": "1px",
+#                                         "display": "none" if key in (FILE_NAME, LABEL) else "inline-block",
+#                                     },
+#                                 ),
+#                                 dbc.Button(
+#                                     html.Img(
+#                                         src=COMPARE_ICON_PATH,
+#                                         id={"type": "compare_texts", "id": i},
+#                                         style={
+#                                             "height": "15px",
+#                                             "display": "inline-block",
+#                                         },
+#                                     ),
+#                                     id={"type": "compare_texts_button", "id": i},
+#                                     outline=True,
+#                                     color="primary",
+#                                     className="me-1",
+#                                     style={
+#                                         "border": "none",
+#                                         "line-height": "1.2",
+#                                         "display": "inline-block",
+#                                         "margin-left": "-10px" if key != LABEL else "1px",
+#                                         "display": "none" if key == FILE_NAME else "inline-block",
+#                                     },
+#                                 ),
+#                                 dbc.Button(
+#                                     "-",
+#                                     id={"type": "del_row", "id": i},
+#                                     outline=True,
+#                                     color="primary",
+#                                     className="me-1",
+#                                     style={
+#                                         "border": "none",
+#                                         "display": "inline-block",
+#                                         "margin-left": "-9px" if key != FILE_NAME else "1px",
+#                                     },
+#                                 ),
+#                             ],
+#                             style={"display": "inline-block"},
+#                         ),
+#                     ),
+#                     width=2,
+#                     class_name='mt-1 bg-light font-monospace text-break small rounded border',
+#                 )
+#             ]
+#             + [get_detailed_answer_column(j * len(keys) + i) for j in range(colums_number)],
+#             id={"type": "detailed_answers_row", "id": i},
+#         )
+#         for i, key in enumerate(keys)
+#     ]
 
 
 def get_table_answers_detailed_data_layout(
