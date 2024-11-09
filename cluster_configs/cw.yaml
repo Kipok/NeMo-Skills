@@ -23,7 +23,7 @@ containers:
   nemo-skills: igitman/nemo-skills:0.4.1
 
 mounts:
-  - /lustre/fsw/portfolios/llmservice/users/adithyare/experiments/:/experiments
+  - <SOMEPATH_ON_CW_WHICH_WILL_HAVE_EVAL_RESULTS>:/experiments
   - /lustre/fsw/portfolios/llmservice/users/adithyare/code/NeMo:/opt/NeMo
   - /lustre/fsw/portfolios/llmservice/users/jiaqiz/results/:/results
   # you also need to mount your own workspace folder (or any other folder you need)
