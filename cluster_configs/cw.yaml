@@ -24,7 +24,8 @@ containers:
 
 mounts:
   - /lustre/fsw/portfolios/llmservice/users/adithyare/experiments:/experiments
-  - /lustre/fsw/portfolios/llmservice/users/adithyare/code/NeMo:/NeMo
+  - /lustre/fsw/portfolios/llmservice/users/adithyare/code/NeMo:/opt/NeMo
+  - /lustre/fsw/portfolios/llmservice/users/adithyare/code/megatron-lm:/opt/megatron-lm
   - /lustre/fsw/portfolios/llmservice/users/jiaqiz/results/:/results
   # you also need to mount your own workspace folder (or any other folder you need)
   # - /lustre/fsw/portfolios/llmservice/users/igitman:/workspace
