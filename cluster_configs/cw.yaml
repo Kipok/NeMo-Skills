@@ -1,0 +1,41 @@
+executor: slurm
+
+ssh_tunnel:
+  host: cw-dfw-cs-001-login-01.cw-dfw-cs-001.hpc.nvidia.com
+  # ------------------------------- Fill this up! -------------------------------
+  user: adithyare
+  job_dir: /lustre/fsw/portfolios/llmservice/users/adithyare/nemo-skils-cluster-mgmt-tmp-test
+  #identity: #<path to the ssh key. You can skip but will have to enter your password all the time>
+  # -----------------------------------------------------------------------------
+
+account: llmservice_modelalignment_ppo
+partition: batch,interactive,batch_short
+job_name_prefix: "llmservice_modelalignment_ppo:"
+
+containers:
+  trtllm: /lustre/fsw/portfolios/llmservice/users/igitman/llm/images/nemo-skills-trtllm-0.4.1.sqsh
+  vllm: /lustre/fsw/portfolios/llmservice/users/igitman/llm/images/nemo-skills-vllm-0.4.1.sqsh
+  nemo: /lustre/fsw/portfolios/llmservice/users/adithyare/container_sqsh_files/nemofw24.07.mlm.080224.sqsh
+  mamba: /lustre/fsw/portfolios/llmservice/users/adithyare/container_sqsh_files/nemofw24.07.mlm.080224.sqsh
+  nemo_openai: /lustre/fsw/portfolios/llmservice/projects/llmservice_modelalignment_sft/rlhf/containers/aligner:terryk-trtllm-v13.sqsh
+  mamba_openai: /lustre/fsw/portfolios/llmservice/users/adithyare/container_sqsh_files/nemofw24.07.mlm.080224.sqsh
+  sandbox: igitman/nemo-skills-sandbox:0.4.1
+  nemo-skills: igitman/nemo-skills:0.4.1
+
+mounts:
+  - /lustre/fsw/portfolios/llmservice/users/adithyare/experiments/:/experiments
+  - /lustre/fsw/portfolios/llmservice/users/adithyare/code/NeMo_mamba:/opt/NeMo
+  - /lustre/fsw/portfolios/llmservice/users/jiaqiz/results/:/results
+  # you also need to mount your own workspace folder (or any other folder you need)
+  # - /lustre/fsw/portfolios/llmservice/users/igitman:/workspace
+
+timeouts:
+  batch: 04:00:00
+  batch_short: 02:00:00
+  batch_large: 04:00:00
+  interactive: 04:00:00
+  interactive_singlenode: 04:00:00
+  batch,interactive,batch_short: 02:00:00
+
+required_env_vars:
+  - PYTHONPATH
