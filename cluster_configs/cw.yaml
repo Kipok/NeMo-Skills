@@ -3,8 +3,8 @@ executor: slurm
 ssh_tunnel:
   host: cw-dfw-cs-001-login-01.cw-dfw-cs-001.hpc.nvidia.com
   # ------------------------------- Fill this up! -------------------------------
-  user: adithyare
-  job_dir: /lustre/fsw/portfolios/llmservice/users/adithyare/nemo-skils-cluster-mgmt-tmp-test
+  user: <YOUR_CW_USERNAME> #adithyare
+  job_dir: <YOUR_CW_WORKING_DIR_FOR_SKILLS> #/lustre/fsw/portfolios/llmservice/users/adithyare/nemo-skils-cluster-mgmt-tmp-test
   #identity: #<path to the ssh key. You can skip but will have to enter your password all the time>
   # -----------------------------------------------------------------------------
 
