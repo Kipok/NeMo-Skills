@@ -198,9 +198,9 @@ class Prompt:
             examples = ""
         else:
             examples = f"{self.config.few_shot_examples.prefix}{filled_examples}{self.config.few_shot_examples.suffix}"
-        print(examples)
-        print(input_dict)
-        print(self.config.user)
+        # print(examples)
+        # print(input_dict)
+        # print(self.config.user)
         user = self.config.user.format(examples=examples, **input_dict)
         return user
 
@@ -232,13 +232,18 @@ class Prompt:
 
         if self.config.template:
             if multi_turn_key is None:
-                format_string = self.SYSTEM_FORMAT + self.TURN_BEGIN_FORMAT + "{generation}"
+                format_string = (
+                    self.SYSTEM_FORMAT + self.TURN_BEGIN_FORMAT + "{generation}" + self.config.template.assistant_end
+                )
                 prompt_string = format_string.format(
                     system=self.config.system,
                     user=self.build_user_message(input_dict),
                     generation=generation,
                     **asdict(self.config.template),
                 )
+                # System {{}} are not correctly handled right now, so doing this post-hoc
+                # TODO: See why the formatting is not working for system string but works for user.
+                prompt_string = prompt_string.replace("{{}}", "{}")
             else:
                 prompt_string = self.SYSTEM_FORMAT.format(system=self.config.system, **asdict(self.config.template))
                 for turn in input_dict[multi_turn_key][:-1]:
