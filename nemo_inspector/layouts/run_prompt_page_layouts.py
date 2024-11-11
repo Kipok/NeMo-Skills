@@ -68,6 +68,7 @@ def get_run_mode_layout() -> html.Div:
                     {"label": "Run one sample", "value": ONE_SAMPLE_MODE},
                 ],
                 value=ONE_SAMPLE_MODE,
+                # color="light"
             ),
         ],
         className="radio-group",

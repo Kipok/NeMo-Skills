@@ -24,48 +24,6 @@ from utils.common import parse_model_answer
 from utils.decoration import color_text_diff, design_text_output, highlight_code
 
 
-
-# def get_main_page_layout() -> html.Div:
-#     nav_items = [
-#         dbc.NavItem(
-#             dbc.NavLink(
-#                 "Inference",
-#                 id="run_mode_link",
-#                 href="/",
-#                 active=True,
-#                 # color=UIConfig.COLORS["text"],
-#             )
-#         ),
-#         dbc.NavItem(dbc.NavLink("Analyze", id="analyze_link", href="/analyze", style=UIConfig.COLORS["text"])),
-#     ]
-#     return html.Div(
-#         [
-#             dcc.Location(id="url", refresh=False),
-#             dbc.NavbarSimple(
-#                 children=nav_items,
-#                 brand="NeMo Inspector",
-#                 # brand_style={'font-weight': '600', 'letter-spacing': '0.5px', "font-size": "1.2rem"},
-#                 sticky="top",
-#                 # color="primary",  # Using Bootstrap's primary instead of plain "blue"
-#                 dark=True,
-#                 style=UIConfig.STYLES["nav"],
-#                 class_name="mb-2 shadow-sm",  # Added subtle shadow
-#                 # padding="1rem",  # More comfortable padding
-#             ),
-#             #     children=nav_items,
-#             #     brand="NeMo Inspector",
-#             #     sticky="top",
-#             #     color="blue",
-#             #     dark=True,
-#             #     class_name="mb-2",
-#             # ),
-#             dbc.Container(id="page_content"),
-#             dbc.Container(id="js_trigger", style={'display': 'none'}, children=""),
-#             dbc.Container(id="js_container"),
-#             dbc.Container(id='dummy_output', style={'display': 'none'}, children=""),
-#         ]
-#     )
-
 def get_main_page_layout() -> html.Div:
     # Define modern dark theme colors and styles
     THEME = {
