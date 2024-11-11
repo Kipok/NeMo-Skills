@@ -16,6 +16,7 @@
 import abc
 import json
 import logging
+import math
 import os
 import re
 import time
@@ -530,7 +531,11 @@ class VLLMModel(BaseModel):
         """Get Reward Model Scores."""
         responses = self.oai_client.embeddings.create(input=prompts, model=self.model)
         LOG.info([len(data.embedding) for data in responses.data])
-        outputs = [{'score': data.embedding[-1]} for data in responses.data]
+        outputs = []
+        for data in responses.data:
+            raw_score = data.embedding[-1]
+            score = 1 / (1 + math.exp(-raw_score))
+            outputs.append({"raw_score": raw_score, "score": score})
         return outputs
 
     def prompt_api(
