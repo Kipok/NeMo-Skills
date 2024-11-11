@@ -34,7 +34,7 @@ class SupportedServers(str, Enum):
     openai = "openai"
 
 
-def get_judge_cmd(input_files, extra_arguments=""):
+def get_cmd(input_files, extra_arguments=""):
     return f'python -m nemo_skills.inference.rm_scoring ++input_files={input_files} {extra_arguments}'
 
 
@@ -115,7 +115,7 @@ def rm_scoring(
             exp,
             cmd=get_generation_command(
                 server_address=server_address,
-                generation_commands=get_judge_cmd(input_files_str, extra_arguments),
+                generation_commands=get_cmd(input_files_str, extra_arguments),
             ),
             task_name="rm-scoring",
             log_dir=log_dir,
