@@ -529,8 +529,8 @@ class VLLMModel(BaseModel):
     def get_rm_score(self, prompts: list[str | dict]):
         """Get Reward Model Scores."""
         responses = self.oai_client.embeddings.create(input=prompts, model=self.model)
-        # LOG.info([len(seq_scores) for seq_scores in responses.data])
-        outputs = [{'score': seq_scores[-1]} for seq_scores in responses.data]
+        LOG.info([len(data.embedding) for data in responses.data])
+        outputs = [{'score': data.embedding[-1]} for data in responses.data]
         return outputs
 
     def prompt_api(
