@@ -86,6 +86,8 @@ def rm_scoring(
         pass
 
     cluster_config = get_cluster_config(cluster, config_dir)
+
+    print(input_files)
     for input_file in input_files:
         check_if_mounted(cluster_config, input_file)
     if log_dir:
@@ -111,6 +113,7 @@ def rm_scoring(
         )
 
     with run.Experiment(expname) as exp:
+        print(get_cmd(input_files_str, extra_arguments))
         add_task(
             exp,
             cmd=get_generation_command(
