@@ -87,7 +87,6 @@ def rm_scoring(
 
     cluster_config = get_cluster_config(cluster, config_dir)
 
-    print(input_files)
     for input_file in input_files:
         check_if_mounted(cluster_config, input_file)
     if log_dir:
