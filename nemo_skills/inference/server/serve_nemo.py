@@ -85,6 +85,8 @@ if not torch.cuda.is_available():
 @hydra_runner(config_path=".", config_name="nemo_inference")
 def main(cfg) -> None:
     # trainer required for restoring model parallel models
+    print("im here!!!!")
+    print(os.environ["PYTHONPATH"], "hello im here....")
     trainer = Trainer(
         strategy=NLPDDPStrategy(timeout=datetime.timedelta(seconds=18000)),
         **cfg.trainer,
