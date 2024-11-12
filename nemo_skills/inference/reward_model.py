@@ -43,7 +43,7 @@ class RewardModelConfig:
 
     input_file: str | None = None  # Can directly specify an input file, if using a custom dataset
     output_file: str | None = None  # Where to save the generations if `input_file` is provided
-    # Can specify an input directory, where the file will be inferred output-greedy.jsonl if no seed
+    # Can specify an input directory, where the file will be inferred output.jsonl if no seed
     # is provided, and output-rs{{seed}}.jsonl. This pattern is used to match the output files from
     # the `generate` pipeline
     input_dir: str | None = None
@@ -70,9 +70,9 @@ class RewardModelConfig:
         if self.random_seed.strip() == 'None':
             self.random_seed = None
         if self.input_file is None and self.input_dir is not None:
-            seed = f'rs{self.random_seed}' if self.random_seed is not None else 'greedy'
-            self.input_file = Path(self.input_dir) / f"output-{seed}.jsonl"
-            self.output_file = Path(self.output_dir) / f"output-{seed}.jsonl"
+            seed = f'-rs{self.random_seed}' if self.random_seed is not None else ''
+            self.input_file = Path(self.input_dir) / f"output{seed}.jsonl"
+            self.output_file = Path(self.output_dir) / f"output{seed}.jsonl"
         elif self.input_file is not None and self.input_dir is None:
             if self.output_file is None:
                 raise ValueError("Output file should be provided if providing `input_file`")

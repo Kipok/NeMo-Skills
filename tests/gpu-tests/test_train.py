@@ -184,6 +184,7 @@ def test_dpo():
 @pytest.mark.gpu
 @pytest.mark.parametrize("test_mode", ["unit", "integration"])
 def test_rm(test_mode):
+    seeds_supported_models = ['llama']
     model_path = os.getenv('NEMO_SKILLS_TEST_NEMO_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_NEMO_MODEL to run this test")
@@ -199,9 +200,10 @@ def test_rm(test_mode):
         input_dir_greedy = os.getenv('NEMO_SKILLS_TEST_RM_INPUTS_GREEDY')
         if not input_dir_greedy:
             pytest.skip("Define NEMO_SKILLS_TEST_RM_INPUTS_SEEDS_GREEDY to run this test")
-        input_dir_seeds = os.getenv('NEMO_SKILLS_TEST_RM_INPUTS_SEEDS')
-        if not input_dir_seeds:
-            pytest.skip("Define NEMO_SKILLS_TEST_RM_INPUTS_SEEDS to run this test")
+        if model_type in seeds_supported_models:
+            input_dir_seeds = os.getenv('NEMO_SKILLS_TEST_RM_INPUTS_SEEDS')
+            if not input_dir_seeds:
+                pytest.skip("Define NEMO_SKILLS_TEST_RM_INPUTS_SEEDS to run this test")
         expected_scores_per_file = int(os.getenv('NEMO_SKILLS_TEST_RM_EXPECTED_SCORES_PER_FILE'))
         if not expected_scores_per_file:
             pytest.skip("Define NEMO_SKILLS_TEST_RM_EXPECTED_SCORES_PER_FILE to run this test")
@@ -266,37 +268,38 @@ def test_rm(test_mode):
         num_random_seeds=None,
     )
 
-    assert os.path.exists(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-greedy.jsonl")
+    assert os.path.exists(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output.jsonl")
     rm_output = [
-        json.loads(line) for line in open(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-greedy.jsonl")
+        json.loads(line) for line in open(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output.jsonl")
     ]
     assert len(rm_output) == expected_scores_per_file
     assert all("reward_model_score" in line for line in rm_output)
 
-    generate(
-        ctx=wrap_arguments(
-            f"++batch_size=2 "
-            f"++input_dir={input_dir_seeds} "
-            f"++prompt_config=generic/math-base "
-            f"++prompt_template=llama3-base "
-        ),
-        cluster="test-local",
-        config_dir=Path(__file__).absolute().parent,
-        output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-rm/score",
-        server_type="nemo",
-        generation_type="reward",
-        expname="test-rm",
-        model=f"/tmp/nemo-skills-tests/{model_type}/test-rm/model-averaged-nemo",
-        server_gpus=1,
-        server_nodes=1,
-        partition="interactive",
-        num_random_seeds=3,
-    )
+    if model_type in seeds_supported_models:
+        generate(
+            ctx=wrap_arguments(
+                f"++batch_size=2 "
+                f"++input_dir={input_dir_seeds} "
+                f"++prompt_config=generic/math-base "
+                f"++prompt_template=llama3-base "
+            ),
+            cluster="test-local",
+            config_dir=Path(__file__).absolute().parent,
+            output_dir=f"/tmp/nemo-skills-tests/{model_type}/test-rm/score",
+            server_type="nemo",
+            generation_type="reward",
+            expname="test-rm",
+            model=f"/tmp/nemo-skills-tests/{model_type}/test-rm/model-averaged-nemo",
+            server_gpus=1,
+            server_nodes=1,
+            partition="interactive",
+            num_random_seeds=3,
+        )
 
-    for rs in range(3):
-        assert os.path.exists(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-rs{rs}.jsonl")
-        rm_output = [
-            json.loads(line) for line in open(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-rs{rs}.jsonl")
-        ]
-        assert len(rm_output) == expected_scores_per_file
-        assert all("reward_model_score" in line for line in rm_output)
+        for rs in range(3):
+            assert os.path.exists(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-rs{rs}.jsonl")
+            rm_output = [
+                json.loads(line) for line in open(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-rs{rs}.jsonl")
+            ]
+            assert len(rm_output) == expected_scores_per_file
+            assert all("reward_model_score" in line for line in rm_output)
