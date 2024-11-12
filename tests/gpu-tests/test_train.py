@@ -269,9 +269,7 @@ def test_rm(test_mode):
     )
 
     assert os.path.exists(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output.jsonl")
-    rm_output = [
-        json.loads(line) for line in open(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output.jsonl")
-    ]
+    rm_output = [json.loads(line) for line in open(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output.jsonl")]
     assert len(rm_output) == expected_scores_per_file
     assert all("reward_model_score" in line for line in rm_output)
 
@@ -299,7 +297,8 @@ def test_rm(test_mode):
         for rs in range(3):
             assert os.path.exists(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-rs{rs}.jsonl")
             rm_output = [
-                json.loads(line) for line in open(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-rs{rs}.jsonl")
+                json.loads(line)
+                for line in open(f"/tmp/nemo-skills-tests/{model_type}/test-rm/score/output-rs{rs}.jsonl")
             ]
             assert len(rm_output) == expected_scores_per_file
             assert all("reward_model_score" in line for line in rm_output)
