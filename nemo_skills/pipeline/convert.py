@@ -126,7 +126,6 @@ def get_hf_to_nemo_cmd(
 class SupportedTypes(str, Enum):
     llama = "llama"
     qwen = "qwen"
-    deepseekv2 = "deepseekv2"
 
 
 class SupportedFormatsTo(str, Enum):
