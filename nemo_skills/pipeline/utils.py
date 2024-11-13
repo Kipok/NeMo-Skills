@@ -468,6 +468,8 @@ def get_env_variables(cluster_config):
     - `required_env_vars` - list of required environment variables
     - `env_vars` - list of optional environment variables
 
+    NVIDIA_API_KEY and OPENAI_API_KEY are always added if they exist.
+
     Args:
         cluster_config: cluster config dictionary
 
@@ -484,9 +486,13 @@ def get_env_variables(cluster_config):
         env_vars[env_var] = os.environ[env_var]
         logging.info(f"Adding required environment variable {env_var} (value={os.environ[env_var]})")
 
+    # It is fine to have these as always optional even if they are required for some configs
+    # Assume it is required, then this will override the value set above with the same
+    # value, assuming it has not been updated externally between these two calls
+    always_optional_env_vars = ["NVIDIA_API_KEY", "OPENAI_API_KEY"]
     # Add optional env variables
     optional_env_vars = cluster_config.get("env_vars", [])
-    for env_var in optional_env_vars:
+    for env_var in optional_env_vars + always_optional_env_vars:
         if env_var in os.environ:
             logging.info(f"Adding optional environment variable {env_var} (value={os.environ[env_var]})")
             env_vars[env_var] = os.environ[env_var]
