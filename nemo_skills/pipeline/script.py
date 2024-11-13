@@ -53,10 +53,12 @@ def script(
     partition: str = typer.Option(
         None, help="Can specify if need interactive jobs or a specific non-default partition"
     ),
-    module: str = typer.Option(help=(
-        "Searches sys.path in the NeMo-Skills Container for the named module and runs the "
-        "corresponding .py file as a script."
-    )),
+    module: str = typer.Option(
+        help=(
+            "Searches sys.path in the NeMo-Skills Container for the named module and runs the "
+            "corresponding .py file as a script."
+        )
+    ),
     num_gpus: int = typer.Option(1, help="Number of GPUs to use"),
     run_after: str = typer.Option(
         None, help="Can specify an expname that needs to be completed before this one starts"
@@ -93,4 +95,3 @@ def script(
 if __name__ == "__main__":
     typer.main.get_command_name = lambda name: name
     app()
-
