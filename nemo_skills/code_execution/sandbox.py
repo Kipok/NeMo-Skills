@@ -291,13 +291,22 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         except requests.exceptions.Timeout:
             output = {'result': False, 'error_message': 'timeout'}
 
-        error_message = output.get('error_message', 'internal error!')
-        if error_message:
+        if output.get('error_message', 'internal error!'):
             # logging the error
-            LOG.warning("Error during correctness check: %s", error_message)
+            LOG.error(
+                "Error during correctness check:\noutput dict: %s\npred_output: %s\ngt_output: %s",
+                output,
+                pred_output,
+                gt_output,
+            )
 
         if 'result' not in output:
-            LOG.error("Unexpected output: %s", output)
+            LOG.error(
+                "Unexpected output:\noutput dict: %s\npred_output: %s\ngt_output: %s",
+                output,
+                pred_output,
+                gt_output,
+            )
             return False
 
         return output['result']
