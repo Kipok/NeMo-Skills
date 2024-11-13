@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import logging
+import os
 from pathlib import Path
 
 import nemo_run as run
