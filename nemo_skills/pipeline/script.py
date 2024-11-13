@@ -63,7 +63,7 @@ def script(
         None, help="Can specify an expname that needs to be completed before this one starts"
     ),
     config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
-    log_dir: str = typer.Option(None, help="Can specify a custom location for slurm logs. "),
+    log_dir: str = typer.Option(help="Specify a custom location for slurm logs. "),
 ):
     """Generate LLM completions for a given input file.
 
@@ -74,10 +74,7 @@ def script(
     extra_arguments = f'{" ".join(ctx.args)}'
 
     cluster_config = get_cluster_config(cluster, config_dir)
-    if log_dir:
-        check_if_mounted(cluster_config, log_dir)
-    else:
-        log_dir = str(Path('.').absolute() / 'script-logs')
+    check_if_mounted(cluster_config, log_dir)
 
     with run.Experiment(expname) as exp:
         _ = add_task(
