@@ -27,8 +27,7 @@ LOG = logging.getLogger(__file__)
 
 
 def get_cmd(module, extra_arguments):
-    cmd = "pip install transformers && "
-    cmd += f"time python -m {module} "
+    cmd = f"python -m {module} "
     cmd += f" {extra_arguments} "
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
