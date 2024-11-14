@@ -36,11 +36,7 @@ def get_cmd(module, script, extra_arguments):
         cmd = f"python -m {module} "
 
     cmd += f" {extra_arguments} "
-    cmd = (
-        f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"cd /nemo_run/code && "
-        f"{cmd}"
-    )
+    cmd = f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && " f"cd /nemo_run/code && " f"{cmd}"
     return cmd
 
 
@@ -62,7 +58,7 @@ def script(
         help=(
             "Searches sys.path in the NeMo-Skills Container for the named module and runs the "
             "corresponding .py file as a script."
-        )
+        ),
     ),
     script: str = typer.Option(
         None,
@@ -79,9 +75,7 @@ def script(
     config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
     log_dir: str = typer.Option(help="Specify a custom location for slurm logs. "),
 ):
-    """Run a pre-defined module or script in the NeMo-Skills container.
-
-    """
+    """Run a pre-defined module or script in the NeMo-Skills container."""
     setup_logging(disable_hydra_logs=False)
     extra_arguments = f'{" ".join(ctx.args)}'
 
