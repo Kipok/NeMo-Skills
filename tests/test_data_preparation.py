@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import hashlib
+import sys
 import uuid
 from pathlib import Path
-import sys
+
 import yaml
 
 from nemo_skills.pipeline import wrap_arguments
@@ -32,6 +33,7 @@ def compute_md5(file_path):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
+
 def docker_mkdir(directory):
     test_config_path = Path(__file__).absolute().parent / "gpu-tests" / "test-local.yaml"
     config = yaml.safe_load(open(test_config_path).read())
@@ -43,6 +45,7 @@ def docker_mkdir(directory):
         volume_paths=volumes,
         command=cmd,
     )
+
 
 def test_multiple_files():
     output_file = f"/mnt/datadrive/nemo-skills-test-data/tests/data/processed_multifile_output_{uuid.uuid4()}.jsonl"
