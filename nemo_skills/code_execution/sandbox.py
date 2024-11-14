@@ -156,7 +156,7 @@ class Sandbox(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def _prepare_request(self, generated_code, timeout):
+    def _prepare_request(self, generated_code, timeout, language='python'):
         pass
 
     def execute_code(
@@ -367,20 +367,18 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                     "predicted_answer key not found in the line_dict. "
                                     "Set use_predicted_answer_key=False to re-extract"
                                 )
-                       #TODO manually removing <｜begin▁of▁sentence｜> for trtllm 
+                        # TODO manually removing <｜begin▁of▁sentence｜> for trtllm 
                     elif answer_format == "lean":
                         if not use_predicted_proof_key:
-                            # line_dict["predicted_proof"] = line_dict["header"] + line_dict["formal_statement"] + line_dict["generation"][:-3] if line_dict["generation"].endswith("```") else line_dict["generation"]
-                            ## TODO temp changes, need to add header to autoformalization step
+                            # TODO temp changes, need to add header to autoformalization step
                             header = "import Mathlib\n\nopen Complex Filter Function Metric Finset\nopen scoped BigOperators Topology\n\n"
-
 
                             # Extract generation, removing trailing ``` if present
                             if line_dict["generation"].endswith("```"):
                                 generation = line_dict["generation"][:-3]
                             else:
                                 generation = line_dict["generation"]
-                                
+
                             generation = re.sub(r"^<｜begin▁of▁sentence｜>", "", generation)
 
                             # Always include header and formal_statement
@@ -404,12 +402,11 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                     "predicted_proof key not found in the line_dict. "
                                     "Set use_predicted_proof_key=False to re-combine"
                                 )
-                    
 
                     data[-1][-1] = json.dumps(line_dict)
 
-                    predicted_answer = line_dict["predicted_answer"]
-                    predicted_proof = line_dict["predicted_proof"]
+                    predicted_answer = line_dict.get("predicted_answer")
+                    predicted_proof = line_dict.get("predicted_proof")
                     if answer_format == "natural_language" and (predicted_answer, gt_answer) in map_to_future:
                         continue
                     elif answer_format == "lean" and predicted_proof in map_to_future:
