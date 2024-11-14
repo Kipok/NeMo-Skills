@@ -15,9 +15,14 @@
 import hashlib
 import uuid
 from pathlib import Path
+import sys
+import yaml
 
 from nemo_skills.pipeline import wrap_arguments
 from nemo_skills.pipeline.cli import run_cmd
+
+sys.path.append(str(Path(__file__).absolute().parent / 'gpu-tests'))
+from test_train import docker_run
 
 
 def compute_md5(file_path):
@@ -27,10 +32,21 @@ def compute_md5(file_path):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
+def docker_mkdir(directory):
+    test_config_path = Path(__file__).absolute().parent / "gpu-tests" / "test-local.yaml"
+    config = yaml.safe_load(open(test_config_path).read())
+    volumes = config['mounts']
+    container = config['containers']['nemo-skills']
+    cmd = f"mkdir -p {str(directory)}"
+    docker_run(
+        image_name=container,
+        volume_paths=volumes,
+        command=cmd,
+    )
 
 def test_multiple_files():
     output_file = f"/mnt/datadrive/nemo-skills-test-data/tests/data/processed_multifile_output_{uuid.uuid4()}.jsonl"
-    Path(output_file).absolute().parent.mkdir(parents=True, exist_ok=True)
+    docker_mkdir(Path(output_file).absolute().parent)
     run_cmd(
         module="nemo_skills.training.prepare_sft_data ",
         cluster='test-local',
@@ -64,7 +80,7 @@ def test_multiple_files():
 
 def test_exclude_keys():
     output_file = f"/mnt/datadrive/nemo-skills-test-data/tests/data/processed_compact_output_{uuid.uuid4()}.jsonl"
-    Path(output_file).absolute().parent.mkdir(parents=True, exist_ok=True)
+    docker_mkdir(Path(output_file).absolute().parent)
     run_cmd(
         module="nemo_skills.training.prepare_sft_data ",
         cluster='test-local',
@@ -98,7 +114,7 @@ def test_exclude_keys():
 
 def test_code_sft_data():
     output_file = f"/mnt/datadrive/nemo-skills-test-data/tests/data/code_processed_output_{uuid.uuid4()}.jsonl"
-    Path(output_file).absolute().parent.mkdir(parents=True, exist_ok=True)
+    docker_mkdir(Path(output_file).absolute().parent)
     run_cmd(
         module="nemo_skills.training.prepare_sft_data ",
         cluster='test-local',
@@ -127,8 +143,7 @@ def test_code_sft_data():
 
 def test_openmathinstruct2():
     output_file = f"/mnt/datadrive/nemo-skills-test-data/tests/data/openmathinstruct2-sft_{uuid.uuid4()}.jsonl"
-    Path(output_file).absolute().parent.mkdir(parents=True, exist_ok=True)
-
+    docker_mkdir(Path(output_file).absolute().parent)
     run_cmd(
         module="nemo_skills.training.prepare_sft_data ",
         cluster='test-local',
