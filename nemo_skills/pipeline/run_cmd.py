@@ -42,7 +42,7 @@ def get_cmd(module, script, extra_arguments):
 
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 @typer_unpacker
-def script(
+def run_cmd(
     ctx: typer.Context,
     cluster: str = typer.Option(
         None,
