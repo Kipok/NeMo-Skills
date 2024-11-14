@@ -110,6 +110,6 @@ def execute():
 
 
 if __name__ == '__main__':
-    logger = logging.getLogger()
-    logger.setLevel(logging.ERROR)
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.WARNING)
     app.run(port=6000)
