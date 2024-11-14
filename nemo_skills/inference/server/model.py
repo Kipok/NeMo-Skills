@@ -37,22 +37,6 @@ def trim_after_stop_phrases(text: str, stop_phrases: list[str]) -> str:
     return re.split("|".join(escaped_stop_phrases), text, maxsplit=1)[0]
 
 
-def preprocess_request(request: dict):
-    """Just a small utility to pre-process some of the parameters of request."""
-    # temperature of 0 means greedy, but it's not always supported by the server
-    # so setting explicit greedy parameters instead
-    if request["temperature"] == 0:
-        request["temperature"] = 1.0
-        request["top_k"] = 1
-        request["top_p"] = 1.0
-
-
-def postprocess_output(outputs: list[dict], stop_phrases: list[str]):
-    """Post-processes the outputs of the model."""
-    for output in outputs:
-        output['generation'] = trim_after_stop_phrases(output['generation'], stop_phrases)
-
-
 class BaseModel(abc.ABC):
     """Base model class for handling requests to the inference server.
 
@@ -91,6 +75,33 @@ class BaseModel(abc.ABC):
             self.requests_lib = requests
 
     @abc.abstractmethod
+    def _generate_single(
+        self,
+        prompt: str | dict,
+        tokens_to_generate: int | list[int] = 512,
+        temperature: float | list[float] = 0.0,
+        top_p: float | list[float] = 0.95,
+        top_k: int | list[int] = 0,
+        repetition_penalty: float | list[float] = 1.0,
+        random_seed: int | list[int] = 0,
+        stop_phrases: list[str] | list[list[str]] | None = None,
+        remove_stop_phrases: bool = True,
+    ) -> list[dict]:
+        """If the engine supports inflight-batching of requests, you only need to define this method.
+
+        We will call it in threads on the list of prompts.
+        """
+        pass
+
+    def preprocess_request(self, request: dict):
+        """Just a small utility to pre-process some of the parameters of request."""
+        # temperature of 0 means greedy, but it's not always supported by the server
+        # so setting explicit greedy parameters instead
+        if request["temperature"] == 0:
+            request["temperature"] = 1.0
+            request["top_k"] = 1
+            request["top_p"] = 1.0
+
     def generate(
         self,
         prompts: list[str | dict],
@@ -105,9 +116,43 @@ class BaseModel(abc.ABC):
     ) -> list[dict]:
         """For any generation parameter you can specify a list of values that needs to match the number of prompts.
 
-        Not every server supports that, so we will raise an error if that's the case.
+        Not every server supports that, so make sure to override this method directly if that's not the case.
         """
-        pass
+        kwargs = {
+            'tokens_to_generate': tokens_to_generate,
+            'temperature': temperature,
+            'top_p': top_p,
+            'top_k': top_k,
+            'repetition_penalty': repetition_penalty,
+            'random_seed': random_seed,
+            'stop_phrases': stop_phrases,
+        }
+        for key, value in kwargs.items():
+            is_list = False
+            if key == 'stop_phrases' and (value and isinstance(value[0], list)):
+                is_list = True
+            if key != 'stop_phrases' and isinstance(value, list):
+                is_list = True
+            if is_list and len(value) != len(prompts):
+                raise ValueError(f"Length of {key} should match the number of prompts.")
+            if not is_list:
+                kwargs[key] = [value for _ in range(len(prompts))]
+
+        futures = []
+        with ThreadPoolExecutor(max_workers=len(prompts)) as executor:
+            for request_idx in range(len(prompts)):
+                request = {key: value[request_idx] for key, value in kwargs.items()}
+                request['prompt'] = prompts[request_idx]
+                request['remove_stop_phrases'] = remove_stop_phrases
+                self.preprocess_request(request)
+                futures.append(executor.submit(self._generate_single, **request))
+        outputs = [future.result() for future in futures]
+
+        if remove_stop_phrases:
+            for output in outputs:
+                output['generation'] = trim_after_stop_phrases(output['generation'], stop_phrases)
+
+        return outputs
 
 
 class TRTLLMModel(BaseModel):
@@ -461,122 +506,49 @@ class VLLMModel(BaseModel):
         self.model_name_server = self.get_model_name_from_server()
         self.model = self.model_name_server
 
-    def generate(
+    def _generate_single(
         self,
-        prompts: list[str | dict],
-        tokens_to_generate: int | list[int] = 512,
-        temperature: float | list[float] = 0.0,
-        top_p: float | list[float] = 0.95,
-        top_k: int | list[int] = 0,
-        repetition_penalty: float | list[float] = 1.0,
-        random_seed: int | list[int] = 0,
-        stop_phrases: list[str] | list[list[str]] | None = None,
-        remove_stop_phrases: bool = True,
-    ) -> list[dict]:
-        if isinstance(prompts[0], dict):
-            raise NotImplementedError("TODO: need to add this support, but not implemented yet.")
-        if stop_phrases is None:
-            stop_phrases = []
-
-        kwargs = {
-            'tokens_to_generate': tokens_to_generate,
-            'temperature': temperature,
-            'top_p': top_p,
-            'top_k': top_k,
-            'repetition_penalty': repetition_penalty,
-            'random_seed': random_seed,
-            'stop_phrases': stop_phrases,
-        }
-        for key, value in kwargs.items():
-            is_list = False
-            if key == 'stop_phrases' and (value and isinstance(value[0], list)):
-                is_list = True
-            if key != 'stop_phrases' and isinstance(value, list):
-                is_list = True
-            if is_list and len(value) != len(prompts):
-                raise ValueError(f"Length of {key} should match the number of prompts.")
-            if not is_list:
-                kwargs[key] = [value for _ in range(len(prompts))]
-
-        futures = []
-        with ThreadPoolExecutor(max_workers=len(prompts)) as executor:
-            for request_idx in range(len(prompts)):
-                request = {
-                    'prompt': [prompts[request_idx]],
-                    'max_tokens': kwargs['tokens_to_generate'][request_idx],
-                    'temperature': kwargs['temperature'][request_idx],
-                    'top_p': kwargs['top_p'][request_idx],
-                    'top_k': kwargs['top_k'][request_idx],
-                    'repetition_penalty': kwargs['repetition_penalty'][request_idx],
-                    'seed': kwargs['random_seed'][request_idx],
-                    'stop': kwargs['stop_phrases'][request_idx],
-                    # setting other parameters that we don't support
-                    'echo': False,
-                    'frequency_penalty': 0.0,
-                    'presence_penalty': 0.0,
-                    'logprobs': None,
-                    'logit_bias': None,
-                    'num_generations': 1,
-                }
-                preprocess_request(request)
-                futures.append(executor.submit(self.prompt_api, **request))
-        outputs = [{'generation': future.result()[0]} for future in futures]
-        if remove_stop_phrases:
-            postprocess_output(outputs, stop_phrases)
-
-        return outputs
-
-    def prompt_api(
-        self,
-        prompt: list[str],
-        max_tokens: int,
-        temperature: float,
-        top_p: float,
-        top_k: int = -1,
-        num_generations: int = 1,
-        stop=None,
-        echo: bool = False,
+        prompt: str | dict,
+        tokens_to_generate: int = 512,
+        temperature: float = 0.0,
+        top_p: float = 0.95,
+        top_k: int = 0,
         repetition_penalty: float = 1.0,
-        frequency_penalty: float = 0.0,
-        presence_penalty: float = 0.0,
-        logprobs: int = None,
-        logit_bias: dict = None,
-        seed: int = None,
-        parse_response: bool = True,
-    ) -> Union[list[str], openai.types.Completion]:
+        random_seed: int = 0,
+        stop_phrases: list[str] | None = None,
+        remove_stop_phrases: bool = True,
+    ) -> dict:
+        if isinstance(prompt, dict):
+            raise NotImplementedError("TODO: need to add this support, but not implemented yet.")
+        stop_phrases = stop_phrases or []
+
         if top_k == 0:
             top_k = -1
 
-        # Process top_k
-        extra_body = {
-            "extra_body": {
+        response = self.oai_client.completions.create(
+            model=self.model,
+            prompt=[prompt],
+            max_tokens=tokens_to_generate,
+            temperature=temperature,
+            top_p=top_p,
+            seed=random_seed,
+            stop=stop_phrases,
+            echo=False,
+            frequency_penalty=0.0,
+            presence_penalty=0.0,
+            logprobs=None,
+            logit_bias=None,
+            n=1,
+            extra_body={
                 "top_k": top_k,
                 "repetition_penalty": repetition_penalty,
                 "spaces_between_special_tokens": False,
-            }
-        }
-        response = self.oai_client.completions.create(
-            model=self.model,
-            prompt=prompt,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            top_p=top_p,
-            n=num_generations,
-            stream=False,
-            stop=stop,
-            echo=echo,
-            frequency_penalty=frequency_penalty,
-            presence_penalty=presence_penalty,
-            logprobs=logprobs,
-            logit_bias=logit_bias,
-            seed=seed,
-            **extra_body,
+            },
         )
 
-        if parse_response:
-            response = self.parse_openai_response(response)
+        response = self.parse_openai_response(response)
 
-        return response
+        return {'generation': response[0]}
 
     @classmethod
     def parse_openai_response(cls, response: "openai.types.Completion") -> list[str]:
