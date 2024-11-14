@@ -103,7 +103,7 @@ class BaseModel(abc.ABC):
     def generate(
         self,
         prompts: list[str | dict],
-        tokens_to_generate: int | list[int] = 512,
+        tokens_to_generate: int | list[int] = 2048,
         temperature: float | list[float] = 0.0,
         top_p: float | list[float] = 0.95,
         top_k: int | list[int] = 0,
@@ -309,7 +309,6 @@ class OpenAIModel(BaseModel):
         model=None,
         base_url=None,
         api_key=None,
-        max_parallel_requests: int = 1000,  # can adjust to avoid rate-limiting
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -336,50 +335,6 @@ class OpenAIModel(BaseModel):
 
         self.model = model
         self.client = OpenAI(api_key=api_key, base_url=base_url)
-        self.max_parallel_requests = max_parallel_requests
-
-    def generate(
-        self,
-        prompts: list[str | dict],
-        tokens_to_generate: int = 512,
-        temperature: float = 0.0,
-        top_p: float = 0.95,
-        top_k: int = 0,
-        repetition_penalty: float = 1.0,
-        random_seed: int = 0,
-        stop_phrases: list[str] | None = None,
-        reduce_generation_tokens_if_error: bool = True,
-        remove_stop_phrases: bool = True,
-    ) -> list[dict]:
-        if isinstance(prompts[0], str):
-            raise NotImplementedError("OpenAI server requires \"messages\" dicts as prompt.")
-        if stop_phrases is None:
-            stop_phrases = []
-        if top_k != 0:
-            raise ValueError("`top_k` is not supported by OpenAI API, please set it to default value `0`.")
-
-        futures = []
-        with ThreadPoolExecutor(max_workers=self.max_parallel_requests) as executor:
-            for prompt in prompts:
-                futures.append(
-                    executor.submit(
-                        self._send_request,
-                        prompt=prompt,
-                        tokens_to_generate=tokens_to_generate,
-                        temperature=temperature,
-                        top_p=top_p,
-                        repetition_penalty=repetition_penalty,
-                        random_seed=random_seed,
-                        stop_phrases=stop_phrases,
-                        reduce_generation_tokens_if_error=reduce_generation_tokens_if_error,
-                    )
-                )
-
-        outputs = [{'generation': future.result()} for future in futures]
-        if remove_stop_phrases:
-            postprocess_output(outputs, stop_phrases)
-
-        return outputs
 
     def batch_generate(
         self,
@@ -455,20 +410,20 @@ class OpenAIModel(BaseModel):
 
         return metadata, outputs
 
-    def _send_request(
+    def _generate_single(
         self,
         prompt: dict,
         tokens_to_generate: int,
         temperature: float,
         top_p: float,
+        top_k: int,
         repetition_penalty: float,
         random_seed: int,
         stop_phrases: list[str],
-        reduce_generation_tokens_if_error: bool = True,
     ) -> str:
-        import openai
+        if top_k != 0:
+            raise ValueError("`top_k` is not supported by OpenAI API, please set it to default value `0`.")
 
-        messages = prompt
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
@@ -478,13 +433,11 @@ class OpenAIModel(BaseModel):
                 presence_penalty=repetition_penalty,
                 seed=random_seed,
                 stop=stop_phrases,
-                messages=messages,
+                messages=prompt,
             )
             response = response.choices[0]
         except openai.BadRequestError as e:
             # this likely only works for Nvidia-hosted models
-            if not reduce_generation_tokens_if_error:
-                raise
             msg = e.body['detail']
             # expected message:
             # This model's maximum context length is N tokens.
@@ -502,7 +455,7 @@ class OpenAIModel(BaseModel):
                     presence_penalty=repetition_penalty,
                     seed=random_seed,
                     stop=stop_phrases,
-                    messages=messages,
+                    messages=prompt,
                 ).choices[0]
             else:
                 raise

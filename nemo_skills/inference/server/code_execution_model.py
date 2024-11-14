@@ -47,12 +47,12 @@ class CodeExecutionWrapper:
         code_output_begin: str,
         code_output_end: str,
         code_output_format: str,
-        tokens_to_generate: int = 512,
-        temperature: float = 0.0,
-        top_p: float = 0.95,
-        top_k: int = 0,
-        repetition_penalty: float = 1.0,
-        random_seed: int = 0,
+        tokens_to_generate: int,
+        temperature: float,
+        top_p: float,
+        top_k: int,
+        repetition_penalty: float,
+        random_seed: int,
         stop_phrases: list[str] | None = None,
     ):
         if not isinstance(prompt, str):
