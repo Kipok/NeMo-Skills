@@ -15,10 +15,11 @@
 
 import copy
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 from nemo_skills.code_execution import extract_code_to_execute, format_code_output
 from nemo_skills.code_execution.sandbox import Sandbox
-from nemo_skills.inference.server.model import BaseModel, get_model, models
+from nemo_skills.inference.server.model import BaseModel, get_model, models, trim_after_stop_phrases
 from nemo_skills.utils import nested_dataclass, python_doc_to_cmd_help
 
 LOG = logging.getLogger(__name__)
@@ -32,8 +33,7 @@ class CodeExecutionConfig:
     stop_on_code_error: bool = False
 
 
-# TODO: can we not inherit, but still reuse the generate code?
-class CodeExecutionWrapper(BaseModel):
+class CodeExecutionWrapper:
     def __init__(self, model: BaseModel, sandbox: Sandbox, config: CodeExecutionConfig):
         self.model = model
         self.sandbox = sandbox
@@ -76,8 +76,8 @@ class CodeExecutionWrapper(BaseModel):
         session_id = None
 
         for _ in range(self.config.max_code_executions):
-            output = self.model._generate_single(**request)
-            request['prompt'] += output['generation']
+            output = self.model._generate_single(**request)['generation']
+            request['prompt'] += output
             # .rfind(code_end, 0, -1) searches for the second-to-last occurrence of code_end and checks
             # that the last code_begin is not closed to ensure that we are inside the code block
             if output.endswith(code_end) and output.rfind(code_begin) > output.rfind(code_end, 0, -1):
@@ -94,6 +94,71 @@ class CodeExecutionWrapper(BaseModel):
 
         # removing original prompt
         return {'generation': request['prompt'][len(prompt) :]}
+
+    # TODO: is there a way to reuse this with BaseModel?
+    def generate(
+        self,
+        prompts: list[str | dict],
+        code_begin: str | list[str],
+        code_end: str | list[str],
+        code_output_begin: str | list[str],
+        code_output_end: str | list[str],
+        code_output_format: str | list[str],
+        tokens_to_generate: int | list[int] = 512,
+        temperature: float | list[float] = 0.0,
+        top_p: float | list[float] = 0.95,
+        top_k: int | list[int] = 0,
+        repetition_penalty: float | list[float] = 1.0,
+        random_seed: int | list[int] = 0,
+        stop_phrases: list[str] | list[list[str]] | None = None,
+        remove_stop_phrases: bool = True,
+    ) -> list[dict]:
+        """For any generation parameter you can specify a list of values that needs to match the number of prompts.
+
+        Not every server supports that, so make sure to override this method directly if that's not the case.
+        """
+        # TODO: currently nemo server would get separate 1-batch requests, which is likely really inefficient
+        #       but the alternative is to have a fully separate implementation, which is also not nice
+        #       If we find ourselves needing to use nemo with code execution often, we should fix this
+        kwargs = {
+            'code_begin': code_begin,
+            'code_end': code_end,
+            'code_output_begin': code_output_begin,
+            'code_output_end': code_output_end,
+            'code_output_format': code_output_format,
+            'tokens_to_generate': tokens_to_generate,
+            'temperature': temperature,
+            'top_p': top_p,
+            'top_k': top_k,
+            'repetition_penalty': repetition_penalty,
+            'random_seed': random_seed,
+            'stop_phrases': stop_phrases,
+        }
+        for key, value in kwargs.items():
+            is_list = False
+            if key == 'stop_phrases' and (value and isinstance(value[0], list)):
+                is_list = True
+            if key != 'stop_phrases' and isinstance(value, list):
+                is_list = True
+            if is_list and len(value) != len(prompts):
+                raise ValueError(f"Length of {key} should match the number of prompts.")
+            if not is_list:
+                kwargs[key] = [value for _ in range(len(prompts))]
+
+        futures = []
+        with ThreadPoolExecutor(max_workers=len(prompts)) as executor:
+            for request_idx in range(len(prompts)):
+                request = {key: value[request_idx] for key, value in kwargs.items()}
+                request['prompt'] = prompts[request_idx]
+                self.model.preprocess_request(request)
+                futures.append(executor.submit(self._generate_single, **request))
+        outputs = [future.result() for future in futures]
+
+        if remove_stop_phrases:
+            for output in outputs:
+                output['generation'] = trim_after_stop_phrases(output['generation'], stop_phrases)
+
+        return outputs
 
 
 def server_params():
