@@ -469,7 +469,7 @@ class OpenAIModel(BaseModel):
             raise
 
         output = response.message.content
-        return output
+        return {'generation': output}
 
 
 class VLLMModel(BaseModel):
