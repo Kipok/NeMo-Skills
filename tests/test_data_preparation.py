@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import hashlib
-from pathlib import Path
 import uuid
+from pathlib import Path
 
 from nemo_skills.pipeline import wrap_arguments
 from nemo_skills.pipeline.cli import run_cmd
@@ -85,7 +85,7 @@ def test_exclude_keys():
             f"    ++num_output_samples=32 "
             f"    ++downsampling_method=fair "
             f"    ++do_shuffle=false ",
-        )
+        ),
     )
 
     expected_md5 = "7144c098a6e75ffd01c29e714552db24"
@@ -114,7 +114,7 @@ def test_code_sft_data():
             f"    ++exclude_optional_keys=false "
             f"    ++filters.drop_incorrect_code_blocks=false "
             f"    ++generation_suffix='\"<|eot_id|>\"' ",
-        )
+        ),
     )
 
     expected_md5 = "a830a174291795cc7db0d1c3ee39de25"
@@ -148,7 +148,7 @@ def test_openmathinstruct2():
             "++filters.drop_incorrect_arithmetic=false "
             "++filters.split_arithmetic=false "
             "++generation_suffix='\"<|eot_id|>\"'",
-        )
+        ),
     )
 
     expected_md5 = "981e11051436be68cdc45953888a5685"
