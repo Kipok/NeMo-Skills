@@ -26,6 +26,7 @@ from typing import Dict, List, Optional, Tuple
 import backoff
 import requests
 import tqdm
+import re
 
 from nemo_skills.code_execution.math_grader import extract_answer
 from nemo_skills.utils import python_doc_to_cmd_help, unroll_files
@@ -169,6 +170,9 @@ class Sandbox(abc.ABC):
         if session_id is None and language == "python":  # creating a new session with empty state
             session_id = uuid.uuid4()
             self.sessions[session_id] = []
+        generated_code = generated_code.replace('"""', r'\"\"\"')
+        while generated_code.endswith('\\'):
+            generated_code = generated_code[:-1]
 
         if session_id is not None:
             self.sessions[session_id].append(generated_code)
@@ -188,9 +192,8 @@ from IPython.utils import io
 code_snippets = []
 """
             for code_snippet in self.sessions[session_id]:
-                TO_EXECUTE += f'\ncode_snippets.append({repr(code_snippet)})\n'
+                TO_EXECUTE += f'\ncode_snippets.append("""{code_snippet}""")\n'
 
-            # we do `strip() + \\n` below to ensure that `print(res)` and `res` return the same output
             TO_EXECUTE += f"""
 try:
     shell = InteractiveShell()
@@ -203,10 +206,6 @@ try:
         stdout = stdout[:{max_output_characters}] + "<output cut>"
     if len(stderr) > {max_output_characters}:
         stderr = stderr[:{max_output_characters}] + "<output cut>"
-    if stdout:
-        stdout += "\\n"
-    if stderr:
-        stderr += "\\n"
     to_return = {{"process_status": "completed", "stdout": stdout, "stderr": stderr}}
 except Exception:
     # removing useless prefix from traceback
@@ -230,7 +229,7 @@ print(json.dumps(to_return))
         try:
             output = self._send_request(request, timeout)
         except requests.exceptions.Timeout:
-            output = {"process_status": "timeout", "stdout": "", "stderr": "Timed out\n"}
+            output = {"process_status": "timeout", "stdout": "Timed out", "stderr": "Timed out"}
         # removing last state to not re-execute code with errors
         if session_id is not None:
             if output['stderr'] or 'Traceback (most recent call last)' in output['stdout']:
@@ -253,16 +252,6 @@ print(json.dumps(to_return))
             while gt_output.endswith('\\'):
                 gt_output = gt_output[:-1]
 
-        math_equal_call = f"""
-    output = math_equal(
-        {repr(str(pred_output))},
-        {repr(str(gt_output))},
-        {include_percentage},
-        {tolerance},
-        {timeout},
-    )
-"""
-
         TO_EXECUTE = f"""
 import os
 import sys
@@ -276,7 +265,13 @@ stdout = sys.stdout
 # removing all output to not capture that
 sys.stdout = sys.stderr = StringIO()
 try:
-    {math_equal_call}
+    output = math_equal(
+        r'''{pred_output}''',
+        r'''{gt_output}''',
+        {include_percentage},
+        {tolerance},
+        {timeout},
+    )
     error_message = ""
 except Exception as e:
     output = False
@@ -292,25 +287,9 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         except requests.exceptions.Timeout:
             output = {'result': False, 'error_message': 'timeout'}
 
-        if output.get('error_message', 'internal error!'):
+        if output['error_message']:
             # logging the error
-            LOG.error(
-                "Error during correctness check:\noutput dict: %s\npred_output: %s\ngt_output: %s\nmath_equal_call: %s",
-                output,
-                pred_output,
-                gt_output,
-                math_equal_call,
-            )
-
-        if 'result' not in output:
-            LOG.error(
-                "Unexpected output:\noutput dict: %s\npred_output: %s\ngt_output: %s\nmath_equal_call: %s",
-                output,
-                pred_output,
-                gt_output,
-                math_equal_call,
-            )
-            return False
+            LOG.warning("Error during correctness check: %s", output['error_message'])
 
         return output['result']
 
@@ -335,6 +314,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         answer_format="natural_language",
         ignore_cache: bool = False,
         use_predicted_answer_key: bool = False,
+        use_predicted_proof_key: bool = False,
         extract_from_boxed: bool = True,
         extract_regex: str = r"The final answer is (.+)$",
     ):
@@ -349,7 +329,9 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     (line_dict["predicted_answer"], line_dict["expected_answer"])
                 ].result()
             elif answer_format == "lean":
-                line_dict["proof_status"] = map_to_future[(line_dict["predicted_answer"])].result()
+                line_dict["proof_status"] = map_to_future[(line_dict["predicted_proof"])].result()
+            elif answer_format == "lean-stat":
+                line_dict["proof_status"] = map_to_future[(line_dict["predicted_proof"])].result()
 
         data = []
         with ThreadPoolExecutor(max_workers=num_parallel_requests) as executor:
@@ -372,42 +354,74 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     if answer_format == "natural_language":
                         gt_answer = line_dict["expected_answer"]
 
-                    if not use_predicted_answer_key:
-                        if answer_format == "natural_language":
+                    if answer_format == "natural_language":
+                        if not use_predicted_answer_key:
                             line_dict["predicted_answer"] = extract_answer(
                                 line_dict["generation"],
                                 extract_from_boxed=extract_from_boxed,
                                 extract_regex=extract_regex,
                             )
-                        elif answer_format == "lean":
-                            line_dict["predicted_answer"] = (
-                                line_dict["header"]
-                                + line_dict["formal_statement"]
-                                + (
-                                    line_dict["generation"][:-3]
-                                    if line_dict["generation"].endswith("```")
-                                    else line_dict["generation"]
+                        else:
+                            if "predicted_answer" not in line_dict:
+                                raise ValueError(
+                                    "predicted_answer key not found in the line_dict. "
+                                    "Set use_predicted_answer_key=False to re-extract"
                                 )
-                            )
-                    else:
-                        if "predicted_answer" not in line_dict:
-                            raise ValueError(
-                                "predicted_answer key not found in the line_dict. "
-                                "Set use_predicted_answer_key=False to re-extract"
-                            )
+                       #TODO manually removing <｜begin▁of▁sentence｜> for trtllm 
+                    elif answer_format == "lean":
+                        if not use_predicted_proof_key:
+                            # line_dict["predicted_proof"] = line_dict["header"] + line_dict["formal_statement"] + line_dict["generation"][:-3] if line_dict["generation"].endswith("```") else line_dict["generation"]
+                            ## TODO temp changes, need to add header to autoformalization step
+                            header = "import Mathlib\n\nopen Complex Filter Function Metric Finset\nopen scoped BigOperators Topology\n\n"
+
+
+                            # Extract generation, removing trailing ``` if present
+                            if line_dict["generation"].endswith("```"):
+                                generation = line_dict["generation"][:-3]
+                            else:
+                                generation = line_dict["generation"]
+                                
+                            generation = re.sub(r"^<｜begin▁of▁sentence｜>", "", generation)
+
+                            # Always include header and formal_statement
+                            line_dict["predicted_proof"] = header + line_dict["formal_statement"] + generation
+
+                        else:
+                            if "predicted_proof" not in line_dict:
+                                raise ValueError(
+                                    "predicted_proof key not found in the line_dict. "
+                                    "Set use_predicted_proof_key=False to re-combine"
+                                )
+                    elif answer_format == "lean-stat":
+                        if not use_predicted_proof_key:
+                            generation = line_dict["generation"]
+                            generation = re.sub(r"^<｜begin▁of▁sentence｜>", "", generation)
+                            header = "import Mathlib\n\nopen Complex Filter Function Metric Finset\nopen scoped BigOperators Topology\n\n"
+                            line_dict["predicted_proof"] = header + re.sub(r"^```(lean4)?\s*|\s*```$", "", generation) + "sorry"
+                        else:
+                            if "predicted_proof" not in line_dict:
+                                raise ValueError(
+                                    "predicted_proof key not found in the line_dict. "
+                                    "Set use_predicted_proof_key=False to re-combine"
+                                )
+                    
 
                     data[-1][-1] = json.dumps(line_dict)
 
                     predicted_answer = line_dict["predicted_answer"]
+                    predicted_proof = line_dict["predicted_proof"]
                     if answer_format == "natural_language" and (predicted_answer, gt_answer) in map_to_future:
                         continue
-                    elif answer_format == "lean" and predicted_answer in map_to_future:
+                    elif answer_format == "lean" and predicted_proof in map_to_future:
+                        continue
+                    elif answer_format == "lean-stat" and predicted_proof in map_to_future:
                         continue
 
                     if (
                         ignore_cache
                         or (line_dict.get("is_correct") is None and answer_format == "natural_language")
                         or (line_dict.get("proof_status") is None and answer_format == "lean")
+                        or (line_dict.get("proof_status") is None and answer_format == "lean-stat")
                     ):
                         if answer_format == "natural_language":
                             map_to_future[(predicted_answer, gt_answer)] = executor.submit(
@@ -419,16 +433,24 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                 timeout=timeout,
                             )
                         elif answer_format == "lean":
-                            map_to_future[predicted_answer] = executor.submit(
+                            map_to_future[predicted_proof] = executor.submit(
                                 self.is_proof_correct,
-                                predicted_answer,
+                                predicted_proof,
+                                timeout=timeout,
+                            )
+                        elif answer_format == "lean-stat":
+                            map_to_future[predicted_proof] = executor.submit(
+                                self.is_proof_correct,
+                                predicted_proof,
                                 timeout=timeout,
                             )
                     else:
                         if answer_format == "natural_language":
                             map_to_future[(predicted_answer, gt_answer)] = DummyFuture(line_dict["is_correct"])
                         elif answer_format == "lean":
-                            map_to_future[predicted_answer] = DummyFuture(line_dict["proof_status"])
+                            map_to_future[predicted_proof] = DummyFuture(line_dict["proof_status"])
+                        elif answer_format == "lean-stat":
+                            map_to_future[predicted_proof] = DummyFuture(line_dict["proof_status"])
 
             for file_handle in file_handles:
                 file_handle.close()
