@@ -34,7 +34,7 @@ def get_greedy_cmd(
     extra_arguments = f"{benchmark_module.DEFAULT_GENERATION_ARGS} {extra_arguments}"
     cmd = (
         f'echo "Evaluating benchmark {benchmark}" && '
-        f'python -m nemo_skills.inference.generate '
+        f'python -m nemo_skills.inference.generate '  # <------------ IT COMES FROM HERE !!!!
         f'    ++dataset={benchmark} '
         f'    ++split={split} '
         f'    ++output_file={output_dir}/eval-results/{benchmark}/{output_name} '
