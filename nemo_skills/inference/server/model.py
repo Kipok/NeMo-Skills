@@ -410,6 +410,10 @@ class OpenAIModel(BaseModel):
 
         return metadata, outputs
 
+    def preprocess_request(self, request: dict):
+        """OpenAI doesn't support top-k, so not making any changes here."""
+        pass
+
     def _generate_single(
         self,
         prompt: dict,
