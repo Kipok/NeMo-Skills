@@ -14,7 +14,7 @@
 
 ansi2html
 dash
-dash_ache
+dash-ace
 dash_bootstrap_components
 hydra-core
 joblib
