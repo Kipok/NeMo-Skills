@@ -36,7 +36,7 @@ def get_cmd(module, script, extra_arguments):
         cmd = f"python -m {module} "
 
     cmd += f" {extra_arguments} "
-    cmd = f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && " f"cd /nemo_run/code && " f"{cmd}"
+    cmd = f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && cd /nemo_run/code && {cmd}"
     return cmd
 
 
@@ -63,7 +63,7 @@ def script(
     script: str = typer.Option(
         None,
         help=(
-            "Path to the python script to run. The script must in the git index "
+            "Path to the python script to run. The script must be in the git index "
             "of the directory where this command is run. The relative path to the script "
             "from the current working directory should be provided."
         ),
