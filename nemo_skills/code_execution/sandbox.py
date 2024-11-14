@@ -17,6 +17,7 @@ import glob
 import json
 import logging
 import os
+import re
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from itertools import zip_longest
@@ -451,7 +452,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                         elif answer_format == "lean" or answer_format == "lean-stat":
                             map_to_future[predicted_proof] = executor.submit(
                                 self.is_proof_correct,
-                                predicted_answer,
+                                predicted_proof,
                                 timeout=timeout,
                             )
                     else:
