@@ -32,7 +32,8 @@ class CodeExecutionConfig:
     stop_on_code_error: bool = False
 
 
-class CodeExecutionWrapper:
+# TODO: can we not inherit, but still reuse the generate code?
+class CodeExecutionWrapper(BaseModel):
     def __init__(self, model: BaseModel, sandbox: Sandbox, config: CodeExecutionConfig):
         self.model = model
         self.sandbox = sandbox
