@@ -20,7 +20,6 @@ import os
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Union
 
 import openai
 import requests
@@ -85,7 +84,6 @@ class BaseModel(abc.ABC):
         repetition_penalty: float | list[float] = 1.0,
         random_seed: int | list[int] = 0,
         stop_phrases: list[str] | list[list[str]] | None = None,
-        remove_stop_phrases: bool = True,
     ) -> list[dict]:
         """If the engine supports inflight-batching of requests, you only need to define this method.
 
@@ -143,7 +141,6 @@ class BaseModel(abc.ABC):
             for request_idx in range(len(prompts)):
                 request = {key: value[request_idx] for key, value in kwargs.items()}
                 request['prompt'] = prompts[request_idx]
-                request['remove_stop_phrases'] = remove_stop_phrases
                 self.preprocess_request(request)
                 futures.append(executor.submit(self._generate_single, **request))
         outputs = [future.result() for future in futures]
@@ -516,7 +513,6 @@ class VLLMModel(BaseModel):
         repetition_penalty: float = 1.0,
         random_seed: int = 0,
         stop_phrases: list[str] | None = None,
-        remove_stop_phrases: bool = True,
     ) -> dict:
         if isinstance(prompt, dict):
             raise NotImplementedError("TODO: need to add this support, but not implemented yet.")
