@@ -13,6 +13,7 @@
 # limitations under the License.
 
 
+import logging
 import multiprocessing
 import os
 import resource
@@ -109,4 +110,6 @@ def execute():
 
 
 if __name__ == '__main__':
+    logger = logging.getLogger()
+    logger.setLevel(logging.ERROR)
     app.run(port=6000)
