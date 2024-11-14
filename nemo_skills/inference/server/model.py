@@ -160,9 +160,9 @@ class TRTLLMModel(BaseModel):
     A good default value is 16-32 times bigger than the model's max batch size.
     """
 
-    def generate(
+    def _generate_single(
         self,
-        prompts: list[str | dict],
+        prompt: str | dict,
         tokens_to_generate: int = 512,
         temperature: float = 0.0,
         top_p: float = 0.95,
@@ -170,13 +170,13 @@ class TRTLLMModel(BaseModel):
         repetition_penalty: float = 1.0,
         random_seed: int = 0,
         stop_phrases: list[str] | None = None,
-        remove_stop_phrases: bool = True,
     ) -> list[dict]:
-        if isinstance(prompts[0], dict):
+        if isinstance(prompt, dict):
             raise NotImplementedError("trtllm server does not support OpenAI \"messages\" as prompt.")
         if stop_phrases is None:
             stop_phrases = []
         request = {
+            "prompt": prompt,
             "tokens_to_generate": tokens_to_generate,
             "temperature": temperature,
             "top_k": top_k,
@@ -185,44 +185,26 @@ class TRTLLMModel(BaseModel):
             "repetition_penalty": repetition_penalty,
             "stop_words_list": stop_phrases,
         }
-        preprocess_request(request)
-
-        generation_ids = []
-
-        for prompt in prompts:
-            request["prompt"] = prompt
-            generation_ids.append(
-                self.requests_lib.put(
-                    url="http://{}:{}/start_generation".format(self.server_host, self.server_port),
-                    data=json.dumps(request),
-                    headers={"Content-Type": "application/json"},
-                ).json()
-            )
-
-        outputs = [None] * len(generation_ids)
-        finished_count = 0
-        last_time = time.time()
-        while finished_count < len(generation_ids):
+        # TODO: change this back to a single command to get generation as we moved async part to the client
+        generation_id = self.requests_lib.put(
+            url="http://{}:{}/start_generation".format(self.server_host, self.server_port),
+            data=json.dumps(request),
+            headers={"Content-Type": "application/json"},
+        ).json()
+        start_time = time.time()
+        output = None
+        while output is None:
             time.sleep(0.1)
-            for pos, generation_id in enumerate(generation_ids):
-                if outputs[pos] is not None:
-                    continue
-                result = self.requests_lib.put(
-                    url="http://{}:{}/get_result".format(self.server_host, self.server_port),
-                    data=json.dumps({'generation_id': generation_id}),
-                    headers={"Content-Type": "application/json"},
-                ).json()
-                if result is not None:
-                    finished_count += 1
-                    outputs[pos] = {'generation': result}
-                    last_time = time.time()
+            output = self.requests_lib.put(
+                url="http://{}:{}/get_result".format(self.server_host, self.server_port),
+                data=json.dumps({'generation_id': generation_id}),
+                headers={"Content-Type": "application/json"},
+            ).json()
             # a hack to make sure we never hang indefinitely and
             # always abort the job if something is stuck in trt engine
-            if time.time() - last_time > 300:
+            if time.time() - start_time > 300:
                 raise RuntimeError("TRTLLM server is stuck, aborting the job. Please report this!")
-        if remove_stop_phrases:
-            postprocess_output(outputs, stop_phrases)
-        return outputs
+        return {'generation': output}
 
 
 class NemoModel(BaseModel):
