@@ -216,7 +216,6 @@ def get_server_command(
         f"nvidia-smi && "
         f"cd /nemo_run/code && "
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"export HF_TOKEN={get_token()} && "
         f"{server_start_cmd} "
     )
     return server_cmd, num_tasks
