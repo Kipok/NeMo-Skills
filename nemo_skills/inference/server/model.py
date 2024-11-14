@@ -208,6 +208,50 @@ class TRTLLMModel(BaseModel):
 
 
 class NemoModel(BaseModel):
+    def _generate_single(
+        self,
+        prompt: str | dict,
+        tokens_to_generate: int | list[int] = 512,
+        temperature: float | list[float] = 0.0,
+        top_p: float | list[float] = 0.95,
+        top_k: int | list[int] = 0,
+        repetition_penalty: float | list[float] = 1.0,
+        random_seed: int | list[int] = 0,
+        stop_phrases: list[str] | list[list[str]] | None = None,
+    ) -> list[dict]:
+        """If the engine supports inflight-batching of requests, you only need to define this method.
+
+        We will call it in threads on the list of prompts.
+        """
+        if isinstance(prompt, dict):
+            raise NotImplementedError("NeMo server does not support OpenAI \"messages\" as prompt.")
+        if stop_phrases is None:
+            stop_phrases = []
+        request = {
+            "sentences": [prompt],
+            "tokens_to_generate": tokens_to_generate,
+            "temperature": temperature,
+            "top_k": top_k,
+            "top_p": top_p,
+            "random_seed": random_seed,
+            "repetition_penalty": repetition_penalty,
+            "end_strings": ["<|endoftext|>"] + stop_phrases,
+        }
+        generations = self.requests_lib.put(
+            url="http://{}:{}/generate".format(self.server_host, self.server_port),
+            data=json.dumps(request),
+            headers={"Content-Type": "application/json"},
+        ).json()
+        # we need to remove the original prompt as nemo always returns it
+        output = generations['sentences'][0]
+        # when the prompt starts from special tokens like bos, nemo will remove them,
+        # so we need this hack to find where to start the cut
+        begin_idx = 0
+        while begin_idx < len(prompt) and not prompt[begin_idx:].startswith(output[:20]):
+            begin_idx += 1
+        output = {'generation': output[(len(prompt) - begin_idx) :]}
+        return output
+
     def generate(
         self,
         prompts: list[str | dict],
@@ -220,6 +264,7 @@ class NemoModel(BaseModel):
         stop_phrases: list[str] | None = None,
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
+        # we are overriding generate directly, since nemo doesn't support inflight batching
         if isinstance(prompts[0], dict):
             raise NotImplementedError("NeMo server does not support OpenAI \"messages\" as prompt.")
         if stop_phrases is None:
@@ -234,7 +279,7 @@ class NemoModel(BaseModel):
             "repetition_penalty": repetition_penalty,
             "end_strings": ["<|endoftext|>"] + stop_phrases,
         }
-        preprocess_request(request)
+        self.preprocess_request(request)
         generations = self.requests_lib.put(
             url="http://{}:{}/generate".format(self.server_host, self.server_port),
             data=json.dumps(request),
@@ -251,7 +296,8 @@ class NemoModel(BaseModel):
             outputs[idx] = {'generation': generation[(len(prompts[idx]) - begin_idx) :]}
 
         if remove_stop_phrases:
-            postprocess_output(outputs, stop_phrases)
+            for output in outputs:
+                output['generation'] = trim_after_stop_phrases(output['generation'], stop_phrases)
         return outputs
 
 
