@@ -41,7 +41,7 @@ def main():
         f'    --enforce-eager '
         f'    --disable-log-requests '
         f'    --disable-log-stats '
-        f'    {extra_arguments} | grep -v "/v1/completions"'
+        f'    {extra_arguments} '
     )
 
     subprocess.run(cmd, shell=True, check=True)
