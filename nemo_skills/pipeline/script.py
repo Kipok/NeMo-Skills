@@ -67,9 +67,9 @@ def script(
     script: str = typer.Option(
         None,
         help=(
-            "Path to the python script to run. "
-            "If specified, will run this script instead of the module. "
-            "Will be passed as the first argument to the module."
+            "Path to the python script to run. The script must in the git index "
+            "of the directory where this command is run. The relative path to the script "
+            "from the current working directory should be provided."
         ),
     ),
     num_gpus: int = typer.Option(1, help="Number of GPUs to use"),
