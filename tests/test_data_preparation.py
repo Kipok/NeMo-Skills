@@ -14,16 +14,14 @@
 
 import hashlib
 import sys
-import uuid
+import os
 from pathlib import Path
-
-import yaml
 
 from nemo_skills.pipeline import wrap_arguments
 from nemo_skills.pipeline.cli import run_cmd
 
 sys.path.append(str(Path(__file__).absolute().parent / 'gpu-tests'))
-from test_train import docker_run
+# from test_train import docker_run
 
 
 def compute_md5(file_path):
@@ -35,17 +33,19 @@ def compute_md5(file_path):
 
 
 def docker_rm_and_mkdir(file_):
-    directory = Path(file_).absolute().parent
-    test_config_path = Path(__file__).absolute().parent / "gpu-tests" / "test-local.yaml"
-    config = yaml.safe_load(open(test_config_path).read())
-    volumes = config['mounts']
-    container = config['containers']['nemo-skills']
-    rm_mkdir_cmd = f"rm -f {str(file_)} && mkdir -p {str(directory)}"
-    docker_run(
-        image_name=container,
-        volume_paths=volumes,
-        command=rm_mkdir_cmd,
-    )
+    Path(file_).unlink(missing_ok=True)
+    Path(file_).parent.mkdir(parents=True, exist_ok=True)
+    # directory = Path(file_).absolute().parent
+    # test_config_path = Path(__file__).absolute().parent / "gpu-tests" / "test-local.yaml"
+    # config = yaml.safe_load(open(test_config_path).read())
+    # volumes = config['mounts']
+    # container = config['containers']['nemo-skills']
+    # rm_mkdir_cmd = f"rm -f {str(file_)} && mkdir -p {str(directory)}"
+    # docker_run(
+    #     image_name=container,
+    #     volume_paths=volumes,
+    #     command=rm_mkdir_cmd,
+    # )
 
 
 def test_multiple_files():
