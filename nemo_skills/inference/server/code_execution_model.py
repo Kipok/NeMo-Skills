@@ -91,6 +91,8 @@ class CodeExecutionWrapper:
                 request['prompt'] += format_code_output(
                     execution_dict, code_output_begin, code_output_end, code_output_format
                 )
+            else:  # if not code was generated, we need to finish
+                break
 
         # removing original prompt
         return {'generation': request['prompt'][len(prompt) :]}
