@@ -17,15 +17,14 @@ containers:
   vllm: /lustre/fsw/portfolios/llmservice/users/igitman/llm/images/nemo-skills-vllm-0.4.1.sqsh
   nemo: /lustre/fsw/portfolios/llmservice/users/adithyare/container_sqsh_files/nemofw24.07.mlm.080224.sqsh
   mamba: /lustre/fsw/portfolios/llmservice/users/adithyare/container_sqsh_files/nemofw24.07.mlm.080224.sqsh
-  nemo_openai: /lustre/fsw/portfolios/llmservice/projects/llmservice_modelalignment_sft/rlhf/containers/aligner:terryk-trtllm-v13.sqsh
-  mamba_openai: /lustre/fsw/portfolios/llmservice/users/adithyare/container_sqsh_files/nemofw24.07.mlm.080224.sqsh
+  nemo_openai: /lustre/fsw/portfolios/llmservice/users/adithyare/container_sqsh_files/nemotron5.111324.sqsh
+  mamba_openai: /lustre/fsw/portfolios/llmservice/users/adithyare/container_sqsh_files/nemotron5.111324.sqsh
   sandbox: igitman/nemo-skills-sandbox:0.4.1
   nemo-skills: igitman/nemo-skills:0.4.1
 
 mounts:
   - <SOMEPATH_ON_CW_WHICH_WILL_HAVE_EVAL_RESULTS>:/eval_results
-  - /lustre/fsw/portfolios/llmservice/users/adithyare/code/NeMo:/NeMo
-  - /lustre/fsw/portfolios/llmservice/users/adithyare/code/megatron-lm:/opt/megatron-lm
+  - /lustre/fsw/portfolios/llmservice/users/adithyare/code/NeMo_mamba:/NeMo
   - /lustre/fsw/portfolios/llmservice/users/jiaqiz/results/:/results
   # you also need to mount your own workspace folder (or any other folder you need)
   # - /lustre/fsw/portfolios/llmservice/users/igitman:/workspace
