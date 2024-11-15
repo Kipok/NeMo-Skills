@@ -585,7 +585,7 @@ def get_executor(
 
         if use_root:
             additional_kwargs = dict()
-        else: # otherwise, use the current user
+        else:  # otherwise, use the current user
             # Note: numeric user/group id has to be used here, if we use the name, it will not work
             # because in that case docker will try to resolve the name to the uid and it will fail
             # because the user does not exist in the container and the /etc/passwd file
