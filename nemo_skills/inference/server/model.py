@@ -185,7 +185,7 @@ class TRTLLMModel(BaseModel):
             "stop_words_list": stop_phrases,
         }
         try:
-            output = self.requests_lib.put(
+            output_dict = self.requests_lib.put(
                 url="http://{}:{}/generate".format(self.server_host, self.server_port),
                 data=json.dumps(request),
                 headers={"Content-Type": "application/json"},
@@ -196,7 +196,7 @@ class TRTLLMModel(BaseModel):
             LOG.error("Please report this! Request timed out for prompt: %s", prompt)
             raise
 
-        return {'generation': output}
+        return output_dict
 
 
 class NemoModel(BaseModel):
@@ -290,6 +290,8 @@ class NemoModel(BaseModel):
         if remove_stop_phrases:
             for output in outputs:
                 output['generation'] = trim_after_stop_phrases(output['generation'], stop_phrases)
+
+        # TODO: return num_generated_tokens as well
         return outputs
 
 
