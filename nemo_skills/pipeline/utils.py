@@ -586,7 +586,7 @@ def get_executor(
         if use_root:
             additional_kwargs = dict()
         else: # otherwise, use the current user
-            # Note: numeric user id has to be used here, if we use the name, it will not work
+            # Note: numeric user/group id has to be used here, if we use the name, it will not work
             # because in that case docker will try to resolve the name to the uid and it will fail
             # because the user does not exist in the container and the /etc/passwd file
             # has not been mounted (it would be mounted after resolving uid).
@@ -596,7 +596,8 @@ def get_executor(
             # container for some reason, we would have to mount the /etc/passwd file first by
             # adding it in read-only mode to the mounts list, like "/etc/passwd:/etc/passwd:ro",
             # but there would still be no user-specific variables like $USER and $HOME.
-            additional_kwargs = {"user": os.getuid()}
+            # Similar for the group id and /etc/group file.
+            additional_kwargs = {"user": f"{os.getuid()}:{os.getgid()}"}
         return DockerExecutor(
             container_image=container,
             packager=packager,
