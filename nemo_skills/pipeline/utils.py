@@ -570,6 +570,7 @@ def get_executor(
     mounts=None,
     partition=None,
     dependencies=None,
+    use_root=False,
 ):
     env_vars = get_env_variables(cluster_config)
     config_mounts = get_mounts_from_config(cluster_config, env_vars)
@@ -582,6 +583,20 @@ def get_executor(
 
         env_vars["PYTHONUNBUFFERED"] = "1"  # this makes sure logs are streamed right away
 
+        if use_root:
+            additional_kwargs = dict()
+        else: # otherwise, use the current user
+            # Note: numeric user id has to be used here, if we use the name, it will not work
+            # because in that case docker will try to resolve the name to the uid and it will fail
+            # because the user does not exist in the container and the /etc/passwd file
+            # has not been mounted (it would be mounted after resolving uid).
+            # Also, since we are using the numeric user id, there is no need to mount the
+            # /etc/passwd file. However, this does mean there will be no values for user-specific
+            # variables like $USER and $HOME. If we wanted the access to the username in the
+            # container for some reason, we would have to mount the /etc/passwd file first by
+            # adding it in read-only mode to the mounts list, like "/etc/passwd:/etc/passwd:ro",
+            # but there would still be no user-specific variables like $USER and $HOME.
+            additional_kwargs = {"user": os.getuid()}
         return DockerExecutor(
             container_image=container,
             packager=packager,
@@ -591,6 +606,7 @@ def get_executor(
             num_gpus=gpus_per_node,
             network="host",
             env_vars=env_vars,
+            additional_kwargs=additional_kwargs,
         )
 
     partition = partition or cluster_config.get("partition")
