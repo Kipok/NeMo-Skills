@@ -428,18 +428,20 @@ def get_packager(cluster_config, env_vars):
     include_patterns = []
     include_pattern_relative_paths = []
 
+    if repo_path is not None:
+        include_patterns.append(str(Path(repo_path) / '*'))
+        include_pattern_relative_paths.append(repo_path)
+
     try:
-        if repo_path is None:
-            # are we in a git repo? If yes, we are uploading the current code
-            repo_path = (
-                subprocess.run(
-                    ["git", "rev-parse", "--show-toplevel"],
-                    capture_output=True,
-                    check=True,
-                )
-                .stdout.decode()
-                .strip()
+        repo_path = (
+            subprocess.run(
+                ["git", "rev-parse", "--show-toplevel"],
+                capture_output=True,
+                check=True,
             )
+            .stdout.decode()
+            .strip()
+        )
 
         # Do we have nemo_skills package in this repo? If no, we need to pick it up from installed location
         if not (Path(repo_path) / 'nemo_skills').is_dir():
@@ -459,7 +461,6 @@ def get_packager(cluster_config, env_vars):
 
         check_uncommited_changes = not bool(os.getenv('NEMO_SKILLS_DISABLE_UNCOMMITTED_CHANGES_CHECK', 0))
         return run.GitArchivePackager(
-            basepath=repo_path,
             include_pattern=include_patterns,
             include_pattern_relative_path=include_pattern_relative_paths,
             check_uncommitted_changes=check_uncommited_changes,
@@ -469,10 +470,6 @@ def get_packager(cluster_config, env_vars):
             "Not running from a git repo, trying to upload installed package. Make sure there are no extra files in %s",
             str(Path(__file__).absolute().parents[1] / '*'),
         )
-
-        if repo_path is not None:
-            include_patterns.append(str(Path(repo_path) / '*'))
-            include_pattern_relative_paths.append(repo_path)
 
         include_patterns.append(str(Path(__file__).absolute().parents[1] / '*'))
         include_pattern_relative_paths.append(str(Path(__file__).absolute().parents[2]))
