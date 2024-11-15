@@ -64,10 +64,7 @@ def get_hf_to_trtllm_cmd(
 
     tmp_engine_dir = f"{output_model}-tmp"
 
-    setup_cmd = (
-        f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"cd /nemo_run/code && "
-    )
+    setup_cmd = f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && " f"cd /nemo_run/code && "
 
     hf_to_trtllm_cmd = (
         f"python -m nemo_skills.conversion.hf_to_trtllm_{model_type} "
