@@ -40,17 +40,11 @@ def docker_rm_and_mkdir(file_):
     config = yaml.safe_load(open(test_config_path).read())
     volumes = config['mounts']
     container = config['containers']['nemo-skills']
-    rm_cmd = f"rm -f {str(file_)}"
-    mkdir_cmd = f"mkdir -p {str(directory)}"
+    rm_mkdir_cmd = f"rm -f {str(file_)} && mkdir -p {str(directory)}"
     docker_run(
         image_name=container,
         volume_paths=volumes,
-        command=rm_cmd,
-    )
-    docker_run(
-        image_name=container,
-        volume_paths=volumes,
-        command=mkdir_cmd,
+        command=rm_mkdir_cmd,
     )
 
 
@@ -62,7 +56,6 @@ def test_multiple_files():
         cluster='test-local',
         config_dir=Path(__file__).parent / 'gpu-tests',
         log_dir='/tmp/nemo-skills-tests/test_multiple_files',
-        num_gpus=0,
         ctx=wrap_arguments(
             f"    ++input_files='tests/data/output-rs*.test' "
             f"    ++output_path={output_file} "
@@ -96,7 +89,6 @@ def test_exclude_keys():
         cluster='test-local',
         config_dir=Path(__file__).parent / 'gpu-tests',
         log_dir='/tmp/nemo-skills-tests/test_exclude_keys',
-        num_gpus=0,
         ctx=wrap_arguments(
             f"    ++input_files='tests/data/output-rs*.test' "
             f"    ++output_path={output_file} "
@@ -130,7 +122,6 @@ def test_code_sft_data():
         cluster='test-local',
         config_dir=Path(__file__).parent / 'gpu-tests',
         log_dir='/tmp/nemo-skills-tests/test_code_sft_data',
-        num_gpus=0,
         ctx=wrap_arguments(
             f"    --config-name=prepare_code_sft_data "
             f"    ++preprocessed_dataset_files='tests/data/code-output.test' "
@@ -159,7 +150,6 @@ def test_openmathinstruct2():
         cluster='test-local',
         config_dir=Path(__file__).parent / 'gpu-tests',
         log_dir='/tmp/nemo-skills-tests/test_openmathinstruct2',
-        num_gpus=0,
         ctx=wrap_arguments(
             "++preprocessed_dataset_files='tests/data/openmathinstruct2.test' "
             f"++output_path={output_file} "

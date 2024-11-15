@@ -68,7 +68,7 @@ def run_cmd(
             "from the current working directory should be provided."
         ),
     ),
-    num_gpus: int = typer.Option(1, help="Number of GPUs to use"),
+    num_gpus: int | None = typer.Option(None, help="Number of GPUs to use"),
     run_after: str = typer.Option(
         None, help="Can specify an expname that needs to be completed before this one starts"
     ),

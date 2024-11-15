@@ -669,6 +669,10 @@ def add_task(
         dependencies = tuple(get_exp_handles(run_after))
     else:
         dependencies = None
+
+    if num_gpus is None and cluster_config['executor'] == "slurm":
+        num_gpus = 1
+
     commands = []
     executors = []
     # assuming server always has the largest resources request, so it needs to go first
