@@ -185,25 +185,12 @@ class TRTLLMModel(BaseModel):
             "repetition_penalty": repetition_penalty,
             "stop_words_list": stop_phrases,
         }
-        # TODO: change this back to a single command to get generation as we moved async part to the client
-        generation_id = self.requests_lib.put(
-            url="http://{}:{}/start_generation".format(self.server_host, self.server_port),
+        output = self.requests_lib.put(
+            url="http://{}:{}/generate".format(self.server_host, self.server_port),
             data=json.dumps(request),
             headers={"Content-Type": "application/json"},
+            timeout=300,  # to make sure we never hand indefinitely and abort the job if something is stuck in trtllm
         ).json()
-        start_time = time.time()
-        output = None
-        while output is None:
-            time.sleep(0.1)
-            output = self.requests_lib.put(
-                url="http://{}:{}/get_result".format(self.server_host, self.server_port),
-                data=json.dumps({'generation_id': generation_id}),
-                headers={"Content-Type": "application/json"},
-            ).json()
-            # a hack to make sure we never hang indefinitely and
-            # always abort the job if something is stuck in trt engine
-            if time.time() - start_time > 300:
-                raise RuntimeError("TRTLLM server is stuck, aborting the job. Please report this!")
         return {'generation': output}
 
 
