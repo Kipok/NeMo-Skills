@@ -432,12 +432,18 @@ def get_packager():
 
         # Do we have nemo_skills package in this repo? If no, we need to pick it up from installed location
         if not (Path(repo_path) / 'nemo_skills').is_dir():
+
+            if 'NEMO_SKILLS_GIT_PACKAGE_ROOT_DIR' in os.environ:
+                # if we are in an external git repo but a library wants to upload the installed package
+                include_pattern = str(Path(os.environ['NEMO_SKILLS_GIT_PACKAGE_ROOT_DIR']) / '*')
+            else:
+                include_pattern = str(Path(__file__).absolute().parents[1] / '*')
+
             logging.warning(
                 "Not running from NeMo-Skills repo, trying to upload installed package. "
                 "Make sure there are no extra files in %s",
-                str(Path(__file__).absolute().parents[1] / '*'),
+                include_pattern,
             )
-            include_pattern = str(Path(__file__).absolute().parents[1] / '*')
         else:
             # picking up local dataset files if we are in the right repo
             include_pattern = str(Path(__file__).absolute().parents[1] / "dataset/**/*.jsonl")
