@@ -468,6 +468,7 @@ class VLLMModel(BaseModel):
         temperature: float | list[float] = 0.0,
         top_p: float | list[float] = 0.95,
         top_k: int | list[int] = 0,
+        logprobs: int | list[int] = None,
         repetition_penalty: float | list[float] = 1.0,
         random_seed: int | list[int] = 0,
         stop_phrases: list[str] | list[list[str]] | None = None,
@@ -486,6 +487,7 @@ class VLLMModel(BaseModel):
             'repetition_penalty': repetition_penalty,
             'random_seed': random_seed,
             'stop_phrases': stop_phrases,
+            'logprobs': logprobs,
         }
         for key, value in kwargs.items():
             is_list = False
@@ -514,13 +516,13 @@ class VLLMModel(BaseModel):
                     'echo': False,
                     'frequency_penalty': 0.0,
                     'presence_penalty': 0.0,
-                    'logprobs': None,
+                    'logprobs': kwargs['logprobs'][request_idx],
                     'logit_bias': None,
                     'num_generations': 1,
                 }
                 preprocess_request(request)
                 futures.append(executor.submit(self.prompt_api, **request))
-        outputs = [{'generation': future.result()[0]} for future in futures]
+        outputs = [future.result()[0] for future in futures]
         if remove_stop_phrases:
             postprocess_output(outputs, stop_phrases)
 
@@ -590,7 +592,12 @@ class VLLMModel(BaseModel):
                 # adding back stop words - somehow sometimes it returns token ids, so we do not handle those for now
                 if choice.finish_reason == "stop" and isinstance(choice.stop_reason, str):
                     output += choice.stop_reason
-                responses.append(output)
+                response = {'generation': output}
+                if choice.logprobs:
+                    response['logprobs'] = choice.logprobs.token_logprobs
+                    response['tokens'] = choice.logprobs.tokens
+                    response['top_logprobs'] = choice.logprobs.top_logprobs
+                responses.append(response)
         return responses
 
     def get_model_name_from_server(self):
