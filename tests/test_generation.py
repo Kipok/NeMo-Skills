@@ -74,7 +74,7 @@ def test_eval_mtbench_api():
     if not os.getenv('NVIDIA_API_KEY'):
         pytest.skip("Define NVIDIA_API_KEY to run this test")
 
-    Path('/tmp/nemo-skills-tests').mkdir(exist_ok=True, parents=True)
+    Path('/tmp/nemo-skills-tests/mtbench-api').mkdir(exist_ok=True, parents=True)
 
     cmd = (
         f"ns eval "
