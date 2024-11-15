@@ -416,43 +416,51 @@ def cluster_upload(tunnel: SSHTunnel, local_file: str, remote_dir: str):
     print(f"\nTransfer complete")
 
 
-def get_packager():
+def get_packager(cluster_config, env_vars):
     """Will check if we are running from a git repo and use git packager or default packager otherwise."""
+    # Check for repo root if available
+    repo_path = None
+    if 'NEMO_SKILLS_GIT_PACKAGE_ROOT_DIR' in os.environ:
+        repo_path = str(Path(os.environ['NEMO_SKILLS_GIT_PACKAGE_ROOT_DIR']))
+    elif 'NEMO_SKILLS_GIT_PACKAGE_ROOT_DIR' in env_vars:
+        repo_path = str(Path(env_vars['NEMO_SKILLS_GIT_PACKAGE_ROOT_DIR']))
+
+    include_patterns = []
+    include_pattern_relative_paths = []
+
     try:
-        # are we in a git repo? If yes, we are uploading the current code
-        repo_path = (
-            subprocess.run(
-                ["git", "rev-parse", "--show-toplevel"],
-                capture_output=True,
-                check=True,
+        if repo_path is None:
+            # are we in a git repo? If yes, we are uploading the current code
+            repo_path = (
+                subprocess.run(
+                    ["git", "rev-parse", "--show-toplevel"],
+                    capture_output=True,
+                    check=True,
+                )
+                .stdout.decode()
+                .strip()
             )
-            .stdout.decode()
-            .strip()
-        )
 
         # Do we have nemo_skills package in this repo? If no, we need to pick it up from installed location
         if not (Path(repo_path) / 'nemo_skills').is_dir():
-
-            if 'NEMO_SKILLS_GIT_PACKAGE_ROOT_DIR' in os.environ:
-                # if we are in an external git repo but a library wants to upload the installed package
-                include_pattern = str(Path(os.environ['NEMO_SKILLS_GIT_PACKAGE_ROOT_DIR']) / '*')
-            else:
-                include_pattern = str(Path(__file__).absolute().parents[1] / '*')
-
+            skills_include_pattern = str(Path(__file__).absolute().parents[1] / '*')
             logging.warning(
                 "Not running from NeMo-Skills repo, trying to upload installed package. "
                 "Make sure there are no extra files in %s",
-                include_pattern,
+                skills_include_pattern,
             )
         else:
             # picking up local dataset files if we are in the right repo
-            include_pattern = str(Path(__file__).absolute().parents[1] / "dataset/**/*.jsonl")
-        include_pattern_relative_path = str(Path(__file__).absolute().parents[2])
+            skills_include_pattern = str(Path(__file__).absolute().parents[1] / "dataset/**/*.jsonl")
+        skills_include_pattern_relative_path = str(Path(__file__).absolute().parents[2])
+
+        include_patterns.append(skills_include_pattern)
+        include_pattern_relative_paths.append(skills_include_pattern_relative_path)
 
         check_uncommited_changes = not bool(os.getenv('NEMO_SKILLS_DISABLE_UNCOMMITTED_CHANGES_CHECK', 0))
         return run.GitArchivePackager(
-            include_pattern=include_pattern,
-            include_pattern_relative_path=include_pattern_relative_path,
+            include_pattern=include_patterns,
+            include_pattern_relative_path=include_pattern_relative_paths,
             check_uncommitted_changes=check_uncommited_changes,
         )
     except subprocess.CalledProcessError:
@@ -460,9 +468,13 @@ def get_packager():
             "Not running from a git repo, trying to upload installed package. Make sure there are no extra files in %s",
             str(Path(__file__).absolute().parents[1] / '*'),
         )
+
+        include_patterns.append(str(Path(__file__).absolute().parents[1] / '*'))
+        include_pattern_relative_paths.append(str(Path(__file__).absolute().parents[2]))
+
         return run.PatternPackager(
-            include_pattern=str(Path(__file__).absolute().parents[1] / '*'),
-            relative_path=str(Path(__file__).absolute().parents[2]),
+            include_pattern=include_patterns,
+            relative_path=include_pattern_relative_paths,
         )
 
 
@@ -573,7 +585,7 @@ def get_executor(
     config_mounts = get_mounts_from_config(cluster_config, env_vars)
 
     mounts = mounts or config_mounts
-    packager = get_packager()
+    packager = get_packager(cluster_config, env_vars)
     if cluster_config["executor"] == "local":
         if num_nodes > 1:
             raise ValueError("Local executor does not support multi-node execution")
