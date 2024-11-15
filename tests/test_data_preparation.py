@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import hashlib
-import sys
 import os
+import sys
 from pathlib import Path
 
 from nemo_skills.pipeline import wrap_arguments
