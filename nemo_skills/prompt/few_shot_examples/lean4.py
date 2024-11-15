@@ -33,7 +33,6 @@ minif2f_deepseek_fewshot = [
 
 math_to_lean4_fewshot = [
     {
-        ##
         "header": "import Mathlib\n\nopen Complex Filter Function Metric Finset\nopen scoped BigOperators Topology\n\n",
         "problem": "What is the following value when expressed as a common fraction: $$\\frac{1}{2^{1}}+\\frac{1}{2^{2}}+\\frac{1}{2^{3}}+\\cdots + \\frac{1}{2^{8}}+\\frac{1}{2^{9}}+\\frac{1}{2^{10}}?$$",
         "predicted_answer": "\\frac{1023}{1024}",
@@ -77,5 +76,5 @@ math_to_lean4_fewshot = [
 
 examples_map = {
     "minif2f_deepseek_fewshot": minif2f_deepseek_fewshot,
-    "math_to_lean4_fewshot": math_to_lean4_fewshot[:3],
+    "math_to_lean4_fewshot": math_to_lean4_fewshot,
 }
