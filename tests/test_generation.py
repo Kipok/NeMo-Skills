@@ -74,6 +74,8 @@ def test_eval_mtbench_api():
     if not os.getenv('NVIDIA_API_KEY'):
         pytest.skip("Define NVIDIA_API_KEY to run this test")
 
+    Path('/tmp/nemo-skills-tests').mkdir(exist_ok=True, parents=True)
+
     cmd = (
         f"ns eval "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent / 'gpu-tests'} "
