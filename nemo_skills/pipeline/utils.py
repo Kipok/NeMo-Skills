@@ -425,6 +425,7 @@ def get_packager(cluster_config, env_vars):
     elif 'NEMO_SKILLS_GIT_PACKAGE_ROOT_DIR' in env_vars:
         repo_path = str(Path(env_vars['NEMO_SKILLS_GIT_PACKAGE_ROOT_DIR']))
 
+    # TODO: Add support to read cluster_config for additional include patterns
     include_patterns = []
     include_pattern_relative_paths = []
 
