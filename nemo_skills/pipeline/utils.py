@@ -420,10 +420,10 @@ def get_packager(cluster_config, env_vars):
     """Will check if we are running from a git repo and use git packager or default packager otherwise."""
     # Check for repo root if available
     repo_path = None
-    if 'NEMO_SKILLS_GIT_PACKAGE_ROOT_DIR' in os.environ:
-        repo_path = str(Path(os.environ['NEMO_SKILLS_GIT_PACKAGE_ROOT_DIR']))
-    elif 'NEMO_SKILLS_GIT_PACKAGE_ROOT_DIR' in env_vars:
-        repo_path = str(Path(env_vars['NEMO_SKILLS_GIT_PACKAGE_ROOT_DIR']))
+    if 'NEMO_SKILLS_OVERRIDE_GIT_REPO' in os.environ:
+        repo_path = str(Path(os.environ['NEMO_SKILLS_OVERRIDE_GIT_REPO']))
+    elif 'NEMO_SKILLS_OVERRIDE_GIT_REPO' in env_vars:
+        repo_path = str(Path(env_vars['NEMO_SKILLS_OVERRIDE_GIT_REPO']))
 
     # TODO: Add support to read cluster_config for additional include patterns
     include_patterns = []
