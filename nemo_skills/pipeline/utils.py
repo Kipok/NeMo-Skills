@@ -457,6 +457,10 @@ def get_packager(cluster_config, env_vars):
         include_patterns.append(skills_include_pattern)
         include_pattern_relative_paths.append(skills_include_pattern_relative_path)
 
+        # try multiple patterns
+        include_patterns.append("/home/smajumdar/PycharmProjects/gradio-json-markdown/*")
+        include_pattern_relative_paths.append("/home/smajumdar/PycharmProjects/gradio-json-markdown")
+
         check_uncommited_changes = not bool(os.getenv('NEMO_SKILLS_DISABLE_UNCOMMITTED_CHANGES_CHECK', 0))
         return run.GitArchivePackager(
             basepath=repo_path,
