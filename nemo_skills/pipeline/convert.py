@@ -32,7 +32,6 @@ def get_nemo_to_hf_cmd(
 ):
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"export HF_TOKEN={get_token()} && "
         f"cd /nemo_run/code && "
         f"python -m nemo_skills.conversion.nemo_to_hf_{model_type} "
         f"    --in-path {input_model} "
@@ -67,7 +66,6 @@ def get_hf_to_trtllm_cmd(
 
     setup_cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"export HF_TOKEN={get_token()} && "
         f"cd /nemo_run/code && "
     )
 
@@ -112,7 +110,6 @@ def get_hf_to_nemo_cmd(
 
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"export HF_TOKEN={get_token()} && "
         f"cd /nemo_run/code && "
         f"python -m nemo_skills.conversion.hf_to_nemo_{model_type} "
         f"    --in-path {input_model} "
