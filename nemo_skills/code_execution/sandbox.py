@@ -350,7 +350,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                 line_dict["is_correct"] = map_to_future[
                     (line_dict["predicted_answer"], line_dict["expected_answer"])
                 ].result()
-            elif answer_format == "lean" or answer_format == "lean-stat":
+            elif answer_format == "lean4-proof" or answer_format == "lean4-statemente":
                 line_dict["proof_status"] = map_to_future[(line_dict["predicted_proof"])].result()
 
         data = []
@@ -388,7 +388,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                     "Set use_predicted_answer_key=False to re-extract"
                                 )
                        #TODO manually removing <｜begin▁of▁sentence｜> for trtllm 
-                    elif answer_format == "lean":
+                    elif answer_format == "lean4-proof":
                         if not use_predicted_proof_key:
                             generation = re.sub(r"^```(lean4)?\s*|\s*```$", "", line_dict["generation"])
                             line_dict["predicted_proof"] = line_dict["header"] + line_dict["formal_statement"] + generation
@@ -399,7 +399,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                     "predicted_proof key not found in the line_dict. "
                                     "Set use_predicted_proof_key=False to re-combine"
                                 )
-                    elif answer_format == "lean-stat":
+                    elif answer_format == "lean4-statement":
                         if not use_predicted_proof_key:
                             generation = re.sub(r"^```(lean4)?\s*|\s*```$", "", line_dict["generation"])
                             header = "import Mathlib\n\nopen Complex Filter Function Metric Finset\nopen scoped BigOperators Topology\n\n"
@@ -418,13 +418,13 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     predicted_proof = line_dict["predicted_proof"]
                     if answer_format == "natural_language" and (predicted_answer, gt_answer) in map_to_future:
                         continue
-                    elif (answer_format == "lean" or answer_format == "lean-stat") and predicted_proof in map_to_future:
+                    elif (answer_format == "lean4-proof" or answer_format == "lean4-statement") and predicted_proof in map_to_future:
                         continue
 
                     if (
                         ignore_cache
                         or (line_dict.get("is_correct") is None and answer_format == "natural_language")
-                        or (line_dict.get("proof_status") is None and (answer_format == "lean" or answer_format == "lean-stat"))
+                        or (line_dict.get("proof_status") is None and (answer_format == "lean4-proof" or answer_format == "lean4-statement"))
                     ):
                         if answer_format == "natural_language":
                             map_to_future[(predicted_answer, gt_answer)] = executor.submit(
@@ -435,7 +435,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                 tolerance=tolerance,
                                 timeout=timeout,
                             )
-                        elif answer_format == "lean" or answer_format == "lean-stat":
+                        elif answer_format == "lean4-proof" or answer_format == "lean4-statement":
                             map_to_future[predicted_proof] = executor.submit(
                                 self.is_proof_correct,
                                 predicted_proof,
@@ -444,7 +444,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     else:
                         if answer_format == "natural_language":
                             map_to_future[(predicted_answer, gt_answer)] = DummyFuture(line_dict["is_correct"])
-                        elif answer_format == "lean" or answer_format == "lean-stat":
+                        elif answer_format == "lean4-proof" or answer_format == "lean4-statement":
                             map_to_future[predicted_proof] = DummyFuture(line_dict["proof_status"])
 
             for file_handle in file_handles:
