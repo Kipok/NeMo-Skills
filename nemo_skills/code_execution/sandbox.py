@@ -387,7 +387,6 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                     "predicted_answer key not found in the line_dict. "
                                     "Set use_predicted_answer_key=False to re-extract"
                                 )
-                       #TODO manually removing <｜begin▁of▁sentence｜> for trtllm 
                     elif answer_format == "lean4-proof":
                         if not use_predicted_proof_key:
                             generation = re.sub(r"^```(lean4)?\s*|\s*```$", "", line_dict["generation"])
