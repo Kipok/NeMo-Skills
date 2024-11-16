@@ -382,7 +382,7 @@ class LeanEvaluatorConfig:
     ignore_cache: bool = False
 
 
-def eval_lean4(cfg):
+def eval_lean4_proof(cfg):
     eval_config = LeanEvaluatorConfig(**cfg.eval_config)
 
     sandbox = get_sandbox(**eval_config.sandbox)
@@ -390,11 +390,11 @@ def eval_lean4(cfg):
     eval_config_dict.pop('sandbox')
     sandbox.batch_evaluate_results(
         input_files=cfg.input_files,
-        answer_format='lean',
+        answer_format='lean4-proof',
         **eval_config_dict,
     )
 
-def eval_lean4_stat(cfg):
+def eval_lean4_statement(cfg):
     eval_config = LeanEvaluatorConfig(**cfg.eval_config)
 
     sandbox = get_sandbox(**eval_config.sandbox)
@@ -402,7 +402,7 @@ def eval_lean4_stat(cfg):
     eval_config_dict.pop('sandbox')
     sandbox.batch_evaluate_results(
         input_files=cfg.input_files,
-        answer_format='lean-stat',
+        answer_format='lean4-statement',
         **eval_config_dict,
     )
 
@@ -414,8 +414,8 @@ EVALUATOR_MAP = {
     'arena': eval_arena,
     'mt-bench': eval_mtbench,
     'answer_judgement': dummy_eval,
-    'lean4': eval_lean4,
-    'lean4-stat': eval_lean4_stat
+    'lean4': eval_lean4_proof,
+    'lean4-stat': eval_lean4_statement
 }
 
 
