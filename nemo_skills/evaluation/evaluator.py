@@ -414,8 +414,8 @@ EVALUATOR_MAP = {
     'arena': eval_arena,
     'mt-bench': eval_mtbench,
     'answer_judgement': dummy_eval,
-    'lean4': eval_lean4_proof,
-    'lean4-stat': eval_lean4_statement
+    'lean4-proof': eval_lean4_proof,
+    'lean4-statement': eval_lean4_statement
 }
 
 
