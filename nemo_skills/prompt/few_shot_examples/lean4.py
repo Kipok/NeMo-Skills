@@ -68,7 +68,7 @@ math_to_lean4_fewshot = [
         "header": "import Mathlib\n\nopen Complex Filter Function Metric Finset\nopen scoped BigOperators Topology\n\n",
         "problem": "Two standard six-faced dice are rolled. Jean wins if the product of the two numbers rolled is odd or a multiple of three, otherwise Allen wins. What is the probability that Jean wins? Express your answer as a common fraction.",
         "predicted_answer": "\\frac{2}{3}",
-        "formal_statement": "theorem user_theorem : (Finset.filter (fun x => (x.1 * x.2) % 2 = 1 ∨ (x.1 * x.2) % 3 = 0) (Finset.product (Finset.Icc 1 6) (Finset.Icc 1 6))).card (Finset.product (Finset.Icc 1 6) (Finset.Icc 1 6)).card = 2 / 3 := by\n",
+        "formal_statement": "theorem user_theorem : ((Finset.filter (fun x => (x.1 * x.2) % 2 = 1 ∨ (x.1 * x.2) % 3 = 0) (Finset.product (Finset.Icc 1 6) (Finset.Icc 1 6))).card : ℚ) / (Finset.product (Finset.Icc 1 6) (Finset.Icc 1 6)).card = (2 : ℚ) / 3 := by\n",
         "id": "test_counting_and_probability/551.json",
         "formal_proof": "sorry",
     },

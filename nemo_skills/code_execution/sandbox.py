@@ -350,7 +350,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                 line_dict["is_correct"] = map_to_future[
                     (line_dict["predicted_answer"], line_dict["expected_answer"])
                 ].result()
-            elif answer_format == "lean4-proof" or answer_format == "lean4-statemente":
+            elif answer_format == "lean4-proof" or answer_format == "lean4-statement":
                 line_dict["proof_status"] = map_to_future[(line_dict["predicted_proof"])].result()
 
         data = []
