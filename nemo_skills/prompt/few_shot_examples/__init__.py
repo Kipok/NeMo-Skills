@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from nemo_skills.prompt.few_shot_examples.gsm8k import examples_map as examples_gsm8k
-from nemo_skills.prompt.few_shot_examples.math import examples_map as examples_math
 from nemo_skills.prompt.few_shot_examples.lean4 import examples_map as examples_lean4
+from nemo_skills.prompt.few_shot_examples.math import examples_map as examples_math
 
 examples_map = examples_gsm8k.copy()
 examples_map.update(examples_math)

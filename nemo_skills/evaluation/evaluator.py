@@ -394,6 +394,7 @@ def eval_lean4_proof(cfg):
         **eval_config_dict,
     )
 
+
 def eval_lean4_statement(cfg):
     eval_config = LeanEvaluatorConfig(**cfg.eval_config)
 
@@ -415,7 +416,7 @@ EVALUATOR_MAP = {
     'mt-bench': eval_mtbench,
     'answer_judgement': dummy_eval,
     'lean4-proof': eval_lean4_proof,
-    'lean4-statement': eval_lean4_statement
+    'lean4-statement': eval_lean4_statement,
 }
 
 

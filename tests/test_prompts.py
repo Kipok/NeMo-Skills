@@ -1235,8 +1235,6 @@ open scoped BigOperators Topology"""
     )
 
 
-
-
 def test_minif2f_deepseek_fewshot_prompt():
     prompt = get_prompt('lean4/nat-to-lean4', 'deepseek-prover', 'math_to_lean4_fewshot')
 

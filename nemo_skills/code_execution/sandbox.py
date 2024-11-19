@@ -390,7 +390,9 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     elif answer_format == "lean4-proof":
                         if not use_predicted_proof_key:
                             generation = re.sub(r"^```(lean4)?\s*|\s*```$", "", line_dict["generation"])
-                            line_dict["predicted_proof"] = line_dict["header"] + line_dict["formal_statement"] + generation
+                            line_dict["predicted_proof"] = (
+                                line_dict["header"] + line_dict["formal_statement"] + generation
+                            )
 
                         else:
                             if "predicted_proof" not in line_dict:
@@ -409,7 +411,6 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                     "predicted_proof key not found in the line_dict. "
                                     "Set use_predicted_proof_key=False to re-combine"
                                 )
-                    
 
                     data[-1][-1] = json.dumps(line_dict)
 
@@ -417,13 +418,18 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     predicted_proof = line_dict["predicted_proof"]
                     if answer_format == "natural_language" and (predicted_answer, gt_answer) in map_to_future:
                         continue
-                    elif (answer_format == "lean4-proof" or answer_format == "lean4-statement") and predicted_proof in map_to_future:
+                    elif (
+                        answer_format == "lean4-proof" or answer_format == "lean4-statement"
+                    ) and predicted_proof in map_to_future:
                         continue
 
                     if (
                         ignore_cache
                         or (line_dict.get("is_correct") is None and answer_format == "natural_language")
-                        or (line_dict.get("proof_status") is None and (answer_format == "lean4-proof" or answer_format == "lean4-statement"))
+                        or (
+                            line_dict.get("proof_status") is None
+                            and (answer_format == "lean4-proof" or answer_format == "lean4-statement")
+                        )
                     ):
                         if answer_format == "natural_language":
                             map_to_future[(predicted_answer, gt_answer)] = executor.submit(
