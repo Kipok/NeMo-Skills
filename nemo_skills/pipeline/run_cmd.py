@@ -26,8 +26,8 @@ from nemo_skills.utils import setup_logging
 LOG = logging.getLogger(__file__)
 
 
-def get_cmd(cmd, extra_arguments):
-    cmd += f" {extra_arguments} "
+def get_cmd(extra_arguments):
+    cmd = f"{extra_arguments} "
     cmd = f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && cd /nemo_run/code && {cmd}"
     return cmd
 
@@ -45,7 +45,6 @@ def run_cmd(
     partition: str = typer.Option(
         None, help="Can specify if need interactive jobs or a specific non-default partition"
     ),
-    cmd: str = typer.Option(None, help="Command to run."),
     num_gpus: int | None = typer.Option(None, help="Number of GPUs to use"),
     run_after: str = typer.Option(
         None, help="Can specify an expname that needs to be completed before this one starts"
@@ -63,7 +62,7 @@ def run_cmd(
     with run.Experiment(expname) as exp:
         add_task(
             exp,
-            cmd=get_cmd(cmd=cmd, extra_arguments=extra_arguments),
+            cmd=get_cmd(extra_arguments=extra_arguments),
             task_name="script",
             log_dir=log_dir,
             container=cluster_config["containers"]["nemo-skills"],
