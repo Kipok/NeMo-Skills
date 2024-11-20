@@ -150,6 +150,15 @@ def summarize_results(
                         aggregation_mode="best",
                         max_samples=max_samples,
                     )
+                    try:
+                        results[benchmark][f'rw@{len(sampling_outputs)}'] = compute_metrics(
+                        input_files=sampling_outputs,
+                        metrics_calculator=metrics_calculator,
+                        aggregation_mode="reward",
+                        max_samples=max_samples,
+                    )
+                    except:
+                        pass
         except Exception as e:
             print(f"Error running compute_metrics.py for {benchmark}: {e}")
 

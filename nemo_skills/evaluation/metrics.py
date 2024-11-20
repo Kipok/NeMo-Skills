@@ -107,7 +107,7 @@ class MathMetrics(BaseMetrics):
         Args:
             predictions (list[dict]): aggregated predictions across all generations.
                 The content of the file is benchmark specific.
-            aggregation_mode (str): "best", "majority", "first", etc. Might vary by benchmark.
+            aggregation_mode (str): "best", "majority", "first", "reward model scoring", etc. Might vary by benchmark.
         """
         # this shouldn't do any heavy calculation, but just read the metric from existing json entry
         # all the heavy lifting should be done in the evaluation script
@@ -117,7 +117,9 @@ class MathMetrics(BaseMetrics):
             self.has_sympy = True
         if 'judgement' in predictions[0]:
             self.has_judge = True
-
+        if 'score' in predictions[0]:
+            self.has_sympy = True
+        
         current_correct_sympy = False
         current_correct_judge = False
 
@@ -160,6 +162,17 @@ class MathMetrics(BaseMetrics):
             if self.has_judge:
                 current_correct_judge += is_correct_judgement(predictions[0]['judgement'])
             self.no_answer += predictions[0]['predicted_answer'] is None
+        elif aggregation_mode == "reward":
+            valid_answers_and_results = [
+                    (elem['predicted_answer'], elem['is_correct'], elem['score'])
+                    for elem in predictions
+                    if elem['predicted_answer'] is not None
+                ]
+            if len(valid_answers_and_results) == 0:
+                self.no_answer += 1
+            else:
+                max_score_result = max(valid_answers_and_results, key=lambda x: x[2])
+                current_correct_sympy = max_score_result[1]
         else:
             raise ValueError(f"Unsupported mode {aggregation_mode}")
 
