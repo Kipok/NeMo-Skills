@@ -117,7 +117,7 @@ class MathMetrics(BaseMetrics):
             self.has_sympy = True
         if 'judgement' in predictions[0]:
             self.has_judge = True
-        if 'score' in predictions[0]:
+        if 'reward_model_score' in predictions[0]:
             self.has_sympy = True
 
         current_correct_sympy = False
@@ -164,7 +164,7 @@ class MathMetrics(BaseMetrics):
             self.no_answer += predictions[0]['predicted_answer'] is None
         elif aggregation_mode == "reward":
             valid_answers_and_results = [
-                (elem['predicted_answer'], elem['is_correct'], elem['score'])
+                (elem['predicted_answer'], elem['is_correct'], elem['reward_model_score'])
                 for elem in predictions
                 if elem['predicted_answer'] is not None
             ]
@@ -744,17 +744,36 @@ def compute_metrics(
     max_samples=-1,
     aggregation_mode='first',
 ):
-    metrics_calculator.reset()
+    
     metrics_calculator.setup(input_files)
-
+    metrics_calculator.reset()
+    
     file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(input_files)]
-    for idx, predictions in enumerate(zip_longest(*file_handles)):
-        if idx == max_samples:
-            break
-        data = read_predictions(predictions, metrics_calculator, allow_incomplete)
-        metrics_calculator.update(data, aggregation_mode)
-
+    
+    ### default metrics include majority vote and pass@k 
+    aggregation_mode_dict={"majority": "majority", "best": "pass"}
+    first_line = json.loads(file_handles[0].readline())
+    
+    ### we will try to find any avaliable metrics here, just add as below
+    if 'reward_model_score' in first_line:
+        aggregation_mode_dict['reward'] = 'rw'
+    ### always reset each file pointer to the beginning of the file
+    file_handles[0].seek(0)
+    metrics_dict = {}
+    
+    for aggregation_mode in aggregation_mode_dict.keys(): 
+        ### always reset each file pointer to the beginning of the file
+        for file_handle in file_handles:
+            file_handle.seek(0)
+        for idx, predictions in enumerate(zip_longest(*file_handles)):
+            if idx == max_samples:
+                break
+            data = read_predictions(predictions, metrics_calculator, allow_incomplete)
+            metrics_calculator.update(data, aggregation_mode)
+        metrics_dict[aggregation_mode_dict[aggregation_mode]] = metrics_calculator.get_metrics()
+        metrics_calculator.reset()
+        
     for file_handle in file_handles:
         file_handle.close()
-
-    return metrics_calculator.get_metrics()
+    
+    return metrics_dict
