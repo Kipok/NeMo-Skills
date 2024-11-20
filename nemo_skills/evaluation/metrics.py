@@ -119,7 +119,7 @@ class MathMetrics(BaseMetrics):
             self.has_judge = True
         if 'score' in predictions[0]:
             self.has_sympy = True
-        
+
         current_correct_sympy = False
         current_correct_judge = False
 
@@ -164,10 +164,10 @@ class MathMetrics(BaseMetrics):
             self.no_answer += predictions[0]['predicted_answer'] is None
         elif aggregation_mode == "reward":
             valid_answers_and_results = [
-                    (elem['predicted_answer'], elem['is_correct'], elem['score'])
-                    for elem in predictions
-                    if elem['predicted_answer'] is not None
-                ]
+                (elem['predicted_answer'], elem['is_correct'], elem['score'])
+                for elem in predictions
+                if elem['predicted_answer'] is not None
+            ]
             if len(valid_answers_and_results) == 0:
                 self.no_answer += 1
             else:

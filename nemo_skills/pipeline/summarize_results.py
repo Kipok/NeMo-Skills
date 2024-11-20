@@ -152,11 +152,11 @@ def summarize_results(
                     )
                     try:
                         results[benchmark][f'rw@{len(sampling_outputs)}'] = compute_metrics(
-                        input_files=sampling_outputs,
-                        metrics_calculator=metrics_calculator,
-                        aggregation_mode="reward",
-                        max_samples=max_samples,
-                    )
+                            input_files=sampling_outputs,
+                            metrics_calculator=metrics_calculator,
+                            aggregation_mode="reward",
+                            max_samples=max_samples,
+                        )
                     except:
                         pass
         except Exception as e:
