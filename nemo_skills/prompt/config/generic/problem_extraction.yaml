@@ -7,7 +7,7 @@ user: |-
 
     Identify Distinct Questions:
        Analyze the post to determine if it contains one or more distinct questions.
-       If there is only one question, output it as a single, standalone sentence without numbering
+       If there is only one question, output it as a single, standalone sentence without numbering.
        If there are multiple questions, format them as a sequentially numbered list (e.g., Question 1, Question 2, etc.).
     
     Ensure Clarity and Focus:
@@ -70,4 +70,8 @@ user: |-
     Output:
     Reverend Jethro is making pigpens and cowpens to contain his pigs and cows. If it takes 350 yards of fencing to make a circular pen 35 yards in diameter to hold his cows, 
     how many feet of fencing will it take to make a circular pen with a 54-inch radius to hold his pigs?
+    
+    Forum post:
     {problem}
+    
+    Output:
