@@ -502,10 +502,9 @@ def get_env_variables(cluster_config):
             if env_var.count("=") == 1:
                 env_var, value = env_var.split("=")
             else:
-                env_var, *value = env_var.split("=")
-                value = "=".join(value)
+                raise ValueError(f"Invalid optional environment variable format: {env_var}")
             env_vars[env_var.strip()] = value.strip()
-            logging.info(f"Adding optional environment variable {env_var} (value={value})")
+            logging.info(f"Adding optional environment variable {env_var}")
         else:
             logging.info(f"Optional environment variable {env_var} not found in user environment; skipping.")
 
