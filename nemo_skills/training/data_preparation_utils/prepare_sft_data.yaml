@@ -1,8 +1,8 @@
 processors_to_run: all
 
 output_path: ???
-prompt_config: ???
-prompt_template: ???
+prompt_config: null
+prompt_template: null
 
 preprocessed_dataset_files: null  # can specify multiple patters separated by space
 input_files: null  # can specify datasets from HF instead of prediction_jsonl_files
