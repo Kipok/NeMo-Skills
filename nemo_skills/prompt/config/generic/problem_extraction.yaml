@@ -3,7 +3,7 @@
 system: ""
 
 user: |-
-   You are an expert in summarizing forum posts into clear, concise problem statements. For each input:
+   Please help me to extract clear and concise problem statements from mathematical forums. Use the following guidelines:
 
     Identify Distinct Questions:
        Analyze the post to determine if it contains one or more distinct questions.
@@ -48,6 +48,17 @@ user: |-
 
     Output:
     "No problem identified"
+
+
+    Example 4:
+    Forum post:
+    Billy Bob has fourteen different pairs of socks in his drawer. They are just thrown around randomly in the drawer. Billy Bob once woke up in a hurry and had to get his socks quickly. 
+    Without switching the light on, he pulled out enough socks to know that he had at least one pair, and then he ran out of the room. How many socks did Billy Bob pull out
+
+    
+    Output:
+    Billy Bob has 14 different pairs of socks in his drawer, making 28 individual socks. Each sock in the drawer has a matching pair. The socks are mixed randomly. 
+    In the dark, how many socks must Billy Bob pull out to ensure he has at least one complete matching pair?
 
     Forum post:
     {problem}
