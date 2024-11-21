@@ -190,23 +190,17 @@ class TRTLLMModel(BaseModel):
             "repetition_penalty": repetition_penalty,
             "stop_words_list": stop_phrases,
         }
-        request_dict = self.requests_lib.put(
-            url="http://{}:{}/start_generation".format(self.server_host, self.server_port),
-            data=json.dumps(request),
-            headers={"Content-Type": "application/json"},
-        ).json()
-        output_dict = {'generation': None}
-        start_time = time.time()
-        while output_dict['generation'] is None:
-            time.sleep(0.1)
+        try:
             output_dict = self.requests_lib.put(
-                url="http://{}:{}/get_result".format(self.server_host, self.server_port),
-                data=json.dumps({'generation_id': request_dict['generation_id']}),
+                url="http://{}:{}/generate".format(self.server_host, self.server_port),
+                data=json.dumps(request),
                 headers={"Content-Type": "application/json"},
+                # to make sure we never hand indefinitely and abort the job if something is stuck in trtllm
+                timeout=300,
             ).json()
-            if time.time() - start_time > 300:
-                raise TimeoutError("TensorRTLLM server is stuck - please report this!")
-
+        except requests.exceptions.Timeout:
+            LOG.error("Please report this! Request timed out for prompt: %s", prompt)
+            raise
         return output_dict
 
 

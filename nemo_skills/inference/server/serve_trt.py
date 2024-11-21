@@ -1,3 +1,18 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import asyncio
 import copy
 import json
 import logging
@@ -388,8 +403,8 @@ class TensorRTLLM:
             enable_chunked_context=True,
             kv_cache_enable_block_reuse=True,
         )
+        self.active_generations = {}
         self.executor = ThreadPoolExecutor(max_workers=1024)
-        self.requests = {}  # id to future
 
     def get_output(
         self,
@@ -433,22 +448,12 @@ class TensorRTLLM:
 
         return output
 
-    def get_result(self, idx: str) -> Dict[str, Any]:
-        if idx not in self.requests:
-            raise HTTPException(status_code=404, detail="Generation not found")
-
-        if self.requests[idx].done():
-            result = self.requests.pop(idx).result()
-            return result
-        return {"generation": None}
-
     @torch.no_grad()
     def start_generation(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        idx = str(uuid.uuid4())
-        input_text = data["prompt"]
-        batch_input_ids, input_lengths = parse_input([input_text], self.tokenizer)
+        generation_id = str(uuid.uuid4())
+        batch_input_ids, input_lengths = parse_input([data["prompt"]], self.tokenizer)
 
-        self.requests[idx] = self.executor.submit(
+        future = self.executor.submit(
             self.get_output,
             batch_input_ids,
             input_lengths,
@@ -461,7 +466,23 @@ class TensorRTLLM:
             data["stop_words_list"],
         )
 
-        return {"generation_id": idx}
+        self.active_generations[generation_id] = future
+
+        return generation_id
+
+    def get_generation(self, generation_id: str) -> Dict[str, Any]:
+        if generation_id not in self.active_generations:
+            raise HTTPException(status_code=404, detail="Generation not found")
+
+        future = self.active_generations[generation_id]
+
+        if future.done():
+            result = future.result()
+            # Clean up completed generation
+            del self.active_generations[generation_id]
+            return result
+        else:
+            return None
 
 
 class GenerationRequest(BaseModel):
@@ -475,17 +496,9 @@ class GenerationRequest(BaseModel):
     stop_words_list: Optional[List[str]] = None
 
 
-class GetResultRequest(BaseModel):
-    generation_id: str
-
-
-class GetResultResponse(BaseModel):
+class GenerationResponse(BaseModel):
     generation: Optional[str] = None
     num_generated_tokens: Optional[int] = None
-
-
-class GenerationResponse(BaseModel):
-    generation_id: str
 
 
 class MPIWrapper:
@@ -500,8 +513,8 @@ class MPIWrapper:
     def _create_app(self) -> FastAPI:
         app = FastAPI(title="TensorRT-LLM Service")
 
-        @app.put("/start_generation", response_model=GenerationResponse)
-        async def start_generation(request: GenerationRequest):
+        @app.put("/generate", response_model=GenerationResponse)
+        async def generate(request: GenerationRequest):
             data = {
                 "prompt": request.prompt,
                 "max_new_tokens": request.tokens_to_generate,
@@ -516,13 +529,13 @@ class MPIWrapper:
             self.comm.Barrier()
             data = self.comm.bcast(data, root=0)
 
-            result = self.model.start_generation(data)
-            return result
+            generation_id = self.model.start_generation(data)
 
-        @app.put("/get_result", response_model=GetResultResponse)
-        async def get_result(request: GetResultRequest):
-            generation_id = request.model_dump()["generation_id"]
-            return self.model.get_result(generation_id)
+            while True:
+                output = self.model.get_generation(generation_id)
+                if output is not None:
+                    return output
+                await asyncio.sleep(0.1)
 
         return app
 
