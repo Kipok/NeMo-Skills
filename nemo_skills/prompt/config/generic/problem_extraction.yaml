@@ -6,9 +6,9 @@ user: |-
    You are an expert in summarizing forum posts into clear, concise problem statements. For each input:
 
     Identify Distinct Questions:
-       Break down the post to identify all distinct questions or problems being asked.
-       Each question should be written as a single, standalone problem statement.
-       If there are multiple questions, number them sequentially (e.g., Question 1, Question 2, etc.).
+       Analyze the post to determine if it contains one or more distinct questions.
+       If there is only one question, output it as a single, standalone sentence without numbering (e.g., "How can I make a list of all the formulas needed for MathCounts?").
+       If there are multiple questions, format them as a sequentially numbered list (e.g., Question 1, Question 2, etc.).
     
     Ensure Clarity and Focus:
        Rephrase each question concisely, ensuring it captures the essence of the inquiry.
@@ -49,5 +49,5 @@ user: |-
     Output:
     "No problem identified"
 
-
+    Forum post:
     {problem}
