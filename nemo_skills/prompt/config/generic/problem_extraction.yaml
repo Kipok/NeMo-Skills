@@ -19,10 +19,18 @@ user: |-
        If the post does not include any clear question or problem, simply output: "No problem identified."
     
     Here are a few examples. 
-    Example 1
 
-    "Question 1:
-    A tetrahedron has four vertices. We can label each vertex by one of the four digits: 1,2,3,4. How many non-congruent ways are there to assign a different digit to each vertex of a tetrahedron? Tetrahedra are considered congruent through rotation. 
+    Example 1:
+    Forum post:
+    Countdown:\r\n\r\nWhat is the remainder of 8^6+7^7+6^8 is divided by 5?\r\n\r\n\r\nno calculator of course, paper isn't needed either, but sure
+    No calculator of course, paper isn't needed either, but sure."
+
+    Output:
+    What is the remainder of 8^6+7^7+6^8 is divided by 5?
+
+    Example 2
+    Forum post:
+    "Question 1: A tetrahedron has four vertices. We can label each vertex by one of the four digits: 1,2,3,4. How many non-congruent ways are there to assign a different digit to each vertex of a tetrahedron? Tetrahedra are considered congruent through rotation. 
     Reflections are considered different. I'm wondering how I could approach a problem like this. I started off with 4! and then divided by 4 to take out the rotation aspect. Now I am stuck.
     Note: I'd rather not do case work because I'm sure the test writers could have easily used an icosahedron, or something equally lengthy.
     Another Question along the same lines:
@@ -32,15 +40,6 @@ user: |-
     "Question 1: How many non-congruent ways are there to assign a different digit to each vertex of a tetrahedron, considering rotations but treating reflections as different?
     Question 2: How many ways can a cube be colored using 6 colors, where each face has a unique color?"
 
-
-
-    Example 2:
-    Forum post:
-    Countdown:\r\n\r\nWhat is the remainder of 8^6+7^7+6^8 is divided by 5?\r\n\r\n\r\nno calculator of course, paper isn't needed either, but sure
-    No calculator of course, paper isn't needed either, but sure."
-
-    Output:
-    What is the remainder of 8^6+7^7+6^8 is divided by 5?
 
     Example 3:
     Forum post:
@@ -59,7 +58,6 @@ user: |-
     Output:
     Billy Bob has 14 different pairs of socks in his drawer, making 28 individual socks. Each sock in the drawer has a matching pair. The socks are mixed randomly. 
     In the dark, how many socks must Billy Bob pull out to ensure he has at least one complete matching pair?
-
 
 
     Example 5:
