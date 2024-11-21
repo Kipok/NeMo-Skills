@@ -116,7 +116,11 @@ class Sandbox(abc.ABC):
     ):
         self.host = host
         self.port = port
-        self.http_session = requests.Session()
+        session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(pool_maxsize=1500, pool_connections=1500, max_retries=3)
+        session.mount('http://', adapter)
+        session.mount('https://', adapter)
+        self.http_session = session
         self.ssh_server = os.getenv("NEMO_SKILLS_SSH_SERVER", ssh_server)
         self.ssh_key_path = os.getenv("NEMO_SKILLS_SSH_KEY_PATH", ssh_key_path)
         # will keep state of code sessions
