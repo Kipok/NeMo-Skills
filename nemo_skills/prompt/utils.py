@@ -198,11 +198,18 @@ class Prompt:
             examples = ""
         else:
             examples = f"{self.config.few_shot_examples.prefix}{filled_examples}{self.config.few_shot_examples.suffix}"
-        # print(examples)
-        # print(input_dict)
-        # print(self.config.user)
         user = self.config.user.format(examples=examples, **input_dict)
         return user
+
+    def get_code_execution_args(self):
+        """Returns the code execution arguments."""
+        return {
+            "code_begin": self.config.template.code_begin,
+            "code_end": self.config.template.code_end,
+            "code_output_begin": self.config.template.code_output_begin,
+            "code_output_end": self.config.template.code_output_end,
+            "code_output_format": self.config.template.code_output_format,
+        }
 
     def fill(
         self, input_dict: Dict[str, str], include_generation: bool = False, multi_turn_key: str | None = None
@@ -232,20 +239,19 @@ class Prompt:
 
         if self.config.template:
             if multi_turn_key is None:
-                format_string = (
-                    self.SYSTEM_FORMAT + self.TURN_BEGIN_FORMAT + "{generation}" + self.config.template.assistant_end
+                prompt_string = self.SYSTEM_FORMAT.format(
+                    system=self.config.system.format(), **asdict(self.config.template)
                 )
-                prompt_string = format_string.format(
-                    system=self.config.system,
-                    user=self.build_user_message(input_dict),
-                    generation=generation,
-                    **asdict(self.config.template),
+                prompt_string += self.TURN_BEGIN_FORMAT.format(
+                    user=self.build_user_message(input_dict), **asdict(self.config.template)
                 )
-                # System {{}} are not correctly handled right now, so doing this post-hoc
-                # TODO: See why the formatting is not working for system string but works for user.
-                prompt_string = prompt_string.replace("{{}}", "{}")
+                if generation:
+                    # Generation can be part of the input in cases such as reward models
+                    prompt_string += self.TURN_END_FORMAT.format(assistant=generation, **asdict(self.config.template))
             else:
-                prompt_string = self.SYSTEM_FORMAT.format(system=self.config.system, **asdict(self.config.template))
+                prompt_string = self.SYSTEM_FORMAT.format(
+                    system=self.config.system.format(), **asdict(self.config.template)
+                )
                 for turn in input_dict[multi_turn_key][:-1]:
                     prompt_string += self.TURN_BEGIN_FORMAT.format(
                         user=self.build_user_message(turn), **asdict(self.config.template)
