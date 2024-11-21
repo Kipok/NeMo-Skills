@@ -148,6 +148,9 @@ class Sandbox(abc.ABC):
                 timeout=timeout,
                 headers={"Content-Type": "application/json"},
             )
+        # retrying 502 errors
+        if output.status_code == 502:
+            raise requests.exceptions.Timeout
         return self._parse_request_output(output)
 
     @abc.abstractmethod
@@ -450,7 +453,11 @@ class LocalSandbox(Sandbox):
         return f"http://{self.host}:{self.port}/execute"
 
     def _parse_request_output(self, output):
-        return output.json()
+        try:
+            return output.json()
+        except json.JSONDecodeError:
+            LOG.error("Error during parsing output: %s", output.text)
+            return {'process_status': 'error', 'stdout': '', 'stderr': 'Unknown error'}
 
     def _prepare_request(self, generated_code, timeout, language='python'):
         return {
