@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 import openai
@@ -70,7 +71,12 @@ class BaseModel(abc.ABC):
 
             self.requests_lib = sshtunnel_requests.from_url(f"ssh://{self.ssh_server}:22", self.ssh_key_path)
         else:
-            self.requests_lib = requests
+            # TODO: switch to httpx
+            session = requests.Session()
+            adapter = requests.adapters.HTTPAdapter(pool_maxsize=1500, pool_connections=1500, max_retries=3)
+            session.mount('http://', adapter)
+            session.mount('https://', adapter)
+            self.requests_lib = session
 
     @abc.abstractmethod
     def _generate_single(
@@ -184,17 +190,22 @@ class TRTLLMModel(BaseModel):
             "repetition_penalty": repetition_penalty,
             "stop_words_list": stop_phrases,
         }
-        try:
+        request_dict = self.requests_lib.put(
+            url="http://{}:{}/start_generation".format(self.server_host, self.server_port),
+            data=json.dumps(request),
+            headers={"Content-Type": "application/json"},
+        ).json()
+        output_dict = {'generation': None}
+        start_time = time.time()
+        while output_dict['generation'] is None:
+            time.sleep(0.1)
             output_dict = self.requests_lib.put(
-                url="http://{}:{}/generate".format(self.server_host, self.server_port),
-                data=json.dumps(request),
+                url="http://{}:{}/get_result".format(self.server_host, self.server_port),
+                data=json.dumps({'generation_id': request_dict['generation_id']}),
                 headers={"Content-Type": "application/json"},
-                # to make sure we never hand indefinitely and abort the job if something is stuck in trtllm
-                timeout=300,
             ).json()
-        except requests.exceptions.Timeout:
-            LOG.error("Please report this! Request timed out for prompt: %s", prompt)
-            raise
+            if time.time() - start_time > 300:
+                raise TimeoutError("TensorRTLLM server is stuck - please report this!")
 
         return output_dict
 

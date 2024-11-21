@@ -1,35 +1,25 @@
-# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import copy
 import json
 import logging
 import re
 import sys
+import uuid
 from argparse import ArgumentParser
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import tensorrt_llm
 import tensorrt_llm.bindings.executor as trtllm
 import torch
-from flask import Flask, jsonify, request
-from flask_restful import Api, Resource
+from fastapi import FastAPI, HTTPException
 from mpi4py import MPI
+from pydantic import BaseModel
 from tensorrt_llm.runtime.model_runner_cpp import ModelRunnerCpp
 from transformers import AutoTokenizer, T5Tokenizer
+
+app = FastAPI(title="TensorRT-LLM Server")
 
 
 # keeping it here to make this file self-contained. This is duplicated from model.py
@@ -65,59 +55,6 @@ class CustomSentencePieceTokenizer(T5Tokenizer):
         if torch.is_tensor(token_ids):
             token_ids = token_ids.tolist()
         return self.sp_model.decode([token_ids])[0]
-
-
-class TrtGenerate(Resource):
-    def __init__(self, model):
-        self.model = model
-        self.comm = MPI.COMM_WORLD
-
-    def generate(
-        self,
-        prompt,
-        max_new_tokens,
-        temperature,
-        top_k,
-        top_p,
-        repetition_penalty,
-        random_seed,
-        stop_words_list,
-    ):
-        return self.model.generate(
-            prompt,
-            max_output_token=max_new_tokens,
-            top_k=top_k,
-            top_p=top_p,
-            temperature=temperature,
-            repetition_penalty=repetition_penalty,
-            random_seed=random_seed,
-            stop_words_list=stop_words_list,
-        )
-
-    def put(self):
-        logging.debug("generate async request")
-        logging.debug("request IP: %s", str(request.remote_addr))
-        input_request = request.get_json()
-        logging.debug("request content: %s", json.dumps(input_request))
-
-        top_k = input_request.get("top_k")
-        if top_k == 0:
-            top_k = None
-        data = dict(
-            prompt=input_request["prompt"],
-            max_new_tokens=input_request.get("tokens_to_generate", 64),
-            temperature=input_request.get("temperature", 1.0),
-            top_k=top_k,
-            top_p=input_request.get("top_p", 1.0),
-            repetition_penalty=input_request.get("repetition_penalty", 1.2),
-            random_seed=input_request.get("random_seed", 0),
-            stop_words_list=input_request.get("stop_words_list"),
-        )
-        self.comm.Barrier()
-        data = self.comm.bcast(data, root=0)
-
-        out = self.generate(**data)
-        return jsonify(out)
 
 
 def parse_input(input_texts: str, tokenizer):
@@ -451,11 +388,13 @@ class TensorRTLLM:
             enable_chunked_context=True,
             kv_cache_enable_block_reuse=True,
         )
+        self.executor = ThreadPoolExecutor(max_workers=1024)
+        self.requests = {}  # id to future
 
-    @torch.no_grad()
-    def generate(
+    def get_output(
         self,
-        input_text,
+        batch_input_ids,
+        input_lengths,
         max_output_token,
         top_k,
         top_p,
@@ -464,9 +403,6 @@ class TensorRTLLM:
         random_seed,
         stop_words_list,
     ):
-        # TODO: remove batch dimension since it's not needed anymore?
-        batch_input_ids, input_lengths = parse_input([input_text], self.tokenizer)
-
         try:
             output = generate(
                 self.runner,
@@ -497,50 +433,137 @@ class TensorRTLLM:
 
         return output
 
+    def get_result(self, idx: str) -> Dict[str, Any]:
+        if idx not in self.requests:
+            raise HTTPException(status_code=404, detail="Generation not found")
 
-class WrapperServer:
+        if self.requests[idx].done():
+            result = self.requests.pop(idx).result()
+            return result
+        return {"generation": None}
+
+    @torch.no_grad()
+    def start_generation(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        idx = str(uuid.uuid4())
+        input_text = data["prompt"]
+        batch_input_ids, input_lengths = parse_input([input_text], self.tokenizer)
+
+        self.requests[idx] = self.executor.submit(
+            self.get_output,
+            batch_input_ids,
+            input_lengths,
+            data["max_new_tokens"],
+            data["top_k"],
+            data["top_p"],
+            data["temperature"],
+            data["repetition_penalty"],
+            data["random_seed"],
+            data["stop_words_list"],
+        )
+
+        return {"generation_id": idx}
+
+
+class GenerationRequest(BaseModel):
+    prompt: str
+    tokens_to_generate: int = 64
+    temperature: float = 1.0
+    top_k: Optional[int] = None
+    top_p: float = 1.0
+    repetition_penalty: float = 1.2
+    random_seed: int = 0
+    stop_words_list: Optional[List[str]] = None
+
+
+class GetResultRequest(BaseModel):
+    generation_id: str
+
+
+class GetResultResponse(BaseModel):
+    generation: Optional[str] = None
+    num_generated_tokens: Optional[int] = None
+
+
+class GenerationResponse(BaseModel):
+    generation_id: str
+
+
+class MPIWrapper:
     def __init__(self, model_path: str):
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
-
         self.model = TensorRTLLM(model_path=model_path)
-
+        self.app = None
         if self.rank == 0:
-            self.app = Flask(__file__, static_url_path="")
-            api = Api(self.app)
-            api.add_resource(TrtGenerate, "/generate", resource_class_args=[self.model])
+            self.app = self._create_app()
 
-    def run(self, url, port=5000):
-        if self.rank == 0:
-            self.app.run(url, threaded=True, port=port, debug=False)
-        else:
-            self.worker_loop()
+    def _create_app(self) -> FastAPI:
+        app = FastAPI(title="TensorRT-LLM Service")
+
+        @app.put("/start_generation", response_model=GenerationResponse)
+        async def start_generation(request: GenerationRequest):
+            data = {
+                "prompt": request.prompt,
+                "max_new_tokens": request.tokens_to_generate,
+                "temperature": request.temperature,
+                "top_k": None if request.top_k == 0 else request.top_k,
+                "top_p": request.top_p,
+                "repetition_penalty": request.repetition_penalty,
+                "random_seed": request.random_seed,
+                "stop_words_list": request.stop_words_list,
+            }
+
+            self.comm.Barrier()
+            data = self.comm.bcast(data, root=0)
+
+            result = self.model.start_generation(data)
+            return result
+
+        @app.put("/get_result", response_model=GetResultResponse)
+        async def get_result(request: GetResultRequest):
+            generation_id = request.model_dump()["generation_id"]
+            return self.model.get_result(generation_id)
+
+        return app
 
     def worker_loop(self):
-        server = TrtGenerate(self.model)
+        """Worker loop for non-rank-0 processes"""
         while True:
             self.comm.Barrier()
             data = None
             data = self.comm.bcast(data, root=0)
-            server.generate(**data)
+            if data is None:
+                continue
+            self.model.start_generation(data)
+
+    def run(self, host: str = "0.0.0.0", port: int = 5000):
+        if self.rank == 0:
+            import uvicorn
+
+            uvicorn.run(self.app, host=host, port=port, ws_max_queue=1500)
+        else:
+            self.worker_loop()
 
 
-if __name__ == "__main__":
-
-    class LogFilter(logging.Filter):
-        def filter(self, record):
-            filter_strings = ("\"PUT /generate HTTP/1.1\" 200",)
-            return all(filter_string not in record.getMessage() for filter_string in filter_strings)
-
-    log = logging.getLogger('werkzeug')
-    log.addFilter(LogFilter())
-    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-
+def main():
     parser = ArgumentParser()
     parser.add_argument("--model_path", required=True)
     parser.add_argument("--host", type=str, default="0.0.0.0")
     parser.add_argument("--port", type=int, default=5000)
     args = parser.parse_args()
 
-    server = WrapperServer(model_path=args.model_path)
-    server.run(args.host, args.port)
+    wrapper = MPIWrapper(model_path=args.model_path)
+    wrapper.run(host=args.host, port=args.port)
+
+
+if __name__ == "__main__":
+
+    class LogFilter(logging.Filter):
+        def filter(self, record):
+            filter_strings = ("PUT /start_generation HTTP/1.1", "PUT /get_result HTTP/1.1")
+            return all(filter_string not in record.getMessage() for filter_string in filter_strings)
+
+    logging.getLogger('uvicorn.access').addFilter(LogFilter())
+    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
+    main()
