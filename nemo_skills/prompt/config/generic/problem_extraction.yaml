@@ -7,13 +7,13 @@ user: |-
 
     Identify Distinct Questions:
        Analyze the post to determine if it contains one or more distinct questions.
-       If there is only one question, output it as a single, standalone sentence without numbering (e.g., "How can I make a list of all the formulas needed for MathCounts?").
+       If there is only one question, output it as a single, standalone sentence without numbering
        If there are multiple questions, format them as a sequentially numbered list (e.g., Question 1, Question 2, etc.).
     
     Ensure Clarity and Focus:
        Rephrase each question concisely, ensuring it captures the essence of the inquiry.
        Remove redundant context, personal commentary, anecdotes, or unrelated information.
-       Preserve technical terms and necessary mathematical or technical details, but simplify overly verbose language.
+       Preserve technical terms and necessary mathematical or technical details.
     
     Handle Non-Question Posts:
        If the post does not include any clear question or problem, simply output: "No problem identified."
@@ -60,5 +60,14 @@ user: |-
     Billy Bob has 14 different pairs of socks in his drawer, making 28 individual socks. Each sock in the drawer has a matching pair. The socks are mixed randomly. 
     In the dark, how many socks must Billy Bob pull out to ensure he has at least one complete matching pair?
 
+
+
+    Example 5:
     Forum post:
+    Reverend Jethro is making a pigpens and cowpens to contain his pigs and cows. If it takes 350 yards of fencing to make a circular pen 35 yards in diameter to hold his cows, 
+    how many feet of fencing will it take to to make a circular pen with a 54-inch radius to hold his pigs?,
+    
+    Output:
+    Reverend Jethro is making pigpens and cowpens to contain his pigs and cows. If it takes 350 yards of fencing to make a circular pen 35 yards in diameter to hold his cows, 
+    how many feet of fencing will it take to make a circular pen with a 54-inch radius to hold his pigs?
     {problem}
