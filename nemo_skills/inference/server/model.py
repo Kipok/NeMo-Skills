@@ -18,11 +18,12 @@ import json
 import logging
 import os
 import re
-import time
 from concurrent.futures import ThreadPoolExecutor
 
+import httpx
 import openai
 import requests
+from openai import DefaultHttpxClient
 
 LOG = logging.getLogger(__name__)
 
@@ -478,10 +479,16 @@ class VLLMModel(BaseModel):
         if self.ssh_server and self.ssh_key_path:
             raise NotImplementedError("SSH tunnelling is not implemented for vLLM model.")
 
+        http_client = DefaultHttpxClient(
+            limits=httpx.Limits(max_keepalive_connections=1500, max_connections=1500),
+            transport=httpx.HTTPTransport(retries=3),
+        )
+
         self.oai_client = openai.OpenAI(
             api_key="EMPTY",
             base_url=f"http://{self.server_host}:{self.server_port}/v1",
             timeout=None,
+            http_client=http_client,
         )
 
         self.model_name_server = self.get_model_name_from_server()
