@@ -401,8 +401,9 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     elif answer_format == "lean4-statement":
                         if not use_predicted_proof_key:
                             generation = re.sub(r"^```(lean4)?\s*|\s*```$", "", line_dict["generation"])
-                            header = "import Mathlib\n\nopen Complex Filter Function Metric Finset\nopen scoped BigOperators Topology\n\n"
-                            line_dict["predicted_proof"] = header + generation + "sorry"
+                            # header = "import Mathlib\n\nopen Complex Filter Function Metric Finset\nopen scoped BigOperators Topology\n\n"
+                            # line_dict["predicted_proof"] = header + generation + "sorry"
+                            line_dict["predicted_proof"] = generation + "sorry"
                         else:
                             if "predicted_proof" not in line_dict:
                                 raise ValueError(
