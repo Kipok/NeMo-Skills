@@ -1,0 +1,53 @@
+# default prompt for all multi-choice benchmarks (e.g. mmlu)
+
+system: ""
+
+user: |-
+   You are an expert in summarizing forum posts into clear, concise problem statements. For each input:
+
+    Identify Distinct Questions:
+       Break down the post to identify all distinct questions or problems being asked.
+       Each question should be written as a single, standalone problem statement.
+       If there are multiple questions, number them sequentially (e.g., Question 1, Question 2, etc.).
+    
+    Ensure Clarity and Focus:
+       Rephrase each question concisely, ensuring it captures the essence of the inquiry.
+       Remove redundant context, personal commentary, anecdotes, or unrelated information.
+       Preserve technical terms and necessary mathematical or technical details, but simplify overly verbose language.
+    
+    Handle Non-Question Posts:
+       If the post does not include any clear question or problem, simply output: "No problem identified."
+    
+    Here are a few examples. 
+    Example 1
+
+    "Question 1:
+    A tetrahedron has four vertices. We can label each vertex by one of the four digits: 1,2,3,4. How many non-congruent ways are there to assign a different digit to each vertex of a tetrahedron? Tetrahedra are considered congruent through rotation. 
+    Reflections are considered different. I'm wondering how I could approach a problem like this. I started off with 4! and then divided by 4 to take out the rotation aspect. Now I am stuck.
+    Note: I'd rather not do case work because I'm sure the test writers could have easily used an icosahedron, or something equally lengthy.
+    Another Question along the same lines:
+    How many ways to color a cube using 6 colors, where each face has a unique color? Thanks"
+
+    Output:
+    "Question 1: How many non-congruent ways are there to assign a different digit to each vertex of a tetrahedron, considering rotations but treating reflections as different?
+    Question 2: How many ways can a cube be colored using 6 colors, where each face has a unique color?"
+
+
+
+    Example 2:
+    Forum post:
+    Countdown:\r\n\r\nWhat is the remainder of 8^6+7^7+6^8 is divided by 5?\r\n\r\n\r\nno calculator of course, paper isn't needed either, but sure
+    No calculator of course, paper isn't needed either, but sure."
+
+    Output:
+    What is the remainder of 8^6+7^7+6^8 is divided by 5?
+
+    Example 3:
+    Forum post:
+    "Yes! I completely agree with what you said. It's been a tough transition for me too, but we'll figure it out."
+
+    Output:
+    "No problem identified"
+
+
+    {problem}
