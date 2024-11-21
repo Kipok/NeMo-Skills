@@ -7,7 +7,7 @@ user: |-
 
     Identify Distinct Questions:
        Analyze the post to determine if it contains one or more distinct questions.
-       If there is only one question, output it as a single, standalone sentence without numbering.
+       If there is only one question, output it as a single, standalone sentence without numbering. (e.g., "How can I make a list of all the formulas needed for MathCounts?")
        If there are multiple questions, format them as a sequentially numbered list (e.g., Question 1, Question 2, etc.).
     
     Ensure Clarity and Focus:
