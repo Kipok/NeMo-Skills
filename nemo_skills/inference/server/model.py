@@ -537,16 +537,6 @@ class VLLMModel(BaseModel):
         output, num_generated_tokens = self.parse_openai_response(response)
         return {'generation': output, 'num_generated_tokens': num_generated_tokens}
 
-    def get_rm_score(self, prompts: list[str | dict]):
-        """Get Reward Model Scores."""
-        responses = self.oai_client.embeddings.create(input=prompts, model=self.model)
-        outputs = []
-        for data in responses.data:
-            raw_score = data.embedding[-1]
-            score = 1 / (1 + math.exp(-raw_score))
-            outputs.append({"raw_score": raw_score, "score": score})
-        return outputs
-
     @classmethod
     def parse_openai_response(cls, response: "openai.types.Completion") -> tuple[str, int]:
         assert not isinstance(response, list)
