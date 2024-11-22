@@ -238,23 +238,25 @@ def get_sandox_command():
 
 @dataclass(kw_only=True)
 class CustomJobDetails(SlurmJobDetails):
-    log_prefix: str = "main"
+    # we have 1 srun per sub-task (e.g. server/sandbox/main), but only a single sbatch
+    srun_prefix: str = "main"
+    sbatch_prefix: str = ""
 
     @property
     def stdout(self) -> Path:
-        return Path(self.folder) / f"{self.log_prefix}_sbatch.log"
+        return Path(self.folder) / f"{self.sbatch_prefix}%j_sbatch.log"
 
     @property
     def srun_stdout(self) -> Path:
-        return Path(self.folder) / f"{self.log_prefix}_srun.log"
+        return Path(self.folder) / f"{self.srun_prefix}%j_srun.log"
 
     @property
     def stderr(self) -> Path:
-        return Path(self.folder) / f"{self.log_prefix}_sbatch.log"
+        return Path(self.folder) / f"{self.sbatch_prefix}%j_sbatch.log"
 
     @property
     def srun_stderr(self) -> Path:
-        return Path(self.folder) / f"{self.log_prefix}_srun.log"
+        return Path(self.folder) / f"{self.srun_prefix}%j_srun.log"
 
     @property
     def ls_term(self) -> str:
@@ -263,7 +265,7 @@ class CustomJobDetails(SlurmJobDetails):
         The command used to list the files is ls -1 {ls_term} 2> /dev/null
         """
         assert self.folder
-        return os.path.join(self.folder, "*_srun.log")
+        return os.path.join(self.folder, "*srun.log")
 
 
 def read_config(config_file):
@@ -503,7 +505,14 @@ def get_env_variables(cluster_config):
     # Add optional env variables
     optional_env_vars = cluster_config.get("env_vars", [])
     for env_var in optional_env_vars + always_optional_env_vars:
-        if env_var in os.environ:
+        if "=" in env_var:
+            if env_var.count("=") == 1:
+                env_var, value = env_var.split("=")
+            else:
+                raise ValueError(f"Invalid optional environment variable format: {env_var}")
+            env_vars[env_var.strip()] = value.strip()
+            logging.info(f"Adding optional environment variable {env_var}")
+        elif env_var in os.environ:
             logging.info(f"Adding optional environment variable {env_var} from environment")
             env_vars[env_var] = os.environ[env_var]
         elif env_var in default_factories:
@@ -580,6 +589,7 @@ def get_executor(
     log_prefix: str = "main",
     mounts=None,
     partition=None,
+    time_min=None,
     dependencies=None,
 ):
     env_vars = get_env_variables(cluster_config)
@@ -619,6 +629,7 @@ def get_executor(
         container_image=container,
         container_mounts=mounts,
         time=timeout,
+        additional_parameters={'time_min': time_min},
         packager=packager,
         gpus_per_node=gpus_per_node if not cluster_config.get("disable_gpus_per_node", False) else None,
         srun_args=[
@@ -636,7 +647,8 @@ def get_executor(
         job_details=CustomJobDetails(
             job_name=cluster_config.get("job_name_prefix", "") + job_name,
             folder=get_unmounted_path(cluster_config, log_dir),
-            log_prefix=log_prefix + '_' + job_name,
+            srun_prefix=log_prefix + '_' + job_name + '_',
+            sbatch_prefix=job_name + '_',
         ),
         wait_time_for_group_job=0.01,
         monitor_group_job_wait_time=20,
@@ -657,6 +669,7 @@ def add_task(
     num_nodes=1,
     log_dir=None,
     partition=None,
+    time_min=None,
     with_sandbox=False,
     server_config=None,
     task_dependencies: list[str] = None,
@@ -698,6 +711,7 @@ def add_task(
             tasks_per_node=num_server_tasks,
             gpus_per_node=server_config['num_gpus'],
             partition=partition,
+            time_min=time_min,
             dependencies=dependencies,
             job_name=task_name,
             log_dir=log_dir,
@@ -721,6 +735,7 @@ def add_task(
                 tasks_per_node=num_tasks,
                 gpus_per_node=num_gpus,
                 partition=partition,
+                time_min=time_min,
                 dependencies=dependencies,
                 job_name=task_name,
                 log_dir=log_dir,
@@ -737,6 +752,7 @@ def add_task(
             tasks_per_node=1,
             gpus_per_node=num_gpus,
             partition=partition,
+            time_min=time_min,
             mounts=tuple(),  # we don't want to mount anything
             dependencies=dependencies,
             job_name=task_name,
