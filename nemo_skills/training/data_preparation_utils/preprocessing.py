@@ -245,9 +245,6 @@ class WriteFinalSftManifest(BaseProcessor):
         self.chat_format = chat_format
         self.metadata = metadata
         self.exclude_optional_keys = exclude_optional_keys
-        self.generation_suffix = generation_suffix
-        if self.generation_suffix and self.chat_format:
-            raise ValueError("generation_suffix can only be used with chat_format=False")
         if not self.metadata:
             self.metadata = {}
 
@@ -256,6 +253,19 @@ class WriteFinalSftManifest(BaseProcessor):
             self.prompt = get_prompt(prompt_config, prompt_template)
         else:
             LOG.warning("Prompt details are missing! The processed data won't be formatted using any prompt.")
+
+        if self.chat_format:
+            if generation_suffix:
+                raise ValueError("generation_suffix can only be used with chat_format=False")
+        else:
+            # If generation_suffix is specified, just prefer that
+            if generation_suffix:
+                self.generation_suffix = generation_suffix
+            # Otherwise use the prompt template's assistant end
+            elif self.prompt:
+                self.generation_suffix = self.prompt.config.template.assistant_end
+            else:
+                self.generation_suffix = ""
 
         if self.chat_format and self.prompt is None:
             error_str = ""
