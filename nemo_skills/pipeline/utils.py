@@ -492,19 +492,19 @@ def get_env_variables(cluster_config):
     # Add optional env variables
     optional_env_vars = cluster_config.get("env_vars", [])
     for env_var in optional_env_vars + always_optional_env_vars:
-        if env_var in os.environ:
-            logging.info(f"Adding optional environment variable {env_var} from environment")
-            env_vars[env_var] = os.environ[env_var]
-        elif env_var in default_factories:
-            env_vars[env_var] = default_factories[env_var]()
-            logging.info(f"Adding optional environment variable {env_var} from environment")
-        elif "=" in env_var:
+        if "=" in env_var:
             if env_var.count("=") == 1:
                 env_var, value = env_var.split("=")
             else:
                 raise ValueError(f"Invalid optional environment variable format: {env_var}")
             env_vars[env_var.strip()] = value.strip()
             logging.info(f"Adding optional environment variable {env_var}")
+        elif env_var in os.environ:
+            logging.info(f"Adding optional environment variable {env_var} from environment")
+            env_vars[env_var] = os.environ[env_var]
+        elif env_var in default_factories:
+            env_vars[env_var] = default_factories[env_var]()
+            logging.info(f"Adding optional environment variable {env_var} from environment")
         else:
             logging.info(f"Optional environment variable {env_var} not found in user environment; skipping.")
 
