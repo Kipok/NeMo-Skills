@@ -258,11 +258,8 @@ class WriteFinalSftManifest(BaseProcessor):
             if generation_suffix:
                 raise ValueError("generation_suffix can only be used with chat_format=False")
         else:
-            # If generation_suffix is specified, just prefer that
-            if generation_suffix:
-                self.generation_suffix = generation_suffix
-            # Otherwise use the prompt template's assistant end
-            elif self.prompt:
+            # Default to prompt's assistant_end when prompt is specified
+            if self.prompt:
                 self.generation_suffix = self.prompt.config.template.assistant_end
             else:
                 self.generation_suffix = ""
