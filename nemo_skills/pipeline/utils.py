@@ -233,19 +233,19 @@ class CustomJobDetails(SlurmJobDetails):
 
     @property
     def stdout(self) -> Path:
-        return Path(self.folder) / f"{self.sbatch_prefix}sbatch.log"
+        return Path(self.folder) / f"{self.sbatch_prefix}%j_sbatch.log"
 
     @property
     def srun_stdout(self) -> Path:
-        return Path(self.folder) / f"{self.srun_prefix}srun.log"
+        return Path(self.folder) / f"{self.srun_prefix}%j_srun.log"
 
     @property
     def stderr(self) -> Path:
-        return Path(self.folder) / f"{self.sbatch_prefix}sbatch.log"
+        return Path(self.folder) / f"{self.sbatch_prefix}%j_sbatch.log"
 
     @property
     def srun_stderr(self) -> Path:
-        return Path(self.folder) / f"{self.srun_prefix}srun.log"
+        return Path(self.folder) / f"{self.srun_prefix}%j_srun.log"
 
     @property
     def ls_term(self) -> str:
