@@ -69,6 +69,8 @@ user: |-
     Reverend Jethro is making pigpens and cowpens to contain his pigs and cows. If it takes 350 yards of fencing to make a circular pen 35 yards in diameter to hold his cows, 
     how many feet of fencing will it take to make a circular pen with a 54-inch radius to hold his pigs?
     
+
+    Your task is to analyze the given Forum post, identify the problem it outlines, and present it in the format demonstrated in the examples above.
     Forum post:
     {problem}
     
