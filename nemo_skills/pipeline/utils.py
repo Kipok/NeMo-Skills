@@ -609,7 +609,7 @@ def get_executor(
         container_image=container,
         container_mounts=mounts,
         time=timeout,
-        time_min=time_min,
+        additional_parameters={'time_min': time_min},
         packager=packager,
         gpus_per_node=gpus_per_node if not cluster_config.get("disable_gpus_per_node", False) else None,
         srun_args=[
