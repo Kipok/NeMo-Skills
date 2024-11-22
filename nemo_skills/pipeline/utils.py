@@ -569,6 +569,7 @@ def get_executor(
     log_prefix: str = "main",
     mounts=None,
     partition=None,
+    time_min=None,
     dependencies=None,
 ):
     env_vars = get_env_variables(cluster_config)
@@ -608,6 +609,7 @@ def get_executor(
         container_image=container,
         container_mounts=mounts,
         time=timeout,
+        time_min=time_min,
         packager=packager,
         gpus_per_node=gpus_per_node if not cluster_config.get("disable_gpus_per_node", False) else None,
         srun_args=[
@@ -646,6 +648,7 @@ def add_task(
     num_nodes=1,
     log_dir=None,
     partition=None,
+    time_min=None,
     with_sandbox=False,
     server_config=None,
     task_dependencies: list[str] = None,
@@ -687,6 +690,7 @@ def add_task(
             tasks_per_node=num_server_tasks,
             gpus_per_node=server_config['num_gpus'],
             partition=partition,
+            time_min=time_min,
             dependencies=dependencies,
             job_name=task_name,
             log_dir=log_dir,
@@ -710,6 +714,7 @@ def add_task(
                 tasks_per_node=num_tasks,
                 gpus_per_node=num_gpus,
                 partition=partition,
+                time_min=time_min,
                 dependencies=dependencies,
                 job_name=task_name,
                 log_dir=log_dir,
@@ -726,6 +731,7 @@ def add_task(
             tasks_per_node=1,
             gpus_per_node=num_gpus,
             partition=partition,
+            time_min=time_min,
             mounts=tuple(),  # we don't want to mount anything
             dependencies=dependencies,
             job_name=task_name,
