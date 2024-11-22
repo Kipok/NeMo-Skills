@@ -95,8 +95,6 @@ def get_generation_command(server_address, generation_commands):
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
         f"cd /nemo_run/code && "
         # might be required if we are not hosting server ourselves
-        f"export NVIDIA_API_KEY={os.getenv('NVIDIA_API_KEY', '')} && "
-        f"export OPENAI_API_KEY={os.getenv('OPENAI_API_KEY', '')} && "
         # this will try to handshake in a loop and unblock when the server responds
         f"echo 'Waiting for the server to start at {server_address}' && "
         f"while [ $(curl -X PUT {server_address} >/dev/null 2>&1; echo $?) -ne 0 ]; do sleep 3; done && "
@@ -106,8 +104,67 @@ def get_generation_command(server_address, generation_commands):
     return cmd
 
 
+def get_reward_server_command(
+    server_type: str,
+    num_gpus: int,
+    num_nodes: int,
+    model_path: str,
+    cluster_config: dict,
+    server_args: str = "",
+):
+    num_tasks = num_gpus
+
+    # check if the model path is mounted if not vllm;
+    # vllm can also pass model name as "model_path" so we need special processing
+    if server_type != "vllm":
+        check_if_mounted(cluster_config, model_path)
+
+    # the model path will be mounted, so generally it will start with /
+    elif server_type == "vllm" and model_path.startswith("/"):
+        check_if_mounted(cluster_config, model_path)
+
+    if server_type == 'nemo':
+        server_start_cmd = (
+            # Note: The order of the two commands is important as the reward model server
+            # needs to be the first command so it can get the HF_TOKEN from the environment
+            f"python -m nemo_skills.inference.server.serve_nemo_aligner_reward_model "
+            f"    ++rm_model_file={model_path} "
+            f"    trainer.devices={num_gpus} "
+            f"    trainer.num_nodes={num_nodes} "
+            f"    +tensor_model_parallel_size={num_gpus} "
+            f"    +pipeline_model_parallel_size={num_nodes} "
+            # This port could be configurable, but is hard coded to reduce
+            # the divergence of the server command parameters from pipeline/generate.py
+            f"    inference.port=5001 "
+            f"    {server_args} & "
+            f"python -m nemo_skills.inference.server.serve_nemo_reward_model "
+            # These ports could be configurable, but is hard coded to reduce
+            # the divergence of the server command parameters from pipeline/generate.py
+            f" inference_port=5000  triton_server_address=localhost:5001 "
+        )
+
+        # somehow on slurm nemo needs multiple tasks, but locally only 1
+        if cluster_config["executor"] == "local":
+            num_tasks = 1
+    else:
+        raise ValueError(f"Server type '{server_type}' not supported for reward model.")
+
+    server_cmd = (
+        f"nvidia-smi && "
+        f"cd /nemo_run/code && "
+        f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
+        f"{server_start_cmd} "
+    )
+    return server_cmd, num_tasks
+
+
 def get_server_command(
-    server_type: str, num_gpus: int, num_nodes: int, model_path: str, cluster_config: dict, server_args: str = ""
+    server_type: str,
+    num_gpus: int,
+    num_nodes: int,
+    model_path: str,
+    cluster_config: dict,
+    server_args: str = "",
 ):
     num_tasks = num_gpus
 
@@ -130,6 +187,7 @@ def get_server_command(
             f"    pipeline_model_parallel_size={num_nodes} "
             f"    {server_args} "
         )
+
         # somehow on slurm nemo needs multiple tasks, but locally only 1
         if cluster_config["executor"] == "local":
             num_tasks = 1
@@ -158,7 +216,6 @@ def get_server_command(
         f"nvidia-smi && "
         f"cd /nemo_run/code && "
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"export HF_TOKEN={get_token()} && "
         f"{server_start_cmd} "
     )
     return server_cmd, num_tasks
@@ -407,6 +464,8 @@ def get_env_variables(cluster_config):
     - `required_env_vars` - list of required environment variables
     - `env_vars` - list of optional environment variables
 
+    NVIDIA_API_KEY, OPENAI_API_KEY, and HF_TOKEN are always added if they exist.
+
     Args:
         cluster_config: cluster config dictionary
 
@@ -423,12 +482,22 @@ def get_env_variables(cluster_config):
         env_vars[env_var] = os.environ[env_var]
         logging.info(f"Adding required environment variable {env_var} (value={os.environ[env_var]})")
 
+    # It is fine to have these as always optional even if they are required for some configs
+    # Assume it is required, then this will override the value set above with the same
+    # value, assuming it has not been updated externally between these two calls
+    always_optional_env_vars = ["NVIDIA_API_KEY", "OPENAI_API_KEY", "HF_TOKEN"]
+    default_factories = {
+        "HF_TOKEN": lambda: str(get_token()),
+    }
     # Add optional env variables
     optional_env_vars = cluster_config.get("env_vars", [])
-    for env_var in optional_env_vars:
+    for env_var in optional_env_vars + always_optional_env_vars:
         if env_var in os.environ:
-            logging.info(f"Adding optional environment variable {env_var} (value={os.environ[env_var]})")
+            logging.info(f"Adding optional environment variable {env_var} from environment")
             env_vars[env_var] = os.environ[env_var]
+        elif env_var in default_factories:
+            env_vars[env_var] = default_factories[env_var]()
+            logging.info(f"Adding optional environment variable {env_var} from environment")
         else:
             logging.info(f"Optional environment variable {env_var} not found in user environment; skipping.")
 
@@ -581,6 +650,7 @@ def add_task(
     server_config=None,
     task_dependencies: list[str] = None,
     run_after=None,
+    get_server_command=get_server_command,
 ):
     """Wrapper for nemo-run exp.add to help setting up executors and dependencies.
 
@@ -599,6 +669,10 @@ def add_task(
         dependencies = tuple(get_exp_handles(run_after))
     else:
         dependencies = None
+
+    if num_gpus is None and cluster_config['executor'] == "slurm":
+        num_gpus = 1
+
     commands = []
     executors = []
     # assuming server always has the largest resources request, so it needs to go first

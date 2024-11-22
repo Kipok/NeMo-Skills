@@ -32,7 +32,6 @@ def get_nemo_to_hf_cmd(
 ):
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"export HF_TOKEN={get_token()} && "
         f"cd /nemo_run/code && "
         f"python -m nemo_skills.conversion.nemo_to_hf_{model_type} "
         f"    --in-path {input_model} "
@@ -65,11 +64,7 @@ def get_hf_to_trtllm_cmd(
 
     tmp_engine_dir = f"{output_model}-tmp"
 
-    setup_cmd = (
-        f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"export HF_TOKEN={get_token()} && "
-        f"cd /nemo_run/code && "
-    )
+    setup_cmd = f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && cd /nemo_run/code && "
 
     hf_to_trtllm_cmd = (
         f"python -m nemo_skills.conversion.hf_to_trtllm_{model_type} "
@@ -96,7 +91,9 @@ def get_hf_to_trtllm_cmd(
     )
 
     if trt_reuse_tmp_engine:
-        cmd = setup_cmd + f"if [ ! -d {tmp_engine_dir} ]; then {hf_to_trtllm_cmd}; fi && {trtllm_build_cmd}"
+        cmd = (
+            setup_cmd + f"if [ ! -f {tmp_engine_dir}/config.json ]; then {hf_to_trtllm_cmd}; fi && {trtllm_build_cmd}"
+        )
     else:
         cmd = setup_cmd + hf_to_trtllm_cmd + " && " + trtllm_build_cmd
 
@@ -110,7 +107,6 @@ def get_hf_to_nemo_cmd(
 
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"export HF_TOKEN={get_token()} && "
         f"cd /nemo_run/code && "
         f"python -m nemo_skills.conversion.hf_to_nemo_{model_type} "
         f"    --in-path {input_model} "

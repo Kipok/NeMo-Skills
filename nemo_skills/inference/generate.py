@@ -25,12 +25,7 @@ from omegaconf import open_dict
 from tqdm import tqdm
 
 from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
-from nemo_skills.inference.server.code_execution_model import (
-    ErrorRecoveryConfig,
-    get_code_execution_model,
-    get_model,
-    server_params,
-)
+from nemo_skills.inference.server.code_execution_model import get_code_execution_model, get_model, server_params
 from nemo_skills.prompt.utils import get_prompt
 from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dataclass, setup_logging
 
@@ -52,7 +47,7 @@ class GenerateSolutionsConfig:
     """LLM generation parameters."""
 
     output_file: str  # Where to save the generations
-    # Inference server configuration {server_params} {error_recovery_params}
+    # Inference server configuration {server_params}
     server: dict = field(default_factory=dict)
     # Sandbox configuration {sandbox_params}
     sandbox: dict = field(default_factory=dict)
@@ -109,7 +104,7 @@ class GenerateSolutionsConfig:
             # TODO: fix that
             raise ValueError("Prompt template is required for trtllm servers")
 
-        if self.server["server_type"] == "nemo" and self.prompt_template is not None:
+        if self.server["server_type"] == "nemo" and self.prompt_template is None:
             LOG.warning(
                 "NeMo implementation of openai chat completions api doesn't support batching and thus is very slow. "
                 "Until this is fixed, we highly recommend that you provide prompt template explicitly."
@@ -203,13 +198,7 @@ def generate(cfg: GenerateSolutionsConfig):
 
     # if using code execution, we need some extra parameters for generate call
     if cfg.code_execution:
-        extra_generate_params = {
-            "code_begin": prompt.config.template.code_begin,
-            "code_end": prompt.config.template.code_end,
-            "code_output_begin": prompt.config.template.code_output_begin,
-            "code_output_end": prompt.config.template.code_output_end,
-            "code_output_format": prompt.config.template.code_output_format,
-        }
+        extra_generate_params = prompt.get_code_execution_args()
     else:
         extra_generate_params = {}
 
@@ -281,18 +270,10 @@ def generate(cfg: GenerateSolutionsConfig):
                 data_points = []
 
 
-error_recovery_params = '\n' + get_fields_docstring(
-    ErrorRecoveryConfig,
-    prefix='server.error_recovery.',
-    level=2,
-)
-
-
 HELP_MESSAGE = get_help_message(
     GenerateSolutionsConfig,
     server_params=server_params(),
     sandbox_params=sandbox_params(),
-    error_recovery_params=error_recovery_params,
 )
 
 
