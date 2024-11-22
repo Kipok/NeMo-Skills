@@ -254,6 +254,8 @@ class WriteFinalSftManifest(BaseProcessor):
         self.prompt = None
         if prompt_config and prompt_template:
             self.prompt = get_prompt(prompt_config, prompt_template)
+        else:
+            LOG.warning("Prompt details are missing! The processed data won't be formatted using any prompt.")
 
         if self.chat_format and self.prompt is None:
             error_str = ""
