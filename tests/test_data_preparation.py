@@ -161,7 +161,6 @@ def test_openmathinstruct2():
             "++filters.trim_solutions=false "
             "++filters.drop_incorrect_arithmetic=false "
             "++filters.split_arithmetic=false "
-            "++generation_suffix='\"<|eot_id|>\"'",
         ),
     )
 
