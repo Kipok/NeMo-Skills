@@ -234,7 +234,6 @@ class WriteFinalSftManifest(BaseProcessor):
         chat_format: str | None = None,  # nemotron/llama/None
         input_key: str = "input",
         output_key: str = "output",
-        generation_suffix: str = "",
         metadata: Optional[Dict] = None,
         exclude_optional_keys: bool = True,
         **kwargs,
@@ -253,16 +252,6 @@ class WriteFinalSftManifest(BaseProcessor):
             self.prompt = get_prompt(prompt_config, prompt_template)
         else:
             LOG.warning("Prompt details are missing! The processed data won't be formatted using any prompt.")
-
-        if self.chat_format:
-            if generation_suffix:
-                raise ValueError("generation_suffix can only be used with chat_format=False")
-        else:
-            # Default to prompt's assistant_end when prompt is specified
-            if self.prompt:
-                self.generation_suffix = self.prompt.config.template.assistant_end
-            else:
-                self.generation_suffix = ""
 
         if self.chat_format and self.prompt is None:
             error_str = ""
@@ -298,10 +287,10 @@ class WriteFinalSftManifest(BaseProcessor):
                     generation = elem.pop(self.output_key)
                     if self.prompt:
                         output_sample["input"] = self.prompt.fill(input_dict=elem)
+                        output_sample["output"] = generation + self.prompt.config.template.assistant_end
                     else:
                         output_sample["input"] = elem[self.input_key]
 
-                    output_sample["output"] = generation + self.generation_suffix
                 elif self.chat_format.lower() == "nemotron":
                     output_sample['conversations'] = [
                         {'value': self.prompt.config.user.format(**elem), 'from': 'User', 'canonical_form': ''},
