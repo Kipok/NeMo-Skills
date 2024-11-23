@@ -73,13 +73,12 @@ def test_multiple_files():
         ),
     )
 
-    expected_md5 = "3971b33e2dd9ed28b2edc323eac19a1f"
+    expected_md5 = "8fce1c6a4abc47e82eec4e781909469b"
     output_md5 = compute_md5(output_file)
-    print("Output:", output_md5)
 
-    # assert (
-    #     expected_md5 == output_md5
-    # ), "MD5 hashes do not match, something is wrong with nemo_skills/training/prepare_sft_data.py"
+    assert (
+        expected_md5 == output_md5
+    ), "MD5 hashes do not match, something is wrong with nemo_skills/training/prepare_sft_data.py"
 
 
 def test_exclude_keys():
@@ -109,11 +108,10 @@ def test_exclude_keys():
 
     expected_md5 = "08c9b228faa1065825b68c0c994fcdb4"
     output_md5 = compute_md5(output_file)
-    print("Output:", output_md5)
 
-    # assert (
-    #     expected_md5 == output_md5
-    # ), "MD5 hashes do not match, something is wrong with nemo_skills/training/prepare_sft_data.py"
+    assert (
+        expected_md5 == output_md5
+    ), "MD5 hashes do not match, something is wrong with nemo_skills/training/prepare_sft_data.py"
 
 
 def test_code_sft_data():
