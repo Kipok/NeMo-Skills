@@ -130,7 +130,6 @@ def test_code_sft_data():
             f"    ++prompt_template=llama3-instruct "
             f"    ++exclude_optional_keys=false "
             f"    ++filters.drop_incorrect_code_blocks=false "
-            f"    ++generation_suffix='\"<|eot_id|>\"' ",
         ),
     )
 
@@ -162,7 +161,6 @@ def test_openmathinstruct2():
             "++filters.trim_solutions=false "
             "++filters.drop_incorrect_arithmetic=false "
             "++filters.split_arithmetic=false "
-            "++generation_suffix='\"<|eot_id|>\"'",
         ),
     )
 
