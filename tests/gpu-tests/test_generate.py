@@ -95,7 +95,7 @@ def test_vllm_reward():
     )
     subprocess.run(cmd, shell=True, check=True)
 
-    # no evaluation by default - checking just the number of lines and that there is no is_correct key
+    # no evaluation by default - checking just the number of lines and that there is a "reward_model_score" key
     with open(output_file) as fin:
         lines = fin.readlines()
     assert len(lines) == 10
