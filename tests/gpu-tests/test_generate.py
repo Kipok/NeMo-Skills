@@ -75,7 +75,7 @@ def test_vllm_reward():
     prompt_template = 'llama3-instruct' if model_type == 'llama' else 'qwen-instruct'
 
     input_file = "/tmp/nemo-skills-tests/data/output-rs0.test"
-    output_file = "/tmp/nemo-skills-tests/data/rm-output-rs0.jsonl "
+    output_file = "/tmp/nemo-skills-tests/data/rm-output-rs0.jsonl"
     cmd = (
         f"ns generate "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
