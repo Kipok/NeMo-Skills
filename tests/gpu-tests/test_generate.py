@@ -86,7 +86,7 @@ def test_vllm_reward():
         f"    --server_nodes 1 "
         f"    ++input_file={input_file} "
         f"    ++output_file={output_file} "
-        f"    --output_dir={os.dirname(output_file)} "
+        f"    --output_dir={os.path.dirname(output_file)} "
         f"    ++prompt_config=generic/math "
         f"    ++prompt_template={prompt_template} "
         f"    ++batch_size=8 "
