@@ -97,4 +97,4 @@ jobs:
         cd ${{ github.run_id }}
         nvidia-smi
         set -o pipefail # this will make sure next line returns non-0 exit code if tests fail
-        ./tests/gpu-tests/run_emb_mistral.sh
+        ./tests/gpu-tests/run_rm.sh
