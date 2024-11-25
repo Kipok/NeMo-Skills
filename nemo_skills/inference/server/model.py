@@ -89,6 +89,7 @@ class BaseModel(abc.ABC):
         top_k: int | list[int],
         repetition_penalty: float | list[float],
         random_seed: int | list[int],
+        logprobs: int | None = None,
         stop_phrases: list[str] | list[list[str]] | None,
     ) -> dict:
         """If the engine supports inflight-batching of requests, you only need to define this method.
@@ -116,6 +117,7 @@ class BaseModel(abc.ABC):
         repetition_penalty: float | list[float] = 1.0,
         random_seed: int | list[int] = 0,
         stop_phrases: list[str] | list[list[str]] | None = None,
+        logprobs: int | None = None,
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
         """For any generation parameter you can specify a list of values that needs to match the number of prompts.
@@ -129,6 +131,7 @@ class BaseModel(abc.ABC):
             'top_k': top_k,
             'repetition_penalty': repetition_penalty,
             'random_seed': random_seed,
+            'logprobs': logprobs,
             'stop_phrases': stop_phrases,
         }
         for key, value in kwargs.items():
@@ -175,6 +178,7 @@ class TRTLLMModel(BaseModel):
         top_k: int = 0,
         repetition_penalty: float = 1.0,
         random_seed: int = 0,
+        logprobs: int | None = None,
         stop_phrases: list[str] | None = None,
     ) -> list[dict]:
         if isinstance(prompt, dict):
@@ -215,6 +219,7 @@ class NemoModel(BaseModel):
         top_k: int | list[int] = 0,
         repetition_penalty: float | list[float] = 1.0,
         random_seed: int | list[int] = 0,
+        logprobs: int | None = None,
         stop_phrases: list[str] | list[list[str]] | None = None,
     ) -> list[dict]:
         """If the engine supports inflight-batching of requests, you only need to define this method.
@@ -423,6 +428,7 @@ class OpenAIModel(BaseModel):
         top_k: int,
         repetition_penalty: float,
         random_seed: int,
+        logprobs: int | None = None,
         stop_phrases: list[str],
     ) -> str:
         if top_k != 0:
