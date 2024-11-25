@@ -72,7 +72,7 @@ jobs:
         set -o pipefail # this will make sure next line returns non-0 exit code if tests fail
         ./tests/gpu-tests/run_qwen.sh
   
-  gpu-tests-emb-mistral:
+  gpu-tests-rm:
     runs-on: self-hosted-nemo-skills
     if: ${{ github.event.label.name == 'run GPU tests' }}
     steps:
