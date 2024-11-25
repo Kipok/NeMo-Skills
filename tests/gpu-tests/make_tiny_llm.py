@@ -16,7 +16,7 @@
 
 import argparse
 
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoConfig, AutoModel, AutoModelForCausalLM, AutoTokenizer
 
 parser = argparse.ArgumentParser(description="Create a tiny model for testing.")
 parser.add_argument("--model_type", type=str, required=True, choices=("qwen", "llama", "mistral_emb"))
@@ -27,7 +27,7 @@ if args.model_type == 'qwen':
     output_dir = "/tmp/nemo-skills-tests/qwen/tiny-model-hf"
     hidden_dim = 56
     head_dim = 2
-if args.model_type == 'mistral_emb':
+elif args.model_type == 'mistral_emb':
     model_name = "intfloat/e5-mistral-7b-instruct"
     output_dir = "/tmp/nemo-skills-tests/mistral_emb/tiny-model-hf"
     hidden_dim = 128
@@ -50,8 +50,12 @@ config.update(
 )
 print("new config", config)
 
-# create a tiny random model
-tiny_model = AutoModelForCausalLM.from_config(config)
+if args.model_type == 'mistral_emb':
+    tiny_model = AutoModel.from_config(config)
+else:
+    # create a tiny random model
+    tiny_model = AutoModelForCausalLM.from_config(config)
+
 print(f"num of params {tiny_model.num_parameters()}")
 
 # shrink it more and save
