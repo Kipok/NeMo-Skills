@@ -404,12 +404,10 @@ class TensorRTLLM:
 
         runner_kwargs = dict(engine_dir=model_path,
                         rank=tensorrt_llm.mpi_rank(),
+                        max_batch_size=max_batch_size,
+                        kv_cache_free_gpu_memory_fraction=kv_cache_free_gpu_memory_fraction,
                         enable_chunked_context=True,
-                        kv_cache_enable_block_reuse=True,)
-        if max_batch_size is not None:
-            runner_kwargs['max_batch_size'] = max_batch_size
-        if kv_cache_free_gpu_memory_fraction is not None:
-            runner_kwargs['kv_cache_free_gpu_memory_fraction'] = kv_cache_free_gpu_memory_fraction
+                        kv_cache_enable_block_reuse=True)
 
         self.runner = ModelRunnerCpp.from_dir(**runner_kwargs)
 
