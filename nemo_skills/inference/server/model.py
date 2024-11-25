@@ -89,8 +89,8 @@ class BaseModel(abc.ABC):
         top_k: int | list[int],
         repetition_penalty: float | list[float],
         random_seed: int | list[int],
-        logprobs: int | None = None,
         stop_phrases: list[str] | list[list[str]] | None,
+        logprobs: int | None = None,
     ) -> dict:
         """If the engine supports inflight-batching of requests, you only need to define this method.
 
@@ -428,8 +428,8 @@ class OpenAIModel(BaseModel):
         top_k: int,
         repetition_penalty: float,
         random_seed: int,
-        logprobs: int | None = None,
         stop_phrases: list[str],
+        logprobs: int | None = None,
     ) -> str:
         if top_k != 0:
             raise ValueError("`top_k` is not supported by OpenAI API, please set it to default value `0`.")
