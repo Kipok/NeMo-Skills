@@ -240,7 +240,7 @@ class Prompt:
         if self.config.template:
             if multi_turn_key is None:
                 prompt_string = self.SYSTEM_FORMAT.format(
-                    system=self.config.system.format(), **asdict(self.config.template)
+                    system=self.config.system.format(**input_dict), **asdict(self.config.template)
                 )
                 prompt_string += self.TURN_BEGIN_FORMAT.format(
                     user=self.build_user_message(input_dict), **asdict(self.config.template)
@@ -250,7 +250,7 @@ class Prompt:
                     prompt_string += self.TURN_END_FORMAT.format(assistant=generation, **asdict(self.config.template))
             else:
                 prompt_string = self.SYSTEM_FORMAT.format(
-                    system=self.config.system.format(), **asdict(self.config.template)
+                    system=self.config.system.format(**input_dict), **asdict(self.config.template)
                 )
                 for turn in input_dict[multi_turn_key][:-1]:
                     prompt_string += self.TURN_BEGIN_FORMAT.format(
