@@ -9,7 +9,7 @@ docker run --rm \
     -v /tmp:/tmp \
     -v `pwd`:/nemo_run/code \
     igitman/nemo-skills-nemo:0.4.2 \
-    python /nemo_run/code/tests/gpu-tests/make_tiny_llm.py --model_type $NEMO_SKILLS_TEST_MODEL_TYPE;
+    python /nemo_run/code/tests/gpu-tests/make_tiny_llm.py --model_type $NEMO_SKILLS_TEST_MODEL_TYPE
 
 export NEMO_SKILLS_TEST_HF_MODEL=/tmp/nemo-skills-tests/$NEMO_SKILLS_TEST_MODEL_TYPE/tiny-model-hf
-pytest tests/gpu-tests/test_reward.py -s -x
+pytest /nemo_run/code/tests/gpu-tests/test_reward.py -s -x
