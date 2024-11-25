@@ -26,6 +26,10 @@ if args.model_type == 'qwen':
     model_name = "Qwen/Qwen2.5-Math-7B"
     output_dir = "/tmp/nemo-skills-tests/qwen/tiny-model-hf"
     hidden_dim = 56
+elif args.model_type == 'mistral_emb':
+    model_name = "intfloat/e5-mistral-7b-instruct"
+    output_dir = "/tmp/nemo-skills-tests/mistral_emb/tiny-model-hf"
+    hidden_dim = 64
 else:
     model_name = "meta-llama/Meta-Llama-3.1-8B-Instruct"
     output_dir = "/tmp/nemo-skills-tests/llama/tiny-model-hf"
