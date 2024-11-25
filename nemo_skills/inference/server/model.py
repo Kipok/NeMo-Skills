@@ -19,6 +19,7 @@ import logging
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor
+from math import log
 
 import httpx
 import openai
@@ -183,6 +184,8 @@ class TRTLLMModel(BaseModel):
     ) -> list[dict]:
         if isinstance(prompt, dict):
             raise NotImplementedError("trtllm server does not support OpenAI \"messages\" as prompt.")
+        if logprobs is not None:
+            raise NotImplementedError("trtllm server does not support logprobs.")
         if stop_phrases is None:
             stop_phrases = []
         request = {
@@ -240,6 +243,9 @@ class NemoModel(BaseModel):
             "repetition_penalty": repetition_penalty,
             "end_strings": ["<|endoftext|>"] + stop_phrases,
         }
+        if logprobs is not None:
+            request["all_probs"] = True
+            request["compute_logprob"] = True
         generations = self.requests_lib.put(
             url="http://{}:{}/generate".format(self.server_host, self.server_port),
             data=json.dumps(request),
@@ -253,6 +259,15 @@ class NemoModel(BaseModel):
         while begin_idx < len(prompt) and not prompt[begin_idx:].startswith(output[:20]):
             begin_idx += 1
         output = {'generation': output[(len(prompt) - begin_idx) :]}
+        if logprobs is not None:  # TODO: for some reason nemo return non-zero logprobs only for the prompt
+            # outputs[idx]['num_generated_tokens'] = TODO: we can use returned tokens
+            output['logprobs'] = generations['logprob'][0]
+            output['tokens'] = generations['tokens'][0]
+            output['top_logprobs'] = []
+            for token_full_logprob in generations['full_logprob'][0]:
+                output['top_logprobs'].append(
+                    dict(sorted(enumerate(token_full_logprob), key=lambda x: x[1], reverse=True)[:logprobs])
+                )
         return output
 
     def generate(
@@ -265,6 +280,7 @@ class NemoModel(BaseModel):
         repetition_penalty: float = 1.0,
         random_seed: int = 0,
         stop_phrases: list[str] | None = None,
+        logprobs: int | None = None,
         remove_stop_phrases: bool = True,
     ) -> list[dict]:
         # we are overriding generate directly, since nemo doesn't support inflight batching
@@ -282,6 +298,9 @@ class NemoModel(BaseModel):
             "repetition_penalty": repetition_penalty,
             "end_strings": ["<|endoftext|>"] + stop_phrases,
         }
+        if logprobs is not None:
+            request["all_probs"] = True
+            request["compute_logprob"] = True
         self.preprocess_request(request)
         generations = self.requests_lib.put(
             url="http://{}:{}/generate".format(self.server_host, self.server_port),
@@ -297,6 +316,15 @@ class NemoModel(BaseModel):
             while begin_idx < len(prompts[idx]) and not prompts[idx][begin_idx:].startswith(generation[:20]):
                 begin_idx += 1
             outputs[idx] = {'generation': generation[(len(prompts[idx]) - begin_idx) :]}
+            if logprobs is not None:  # TODO: for some reason nemo return non-zero logprobs only for the prompt
+                # outputs[idx]['num_generated_tokens'] = TODO: we can use returned tokens
+                outputs[idx]['logprobs'] = generations['logprob'][idx]
+                outputs[idx]['tokens'] = generations['tokens'][idx]
+                outputs[idx]['top_logprobs'] = []
+                for token_full_logprob in generations['full_logprob'][idx]:
+                    outputs[idx]['top_logprobs'].append(
+                        dict(sorted(enumerate(token_full_logprob), key=lambda x: x[1], reverse=True)[:logprobs])
+                    )
 
         if remove_stop_phrases:
             for output in outputs:
@@ -433,6 +461,8 @@ class OpenAIModel(BaseModel):
     ) -> str:
         if top_k != 0:
             raise ValueError("`top_k` is not supported by OpenAI API, please set it to default value `0`.")
+        if logprobs is not None:  # TODO: add support for logprobs
+            raise NotImplementedError("OpenAI API does not support logprobs.")
 
         try:
             response = self.client.chat.completions.create(
