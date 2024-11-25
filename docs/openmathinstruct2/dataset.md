@@ -254,7 +254,7 @@ update_output_files("<path to workspace>/new-problems-solution-augmentation/", c
 
 Now all the data is generated and you can follow up by converting it to the SFT format.
 We remove the problems marked as contaminated.
-We also remove problems and solutions with length > 1024 Llama tokens. 
+We also remove problems and solutions with length > 1024 Llama tokens.
 To avoid the models from generating extremely short solutions, we remove solutions shorter than 200 characters.
 
 ```bash
@@ -270,10 +270,9 @@ python -m nemo_skills.training.prepare_sft_data \
     ++use_chars_for_min_length=true \
     ++min_solution_length=200 \
     ++hf_model_name="meta-llama/Meta-Llama-3.1-8B" \
-    ++max_solution_length=1024 \
-    ++generation_suffix='"<|eot_id|>"'
+    ++max_solution_length=1024
 ```
 
 ## Dataset contamination explorer
 
-To reproduce our dataset contamination explorer demo refer to [dataset_explorer_demo/README.md](https://github.com/Kipok/NeMo-Skills/blob/main/dataset_explorer_demo/README.md)
+To reproduce our dataset contamination explorer demo refer to [dataset_explorer_demo/README.md](https://github.com/NVIDIA/NeMo-Skills/blob/main/dataset_explorer_demo/README.md)

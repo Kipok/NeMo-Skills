@@ -52,11 +52,11 @@ def test_multiple_files():
     output_file = f"/tmp/nemo-skills-tests/data/processed_multifile_output.jsonl"
     docker_rm_and_mkdir(output_file)
     run_cmd(
-        module="nemo_skills.training.prepare_sft_data ",
         cluster='test-local',
         config_dir=Path(__file__).parent / 'gpu-tests',
         log_dir='/tmp/nemo-skills-tests/test_multiple_files',
         ctx=wrap_arguments(
+            "python -m nemo_skills.training.prepare_sft_data "
             f"    ++input_files='tests/data/output-rs*.test' "
             f"    ++output_path={output_file} "
             f"    ++prompt_config=generic/math "
@@ -73,7 +73,7 @@ def test_multiple_files():
         ),
     )
 
-    expected_md5 = "3971b33e2dd9ed28b2edc323eac19a1f"
+    expected_md5 = "8fce1c6a4abc47e82eec4e781909469b"
     output_md5 = compute_md5(output_file)
 
     assert (
@@ -85,11 +85,11 @@ def test_exclude_keys():
     output_file = f"/tmp/nemo-skills-tests/data/processed_compact_output.jsonl"
     docker_rm_and_mkdir(output_file)
     run_cmd(
-        module="nemo_skills.training.prepare_sft_data ",
         cluster='test-local',
         config_dir=Path(__file__).parent / 'gpu-tests',
         log_dir='/tmp/nemo-skills-tests/test_exclude_keys',
         ctx=wrap_arguments(
+            "python -m nemo_skills.training.prepare_sft_data "
             f"    ++input_files='tests/data/output-rs*.test' "
             f"    ++output_path={output_file} "
             f"    ++prompt_config=generic/math "
@@ -106,7 +106,7 @@ def test_exclude_keys():
         ),
     )
 
-    expected_md5 = "7144c098a6e75ffd01c29e714552db24"
+    expected_md5 = "08c9b228faa1065825b68c0c994fcdb4"
     output_md5 = compute_md5(output_file)
 
     assert (
@@ -118,11 +118,11 @@ def test_code_sft_data():
     output_file = f"/tmp/nemo-skills-tests/data/code_processed_output.jsonl"
     docker_rm_and_mkdir(output_file)
     run_cmd(
-        module="nemo_skills.training.prepare_sft_data ",
         cluster='test-local',
         config_dir=Path(__file__).parent / 'gpu-tests',
         log_dir='/tmp/nemo-skills-tests/test_code_sft_data',
         ctx=wrap_arguments(
+            "python -m nemo_skills.training.prepare_sft_data "
             f"    --config-name=prepare_code_sft_data "
             f"    ++preprocessed_dataset_files='tests/data/code-output.test' "
             f"    ++output_path={output_file} "
@@ -130,7 +130,6 @@ def test_code_sft_data():
             f"    ++prompt_template=llama3-instruct "
             f"    ++exclude_optional_keys=false "
             f"    ++filters.drop_incorrect_code_blocks=false "
-            f"    ++generation_suffix='\"<|eot_id|>\"' ",
         ),
     )
 
@@ -146,11 +145,11 @@ def test_openmathinstruct2():
     output_file = f"/tmp/nemo-skills-tests/data/openmathinstruct2-sft.jsonl"
     docker_rm_and_mkdir(output_file)
     run_cmd(
-        module="nemo_skills.training.prepare_sft_data ",
         cluster='test-local',
         config_dir=Path(__file__).parent / 'gpu-tests',
         log_dir='/tmp/nemo-skills-tests/test_openmathinstruct2',
         ctx=wrap_arguments(
+            "python -m nemo_skills.training.prepare_sft_data "
             "++preprocessed_dataset_files='tests/data/openmathinstruct2.test' "
             f"++output_path={output_file} "
             "++prompt_template=llama3-instruct "
@@ -162,7 +161,6 @@ def test_openmathinstruct2():
             "++filters.trim_solutions=false "
             "++filters.drop_incorrect_arithmetic=false "
             "++filters.split_arithmetic=false "
-            "++generation_suffix='\"<|eot_id|>\"'",
         ),
     )
 
