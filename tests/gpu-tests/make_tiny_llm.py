@@ -27,16 +27,19 @@ if args.model_type == 'qwen':
     output_dir = "/tmp/nemo-skills-tests/qwen/tiny-model-hf"
     hidden_dim = 56
     head_dim = 2
+    max_position_embeddings=256
 elif args.model_type == 'mistral_emb':
     model_name = "intfloat/e5-mistral-7b-instruct"
     output_dir = "/tmp/nemo-skills-tests/mistral_emb/tiny-model-hf"
     hidden_dim = 128
     head_dim = 64
+    max_position_embeddings=2048
 else:
     model_name = "meta-llama/Meta-Llama-3.1-8B-Instruct"
     output_dir = "/tmp/nemo-skills-tests/llama/tiny-model-hf"
     hidden_dim = 64
     head_dim = 2
+    max_position_embeddings=256
 
 config = AutoConfig.from_pretrained(model_name)
 config.update(
@@ -45,7 +48,7 @@ config.update(
         head_dim=head_dim,
         intermediate_size=hidden_dim,
         num_hidden_layers=2,
-        max_position_embeddings=256,
+        max_position_embeddings=max_position_embeddings,
     )
 )
 print("new config", config)
