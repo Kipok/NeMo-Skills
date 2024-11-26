@@ -14,6 +14,7 @@
 
 import logging
 
+import hydra
 from sdp.processors.base_processor import DataEntry
 
 from nemo_skills.training.data_preparation_utils.filters import BaseFilter
@@ -22,15 +23,23 @@ LOG = logging.getLogger(__file__)
 
 
 class MergeProcessor(BaseFilter):
-    def __init__(self, processors: list[BaseFilter], **kwargs):
+    def __init__(self, processor_configs: list[dict], **kwargs):
         super().__init__(**kwargs)
-        self.processors = processors
+        self.processors = []
+        for processor_cfg in processor_configs:
+            if not processor_cfg.pop('should_run', True):
+                continue
+            processor_cfg['input_manifest_file'] = None
+            processor_cfg['output_manifest_file'] = None
+            processor = hydra.utils.instantiate(processor_cfg)
+            # running runtime tests to fail right-away if something is not
+            # matching users expectations
+            processor.test()
+            self.processors.append(processor)
 
     def process_dataset_entry(self, data_entry: dict) -> list[DataEntry]:
         num_modified = 0
         for processor in self.processors:
-            if not processor.should_run:
-                continue
             data_entry = processor.process_dataset_entry(data_entry)[0]
             if data_entry.metrics.get('num_modified', 0) > 0:
                 num_modified = 1
