@@ -1,0 +1,64 @@
+# Prompt used by Llama-base/instruct models for MMLU benchmark
+# https://huggingface.co/datasets/meta-llama/Meta-Llama-3.1-8B-Instruct-evals/viewer/Meta-Llama-3.1-8B-Instruct-evals__mmlu__0_shot__cot__details?row=0
+
+system: ""
+
+user: |-
+  You are analyzing forum posts where each problem is associated with a list of discussions. Each discussion may contain a correct answer or might not. Your task is to:
+
+  Understand the Problem: Carefully read the problem statement, which includes:
+
+   1. Question Text: The full text of the question.
+      Thanks Received: A number indicating how many users appreciated the question (e.g., Thanks Received: 1).
+      No Thanks Received: A number indicating how many users found the question unhelpful (e.g., No Thanks Received: 0).
+      A higher "Thanks Received" value for the question indicates that it is of higher quality and importance. 
+
+  2. Evaluate Individual Discussions: Analyze each discussion, which contains:
+     Text: The content of the discussion.
+     Thanks Received: A number indicating how many users appreciated this discussion.
+     No Thanks Received: A number indicating how many users found this discussion unhelpful.
+     Discussions with a higher "Thanks Received" and fewer "No Thanks Received" are generally more valuable.
+
+  3. Understand the Discussion Metrics: In addition to the details of each discussion, the following aggregate metrics for all discussions are provided:
+     Total Thanks Received: The sum of all "Thanks Received" values across all discussions.
+     Total No Thanks Received: The sum of all "No Thanks Received" values across all discussions.
+     These totals provide a general indication of the level of engagement and sentiment about the entire set of discussions.
+
+  4. Extract Correct Answers: Identify and extract the correct answers (if any) from the discussions. Trt to prioritize those with:
+     Higher "Thanks Received."
+     Lower "No Thanks Received."
+     Contextual relevance to the problem.
+  
+  Format the Answers: Output the extracted correct answers (if any) in \boxed{{}} notation. If no correct answers are found, state "No correct answer found."
+  
+   Here are one examples. 
+
+   Forum post:
+   "Question Text: Billy Bob has fourteen different pairs of socks in his drawer. They are just thrown around randomly in the drawer. Billy Bob once woke up in a hurry and had to get his socks quickly. Without switching the light on, he pulled out enough socks to know that he had at least one pair, and then he ran out of the room. How many socks did Billy Bob pull out?\n
+   Thanks Received: 2\nNo Thanks Received: 0",
+   
+   Forum discussion:
+   Discussion 1\n
+   Discussion Text: [quote=\"Arvind_sn\"]Billy Bob has fourteen different pairs of socks in his drawer. They are just thrown around randomly in the drawer. Billy Bob once woke up in a hurry and had to get his socks quickly. Without switching the light on, he pulled out enough socks to know that he had at least one pair, and then he ran out of the room. How many socks did Billy Bob pull out?[/quote]\r\n\r\n[hide]Using the Pigeonhole Principal, $\\boxed{15}$[/hide]\nThanks Received: 2\nNo Thanks Received: 0\n\nD
+   iscussion 2\nDiscussion Text: [hide=\"Using what SplashD used,\"]You get 15, which is 14+1[/hide]\nThanks Received: 2\nNo Thanks Received: 0\n\n
+   Discussion 3\nDiscussion Text: [hide] Pigeonhole: If there are $kn+1$ objects in $kn$ boxes, there must be one box with at least $k+1$ objects in it.\n\nYou have $14$ boxes for the 14 pairs of socks. We want at least $2$ socks in one of the boxes. So, in this case, $k=1$, $n=14$, $kn+1=\\boxed{15}$. [/hide]\nThanks Received: 2\nNo Thanks Received: 0\n\n
+   Discussion 4\nDiscussion Text: [quote=\"Arvind_sn\"]Billy Bob has fourteen different pairs of socks in his drawer. They are just thrown around randomly in the drawer. Billy Bob once woke up in a hurry and had to get his socks quickly. Without switching the light on, he pulled out enough socks to know that he had at least one pair, and then he ran out of the room. How many socks did Billy Bob pull out?[/quote]\r\n[hide]After you pick fourteen, if they are all the same type, then the fifteenth will be different.[/hide]\nThanks Received: 2\nNo Thanks Received: 0\n\n
+   Discussion 5\nDiscussion Text: [hide]15, by pidgeonhole[/hide]\nThanks Received: 2\nNo Thanks Received: 0\n\nD
+   iscussion 6\nDiscussion Text: [hide]By the pigeonhole property, 15.[/hide]\nThanks Received: 2\nNo Thanks Received: 0\n\n
+   Discussion 7\nDiscussion Text: the answer is 15 because if bob picks 14 different socks, the 15th one is obviously going to be the same as one of the 14 different socks. \r\nBy the way, what's the pigeonhole property? (Sorry I'm kind of new to this)\nThanks Received: 2\nNo Thanks Received: 0\n\n
+   Discussion 8\nDiscussion Text: [quote=\"Arvind_sn\"]Billy Bob has fourteen different pairs of socks in his drawer. They are just thrown around randomly in the drawer. Billy Bob once woke up in a hurry and had to get his socks quickly. Without switching the light on, he pulled out enough socks to know that he had at least one pair, and then he ran out of the room. How many socks did Billy Bob pull out?[/quote]\r\n\r\n[hide]15? or 3[/hide]\nThanks Received: 1\nNo Thanks Received: 0\n\nTotal Thanks Received: 15\nTotal No Thanks Received: 0"
+   
+   Your response:
+   The most robust reasoning is presented in Discussion 3:
+   Pigeonhole: If there are If there are $kn+1$ objects in $kn$ boxes, there must be one box with at least $k+1$ objects in it. 
+   You have $14$ boxes for the $14$ pairs of socks. We want at least $2$ socks in one of the boxes. So, in this case: \[k = 1, \quad n = 14, \quad kn+1 = 15.\]
+
+   Thus, the number of socks Billy Bob must pull out is \(\boxed{15}\).
+
+
+   Your task is to analyze the provided forum post and its discussion, extract the most accurate answer, and present it in the format \boxed{{}}. 
+
+   Forum post:
+   {problem_with_thanks}\n\n
+   Forum discussion:
+   {discussion}
