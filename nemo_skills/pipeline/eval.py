@@ -31,7 +31,7 @@ def get_greedy_cmd(
     benchmark,
     split,
     output_dir,
-    output_name='output-greedy.jsonl',
+    output_name='output.jsonl',
     extra_eval_args="",
     extra_arguments="",
     extra_datasets=None,
