@@ -13,20 +13,6 @@ from test_data_preparation import docker_rm_and_mkdir
 
 @pytest.mark.gpu
 def test_vllm_reward():
-    # input_file = "/tmp/nemo-skills-data/tests/data/output-rs0.test"
-    # output_file = "/tmp/nemo-skills-data/tests/data/rm-output-rs0.jsonl"
-
-    # test_config_path = Path(__file__).absolute().parent / "test-local.yaml"
-    # config = yaml.safe_load(open(test_config_path).read())
-    # volumes = config['mounts']
-    # print(volumes)
-    # container = config['containers']['nemo-skills']
-    # docker_run(
-    #     image_name=container,
-    #     volume_paths=volumes,
-    #     command=f'mkdir -p {Path(input_file).parent} && cp tests/data/output-rs0.test {input_file}',
-    # )
-
     model_path = os.getenv('NEMO_SKILLS_TEST_HF_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_HF_MODEL to run this test")
