@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 import yaml
-from train_test import docker_run
+from test_train import docker_run
 
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 
@@ -26,7 +26,7 @@ def test_vllm_reward():
         volume_paths=volumes,
         command=f'mkdir -p {Path(input_file)} && cp tests/data/output-rs0.test {input_file}',
     )
-    docker_rm_and_mkdir(output_file)
+
     model_path = os.getenv('NEMO_SKILLS_TEST_HF_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_HF_MODEL to run this test")
