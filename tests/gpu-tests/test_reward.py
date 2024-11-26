@@ -20,11 +20,12 @@ def test_vllm_reward():
     test_config_path = Path(__file__).absolute().parent / "test-local.yaml"
     config = yaml.safe_load(open(test_config_path).read())
     volumes = config['mounts']
+    print(volumes)
     container = config['containers']['nemo-skills']
     docker_run(
         image_name=container,
         volume_paths=volumes,
-        command=f'mkdir -p {Path(input_file)} && cp /nemo_code/tests/data/output-rs0.test {input_file}',
+        command=f'mkdir -p {Path(input_file).parent} && cp tests/data/output-rs0.test {input_file}',
     )
 
     model_path = os.getenv('NEMO_SKILLS_TEST_HF_MODEL')
