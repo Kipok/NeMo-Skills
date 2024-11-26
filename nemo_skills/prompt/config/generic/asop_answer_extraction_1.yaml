@@ -39,9 +39,9 @@ user: |-
    
    Forum discussion:
    Discussion 1\n
-   Discussion Text: [quote=\"Arvind_sn\"]Billy Bob has fourteen different pairs of socks in his drawer. They are just thrown around randomly in the drawer. Billy Bob once woke up in a hurry and had to get his socks quickly. Without switching the light on, he pulled out enough socks to know that he had at least one pair, and then he ran out of the room. How many socks did Billy Bob pull out?[/quote]\r\n\r\n[hide]Using the Pigeonhole Principal, $\\boxed{15}$[/hide]\nThanks Received: 2\nNo Thanks Received: 0\n\nD
+   Discussion Text: [quote=\"Arvind_sn\"]Billy Bob has fourteen different pairs of socks in his drawer. They are just thrown around randomly in the drawer. Billy Bob once woke up in a hurry and had to get his socks quickly. Without switching the light on, he pulled out enough socks to know that he had at least one pair, and then he ran out of the room. How many socks did Billy Bob pull out?[/quote]\r\n\r\n[hide]Using the Pigeonhole Principal, $\\boxed{{15}}$[/hide]\nThanks Received: 2\nNo Thanks Received: 0\n\nD
    iscussion 2\nDiscussion Text: [hide=\"Using what SplashD used,\"]You get 15, which is 14+1[/hide]\nThanks Received: 2\nNo Thanks Received: 0\n\n
-   Discussion 3\nDiscussion Text: [hide] Pigeonhole: If there are $kn+1$ objects in $kn$ boxes, there must be one box with at least $k+1$ objects in it.\n\nYou have $14$ boxes for the 14 pairs of socks. We want at least $2$ socks in one of the boxes. So, in this case, $k=1$, $n=14$, $kn+1=\\boxed{15}$. [/hide]\nThanks Received: 2\nNo Thanks Received: 0\n\n
+   Discussion 3\nDiscussion Text: [hide] Pigeonhole: If there are $kn+1$ objects in $kn$ boxes, there must be one box with at least $k+1$ objects in it.\n\nYou have $14$ boxes for the 14 pairs of socks. We want at least $2$ socks in one of the boxes. So, in this case, $k=1$, $n=14$, $kn+1=\\boxed{{15}}$. [/hide]\nThanks Received: 2\nNo Thanks Received: 0\n\n
    Discussion 4\nDiscussion Text: [quote=\"Arvind_sn\"]Billy Bob has fourteen different pairs of socks in his drawer. They are just thrown around randomly in the drawer. Billy Bob once woke up in a hurry and had to get his socks quickly. Without switching the light on, he pulled out enough socks to know that he had at least one pair, and then he ran out of the room. How many socks did Billy Bob pull out?[/quote]\r\n[hide]After you pick fourteen, if they are all the same type, then the fifteenth will be different.[/hide]\nThanks Received: 2\nNo Thanks Received: 0\n\n
    Discussion 5\nDiscussion Text: [hide]15, by pidgeonhole[/hide]\nThanks Received: 2\nNo Thanks Received: 0\n\nD
    iscussion 6\nDiscussion Text: [hide]By the pigeonhole property, 15.[/hide]\nThanks Received: 2\nNo Thanks Received: 0\n\n
@@ -53,7 +53,7 @@ user: |-
    Pigeonhole: If there are If there are $kn+1$ objects in $kn$ boxes, there must be one box with at least $k+1$ objects in it. 
    You have $14$ boxes for the $14$ pairs of socks. We want at least $2$ socks in one of the boxes. So, in this case: \[k = 1, \quad n = 14, \quad kn+1 = 15.\]
 
-   Thus, the number of socks Billy Bob must pull out is \(\boxed{15}\).
+   Thus, the number of socks Billy Bob must pull out is \(\boxed{{15}}\).
 
 
    Your task is to analyze the provided forum post and its discussion, extract the most accurate answer, and present it in the format \boxed{{}}. 
