@@ -30,7 +30,6 @@ class CodeExecutionConfig:
     max_code_output_characters: int = 1000
     code_execution_timeout: float = 10.0
     max_code_executions: int = 3
-    stop_on_code_error: bool = False
 
 
 class CodeExecutionWrapper:
@@ -86,7 +85,8 @@ class CodeExecutionWrapper:
             request['tokens_to_generate'] -= num_generated_tokens
             # TODO: currently we don't account for tokens in the code output that we add to the prompt
             #       in most cases the output should be small though
-
+            if request['tokens_to_generate'] <= 0:
+                break
             # .rfind(code_end, 0, -1) searches for the second-to-last occurrence of code_end and checks
             # that the last code_begin is not closed to ensure that we are inside the code block
             if output.endswith(code_end) and output.rfind(code_begin) > output.rfind(code_end, 0, -1):
