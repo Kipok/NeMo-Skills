@@ -416,6 +416,15 @@ def cluster_upload(tunnel: SSHTunnel, local_file: str, remote_dir: str):
 
 def get_packager(extra_package_dirs: list[str] | None = None):
     """Will check if we are running from a git repo and use git packager or default packager otherwise."""
+    nemo_skills_dir = Path(__file__).absolute().parents[1]
+
+    if extra_package_dirs:
+        include_patterns = [str(Path(d) / '*') for d in extra_package_dirs]
+        include_pattern_relative_paths = [str(Path(d).parent) for d in extra_package_dirs]
+    else:
+        include_patterns = []
+        include_pattern_relative_paths = []
+
     try:
         # are we in a git repo? If yes, we are uploading the current code
         repo_path = (
@@ -433,28 +442,28 @@ def get_packager(extra_package_dirs: list[str] | None = None):
             logging.warning(
                 "Not running from NeMo-Skills repo, trying to upload installed package. "
                 "Make sure there are no extra files in %s",
-                str(Path(__file__).absolute().parents[1] / '*'),
+                str(nemo_skills_dir / '*'),
             )
-            include_pattern = str(Path(__file__).absolute().parents[1] / '*')
+            include_patterns.append([str(nemo_skills_dir / '*')])
         else:
             # picking up local dataset files if we are in the right repo
-            include_pattern = str(Path(__file__).absolute().parents[1] / "dataset/**/*.jsonl")
-        include_pattern_relative_path = str(Path(__file__).absolute().parents[2])
+            include_patterns.append([str(nemo_skills_dir / "dataset/**/*.jsonl")])
+        include_pattern_relative_paths.append([str(nemo_skills_dir.parent)])
 
         check_uncommited_changes = not bool(os.getenv('NEMO_SKILLS_DISABLE_UNCOMMITTED_CHANGES_CHECK', 0))
         return run.GitArchivePackager(
-            include_pattern=include_pattern,
-            include_pattern_relative_path=include_pattern_relative_path,
+            include_pattern=include_patterns,
+            include_pattern_relative_path=include_pattern_relative_paths,
             check_uncommitted_changes=check_uncommited_changes,
         )
     except subprocess.CalledProcessError:
         logging.warning(
             "Not running from a git repo, trying to upload installed package. Make sure there are no extra files in %s",
-            str(Path(__file__).absolute().parents[1] / '*'),
+            str(nemo_skills_dir / '*'),
         )
         return run.PatternPackager(
-            include_pattern=str(Path(__file__).absolute().parents[1] / '*'),
-            relative_path=str(Path(__file__).absolute().parents[2]),
+            include_pattern=str(nemo_skills_dir / '*'),
+            relative_path=str(nemo_skills_dir.parent),
         )
 
 

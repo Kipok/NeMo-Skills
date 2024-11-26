@@ -212,6 +212,7 @@ def eval(
                 server_config=server_config,
                 with_sandbox=True,
                 run_after=run_after,
+                extra_package_dirs=[extra_datasets] if extra_datasets else None,
             )
         run_exp(exp, cluster_config)
 
