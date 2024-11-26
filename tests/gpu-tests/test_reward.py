@@ -6,10 +6,9 @@ import sys
 from pathlib import Path
 
 import pytest
-import yaml
-from test_train import docker_run
 
 sys.path.append(str(Path(__file__).absolute().parents[1]))
+from test_data_preparation import docker_rm_and_mkdir
 
 
 @pytest.mark.gpu
@@ -37,7 +36,9 @@ def test_vllm_reward():
     prompt_template = 'llama3-instruct' if model_type == 'llama' else 'qwen-instruct'
 
     input_file = "/nemo_run/code/tests/data/output-rs0.test"
-    output_file = "/nemo_run/code/tests/data/rm-output-rs0.jsonl"
+    output_file = "/tmp/nemo-skills-tests/data/rm-output-rs0.jsonl"
+
+    docker_rm_and_mkdir(output_file)
 
     cmd = (
         f"ns generate "
