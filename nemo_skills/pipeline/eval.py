@@ -37,7 +37,6 @@ def get_greedy_cmd(
     extra_datasets=None,
 ):
     benchmark_module, found_in_extra = get_dataset_module(benchmark, extra_datasets=extra_datasets)
-    extra_datasets = extra_datasets or os.environ.get("NEMO_SKILLS_EXTRA_DATASETS")
     if found_in_extra:
         data_parameters = f"++input_file=/nemo_run/code/{Path(extra_datasets).name}/{benchmark}/{split}.jsonl"
     else:
