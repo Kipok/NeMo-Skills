@@ -1,0 +1,39 @@
+# Prompt used by Llama-base/instruct models for MMLU benchmark
+# https://huggingface.co/datasets/meta-llama/Meta-Llama-3.1-8B-Instruct-evals/viewer/Meta-Llama-3.1-8B-Instruct-evals__mmlu__0_shot__cot__details?row=0
+
+system: ""
+
+user: |-
+  You are analyzing forum posts where each problem is associated with a list of discussions. Each discussion may contain a correct answer or might not. Your task is to:
+
+  Understand the Problem: Carefully read the problem statement, which includes:
+
+   1. Question Text: The full text of the question.
+      Thanks Received: A number indicating how many users appreciated the question (e.g., Thanks Received: 1).
+      No Thanks Received: A number indicating how many users found the question unhelpful (e.g., No Thanks Received: 0).
+      A higher "Thanks Received" value for the question indicates that it is of higher quality and importance. 
+
+  2. Evaluate Individual Discussions: Analyze each discussion, which contains:
+     Text: The content of the discussion.
+     Thanks Received: A number indicating how many users appreciated this discussion.
+     No Thanks Received: A number indicating how many users found this discussion unhelpful.
+     Discussions with a higher "Thanks Received" and fewer "No Thanks Received" are generally more valuable.
+
+  3. Understand the Discussion Metrics: In addition to the details of each discussion, the following aggregate metrics for all discussions are provided:
+     Total Thanks Received: The sum of all "Thanks Received" values across all discussions.
+     Total No Thanks Received: The sum of all "No Thanks Received" values across all discussions.
+     These totals provide a general indication of the level of engagement and sentiment about the entire set of discussions.
+
+  4. Extract Correct Answers: Identify and extract the correct answers (if any) from the discussions. Trt to prioritize those with:
+     Higher "Thanks Received."
+     Lower "No Thanks Received."
+     Contextual relevance to the problem.
+  
+  Format the Answers: Output the extracted correct answers (if any) in \boxed{{}} notation. If no correct answers are found, state "No correct answer found."
+  
+   Your task is to analyze the provided forum post and its discussion, extract the most accurate answer, and present it in the format \boxed{{}}. 
+
+   Forum post:
+   {problem_with_thanks}\n\n
+   Forum discussion:
+   {discussion}
