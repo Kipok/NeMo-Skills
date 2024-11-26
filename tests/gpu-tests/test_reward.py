@@ -24,7 +24,7 @@ def test_vllm_reward():
     docker_run(
         image_name=container,
         volume_paths=volumes,
-        command=f'mkdir -p {Path(input_file)} && cp tests/data/output-rs0.test {input_file}',
+        command=f'mkdir -p {Path(input_file)} && cp /nemo_code/tests/data/output-rs0.test {input_file}',
     )
 
     model_path = os.getenv('NEMO_SKILLS_TEST_HF_MODEL')
