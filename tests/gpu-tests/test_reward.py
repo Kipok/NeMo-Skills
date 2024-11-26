@@ -6,12 +6,27 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
+from train_test import docker_run
 
 sys.path.append(str(Path(__file__).absolute().parents[1]))
 
 
 @pytest.mark.gpu
 def test_vllm_reward():
+    input_file = "/tmp/nemo-skills-data/tests/data/output-rs0.test"
+    output_file = "/tmp/nemo-skills-data/tests/data/rm-output-rs0.jsonl"
+
+    test_config_path = Path(__file__).absolute().parent / "test-local.yaml"
+    config = yaml.safe_load(open(test_config_path).read())
+    volumes = config['mounts']
+    container = config['containers']['nemo-skills']
+    docker_run(
+        image_name=container,
+        volume_paths=volumes,
+        command=f'mkdir -p {Path(input_file)} && cp tests/data/output-rs0.test {input_file}',
+    )
+    docker_rm_and_mkdir(output_file)
     model_path = os.getenv('NEMO_SKILLS_TEST_HF_MODEL')
     if not model_path:
         pytest.skip("Define NEMO_SKILLS_TEST_HF_MODEL to run this test")
@@ -20,8 +35,6 @@ def test_vllm_reward():
         pytest.skip("Define NEMO_SKILLS_TEST_MODEL_TYPE to run this test")
     prompt_template = 'llama3-instruct' if model_type == 'llama' else 'qwen-instruct'
 
-    input_file = "tests/data/output-rs0.test"
-    output_file = "tests/data/rm-output-rs0.jsonl"
     cmd = (
         f"ns generate "
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
