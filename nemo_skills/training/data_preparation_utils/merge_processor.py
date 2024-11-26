@@ -21,7 +21,7 @@ from nemo_skills.training.data_preparation_utils.filters import BaseFilter
 LOG = logging.getLogger(__file__)
 
 
-class MergeProcessors(BaseFilter):
+class MergeProcessor(BaseFilter):
     def __init__(self, processors: list[BaseFilter], **kwargs):
         super().__init__(**kwargs)
         self.processors = processors

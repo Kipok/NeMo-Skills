@@ -69,7 +69,7 @@ processors:
     add_incorrect: ${add_incorrect}
 
   # this will optimize processors inside to avoid serializing data to disk
-  - _target_: nemo_skills.training.data_preparation_utils.merge_processors.MergeProcessors
+  - _target_: nemo_skills.training.data_preparation_utils.merge_processors.MergeProcessor
     processors:
       - _target_: nemo_skills.training.data_preparation_utils.filters.DropMultiBoxed
         should_run: ${filters.drop_multi_boxed}
