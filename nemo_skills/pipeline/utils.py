@@ -461,9 +461,12 @@ def get_packager(extra_package_dirs: list[str] | None = None):
             "Not running from a git repo, trying to upload installed package. Make sure there are no extra files in %s",
             str(nemo_skills_dir / '*'),
         )
+        include_patterns.append(str(nemo_skills_dir / '*'))
+        include_pattern_relative_paths.append(str(nemo_skills_dir.parent))
+
         return run.PatternPackager(
-            include_pattern=str(nemo_skills_dir / '*'),
-            relative_path=str(nemo_skills_dir.parent),
+            include_pattern=include_patterns,
+            relative_path=include_pattern_relative_paths,
         )
 
 
