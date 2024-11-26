@@ -50,6 +50,10 @@ class BaseFilter(BaseParallelProcessor):
             self.should_run = kwargs.pop('should_run')
         else:
             self.should_run = True
+        if 'output_manifest_file' not in kwargs:
+            kwargs['output_manifest_file'] = None
+        if 'input_manifest_file' not in kwargs:
+            kwargs['input_manifest_file'] = None
         super().__init__(**kwargs)
 
     def finalize(self, metrics: List):
