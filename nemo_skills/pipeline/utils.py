@@ -444,11 +444,11 @@ def get_packager(extra_package_dirs: list[str] | None = None):
                 "Make sure there are no extra files in %s",
                 str(nemo_skills_dir / '*'),
             )
-            include_patterns.append([str(nemo_skills_dir / '*')])
+            include_patterns.append(str(nemo_skills_dir / '*'))
         else:
             # picking up local dataset files if we are in the right repo
-            include_patterns.append([str(nemo_skills_dir / "dataset/**/*.jsonl")])
-        include_pattern_relative_paths.append([str(nemo_skills_dir.parent)])
+            include_patterns.append(str(nemo_skills_dir / "dataset/**/*.jsonl"))
+        include_pattern_relative_paths.append(str(nemo_skills_dir.parent))
 
         check_uncommited_changes = not bool(os.getenv('NEMO_SKILLS_DISABLE_UNCOMMITTED_CHANGES_CHECK', 0))
         return run.GitArchivePackager(

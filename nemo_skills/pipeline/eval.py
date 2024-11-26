@@ -163,6 +163,8 @@ def eval(
 
     benchmarks = {k: int(v) for k, v in [b.split(":") for b in benchmarks.split(",")]}
 
+    extra_datasets = extra_datasets or os.environ.get("NEMO_SKILLS_EXTRA_DATASETS")
+
     eval_cmds = (
         [
             get_greedy_cmd(
