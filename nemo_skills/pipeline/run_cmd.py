@@ -51,13 +51,15 @@ def run_cmd(
         None, help="Can specify an expname that needs to be completed before this one starts"
     ),
     config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
-    log_dir: str = typer.Option(help="Specify a custom location for slurm logs. "),
+    log_dir: str = typer.Option(None, help="Specify a custom location for slurm logs."),
 ):
     """Run a pre-defined module or script in the NeMo-Skills container."""
     setup_logging(disable_hydra_logs=False)
     extra_arguments = f'{" ".join(ctx.args)}'
 
     cluster_config = get_cluster_config(cluster, config_dir)
+    if cluster_config['executor'] == 'slurm' and log_dir is None:
+        raise ValueError("Must specify log_dir for slurm executor.")
     check_if_mounted(cluster_config, log_dir)
 
     with run.Experiment(expname) as exp:
