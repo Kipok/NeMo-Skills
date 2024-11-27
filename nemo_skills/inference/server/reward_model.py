@@ -19,8 +19,8 @@ import os
 import httpx
 import openai
 import requests
-from openai import DefaultHttpxClient
-from openai import OpenAI, BadRequestError
+from openai import DefaultHttpxClient, OpenAI, BadRequestError
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 class BaseModel(abc.ABC):
     """Base model class for handling requests to the inference server.
