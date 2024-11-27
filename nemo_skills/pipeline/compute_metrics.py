@@ -19,7 +19,7 @@ import logging
 import sys
 from pathlib import Path
 
-from nemo_skills.evaluation.metrics import compute_metrics
+from nemo_skills.evaluation.metrics import ComputeMetrics
 from nemo_skills.utils import setup_logging
 
 LOG = logging.getLogger(__file__)
@@ -64,15 +64,8 @@ if __name__ == '__main__':
 
     setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not args.debug else logging.DEBUG)
 
-    benchmark_module = importlib.import_module(f"nemo_skills.dataset.{args.benchmark}")
-    metrics_calculator = benchmark_module.METRICS_CLASS()
-
-    metrics = compute_metrics(
-        args.input_files,
-        metrics_calculator,
-        args.allow_incomplete,
-        args.max_samples,
-    )
+    metrics_calculator = ComputeMetrics(benchmark=args.benchmark, max_samples=args.max_samples)
+    metrics = metrics_calculator.compute_metrics(args.input_files)
 
     LOG.info(f"Evaluation results for %s", args.input_files)
     for metric_key, metric_value in metrics.items():
