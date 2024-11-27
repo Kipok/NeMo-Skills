@@ -120,6 +120,23 @@ class ReadData(BaseProcessor):
             seen_predictions[question].add(sample[self.output_key])
             yield sample
 
+    def _batch_deduplicate(self, batch):
+        seen_predictions = defaultdict(set)
+        unique_samples = []
+
+        for sample in batch:
+            question = sample[self.input_key]
+            if sample[self.output_key] not in seen_predictions[question]:
+                seen_predictions[question].add(sample[self.output_key])
+                unique_samples.append(sample)
+
+        return unique_samples
+
+    def _chunks(self, lst, n):
+        """Yield successive n-sized chunks from lst."""
+        for i in range(0, len(lst), n):
+            yield lst[i : i + n]
+
     def process(self):
         samples = []
         if self.input_files:
@@ -130,12 +147,31 @@ class ReadData(BaseProcessor):
             args = [(file, self._read_preprocessed_data) for file in unroll_files(self.preprocessed_dataset_files)]
             results = process_map(self._parallel_read_file, args, max_workers=None, chunksize=1)
             samples.extend(list(chain(*results)))
+
         LOG.info("Total samples before deduplication: %d", len(samples))
-        samples_count = 0
-        with open(self.output_manifest_file, "wt", encoding="utf-8") as fout:
-            for sample in self._unique_iterator(samples):
-                fout.write(json.dumps(sample) + "\n")
-                samples_count += 1
+
+        # Parallel deduplication
+        num_cores = multiprocessing.cpu_count()
+        chunk_size = max(1000, len(samples) // (num_cores * 4))  # Adjust chunk size based on data size
+
+        with ProcessPoolExecutor(max_workers=num_cores) as executor:
+            # Process chunks in parallel
+            futures = [executor.submit(self._batch_deduplicate, chunk) for chunk in self._chunks(samples, chunk_size)]
+
+            # Final deduplication of results from all chunks
+            seen_predictions = defaultdict(set)
+            samples_count = 0
+
+            with open(self.output_manifest_file, "wt", encoding="utf-8") as fout:
+                for future in futures:
+                    chunk_results = future.result()
+                    for sample in chunk_results:
+                        question = sample[self.input_key]
+                        if sample[self.output_key] not in seen_predictions[question]:
+                            seen_predictions[question].add(sample[self.output_key])
+                            fout.write(json.dumps(sample) + "\n")
+                            samples_count += 1
+
         LOG.info("Total samples after deduplication: %d", samples_count)
 
 
