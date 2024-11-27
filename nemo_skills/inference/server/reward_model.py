@@ -106,6 +106,9 @@ class VLLMRewardModel(BaseModel):
         self.model = model_list.data[0].id
 
     def score(self, prompts: list[str]) -> list[float]:
+        # TODO: The current VLLM support for Qwen-RM uses a hack of using embedding APIs.
+        # Once VLLM officially adds the support, change the API.
+        
         outputs = [None] * len(prompts)  # Pre-allocate a list to store results in correct order
         futures = {}
 
