@@ -106,14 +106,31 @@ class VLLMRewardModel(BaseModel):
         self.model = model_list.data[0].id
 
     def score(self, prompts: list[str]) -> list[float]:
-        # TODO: The current VLLM support for Qwen-RM uses a hack of using embedding APIs.
-        # Once VLLM officially adds the support, change the API.
-        responses = self.oai_client.embeddings.create(input=prompts, model=self.model)
-        outputs = []
-        for data in responses.data:
-            raw_score = data.embedding[-1]
+        outputs = [None] * len(prompts)  # Pre-allocate a list to store results in correct order
+        futures = {}
+
+        def process_single_prompt(prompt):
+            response = self.oai_client.embeddings.create(input=[prompt], model=self.model)   
+            raw_score = response.data[0].embedding[-1]
             score = 1 / (1 + math.exp(-raw_score))
-            outputs.append({"reward_model_score": score})
+            return {"reward_model_score": score}
+
+        with ThreadPoolExecutor(len(prompts)) as executor:
+            for idx, prompt in enumerate(prompts):
+                futures[executor.submit(process_single_prompt, prompt)] = idx
+
+            for future in as_completed(futures):
+                idx = futures[future]
+                try:
+                    outputs[idx] = future.result()
+                except BadRequestError as e:
+                    error_details = e.body 
+                    error_message = error_details.get("message", "No message found")
+                    error_code = error_details.get("code", "No code found")            
+                    if error_code == 400 and 'maximum context length' in error_message:
+                        outputs[idx] = {"reward_model_score": 0}  # Default value set as 0 if we have request over maximum context length
+                    else:
+                        raise Exception(f"Unhandled request error: {error_details}")      
         return outputs
 
 
