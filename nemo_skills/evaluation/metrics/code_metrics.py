@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
+
 from nemo_skills.evaluation.metrics.base import BaseMetrics
 
 
@@ -25,34 +27,38 @@ class CodeMetrics(BaseMetrics):
     def is_incomplete(self, elem):
         return 'is_correct' not in elem or 'is_correct-plus' not in elem
 
-    def update(self, predictions, aggregation_mode):
+    def _update_perf_dict(self, perf_dict, correct, correct_plus):
+        perf_dict["total_correct"] += correct
+        perf_dict["total_correct_plus"] += correct_plus
+
+    def update(self, predictions):
         """Updating the evaluation results with the current element.
 
         Args:
             predictions (list[dict]): aggregated predictions across all generations.
                 The content of the file is benchmark specific.
-            aggregation_mode (str): "best", "first", etc. Might vary by benchmark.
         """
-        # this shouldn't do any heavy calculation, but just read the metric from existing json entry
-        # all the heavy lifting should be done in the evaluation script
         self.total += 1
-        if aggregation_mode == "best":
-            self.total_correct += any([elem['is_correct'] for elem in predictions])
-            self.total_correct_plus += any([elem['is_correct-plus'] for elem in predictions])
-        elif aggregation_mode == "first":
-            self.total_correct += predictions[0]['is_correct']
-            self.total_correct_plus += predictions[0]['is_correct-plus']
+
+        if len(predictions) > 1:
+            correct = any([elem['is_correct'] for elem in predictions])
+            correct_plus = any([elem['is_correct-plus'] for elem in predictions])
+            self._update_perf_dict(self.agg_mode_dict["best"], correct, correct_plus)
         else:
-            raise ValueError(f"Unsupported mode {aggregation_mode}")
+            correct = predictions[0]['is_correct']
+            correct_plus = predictions[0]['is_correct-plus']
+            self._update_perf_dict(self.agg_mode_dict["greedy"], correct, correct_plus)
 
     def get_metrics(self):
-        return {
-            "num_entries": self.total,
-            "passing_base_tests": self.total_correct / self.total * 100.0,
-            "passing_plus_tests": self.total_correct_plus / self.total * 100.0,
-        }
+        metrics_dict = {}
+        for agg_mode, agg_metric_dict in self.agg_mode_dict.items():
+            metrics_dict[agg_mode] = {"num_entries": self.total}
+
+            metrics_dict[agg_mode]["passing_base_tests"] = (agg_metric_dict["total_correct"] / self.total) * 100.0
+            metrics_dict[agg_mode]["passing_plus_tests"] = (agg_metric_dict["total_correct_plus"] / self.total) * 100.0
+
+        return metrics_dict
 
     def reset(self):
-        self.total_correct = 0
-        self.total_correct_plus = 0
         self.total = 0
+        self.agg_mode_dict = defaultdict(lambda: defaultdict(int))

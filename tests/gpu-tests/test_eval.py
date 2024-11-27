@@ -51,8 +51,7 @@ def test_trtllm_eval():
     subprocess.run(cmd, shell=True, check=True)
 
     # running compute_metrics to check that results are expected
-    metrics_calculator = ComputeMetrics(benchmark='gsm8k')
-    metrics = metrics_calculator.compute_metrics(
+    metrics = ComputeMetrics(benchmark='gsm8k').compute_metrics(
         [f"/tmp/nemo-skills-tests/{model_type}/trtllm-eval/eval-results/gsm8k/output.jsonl"]
     )["greedy"]
     # rough check, since exact accuracy varies depending on gpu type

@@ -20,3 +20,4 @@ from nemo_skills.evaluation.metrics.if_metrics import IFMetrics
 from nemo_skills.evaluation.metrics.lean4_metrics import Lean4Metrics
 from nemo_skills.evaluation.metrics.math_metrics import MathMetrics
 from nemo_skills.evaluation.metrics.mtbench_metrics import MtBenchMetrics
+from nemo_skills.evaluation.metrics.utils import read_predictions
