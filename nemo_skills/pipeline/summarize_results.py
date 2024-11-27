@@ -133,6 +133,12 @@ def summarize_results(
                         metrics_calculator=metrics_calculator,
                         max_samples=max_samples,
                     )
+                elif Path(f'{benchmark_path}/output.jsonl').exists():
+                    results[benchmark]['greedy'] = compute_metrics(
+                        input_files=[f"{benchmark_path}/output.jsonl"],
+                        metrics_calculator=metrics_calculator,
+                        max_samples=max_samples,
+                    )
                 sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
                 if len(sampling_outputs) > 0:
                     results[benchmark][f'pass@{len(sampling_outputs)}'] = compute_metrics(
