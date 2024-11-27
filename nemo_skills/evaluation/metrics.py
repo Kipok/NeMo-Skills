@@ -705,20 +705,20 @@ def read_predictions(predictions, evaluator, allow_incomplete=False):
     for prediction in predictions:
         if not prediction:  # could have missing predictions
             if not allow_incomplete:
-                raise RuntimeError("Some data is missing!1")
+                raise RuntimeError("Some data is missing!")
             data.append(evaluator.fill_up_missing())
             continue
         prediction_dict = json.loads(prediction)
         if not prediction_dict:
             if not allow_incomplete:
-                raise RuntimeError("Some data is missing!2")
+                raise RuntimeError("Some data is missing!")
             data.append(evaluator.fill_up_missing())
             continue
         if evaluator.is_incomplete(prediction_dict):
             if not allow_incomplete:
                 print("Incomplete prediction_dict:", prediction_dict)
                 print("evaluator:", evaluator)
-                raise RuntimeError("Some data is missing!3")
+                raise RuntimeError("Some data is missing!")
             data.append(evaluator.fill_up_missing())
             continue
         data.append(prediction_dict)

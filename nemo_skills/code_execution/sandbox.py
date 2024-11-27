@@ -396,13 +396,8 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                 )
                     elif answer_format == "lean4-proof":
                         if not use_predicted_proof_key:
-                            # TODO Temp solution to be changes
-
-                            generation = re.sub(r"^\s*(<\uff5cbegin\u2581of\u2581sentence\uff5c>)?\s*```(lean4)?\s*|\s*```$", "", line_dict["generation"])
-
-                            # generation = re.sub(r"^\s*```(lean4)?\s*|\s*```$", "", line_dict["generation"])
+                            generation = re.sub(r"^\s*```(lean4)?\s*|\s*```$", "", line_dict["generation"])
                             line_dict["predicted_proof"] = line_dict["header"] + line_dict["formal_statement"] + generation
-
                         else:
                             if "predicted_proof" not in line_dict:
                                 raise ValueError(
