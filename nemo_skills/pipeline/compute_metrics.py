@@ -72,7 +72,6 @@ if __name__ == '__main__':
         metrics_calculator,
         args.allow_incomplete,
         args.max_samples,
-        args.aggregation_mode,
     )
 
     LOG.info(f"Evaluation results for %s", args.input_files)
