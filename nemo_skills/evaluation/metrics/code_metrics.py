@@ -27,10 +27,6 @@ class CodeMetrics(BaseMetrics):
     def is_incomplete(self, elem):
         return 'is_correct' not in elem or 'is_correct-plus' not in elem
 
-    def _update_perf_dict(self, perf_dict, correct, correct_plus):
-        perf_dict["total_correct"] += correct
-        perf_dict["total_correct_plus"] += correct_plus
-
     def update(self, predictions):
         """Updating the evaluation results with the current element.
 
@@ -41,13 +37,16 @@ class CodeMetrics(BaseMetrics):
         self.total += 1
 
         if len(predictions) > 1:
-            correct = any([elem['is_correct'] for elem in predictions])
-            correct_plus = any([elem['is_correct-plus'] for elem in predictions])
-            self._update_perf_dict(self.agg_mode_dict["best"], correct, correct_plus)
+            self.agg_mode = f"pass@{len(predictions)}"
+
+            self.total_correct += any([elem['is_correct'] for elem in predictions])
+            self.total_correct_plus += any([elem['is_correct-plus'] for elem in predictions])
         else:
-            correct = predictions[0]['is_correct']
-            correct_plus = predictions[0]['is_correct-plus']
-            self._update_perf_dict(self.agg_mode_dict["greedy"], correct, correct_plus)
+            # If single prediction, set it to greedy aggregation mode
+            self.agg_mode = "greedy"
+
+            self.total_correct += predictions[0]['is_correct']
+            self.total_correct_plus += predictions[0]['is_correct-plus']
 
     def get_metrics(self):
         metrics_dict = {}
@@ -57,8 +56,11 @@ class CodeMetrics(BaseMetrics):
             metrics_dict[agg_mode]["passing_base_tests"] = (agg_metric_dict["total_correct"] / self.total) * 100.0
             metrics_dict[agg_mode]["passing_plus_tests"] = (agg_metric_dict["total_correct_plus"] / self.total) * 100.0
 
-        return metrics_dict
+        return {self.agg_mode: metrics_dict}
 
     def reset(self):
         self.total = 0
-        self.agg_mode_dict = defaultdict(lambda: defaultdict(int))
+        self.total_correct = 0
+        self.total_correct_plus = 0
+        # Aggregation mode is automatically set
+        self.agg_mode = "greedy"

@@ -28,33 +28,37 @@ class Lean4Metrics(BaseMetrics):
             incomplete = 'proof_status' not in elem
         return incomplete
 
-    def update(self, predictions, aggregation_mode):
+    def update(self, predictions):
         """Updating the evaluation results with the current element.
 
         Args:
             predictions (list[dict]): aggregated predictions across all generations.
                 The content of the file is benchmark specific.
-            aggregation_mode (str): "best", "first", etc. Might vary by benchmark.
         """
         self.total += 1
 
-        if aggregation_mode == "best":
+        if len(predictions) > 1:
+            # Multiple predictions, select the pass@k
+            self.agg_mode = f"pass@{len(predictions)}"
+
             self.correct_proof += any([elem['proof_status'] == "completed" for elem in predictions])
             if all([elem['proof_status'] == "timeout" for elem in predictions]):
                 self.timeout_error += 1
-        elif aggregation_mode == "first":
+        else:
+            self.agg_mode = "greedy"
+
             self.correct_proof += predictions[0]['proof_status'] == "completed"
             self.timeout_error += predictions[0]['proof_status'] == "timeout"
-        else:
-            raise ValueError(f"Unsupported mode {aggregation_mode}")
 
     def get_metrics(self):
         metrics = {"num_entries": self.total}
         metrics["lean4_correct"] = self.correct_proof / self.total * 100.0
         metrics["timeout_error"] = self.timeout_error / self.total * 100.0
-        return metrics
+        return {self.agg_mode: metrics}
 
     def reset(self):
         self.correct_proof = 0
         self.timeout_error = 0
         self.total = 0
+        # Aggregation mode is automatically set
+        self.agg_mode = "greedy"

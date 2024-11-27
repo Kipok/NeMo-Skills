@@ -77,16 +77,18 @@ class IFMetrics(BaseMetrics):
             predictions (list[dict]): aggregated predictions across all generations.
                 The content of the file is benchmark specific.
         """
-        # this shouldn't do any heavy calculation, but just read the metric from existing json entry
-        # all the heavy lifting should be done in the evaluation script
-        if aggregation_mode == "best":
+        if len(predictions) > 1:
+            # Selecting the best among all predictions
+            self.agg_mode = "best"
+
             self._update_single_stat(self.strict_stats, [pred['strict_eval'] for pred in predictions])
             self._update_single_stat(self.loose_stats, [pred['loose_eval'] for pred in predictions])
-        elif aggregation_mode == "first":
+        else:
+            # Single prediction
+            self.agg_mode = "greedy"
+
             self._update_single_stat(self.strict_stats, [predictions[0]['strict_eval']])
             self._update_single_stat(self.loose_stats, [predictions[0]['loose_eval']])
-        else:
-            raise ValueError(f"Unsupported mode {aggregation_mode}")
 
     def get_metrics(self):
         prompt_total = self.strict_stats['prompt']['total']
@@ -95,7 +97,7 @@ class IFMetrics(BaseMetrics):
         inst_strict = self.strict_stats['instruction']['correct'] / inst_total * 100.0
         prompt_loose = self.loose_stats['prompt']['correct'] / prompt_total * 100.0
         inst_loose = self.loose_stats['instruction']['correct'] / inst_total * 100.0
-        return {
+        metrics_dict = {
             "num_prompts": prompt_total,
             "num_instructions": inst_total,
             "average_score": (prompt_strict + inst_strict + prompt_loose + inst_loose) / 4,
@@ -104,6 +106,8 @@ class IFMetrics(BaseMetrics):
             "prompt_loose_accuracy": prompt_loose,
             "instruction_loose_accuracy": inst_loose,
         }
+
+        return {self.agg_mode: metrics_dict}
 
     def reset(self):
         # the original code also has a deeper breakdown into tier1 scores,
@@ -118,3 +122,6 @@ class IFMetrics(BaseMetrics):
             "instruction": {"total": 0, "correct": 0},
             "tier0": {"total": defaultdict(int), "correct": defaultdict(int)},
         }
+
+        # Automatically set
+        self.agg_mode = "greedy"

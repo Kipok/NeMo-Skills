@@ -73,19 +73,20 @@ class ArenaMetrics(BaseMetrics):
     def is_incomplete(self, elem):
         return 'judgement-gen-base' not in elem or 'judgement-base-gen' not in elem or 'generation' not in elem
 
-    def update(self, predictions, aggregation_mode):
+    def update(self, predictions):
         """Updating the evaluation results with the current element.
 
         Args:
             predictions (list[dict]): aggregated predictions across all generations.
                 The content of the file is benchmark specific.
-            aggregation_mode (str): "best", "first", etc. Might vary by benchmark.
         """
         # this shouldn't do any heavy calculation, but just read the metric from existing json entry
         # all the heavy lifting should be done in the evaluation script
         self.total += 1
         self.scores.append([])
-        if aggregation_mode == "best":
+        if len(predictions) > 1:
+            self.agg_mode = f"pass@{len(predictions)}"
+
             judge_scores = [self._get_judge_score(elem['judgement-gen-base']) for elem in predictions]
             # adding the best score out of all the generations
             possible_scores = ['A>>B', 'A>B', 'A=B', 'B>A', 'B>>A']
@@ -110,14 +111,15 @@ class ArenaMetrics(BaseMetrics):
                     break
             else:
                 self.scores[-1].append(None)  # in case judge didn't generate a valid score
-        elif aggregation_mode == "first":
+        else:
+            # Single prediction
+            self.agg_mode = "greedy"
+
             self.lengths += len(predictions[0]['generation'])
             self.scores[-1] = [
                 self._get_judge_score(predictions[0]['judgement-gen-base']),
                 self._get_judge_score(predictions[0]['judgement-base-gen']),
             ]
-        else:
-            raise ValueError(f"Unsupported mode {aggregation_mode}")
 
     def get_metrics(self):
         from nemo_skills.evaluation.arena_utils import get_aggregate_score
@@ -125,9 +127,11 @@ class ArenaMetrics(BaseMetrics):
         metrics = {'num_entries': self.total}
         metrics.update(get_aggregate_score(self.scores))
         metrics['avg_response_length'] = self.lengths / self.total
-        return metrics
+        return {self.agg_mode: metrics}
 
     def reset(self):
         self.scores = []  # list of lists
         self.lengths = 0
         self.total = 0
+        # Set automatically
+        self.agg_mode = "greedy"

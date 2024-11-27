@@ -62,19 +62,22 @@ class MtBenchMetrics(BaseMetrics):
     def is_incomplete(self, elem):
         return 'judgement-turn1' not in elem or 'judgement-turn2' not in elem
 
-    def update(self, predictions, aggregation_mode):
+    def update(self, predictions):
         """Updating the evaluation results with the current element.
 
         Args:
             predictions (list[dict]): aggregated predictions across all generations.
                 The content of the file is benchmark specific.
-            aggregation_mode (str): "best", "first", etc. Might vary by benchmark.
         """
         # this shouldn't do any heavy calculation, but just read the metric from existing json entry
         # all the heavy lifting should be done in the evaluation script
         self.total += 1
-        if aggregation_mode == "best":
+
+        if len(predictions) > 1:
             # TODO: might all have missing judgement?
+            # If multiple predictions, set it to "best" aggregation mode
+            self.agg_mode = "best"
+
             rating1 = max(
                 int(re.search(r'Rating: \[\[(\d+)\]\]', elem['judgement-turn1']).group(1))
                 for elem in predictions
@@ -87,15 +90,16 @@ class MtBenchMetrics(BaseMetrics):
             )
             category = predictions[0]['category']
             self.scores[category].append((rating1, rating2))
-        elif aggregation_mode == "first":
+        else:
+            # If single prediction, set it to greedy aggregation mode
+            self.agg_mode = "greedy"
+
             rating1_match = re.search(r'Rating: \[\[(\d+)\]\]', predictions[0]['judgement-turn1'])
             rating1 = int(rating1_match.group(1)) if rating1_match else None
             rating2_match = re.search(r'Rating: \[\[(\d+)\]\]', predictions[0]['judgement-turn2'])
             rating2 = int(rating2_match.group(1)) if rating2_match else None
             category = predictions[0]['category']
             self.scores[category].append((rating1, rating2))
-        else:
-            raise ValueError(f"Unsupported mode {aggregation_mode}")
 
     def get_metrics(self):
         metrics = {'num_entries': self.total}
@@ -127,11 +131,12 @@ class MtBenchMetrics(BaseMetrics):
         metrics["missing_rating_turn1"] = none_count_turn1
         metrics["missing_rating_turn2"] = none_count_turn2
         print("Please see metrics.json for MT-bench per-category breakdown")
-        return metrics
+        return {self.agg_mode: metrics}
 
     def reset(self):
         self.scores = defaultdict(list)
         self.total = 0
+        self.agg_mode = "greedy"
 
     def max_metrics_to_print(self):
         """We are only printing the averages, but all other metrics can still be found in metrics.json"""
