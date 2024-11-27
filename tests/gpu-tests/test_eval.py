@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 sys.path.append(str(Path(__file__).absolute().parents[1]))
-from nemo_skills.evaluation.metrics import compute_metrics
+from nemo_skills.evaluation.metrics import ComputeMetrics
 
 
 @pytest.mark.gpu
@@ -51,10 +51,10 @@ def test_trtllm_eval():
     subprocess.run(cmd, shell=True, check=True)
 
     # running compute_metrics to check that results are expected
-    metrics_calculator = importlib.import_module('nemo_skills.dataset.gsm8k').METRICS_CLASS()
-    metrics = compute_metrics(
-        [f"/tmp/nemo-skills-tests/{model_type}/trtllm-eval/eval-results/gsm8k/output.jsonl"], metrics_calculator
-    )
+    metrics_calculator = ComputeMetrics(benchmark='gsm8k')
+    metrics = metrics_calculator.compute_metrics(
+        [f"/tmp/nemo-skills-tests/{model_type}/trtllm-eval/eval-results/gsm8k/output.jsonl"]
+    )["greedy"]
     # rough check, since exact accuracy varies depending on gpu type
     if model_type == 'llama':
         assert metrics['symbolic_correct'] >= 50

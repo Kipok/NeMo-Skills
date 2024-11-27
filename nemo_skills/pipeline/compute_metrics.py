@@ -19,6 +19,7 @@ import logging
 import sys
 from pathlib import Path
 
+from nemo_skills.dataset.utils import get_dataset_module
 from nemo_skills.evaluation.metrics import ComputeMetrics
 from nemo_skills.utils import setup_logging
 

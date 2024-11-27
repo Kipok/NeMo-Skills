@@ -70,13 +70,12 @@ class IFMetrics(BaseMetrics):
             if followed_or_not:
                 stats_dict['tier0']['correct'][instruction_id] += 1
 
-    def update(self, predictions, aggregation_mode):
+    def update(self, predictions):
         """Updating the evaluation results with the current element.
 
         Args:
             predictions (list[dict]): aggregated predictions across all generations.
                 The content of the file is benchmark specific.
-            aggregation_mode (str): "best", "first", etc. Might vary by benchmark.
         """
         # this shouldn't do any heavy calculation, but just read the metric from existing json entry
         # all the heavy lifting should be done in the evaluation script

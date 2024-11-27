@@ -14,7 +14,7 @@
 
 from collections import Counter
 
-from nemo_skills.evaluation.metrics.base_metrics import BaseMetrics
+from nemo_skills.evaluation.metrics.base import BaseMetrics
 from nemo_skills.evaluation.metrics.utils import is_correct_judgement
 
 
