@@ -118,7 +118,7 @@ class VLLMRewardModel(BaseModel):
             score = 1 / (1 + math.exp(-raw_score))
             return {"reward_model_score": score}
 
-        with ThreadPoolExecutor(len(prompts)) as executor:
+        with ThreadPoolExecutor(max_workers=len(prompts)) as executor:
             for idx, prompt in enumerate(prompts):
                 futures[executor.submit(process_single_prompt, prompt)] = idx
 
