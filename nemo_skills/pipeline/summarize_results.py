@@ -24,7 +24,7 @@ from typing import List, Optional
 
 import typer
 
-from nemo_skills.evaluation.metrics import MathMetrics
+from nemo_skills.evaluation.metrics import ComputeMetrics
 from nemo_skills.pipeline import (
     check_if_mounted,
     cluster_download,
@@ -108,6 +108,8 @@ def summarize_results(
         if not Path(benchmark_path).is_dir():
             continue
         try:
+            metrics_calculator = ComputeMetrics(benchmark, max_samples=max_samples)
+
             benchmark_module = importlib.import_module(f"nemo_skills.dataset.{benchmark}")
             metrics_calculator = benchmark_module.METRICS_CLASS()
             results[benchmark] = {}
@@ -115,17 +117,18 @@ def summarize_results(
             # TODO: we should just return all available aggregations from compute_metrics directly
             if not isinstance(metrics_calculator, MathMetrics):
                 if Path(f'{benchmark_path}/output.jsonl').exists():
-                    results[benchmark]['greedy'] = compute_metrics(
-                        input_files=[f"{benchmark_path}/output.jsonl"],
+                    input_files = [f"{benchmark_path}/output.jsonl"]
+                    results[benchmark] = compute_metrics(
+                        input_files,
                         metrics_calculator=metrics_calculator,
                         max_samples=max_samples,
                     )
+
                 sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
                 if len(sampling_outputs) > 0:
-                    results[benchmark][f'pass@{len(sampling_outputs)}'] = compute_metrics(
+                    results[benchmark] = compute_metrics(
                         input_files=sampling_outputs,
                         metrics_calculator=metrics_calculator,
-                        aggregation_mode="best",
                         max_samples=max_samples,
                     )
             else:
