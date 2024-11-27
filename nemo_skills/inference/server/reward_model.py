@@ -20,7 +20,7 @@ import httpx
 import openai
 import requests
 from openai import DefaultHttpxClient
-
+from openai import OpenAI, BadRequestError
 
 class BaseModel(abc.ABC):
     """Base model class for handling requests to the inference server.
