@@ -133,7 +133,7 @@ class VLLMRewardModel(BaseModel):
                     if error_code == 400 and 'maximum context length' in error_message:
                         outputs[idx] = {"reward_model_score": 0}  # Default value set as 0 if we have request over maximum context length
                     else:
-                        raise Exception(f"Unhandled request error: {error_details}")      
+                        raise
         return outputs
 
 
