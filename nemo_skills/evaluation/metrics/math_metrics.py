@@ -128,16 +128,28 @@ class MathMetrics(BaseMetrics):
             if not len(valid_answers):
                 # Consider the answer to be incorrect if no valid answer among predictions
                 self.update_comb_metric(
-                    self.agg_mode_dict["pass"], current_correct_sympy, current_correct_judge, no_answer
+                    self.agg_mode_dict[f"pass@{len(predictions)}"],
+                    current_correct_sympy,
+                    current_correct_judge,
+                    no_answer,
                 )
                 self.update_comb_metric(
-                    self.agg_mode_dict["majority"], current_correct_sympy, current_correct_judge, no_answer
+                    self.agg_mode_dict[f"majority@{len(predictions)}"],
+                    current_correct_sympy,
+                    current_correct_judge,
+                    no_answer,
                 )
                 self.update_comb_metric(
-                    self.agg_mode_dict["rm_best"], current_correct_sympy, current_correct_judge, no_answer
+                    self.agg_mode_dict[f"rm_best@{len(predictions)}"],
+                    current_correct_sympy,
+                    current_correct_judge,
+                    no_answer,
                 )
                 self.update_comb_metric(
-                    self.agg_mode_dict["rm_majority"], current_correct_sympy, current_correct_judge, no_answer
+                    self.agg_mode_dict[f"rm_majority@{len(predictions)}"],
+                    current_correct_sympy,
+                    current_correct_judge,
+                    no_answer,
                 )
 
                 return

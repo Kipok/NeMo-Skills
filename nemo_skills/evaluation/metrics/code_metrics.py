@@ -49,12 +49,11 @@ class CodeMetrics(BaseMetrics):
             self.total_correct_plus += predictions[0]['is_correct-plus']
 
     def get_metrics(self):
-        metrics_dict = {}
-        for agg_mode, agg_metric_dict in self.agg_mode_dict.items():
-            metrics_dict[agg_mode] = {"num_entries": self.total}
-
-            metrics_dict[agg_mode]["passing_base_tests"] = (agg_metric_dict["total_correct"] / self.total) * 100.0
-            metrics_dict[agg_mode]["passing_plus_tests"] = (agg_metric_dict["total_correct_plus"] / self.total) * 100.0
+        metrics_dict = {
+            "num_entries": self.total,
+            "passing_base_tests": self.total_correct / self.total * 100.0,
+            "passing_plus_tests": self.total_correct_plus / self.total * 100.0,
+        }
 
         return {self.agg_mode: metrics_dict}
 

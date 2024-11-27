@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import Counter
+from collections import Counter, defaultdict
 
 from nemo_skills.evaluation.metrics.base import BaseMetrics
 from nemo_skills.evaluation.metrics.utils import is_correct_judgement
@@ -28,31 +28,29 @@ class AnswerJudgementMetrics(BaseMetrics):
     def is_incomplete(self, elem):
         return 'judgement' not in elem or 'expected_judgement' not in elem
 
-    def update(self, predictions, aggregation_mode):
+    def update(self, predictions):
         """Updating the evaluation results with the current element.
 
         Args:
             predictions (list[dict]): aggregated predictions across all generations.
                 The content of the file is benchmark specific.
-            aggregation_mode (str): "best", "majority", "first", etc. Might vary by benchmark.
         """
-        # this shouldn't do any heavy calculation, but just read the metric from existing json entry
-        # all the heavy lifting should be done in the evaluation script
         self.total += 1
-        if aggregation_mode == "best":
+        if len(predictions) > 1:
+            is_correct, fp_count, fn_count = False, False, False
             is_correct = any(
                 [
                     is_correct_judgement(elem['judgement']) == is_correct_judgement(elem['expected_judgement'])
                     for elem in predictions
                 ]
             )
-            self.total_correct += is_correct
+
             if not is_correct:
                 if is_correct_judgement(predictions[0]['judgement']):
                     self.fp_count += 1
                 else:
                     self.fn_count += 1
-        elif aggregation_mode == "majority":
+
             answers = [is_correct_judgement(elem['judgement']) for elem in predictions]
             majority_judgement = Counter(answers).most_common(1)[0]
             is_correct = majority_judgement == is_correct_judgement(predictions[0]['expected_judgement'])
@@ -62,7 +60,7 @@ class AnswerJudgementMetrics(BaseMetrics):
                     self.fp_count += 1
                 else:
                     self.fn_count += 1
-        elif aggregation_mode == "first":
+        else:
             is_correct = is_correct_judgement(predictions[0]['judgement']) == is_correct_judgement(
                 predictions[0]['expected_judgement']
             )
@@ -72,10 +70,12 @@ class AnswerJudgementMetrics(BaseMetrics):
                     self.fp_count += 1
                 else:
                     self.fn_count += 1
-        else:
-            raise ValueError(f"Unsupported mode {aggregation_mode}")
 
     def get_metrics(self):
+        metrics_dict = {}
+        for agg_mode, agg_metric_dict in self.agg_mode_dict.items():
+            metrics_dict[agg_mode] = {"num_entries": self.total}
+
         return {
             "num_entries": self.total,
             "correct_judgements": self.total_correct / self.total * 100.0,
@@ -84,7 +84,8 @@ class AnswerJudgementMetrics(BaseMetrics):
         }
 
     def reset(self):
-        self.total_correct = 0
-        self.fp_count = 0
-        self.fn_count = 0
+        # self.total_correct = 0
+        # self.fp_count = 0
+        # self.fn_count = 0
         self.total = 0
+        self.agg_mode_dict = defaultdict(lambda: defaultdict(int))
