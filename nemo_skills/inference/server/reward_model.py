@@ -21,6 +21,7 @@ import openai
 import requests
 from openai import DefaultHttpxClient, OpenAI, BadRequestError
 from concurrent.futures import ThreadPoolExecutor, as_completed
+LOG = logging.getLogger(__file__)
 
 class BaseModel(abc.ABC):
     """Base model class for handling requests to the inference server.
@@ -105,8 +106,8 @@ class VLLMRewardModel(BaseModel):
         model_list = self.oai_client.models.list()
         self.model = model_list.data[0].id
 
-    def _score_single_prompt(self, prompt, oai_client, model):
-        response = oai_client.embeddings.create(input=[prompt], model=model)
+    def _score_single_prompt(self, prompt):
+        response = self.oai_client.embeddings.create(input=[prompt], model=self.model)
         raw_score = response.data[0].embedding[-1]
         score = 1 / (1 + math.exp(-raw_score))
         return {"reward_model_score": score}
@@ -119,7 +120,7 @@ class VLLMRewardModel(BaseModel):
 
         with ThreadPoolExecutor(max_workers=len(prompts)) as executor:
             for idx, prompt in enumerate(prompts):
-                futures[executor.submit(self._score_single_prompt, prompt, self.oai_client, self.model)] = idx
+                futures[executor.submit(self._score_single_prompt, prompt)] = idx
 
             for future in as_completed(futures):
                 idx = futures[future]
