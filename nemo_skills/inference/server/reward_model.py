@@ -105,6 +105,11 @@ class VLLMRewardModel(BaseModel):
         model_list = self.oai_client.models.list()
         self.model = model_list.data[0].id
 
+    def _score_single_prompt(self, prompt, oai_client, model):
+        response = oai_client.embeddings.create(input=[prompt], model=model)
+        raw_score = response.data[0].embedding[-1]
+        score = 1 / (1 + math.exp(-raw_score))
+        return {"reward_model_score": score}
     def score(self, prompts: list[str]) -> list[float]:
         # TODO: The current VLLM support for Qwen-RM uses a hack of using embedding APIs.
         # Once VLLM officially adds the support, change the API.
@@ -112,15 +117,9 @@ class VLLMRewardModel(BaseModel):
         outputs = [None] * len(prompts)  # Pre-allocate a list to store results in correct order
         futures = {}
 
-        def process_single_prompt(prompt):
-            response = self.oai_client.embeddings.create(input=[prompt], model=self.model)   
-            raw_score = response.data[0].embedding[-1]
-            score = 1 / (1 + math.exp(-raw_score))
-            return {"reward_model_score": score}
-
         with ThreadPoolExecutor(max_workers=len(prompts)) as executor:
             for idx, prompt in enumerate(prompts):
-                futures[executor.submit(process_single_prompt, prompt)] = idx
+                futures[executor.submit(self._score_single_prompt, prompt, self.oai_client, self.model)] = idx
 
             for future in as_completed(futures):
                 idx = futures[future]
@@ -132,6 +131,7 @@ class VLLMRewardModel(BaseModel):
                     error_code = error_details.get("code", "No code found")            
                     if error_code == 400 and 'maximum context length' in error_message:
                         outputs[idx] = {"reward_model_score": 0}  # Default value set as 0 if we have request over maximum context length
+                        print("Warning: ", error_message)
                     else:
                         raise
         return outputs
