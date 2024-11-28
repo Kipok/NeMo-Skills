@@ -21,6 +21,7 @@ import openai
 import requests
 from openai import DefaultHttpxClient, OpenAI, BadRequestError
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import logging
 LOG = logging.getLogger(__file__)
 
 class BaseModel(abc.ABC):
