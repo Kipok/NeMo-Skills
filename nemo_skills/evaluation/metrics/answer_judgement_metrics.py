@@ -42,6 +42,22 @@ class AnswerJudgementMetrics(BaseMetrics):
         """
         self.total += 1
         if len(predictions) > 1:
+            # Majority@k
+            # Reinitialize local vars
+            is_correct, is_fp, is_fn = False, False, False
+
+            answers = [is_correct_judgement(elem['judgement']) for elem in predictions]
+            majority_judgement = Counter(answers).most_common(1)[0]
+            is_correct = majority_judgement == is_correct_judgement(predictions[0]['expected_judgement'])
+
+            if not is_correct:
+                if majority_judgement:
+                    is_fp = True
+                else:
+                    is_fn = True
+
+            self.update_perf_dict(self.agg_mode_dict[f"majority@{len(predictions)}"], is_correct, is_fp, is_fn)
+
             # Pass@k
             is_correct, is_fp, is_fn = False, False, False
             is_correct = any(
@@ -58,22 +74,6 @@ class AnswerJudgementMetrics(BaseMetrics):
                     is_fn = True
 
             self.update_perf_dict(self.agg_mode_dict[f"pass@{len(predictions)}"], is_correct, is_fp, is_fn)
-
-            # Majority@k
-            # Reinitialize local vars
-            is_correct, is_fp, is_fn = False, False, False
-
-            answers = [is_correct_judgement(elem['judgement']) for elem in predictions]
-            majority_judgement = Counter(answers).most_common(1)[0]
-            is_correct = majority_judgement == is_correct_judgement(predictions[0]['expected_judgement'])
-
-            if not is_correct:
-                if majority_judgement:
-                    is_fp = True
-                else:
-                    is_fn = True
-
-            self.update_perf_dict(self.agg_mode_dict[f"majority@{len(predictions)}"], is_correct, is_fp, is_fn)
         else:
             is_correct = is_correct_judgement(predictions[0]['judgement']) == is_correct_judgement(
                 predictions[0]['expected_judgement']

@@ -154,20 +154,6 @@ class MathMetrics(BaseMetrics):
 
                 return
 
-            # Pass@K
-            # Reinitialize local vars for tracking prediction correctness
-            current_correct_sympy, current_correct_judge, no_answer = False, False, False
-            if self.has_sympy:
-                current_correct_sympy = any([elem['is_correct'] for elem in predictions])
-            if self.has_judge:
-                current_correct_judge = any([is_correct_judgement(elem['judgement']) for elem in predictions])
-            if all([elem['predicted_answer'] is None for elem in predictions]):
-                no_answer = True
-
-            self.update_comb_metric(
-                self.agg_mode_dict[f"pass@{len(predictions)}"], current_correct_sympy, current_correct_judge, no_answer
-            )
-
             # Majority@K
             # TODO: currently majority does not take into account equivalent answers written in a different way
             # Reinitialize local vars for tracking prediction correctness
@@ -269,6 +255,20 @@ class MathMetrics(BaseMetrics):
                     current_correct_judge,
                     no_answer,
                 )
+
+            # Pass@K
+            # Reinitialize local vars for tracking prediction correctness
+            current_correct_sympy, current_correct_judge, no_answer = False, False, False
+            if self.has_sympy:
+                current_correct_sympy = any([elem['is_correct'] for elem in predictions])
+            if self.has_judge:
+                current_correct_judge = any([is_correct_judgement(elem['judgement']) for elem in predictions])
+            if all([elem['predicted_answer'] is None for elem in predictions]):
+                no_answer = True
+
+            self.update_comb_metric(
+                self.agg_mode_dict[f"pass@{len(predictions)}"], current_correct_sympy, current_correct_judge, no_answer
+            )
 
     def get_metrics(self):
         metrics_dict = {}
