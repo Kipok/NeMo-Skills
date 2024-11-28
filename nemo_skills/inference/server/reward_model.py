@@ -131,7 +131,7 @@ class VLLMRewardModel(BaseModel):
                     error_code = error_details.get("code", "No code found")            
                     if error_code == 400 and 'maximum context length' in error_message:
                         outputs[idx] = {"reward_model_score": 0}  # Default value set as 0 if we have request over maximum context length
-                        print("Warning: ", error_message)
+                        LOG.warning("Maximum context length exceeded, setting reward score as 0")
                     else:
                         raise
         return outputs
