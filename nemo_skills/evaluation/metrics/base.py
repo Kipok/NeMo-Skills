@@ -53,12 +53,15 @@ class BaseMetrics(abc.ABC):
 
 
 class ComputeMetrics:
-    def __init__(self, benchmark, extra_datasets=None, max_samples=-1):
+    def __init__(self, benchmark, extra_datasets=None, max_samples=-1, metric_class=None):
         self.benchmark = benchmark
 
-        # Setup metrics calculator
-        benchmark_module, _ = get_dataset_module(benchmark, extra_datasets=extra_datasets)
-        self.metrics_calculator = benchmark_module.METRICS_CLASS()
+        if metric_class is None:
+            # Setup metrics calculator
+            benchmark_module, _ = get_dataset_module(benchmark, extra_datasets=extra_datasets)
+            self.metrics_calculator = benchmark_module.METRICS_CLASS()
+        else:
+            self.metrics_calculator = metric_class
 
         self.max_samples = max_samples
 

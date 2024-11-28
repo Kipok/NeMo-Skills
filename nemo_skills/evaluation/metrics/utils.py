@@ -13,7 +13,6 @@
 
 import json
 
-
 def read_predictions(predictions, evaluator, allow_incomplete=False):
     data = []
     for prediction in predictions:
@@ -43,3 +42,32 @@ def is_correct_judgement(judgement):
         return False  # improper judgement format, so have to judge as false
     verdict = judgement.split('Judgement:')[-1].strip()
     return verdict.lower() == 'yes'
+
+
+def get_metrics(metric_type: str):
+
+    from nemo_skills.evaluation.metrics.answer_judgement_metrics import AnswerJudgementMetrics
+    from nemo_skills.evaluation.metrics.arena_metrics import ArenaMetrics
+    from nemo_skills.evaluation.metrics.code_metrics import CodeMetrics
+    from nemo_skills.evaluation.metrics.if_metrics import IFMetrics
+    from nemo_skills.evaluation.metrics.lean4_metrics import Lean4Metrics
+    from nemo_skills.evaluation.metrics.math_metrics import MathMetrics
+    from nemo_skills.evaluation.metrics.mtbench_metrics import MtBenchMetrics
+
+
+    METRICS_MAP = {
+        "metric-math": MathMetrics(),
+        "metric-lean4-proof": Lean4Metrics(),
+        "metric-lean4-statement": Lean4Metrics(),
+        "metric-answer-judgement": AnswerJudgementMetrics(),
+        "metric-arena": ArenaMetrics(),
+        "metric-code": CodeMetrics(),
+        "metric-if": IFMetrics(),
+        "metric-mt-bench": MtBenchMetrics(),
+    }
+
+    if metric_type not in METRICS_MAP:
+        raise ValueError(
+            f"Metric f{metric_type} not found.\nSupported types: {str(METRICS_MAP.keys())}"
+        )
+    return METRICS_MAP[metric_type]
