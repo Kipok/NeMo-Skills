@@ -59,7 +59,7 @@ class ComputeMetrics:
         if metric_class is None:
             # Setup metrics calculator
             benchmark_module, _ = get_dataset_module(benchmark, extra_datasets=extra_datasets)
-            self.metrics_calculator = benchmark_module.METRICS_CLASS()
+            self.metrics_calculator = benchmark_module.METRICS_CLASS
         else:
             self.metrics_calculator = metric_class
 
