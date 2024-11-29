@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from nemo_skills.evaluation.metrics.utils import get_metrics
+from nemo_skills.evaluation.metrics import get_metrics
 
 
 # settings that define how evaluation should be done by default (all can be changed from cmdline)
 PROMPT_CONFIG = 'generic/default'
 DATASET_GROUP = 'chat'
-METRICS_CLASS = get_metrics("metric-arena")
+METRICS_CLASS = "arena"
 DEFAULT_EVAL_ARGS = "++eval_type=arena"
 DEFAULT_GENERATION_ARGS = ""

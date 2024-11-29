@@ -117,8 +117,7 @@ def summarize_results(
             continue
         try:
             if metric_type is not None:
-                metric_class = get_metrics(metric_type)
-                metrics_calculator = ComputeMetrics(benchmark, metric_class=metric_class, max_samples=max_samples)
+                metrics_calculator = ComputeMetrics(benchmark, metric_class=metric_type, max_samples=max_samples)
             else:
                 metrics_calculator = ComputeMetrics(benchmark, extra_datasets=extra_datasets, max_samples=max_samples)
 

@@ -18,7 +18,7 @@ from contextlib import ExitStack
 from itertools import zip_longest
 
 from nemo_skills.dataset.utils import get_dataset_module
-from nemo_skills.evaluation.metrics.utils import read_predictions
+from nemo_skills.evaluation.metrics.utils import read_predictions, get_metrics
 from nemo_skills.utils import unroll_files
 
 
@@ -59,9 +59,9 @@ class ComputeMetrics:
         if metric_class is None:
             # Setup metrics calculator
             benchmark_module, _ = get_dataset_module(benchmark, extra_datasets=extra_datasets)
-            self.metrics_calculator = benchmark_module.METRICS_CLASS
+            self.metrics_calculator = get_metrics(benchmark_module.METRICS_CLASS)
         else:
-            self.metrics_calculator = metric_class
+            self.metrics_calculator = get_metrics(metric_class)
 
         self.max_samples = max_samples
 

@@ -68,7 +68,7 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
     file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(cfg.input_files)]
 
     # currently majority is only defined for math evals
-    evaluator = get_metrics("metric-math")
+    evaluator = get_metrics("math")
 
     majority_answers = []
     all_predictions = []
