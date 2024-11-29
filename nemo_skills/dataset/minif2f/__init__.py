@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nemo_skills.evaluation.metrics import get_metrics
 
 # Default evaluation and generation settings for the minif2f dataset
 PROMPT_CONFIG = 'generic/lean4'
