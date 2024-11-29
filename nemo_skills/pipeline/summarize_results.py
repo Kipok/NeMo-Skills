@@ -24,7 +24,7 @@ from typing import List, Optional
 
 import typer
 
-from nemo_skills.evaluation.metrics import ComputeMetrics, get_metrics
+from nemo_skills.evaluation.metrics import ComputeMetrics
 from nemo_skills.pipeline import (
     check_if_mounted,
     cluster_download,
