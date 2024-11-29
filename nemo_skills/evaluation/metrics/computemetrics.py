@@ -17,7 +17,8 @@ from contextlib import ExitStack
 from itertools import zip_longest
 
 from nemo_skills.dataset.utils import get_dataset_module
-from nemo_skills.evaluation.metrics.utils import read_predictions, get_metrics
+from nemo_skills.evaluation.metrics.utils import read_predictions
+from nemo_skills.evaluation.metrics.map_metrics import get_metrics
 from nemo_skills.utils import unroll_files
 
 class ComputeMetrics:
