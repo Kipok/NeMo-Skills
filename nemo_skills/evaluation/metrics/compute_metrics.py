@@ -22,15 +22,15 @@ from nemo_skills.evaluation.metrics.map_metrics import get_metrics
 from nemo_skills.utils import unroll_files
 
 class ComputeMetrics:
-    def __init__(self, benchmark, extra_datasets=None, max_samples=-1, metric_class=None):
+    def __init__(self, benchmark, extra_datasets=None, max_samples=-1, metric_type=None):
         self.benchmark = benchmark
 
-        if metric_class is None:
+        if metric_type is None:
             # Setup metrics calculator
             benchmark_module, _ = get_dataset_module(benchmark, extra_datasets=extra_datasets)
-            self.metrics_calculator = get_metrics(benchmark_module.METRICS_CLASS)
+            self.metrics_calculator = get_metrics(benchmark_module.METRICS_TYPE)
         else:
-            self.metrics_calculator = get_metrics(metric_class)
+            self.metrics_calculator = get_metrics(metric_type)
 
         self.max_samples = max_samples
 

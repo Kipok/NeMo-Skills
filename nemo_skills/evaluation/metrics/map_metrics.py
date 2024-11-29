@@ -20,21 +20,19 @@ from nemo_skills.evaluation.metrics.math_metrics import MathMetrics
 from nemo_skills.evaluation.metrics.mtbench_metrics import MtBenchMetrics
 
 METRICS_MAP = {
-    "math": MathMetrics(),
-    "lean4-proof": Lean4Metrics(),
-    "lean4-statement": Lean4Metrics(),
-    "answer-judgement": AnswerJudgementMetrics(),
-    "arena": ArenaMetrics(),
-    "code": CodeMetrics(),
-    "if": IFMetrics(),
-    "mt-bench": MtBenchMetrics(),
+    "math": MathMetrics,
+    "lean4-proof": Lean4Metrics,
+    "lean4-statement": Lean4Metrics,
+    "answer-judgement": AnswerJudgementMetrics,
+    "arena": ArenaMetrics,
+    "code": CodeMetrics,
+    "if": IFMetrics,
+    "mt-bench": MtBenchMetrics,
 }
 
 def get_metrics(metric_type: str):
-
-
     if metric_type not in METRICS_MAP:
         raise ValueError(
             f"Metric f{metric_type} not found.\nSupported types: {str(METRICS_MAP.keys())}"
         )
-    return METRICS_MAP[metric_type]
+    return METRICS_MAP[metric_type]()

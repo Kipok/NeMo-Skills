@@ -17,6 +17,6 @@ from nemo_skills.evaluation.metrics import get_metrics
 # settings that define how evaluation should be done by default (all can be changed from cmdline)
 PROMPT_CONFIG = 'generic/default'
 DATASET_GROUP = 'chat'
-METRICS_CLASS = "arena"
+METRICS_TYPE = "arena"
 DEFAULT_EVAL_ARGS = "++eval_type=arena"
 DEFAULT_GENERATION_ARGS = ""

@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# settings that define how evaluation should be done by default \(all can be changed from cmdline\)
+# settings that define how evaluation should be done by default (all can be changed from cmdline)
 PROMPT_CONFIG = 'generic/default'
 DATASET_GROUP = 'chat'
-METRICS_CLASS = "mt-bench"
+METRICS_TYPE = "mt-bench"
 DEFAULT_EVAL_ARGS = "++eval_type=mt-bench ++eval_config.judge_model=gpt-4-0125-preview"
 DEFAULT_GENERATION_ARGS = "++multi_turn_key=turns"

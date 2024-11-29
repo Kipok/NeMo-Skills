@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# settings that define how evaluation should be done by default \(all can be changed from cmdline\)
+# settings that define how evaluation should be done by default (all can be changed from cmdline)
 PROMPT_CONFIG = 'judge/math'
 DATASET_GROUP = 'math'
-METRICS_CLASS = "answer-judgement"
+METRICS_TYPE = "answer-judgement"
 DEFAULT_EVAL_ARGS = "++eval_type=answer_judgement"
 DEFAULT_GENERATION_ARGS = "++generation_key=judgement"
