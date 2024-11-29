@@ -244,7 +244,15 @@ print(json.dumps(to_return))
                 self.sessions[session_id] = self.sessions[session_id][:-1]
         return output, session_id
 
-    def is_output_correct(self, pred_output, gt_output, include_percentage=True, tolerance=1e-4, timeout=10.0):
+    def is_output_correct(
+        self,
+        pred_output,
+        gt_output,
+        take_modulo: int | None = None,
+        include_percentage=True,
+        tolerance=1e-4,
+        timeout=10.0,
+    ):
         # embedding the full math grader code here to send to server for execution
         with open(Path(__file__).absolute().parent / "math_grader.py", "rt") as fin:
             math_grader_code = fin.read()
@@ -259,6 +267,10 @@ print(json.dumps(to_return))
             gt_output = gt_output.replace("'''", r'\'\'\'')
             while gt_output.endswith('\\'):
                 gt_output = gt_output[:-1]
+
+        if take_modulo is not None:
+            gt_output = int(gt_output) % take_modulo
+            pred_output = int(pred_output) % take_modulo
 
         math_equal_call = f"""
     output = math_equal(
