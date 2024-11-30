@@ -379,7 +379,7 @@ def cluster_download(
     except Exception:
         streaming_possible = False
 
-    if streaming_possible:
+    if streaming_possible and verbose:
         # We can do streaming compression
         # Command for streaming the compression progress
         command = (

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import glob
-import importlib
 import json
 import logging
 import os
@@ -72,7 +71,7 @@ def summarize_results(
     verbose: bool = typer.Option(True, help="Print download/upload progress"),
 ):
     """Summarize results of an evaluation job."""
-    setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not debug else logging.DEBUG)
+    setup_logging(disable_hydra_logs=False, log_level=logging.WARNING if not debug else logging.DEBUG)
 
     if " " in str(benchmarks):
         raise ValueError("benchmarks should be separated with commas")
