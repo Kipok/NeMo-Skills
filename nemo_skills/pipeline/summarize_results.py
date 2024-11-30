@@ -126,13 +126,21 @@ def summarize_results(
             results[benchmark] = {}
 
             if Path(f'{benchmark_path}/output.jsonl').exists():
-                results[benchmark].update(
-                    metrics_calculator.compute_metrics(input_files=[f"{benchmark_path}/output.jsonl"])
-                )
+                metrics = metrics_calculator.compute_metrics(input_files=[f"{benchmark_path}/output.jsonl"])
+                if len(metrics) > 1:  # has subsets
+                    for subset, subset_metrics in metrics.items():
+                        results[f"{benchmark}-{subset}"] = subset_metrics
+                else:
+                    results[benchmark].update(metrics['all'])
 
             sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
             if len(sampling_outputs) > 0:
-                results[benchmark].update(metrics_calculator.compute_metrics(input_files=sampling_outputs))
+                metrics = metrics_calculator.compute_metrics(input_files=sampling_outputs)
+                if len(metrics) > 1:  # has subsets
+                    for subset, subset_metrics in metrics.items():
+                        results[f"{benchmark}-{subset}"] = subset_metrics
+                else:
+                    results[benchmark].update(metrics['all'])
 
             max_metrics_to_print[benchmark] = metrics_calculator.max_metrics_to_print()
             max_aggregations_to_print[benchmark] = metrics_calculator.max_aggregations_to_print()

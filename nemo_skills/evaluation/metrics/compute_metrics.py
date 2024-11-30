@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import importlib
 from contextlib import ExitStack
 from itertools import zip_longest
 
@@ -24,20 +23,31 @@ from nemo_skills.utils import unroll_files
 
 class ComputeMetrics:
     def __init__(self, benchmark, extra_datasets=None, max_samples=-1, metric_type=None):
+        self.max_samples = max_samples
         self.benchmark = benchmark
+        self.extra_datasets = extra_datasets
+        self.metric_type = metric_type
+        self.calculators = {'all': self.get_metrics_calculator(benchmark, extra_datasets, metric_type)}
 
+    def get_metrics_calculator(self, benchmark, extra_datasets=None, metric_type=None):
         if metric_type is None:
             # Setup metrics calculator
             benchmark_module, _ = get_dataset_module(benchmark, extra_datasets=extra_datasets)
-            self.metrics_calculator = get_metrics(benchmark_module.METRICS_TYPE)
+            metrics_calculator = get_metrics(benchmark_module.METRICS_TYPE)
         else:
-            self.metrics_calculator = get_metrics(metric_type)
+            metrics_calculator = get_metrics(metric_type)
+        metrics_calculator.reset()
 
-        self.max_samples = max_samples
+        return metrics_calculator
 
     def compute_metrics(self, input_files, allow_incomplete=False):
-        self.metrics_calculator.setup(input_files)
-        self.metrics_calculator.reset()
+        """Computing metrics based on the provided input files.
+
+        If report_subsets is True, the output will be wrapped in another dictionary
+        with subset: metrics structure. Will always have "all" key for the full dataset.
+        """
+        # only calling setup on the main one
+        self.calculators['all'].setup(input_files)
 
         with ExitStack() as stack:
             file_handles = [
@@ -48,14 +58,22 @@ class ComputeMetrics:
                 if idx == self.max_samples:
                     break
                 data = read_predictions(predictions, self.metrics_calculator, allow_incomplete)
-                self.metrics_calculator.update(data)
+                # checking if we need to create a new metrics calculator
+                data_subset = data[0].get('subset_for_metrics', 'all')
+                if data_subset not in self.calculators:
+                    self.calculators[data[0]['subset_for_metrics']] = self.get_metrics_calculator(
+                        self.benchmark,
+                        self.extra_datasets,
+                        self.metric_type,
+                    )
+                self.calculators['all'].update(data)
+                if data_subset != 'all':
+                    self.calculators[data_subset].update(data)
 
-            metrics_dict = self.metrics_calculator.get_metrics()
-
-        return metrics_dict
+        return {data_subset: calculator.get_metrics() for data_subset, calculator in self.calculators.items()}
 
     def max_metrics_to_print(self):
-        return self.metrics_calculator.max_metrics_to_print()
+        return self.calculators['all'].max_metrics_to_print()
 
     def max_aggregations_to_print(self):
-        return self.metrics_calculator.max_aggregations_to_print()
+        return self.calculators['all'].max_aggregations_to_print()
