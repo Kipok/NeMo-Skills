@@ -146,7 +146,7 @@ def summarize_results(
             max_aggregations_to_print[benchmark] = metrics_calculator.max_aggregations_to_print()
 
         except Exception as e:
-            print(f"Error computing metrics for {benchmark}: {e}")
+            logging.exception(f"Error computing metrics for {benchmark}: {e}")
 
     for benchmark, benchmark_results in results.items():
         if not benchmark_results:
