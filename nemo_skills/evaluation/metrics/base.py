@@ -14,6 +14,7 @@
 
 import abc
 
+
 # Base class for metrics computation
 class BaseMetrics(abc.ABC):
     @abc.abstractmethod
@@ -43,4 +44,6 @@ class BaseMetrics(abc.ABC):
         """No limit by default."""
         return None
 
-
+    def max_aggregations_to_print(self):
+        """No limit by default."""
+        return None

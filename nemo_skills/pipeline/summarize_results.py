@@ -111,6 +111,7 @@ def summarize_results(
 
     results = defaultdict(dict)
     max_metrics_to_print = {}
+    max_aggregations_to_print = {}
     for benchmark_path in benchmarks_paths:
         benchmark = str(Path(benchmark_path).name)
         if not Path(benchmark_path).is_dir():
@@ -123,6 +124,7 @@ def summarize_results(
 
             results[benchmark] = {}
             max_metrics_to_print[benchmark] = metrics_calculator.max_metrics_to_print()
+            max_aggregations_to_print[benchmark] = metrics_calculator.max_aggregations_to_print()
 
             if Path(f'{benchmark_path}/output.jsonl').exists():
                 results[benchmark].update(
@@ -133,14 +135,14 @@ def summarize_results(
             if len(sampling_outputs) > 0:
                 results[benchmark].update(metrics_calculator.compute_metrics(input_files=sampling_outputs))
         except Exception as e:
-            print(f"Error running compute_metrics.py for {benchmark}: {e}")
+            print(f"Error computing metrics for {benchmark}: {e}")
 
     for benchmark, benchmark_results in results.items():
         if not benchmark_results:
             continue
         max_widths = {}
         max_widths['evaluation_mode'] = len('evaluation_mode')
-        for eval_mode, metrics in benchmark_results.items():
+        for eval_mode, metrics in list(benchmark_results.items())[: max_aggregations_to_print[benchmark]]:
             if max_metrics_to_print[benchmark] is None:
                 max_metrics_to_print[benchmark] = len(metrics)
             for metric_key, metric_value in list(metrics.items())[: max_metrics_to_print[benchmark]]:
@@ -157,7 +159,7 @@ def summarize_results(
         ]
         print(' | '.join([f'{header:<{max_widths[header]}}' for header in headers]))
 
-        for eval_mode, metrics in benchmark_results.items():
+        for eval_mode, metrics in list(benchmark_results.items())[: max_aggregations_to_print[benchmark]]:
             values = [f'{eval_mode:<{max_widths["evaluation_mode"]}}']
             for metric_key, metric_value in list(metrics.items())[: max_metrics_to_print[benchmark]]:
                 if isinstance(metric_value, float):

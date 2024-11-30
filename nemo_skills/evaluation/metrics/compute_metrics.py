@@ -17,9 +17,10 @@ from contextlib import ExitStack
 from itertools import zip_longest
 
 from nemo_skills.dataset.utils import get_dataset_module
-from nemo_skills.evaluation.metrics.utils import read_predictions
 from nemo_skills.evaluation.metrics.map_metrics import get_metrics
+from nemo_skills.evaluation.metrics.utils import read_predictions
 from nemo_skills.utils import unroll_files
+
 
 class ComputeMetrics:
     def __init__(self, benchmark, extra_datasets=None, max_samples=-1, metric_type=None):
@@ -55,3 +56,6 @@ class ComputeMetrics:
 
     def max_metrics_to_print(self):
         return self.metrics_calculator.max_metrics_to_print()
+
+    def max_aggregations_to_print(self):
+        return self.metrics_calculator.max_aggregations_to_print()
