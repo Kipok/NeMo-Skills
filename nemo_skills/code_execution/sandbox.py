@@ -23,7 +23,6 @@ from itertools import zip_longest
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import backoff
 import requests
 import tqdm
 
@@ -129,7 +128,6 @@ class Sandbox(abc.ABC):
     def clear_session(self, session_id):
         del self.sessions[session_id]
 
-    @backoff.on_exception(backoff.constant, requests.exceptions.Timeout, interval=1, max_tries=3)
     def _send_request(self, request, timeout):
         if self.ssh_server and self.ssh_key_path:
             import sshtunnel_requests
