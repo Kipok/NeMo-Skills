@@ -12,9 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# settings that define how evaluation should be done by default (all can be changed from cmdline)
-PROMPT_CONFIG = 'generic/codegen'
-DATASET_GROUP = 'code'
-METRICS_TYPE = "code"
-DEFAULT_EVAL_ARGS = "++eval_type=code ++eval_config.dataset=mbpp"
-DEFAULT_GENERATION_ARGS = ""
+import abc
+
+# Base class for metrics computation
+class BaseMetrics(abc.ABC):
+    @abc.abstractmethod
+    def fill_up_missing(self):
+        pass
+
+    @abc.abstractmethod
+    def is_incomplete(self, elem):
+        pass
+
+    @abc.abstractmethod
+    def update(self, predictions):
+        pass
+
+    @abc.abstractmethod
+    def get_metrics(self):
+        pass
+
+    @abc.abstractmethod
+    def reset(self):
+        pass
+
+    def setup(self, input_files):
+        pass
+
+    def max_metrics_to_print(self):
+        """No limit by default."""
+        return None
+
+
