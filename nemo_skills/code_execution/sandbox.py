@@ -351,6 +351,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
         include_percentage=True,
         tolerance=1e-4,
         timeout=10.0,
+        take_modulo=None,
         answer_format="natural_language",
         ignore_cache: bool = False,
         use_predicted_answer_key: bool = False,
@@ -436,6 +437,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                 include_percentage=include_percentage,
                                 tolerance=tolerance,
                                 timeout=timeout,
+                                take_modulo=take_modulo,
                             )
                         elif answer_format == "lean":
                             map_to_future[predicted_answer] = executor.submit(
