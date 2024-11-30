@@ -268,7 +268,12 @@ print(json.dumps(to_return))
 
         if take_modulo is not None:
             gt_output = int(gt_output) % take_modulo
-            pred_output = int(pred_output) % take_modulo
+            try:
+                pred_output = int(pred_output) % take_modulo
+            except:
+                pred_output = None
+            # no need to simpy call in this case
+            return pred_output == gt_output
 
         math_equal_call = f"""
     output = math_equal(
