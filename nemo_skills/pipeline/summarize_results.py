@@ -110,7 +110,7 @@ def summarize_results(
     if benchmarks:
         benchmarks_paths = [b for b in benchmarks_paths if Path(b).name in benchmarks.split(",")]
 
-    results = defaultdict(dict)
+    results = defaultdict(lambda: defaultdict(dict))
     max_metrics_to_print = {}
     max_aggregations_to_print = {}
     for benchmark_path in benchmarks_paths:
@@ -123,14 +123,17 @@ def summarize_results(
             else:
                 metrics_calculator = ComputeMetrics(benchmark, extra_datasets=extra_datasets, max_samples=max_samples)
 
-            results[benchmark] = {}
             metrics = {}
+            # TODO: this is hacky, basically just assuming that if there is a greedy prediction, we need to add
+            #       an extra aggregation to print
+            has_greedy = False
 
             if Path(f'{benchmark_path}/output.jsonl').exists():
+                has_greedy = True
                 metrics = metrics_calculator.compute_metrics(input_files=[f"{benchmark_path}/output.jsonl"])
                 if len(metrics) > 1:  # has subsets
                     for subset, subset_metrics in metrics.items():
-                        results[f"{benchmark}-{subset}"] = subset_metrics
+                        results[f"{benchmark}-{subset}"].update(subset_metrics)
                 else:
                     results[benchmark].update(metrics['all'])
 
@@ -139,7 +142,7 @@ def summarize_results(
                 metrics = metrics_calculator.compute_metrics(input_files=sampling_outputs)
                 if len(metrics) > 1:  # has subsets
                     for subset, subset_metrics in metrics.items():
-                        results[f"{benchmark}-{subset}"] = subset_metrics
+                        results[f"{benchmark}-{subset}"].update(subset_metrics)
                 else:
                     results[benchmark].update(metrics['all'])
 
@@ -147,9 +150,13 @@ def summarize_results(
                 for subset, subset_metrics in metrics.items():
                     max_metrics_to_print[f"{benchmark}-{subset}"] = metrics_calculator.max_metrics_to_print()
                     max_aggregations_to_print[f"{benchmark}-{subset}"] = metrics_calculator.max_aggregations_to_print()
+                    if max_aggregations_to_print[f"{benchmark}-{subset}"] is not None:
+                        max_aggregations_to_print[f"{benchmark}-{subset}"] += has_greedy
             else:
                 max_metrics_to_print[benchmark] = metrics_calculator.max_metrics_to_print()
                 max_aggregations_to_print[benchmark] = metrics_calculator.max_aggregations_to_print()
+                if max_aggregations_to_print[benchmark] is not None:
+                    max_aggregations_to_print[benchmark] += has_greedy
 
         except Exception as e:
             logging.exception(f"Error computing metrics for {benchmark}: {e}")

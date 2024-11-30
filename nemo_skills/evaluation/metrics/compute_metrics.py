@@ -27,7 +27,6 @@ class ComputeMetrics:
         self.benchmark = benchmark
         self.extra_datasets = extra_datasets
         self.metric_type = metric_type
-        self.calculators = {'all': self.get_metrics_calculator(benchmark, extra_datasets, metric_type)}
 
     def get_metrics_calculator(self, benchmark, extra_datasets=None, metric_type=None):
         if metric_type is None:
@@ -43,6 +42,7 @@ class ComputeMetrics:
     def compute_metrics(self, input_files):
         """Computing metrics based on the provided input files."""
         # only calling setup on the main one
+        self.calculators = {'all': self.get_metrics_calculator(self.benchmark, self.extra_datasets, self.metric_type)}
         self.calculators['all'].setup(input_files)
 
         with ExitStack() as stack:
