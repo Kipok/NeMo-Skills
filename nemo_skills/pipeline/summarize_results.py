@@ -125,8 +125,6 @@ def summarize_results(
                 metrics_calculator = ComputeMetrics(benchmark, extra_datasets=extra_datasets, max_samples=max_samples)
 
             results[benchmark] = {}
-            max_metrics_to_print[benchmark] = metrics_calculator.max_metrics_to_print()
-            max_aggregations_to_print[benchmark] = metrics_calculator.max_aggregations_to_print()
 
             if Path(f'{benchmark_path}/output.jsonl').exists():
                 results[benchmark].update(
@@ -136,6 +134,10 @@ def summarize_results(
             sampling_outputs = glob.glob(f'{benchmark_path}/output-rs*.jsonl')
             if len(sampling_outputs) > 0:
                 results[benchmark].update(metrics_calculator.compute_metrics(input_files=sampling_outputs))
+
+            max_metrics_to_print[benchmark] = metrics_calculator.max_metrics_to_print()
+            max_aggregations_to_print[benchmark] = metrics_calculator.max_aggregations_to_print()
+
         except Exception as e:
             print(f"Error computing metrics for {benchmark}: {e}")
 
