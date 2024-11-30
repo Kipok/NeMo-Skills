@@ -40,12 +40,8 @@ class ComputeMetrics:
 
         return metrics_calculator
 
-    def compute_metrics(self, input_files, allow_incomplete=False):
-        """Computing metrics based on the provided input files.
-
-        If report_subsets is True, the output will be wrapped in another dictionary
-        with subset: metrics structure. Will always have "all" key for the full dataset.
-        """
+    def compute_metrics(self, input_files):
+        """Computing metrics based on the provided input files."""
         # only calling setup on the main one
         self.calculators['all'].setup(input_files)
 
@@ -57,7 +53,7 @@ class ComputeMetrics:
             for idx, predictions in enumerate(zip_longest(*file_handles)):
                 if idx == self.max_samples:
                     break
-                data = read_predictions(predictions, self.metrics_calculator, allow_incomplete)
+                data = read_predictions(predictions, self.metrics_calculator)
                 # checking if we need to create a new metrics calculator
                 data_subset = data[0].get('subset_for_metrics', 'all')
                 if data_subset not in self.calculators:

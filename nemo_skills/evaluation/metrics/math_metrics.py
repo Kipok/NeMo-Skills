@@ -55,16 +55,6 @@ class MathMetrics(BaseMetrics):
     def __init__(self):
         self.reset()
 
-    def fill_up_missing(self):
-        # TODO: not clear how to fill up missing, since we don't know whether llm or sympy was used
-        return {'predicted_answer': None, 'is_correct': False}
-
-    def is_incomplete(self, elem):
-        incomplete = 'predicted_answer' not in elem
-        if not incomplete:
-            incomplete = 'is_correct' not in elem and 'judgement' not in elem
-        return incomplete
-
     def update_comb_metric(self, perf_dict, current_correct_sympy, current_correct_judge, no_answer):
         perf_dict["correct_sympy"] += int(current_correct_sympy)
         perf_dict["correct_judge"] += int(current_correct_judge)
