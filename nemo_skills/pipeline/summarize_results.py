@@ -124,6 +124,7 @@ def summarize_results(
                 metrics_calculator = ComputeMetrics(benchmark, extra_datasets=extra_datasets, max_samples=max_samples)
 
             results[benchmark] = {}
+            metrics = {}
 
             if Path(f'{benchmark_path}/output.jsonl').exists():
                 metrics = metrics_calculator.compute_metrics(input_files=[f"{benchmark_path}/output.jsonl"])
@@ -142,8 +143,13 @@ def summarize_results(
                 else:
                     results[benchmark].update(metrics['all'])
 
-            max_metrics_to_print[benchmark] = metrics_calculator.max_metrics_to_print()
-            max_aggregations_to_print[benchmark] = metrics_calculator.max_aggregations_to_print()
+            if len(metrics) > 1:
+                for subset, subset_metrics in metrics.items():
+                    max_metrics_to_print[f"{benchmark}-{subset}"] = metrics_calculator.max_metrics_to_print()
+                    max_aggregations_to_print[f"{benchmark}-{subset}"] = metrics_calculator.max_aggregations_to_print()
+            else:
+                max_metrics_to_print[benchmark] = metrics_calculator.max_metrics_to_print()
+                max_aggregations_to_print[benchmark] = metrics_calculator.max_aggregations_to_print()
 
         except Exception as e:
             logging.exception(f"Error computing metrics for {benchmark}: {e}")
@@ -174,7 +180,7 @@ def summarize_results(
             values = [f'{eval_mode:<{max_widths["evaluation_mode"]}}']
             for metric_key, metric_value in list(metrics.items())[: max_metrics_to_print[benchmark]]:
                 if isinstance(metric_value, float):
-                    metric_value = f"{metric_value:.2f}"
+                    metric_value = f"{metric_value:.2f}%"
                 values.append(f'{str(metric_value):<{max_widths[metric_key]}}')
             print(' | '.join(values))
 
