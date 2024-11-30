@@ -69,6 +69,7 @@ def summarize_results(
         None,
         help="Specify metric type to use a specific metric calculator.",
     ),
+    verbose: bool = typer.Option(True, help="Print download/upload progress"),
 ):
     """Summarize results of an evaluation job."""
     setup_logging(disable_hydra_logs=False, log_level=logging.INFO if not debug else logging.DEBUG)
@@ -96,6 +97,7 @@ def summarize_results(
             get_unmounted_path(cluster_config, results_dir),
             temp_dir,
             remote_tar_dir=get_unmounted_path(cluster_config, remote_tar_dir),
+            verbose=verbose,
         )
         results_dir = Path(temp_dir) / Path(results_dir).name
 
@@ -177,6 +179,7 @@ def summarize_results(
                 tunnel,
                 Path(results_dir) / 'metrics.json',
                 Path(get_unmounted_path(cluster_config, upload_path)) / 'metrics.json',
+                verbose=verbose,
             )
             print("Metrics are saved to", str(Path(get_unmounted_path(cluster_config, upload_path)) / 'metrics.json'))
             tunnel.cleanup()
