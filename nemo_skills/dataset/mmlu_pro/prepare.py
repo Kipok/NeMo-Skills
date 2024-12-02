@@ -19,7 +19,7 @@ def get_output_file(data_dir, split, category):
 def format_entry(entry):
     return {
         "question": entry['question'],
-        "options": "\n".join(f"({chr(65 + i)}) {option}" for i, option in enumerate(entry['options'])),
+        "options": "\n".join(f"{chr(65 + i)}. {option}" for i, option in enumerate(entry['options'])),
         "expected_answer": entry['answer'],
         "topic": entry['category'],
     }
