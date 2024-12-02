@@ -85,7 +85,6 @@ def check_contamination(
     extra_arguments = f'{" ".join(ctx.args)}'
     if dependent_jobs > 0:
         extra_arguments += " ++skip_filled=True "
-            f" ++skip_filled=True "
     try:
         server_type = server_type.value
     except AttributeError:
