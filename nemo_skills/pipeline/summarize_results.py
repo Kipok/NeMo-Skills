@@ -69,6 +69,8 @@ def summarize_results(
         help="Specify metric type to use a specific metric calculator.",
     ),
     verbose: bool = typer.Option(True, help="Print download/upload progress"),
+    wandb_name: Optional[str] = typer.Option(None, help="Name of the wandb experiment to sync these results to"),
+    wandb_project: Optional[str] = typer.Option('nemo-skills', help="Name of the wandb project"),
 ):
     """Summarize results of an evaluation job."""
     setup_logging(disable_hydra_logs=False, log_level=logging.WARNING if not debug else logging.DEBUG)
@@ -209,6 +211,33 @@ def summarize_results(
             print("Metrics are saved to", str(Path(results_dir) / 'metrics.json'))
     except PermissionError:
         print(f"Could not save metrics.json to {Path(results_dir) / 'metrics.json'}. Please check the permissions.")
+
+    # syncing to wandb if asked
+    if wandb_name is not None:
+        import wandb
+
+        run = wandb.init(project=wandb_project, name=wandb_name)
+        tables = {}
+        for benchmark, benchmark_results in results.items():
+            if not benchmark_results:
+                continue
+            # Get all unique metrics from first aggregation (they're the same for all)
+            metrics = list(next(iter(benchmark_results.values())).keys())
+
+            # Define columns: evaluation_mode (aggregation) + metrics
+            columns = ["evaluation_mode"] + metrics
+
+            # Create rows for each aggregation
+            data = []
+            for agg_name, metric_dict in benchmark_results.items():
+                row = [agg_name] + [metric_dict[metric] for metric in metrics]
+                data.append(row)
+
+            # Create and log table
+            tables[benchmark] = wandb.Table(columns=columns, data=data)
+
+        run.log(tables)
+        run.finish()
 
 
 if __name__ == "__main__":
