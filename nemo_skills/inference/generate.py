@@ -88,7 +88,7 @@ class GenerateSolutionsConfig:
     code_execution: bool = False
 
     # extra stop phrases for llms
-    extra_stop_phrases: list["str"] = []
+    extra_stop_phrases: list[str] = field(default_factory=list)
 
     def __post_init__(self):
         if self.input_file is not None:
