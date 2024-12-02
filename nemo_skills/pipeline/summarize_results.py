@@ -214,29 +214,75 @@ def summarize_results(
 
     # syncing to wandb if asked
     if wandb_name is not None:
+        import re
+
         import wandb
 
         run = wandb.init(project=wandb_project, name=wandb_name)
         tables = {}
+        plots = {}
+
         for benchmark, benchmark_results in results.items():
             if not benchmark_results:
                 continue
-            # Get all unique metrics from first aggregation (they're the same for all)
+
+            # Get all unique metrics from first aggregation
             metrics = list(next(iter(benchmark_results.values())).keys())
 
-            # Define columns: evaluation_mode (aggregation) + metrics
+            # Define columns for the table
             columns = ["evaluation_mode"] + metrics
 
             # Create rows for each aggregation
             data = []
+
+            # Store @k metrics separately for plotting
+            k_metrics = defaultdict(lambda: defaultdict(list))
+
             for agg_name, metric_dict in benchmark_results.items():
+                # Add row to table
                 row = [agg_name] + [metric_dict[metric] for metric in metrics]
                 data.append(row)
 
+                # Check if this is a @k metric
+                k_match = re.search(r'@(\d+)$', agg_name)
+                if k_match:
+                    k = int(k_match.group(1))
+                    base_name = agg_name.rsplit('@', 1)[0]
+
+                    # Store k and corresponding values for each metric
+                    for metric in metrics:
+                        # TODO: support more metrics
+                        if metric == "symbolic_correct":
+                            k_metrics[base_name]["k"].append(k)
+                            k_metrics[base_name]["value"].append(metric_dict[metric])
+
             # Create and log table
             tables[benchmark] = wandb.Table(columns=columns, data=data)
+            # Create one plot with all metrics
+            metric_xs = []
+            metric_ys = []
+            metric_keys = []
 
-        run.log(tables)
+            # Sort by k values and get all metrics for each k
+            for metric_name, values in k_metrics.items():
+                k_value_pairs = sorted(zip(values["k"], values["value"]))
+                k_values, metric_values = zip(*k_value_pairs)
+                metric_xs.append(k_values)
+                metric_ys.append(metric_values)
+                metric_keys.append(metric_name)
+
+            # Create single line plot with all metrics if we have any k metrics
+            if metric_keys:
+                plots[benchmark] = wandb.plot.line_series(
+                    xs=metric_xs,
+                    ys=metric_ys,
+                    keys=metric_keys,
+                    title=benchmark,
+                    xname="number of samples",
+                )
+
+        # Log both tables and plots
+        run.log({**tables, **plots})
         run.finish()
 
 
