@@ -16,6 +16,7 @@ import glob
 import json
 import logging
 import os
+import re
 import tempfile
 from collections import defaultdict
 from pathlib import Path
@@ -214,8 +215,6 @@ def summarize_results(
 
     # syncing to wandb if asked
     if wandb_name is not None:
-        import re
-
         import wandb
 
         run = wandb.init(
