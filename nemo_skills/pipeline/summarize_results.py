@@ -245,7 +245,7 @@ def summarize_results(
 
                         run.summary.update({f"{benchmark}/{eval_mode}/{metric_key}": metric_value})
 
-            # Create one plot per metric key
+            # Create combined plot per metric key (line series)
             for metric_key, eval_modes in k_metrics.items():
                 metric_xs = []
                 metric_ys = []
@@ -259,6 +259,11 @@ def summarize_results(
                     metric_ys.append(metric_values)
                     mode_keys.append(mode_name)
 
+                # a few hardcoded metrics to ignore
+                to_ignore = ["no_answer", "any_correct", "both_correct"]
+                if metric_key in to_ignore:
+                    continue
+
                 plot_key = f"{benchmark}/{metric_key}"
                 plots[plot_key] = wandb.plot.line_series(
                     xs=metric_xs,
@@ -267,6 +272,22 @@ def summarize_results(
                     title=f"{benchmark} - {metric_key}",
                     xname="number of samples",
                 )
+
+                # Create individual plots for each evaluation mode
+                for mode_name, values in eval_modes.items():
+                    k_value_pairs = sorted(zip(values["k"], values["value"]))
+                    k_values, metric_values = zip(*k_value_pairs)
+
+                    plot_data = [[x, y] for x, y in zip(k_values, metric_values)]
+                    table = wandb.Table(data=plot_data, columns=["k", "value"])
+
+                    plot_key = f"{benchmark}/{metric_key}/{mode_name}"
+                    plots[plot_key] = wandb.plot.line(
+                        table,
+                        "k",
+                        "value",
+                        title=f"{benchmark} - {metric_key} - {mode_name}",
+                    )
 
         # Log all plots
         run.log({**plots})
