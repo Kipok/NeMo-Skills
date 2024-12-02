@@ -373,7 +373,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                 line_dict["is_correct"] = map_to_future[
                     (line_dict["predicted_answer"], line_dict["expected_answer"])
                 ].result()
-            elif answer_format == "lean4-proof" or answer_format == "lean4-statement" or anwer_format == "lean4-statement-with-header":
+            elif "lean4-" in answer_format:
                 line_dict["proof_status"] = map_to_future[(line_dict["predicted_proof"])].result()
 
         data = []
@@ -449,13 +449,13 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     predicted_proof = line_dict["predicted_proof"]
                     if answer_format == "natural_language" and (predicted_answer, gt_answer) in map_to_future:
                         continue
-                    elif (answer_format == "lean4-proof" or answer_format == "lean4-statement" or answer_format == "lean4-statement-with-header") and predicted_proof in map_to_future:
+                    elif ("lean4-" in answer_format) and predicted_proof in map_to_future:
                         continue
 
                     if (
                         ignore_cache
                         or (line_dict.get("is_correct") is None and answer_format == "natural_language")
-                        or (line_dict.get("proof_status") is None and (answer_format == "lean4-proof" or answer_format == "lean4-statement" or answer_format == "lean4-statement-with-header"))
+                        or (line_dict.get("proof_status") is None and ("lean4-" in answer_format))
                     ):
                         if answer_format == "natural_language":
                             map_to_future[(predicted_answer, gt_answer)] = executor.submit(
@@ -467,7 +467,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                                 timeout=timeout,
                                 take_modulo=take_modulo,
                             )
-                        elif answer_format == "lean4-proof" or answer_format == "lean4-statement" or answer_format == "lean4-statement-with-header":
+                        elif "lean4-" in answer_format:
                             map_to_future[predicted_proof] = executor.submit(
                                 self.is_proof_correct,
                                 predicted_proof,
@@ -476,7 +476,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     else:
                         if answer_format == "natural_language":
                             map_to_future[(predicted_answer, gt_answer)] = DummyFuture(line_dict["is_correct"])
-                        elif answer_format == "lean4-proof" or answer_format == "lean4-statement" or answer_format == "lean4-statement-with-header":
+                        elif "lean4-" in answer_format:
                             map_to_future[predicted_proof] = DummyFuture(line_dict["proof_status"])
 
             for file_handle in file_handles:
