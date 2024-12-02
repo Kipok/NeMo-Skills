@@ -84,7 +84,7 @@ def check_contamination(
     setup_logging(disable_hydra_logs=False)
     extra_arguments = f'{" ".join(ctx.args)}'
     if dependent_jobs > 0:
-        extra_arguments += (
+        extra_arguments += " ++skip_filled=True "
             f" ++skip_filled=True "
         )
     try:
