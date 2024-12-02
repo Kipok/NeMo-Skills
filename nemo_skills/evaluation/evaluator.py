@@ -43,7 +43,7 @@ class MMLUEvaluatorConfig:
 def eval_mmlu(cfg):
 
     def llama_parse(sample):
-        res = re.search(r"The best answer is \([A-J]\)\.", sample['generation'])
+        res = re.search(r"The best answer is ([A-J])\.", sample['generation'])
         if res:
             return res.group(1)
         else:
