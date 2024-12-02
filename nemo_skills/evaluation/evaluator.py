@@ -75,7 +75,7 @@ def eval_mmlu(cfg):
             data = [json.loads(line) for line in fin]
         with open(parent_dir / 'eval_results.jsonl', 'wt', encoding='utf-8') as fout:
             for sample in tqdm(data):
-                parse_result = parse_funcs[eval_config.eval_type](sample)
+                parse_result = parse_funcs[eval_config.parse_func](sample)
                 sample['is_correct'] = parse_result == sample['expected_answer']
                 sample['parse_result'] = parse_result
                 fout.write(json.dumps(sample) + "\n")
