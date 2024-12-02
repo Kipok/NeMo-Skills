@@ -70,10 +70,9 @@ def eval_mmlu(cfg):
     }
 
     for file in unroll_files(cfg.input_files):
-        parent_dir = Path(file).absolute().parent
         with open(file, 'rt', encoding='utf-8') as fin:
             data = [json.loads(line) for line in fin]
-        with open(parent_dir / 'eval_results.jsonl', 'wt', encoding='utf-8') as fout:
+        with open(file, 'wt', encoding='utf-8') as fout:
             for sample in tqdm(data):
                 parse_result = parse_funcs[eval_config.parse_func](sample)
                 sample['is_correct'] = parse_result == sample['expected_answer']
