@@ -21,7 +21,7 @@ from argparse import Namespace
 from copy import deepcopy
 from dataclasses import asdict, field
 from pathlib import Path
-from typing import Any, Callable, Dict, Required
+from typing import Any, Callable, Dict
 
 from tqdm import tqdm
 
@@ -37,7 +37,7 @@ LOG = logging.getLogger(__file__)
 @nested_dataclass(kw_only=True)
 class MMLUEvaluatorConfig:
     # Eval type is either llama or tigerlab
-    parse_func: Required[str]
+    parse_func: str
 
 
 def eval_mmlu(cfg):
