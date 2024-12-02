@@ -76,7 +76,7 @@ def eval_mmlu(cfg):
             for sample in tqdm(data):
                 parse_result = parse_funcs[eval_config.parse_func](sample)
                 sample['is_correct'] = parse_result == sample['expected_answer']
-                sample['parse_result'] = parse_result
+                sample['predicted_answer'] = parse_result
                 fout.write(json.dumps(sample) + "\n")
                         
 

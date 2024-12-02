@@ -14,11 +14,10 @@
 
 
 # settings that define how evaluation should be done by default (all can be changed from cmdline)
-from nemo_skills.evaluation.metrics.math_metrics import MathMetrics
 
 PROMPT_CONFIG = 'generic/multichoice'
 DATASET_GROUP = 'multichoice'
-METRICS_CLASS = MathMetrics  # TODO: update this?
+METRICS_TYPE = 'math'  # TODO: update this?
 DEFAULT_EVAL_ARGS = (
     "++eval_type=mmlu "
     "++eval_config.parse_func=llama "
