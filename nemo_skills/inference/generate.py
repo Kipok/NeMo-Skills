@@ -212,9 +212,6 @@ def generate(cfg: GenerateSolutionsConfig):
                 break
             data_points.append(data_point)
 
-            print("#DEBUG: stop phrases debuging: ", prompt.stop_phrases)
-            print("#DEBUG: stop phrases extra: ", cfg.extra_stop_phrases)
-
             if len(data_points) == cfg.batch_size or idx == cfg.max_samples - 1:
                 if cfg.multi_turn_key is None:
                     outputs = llm.generate(
