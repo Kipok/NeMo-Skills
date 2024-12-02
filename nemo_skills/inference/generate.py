@@ -87,6 +87,9 @@ class GenerateSolutionsConfig:
     # set to True if code execution needs to be supported
     code_execution: bool = False
 
+    # extra stop phrases for llms
+    extra_stop_phrases: list["str"] = []
+
     def __post_init__(self):
         if self.input_file is not None:
             if self.dataset is not None or self.split is not None:
@@ -213,7 +216,7 @@ def generate(cfg: GenerateSolutionsConfig):
                 if cfg.multi_turn_key is None:
                     outputs = llm.generate(
                         prompts=[prompt.fill(dp) for dp in data_points],
-                        stop_phrases=prompt.stop_phrases,
+                        stop_phrases=prompt.stop_phrases + cfg.extra_stop_phrases,
                         **asdict(cfg.inference),
                         **extra_generate_params,
                     )
@@ -242,7 +245,7 @@ def generate(cfg: GenerateSolutionsConfig):
                                 prompt.fill(turn_data_points[dp_index], multi_turn_key=cfg.multi_turn_key)
                                 for dp_index in dp_indices
                             ],
-                            stop_phrases=prompt.stop_phrases,
+                            stop_phrases=prompt.stop_phrases + cfg.extra_stop_phrases,
                             **asdict(cfg.inference),
                             **extra_generate_params,
                         )
