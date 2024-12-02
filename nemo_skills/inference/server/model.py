@@ -122,6 +122,9 @@ class BaseModel(abc.ABC):
 
         Not every server supports that, so make sure to override this method directly if that's not the case.
         """
+
+        print("#DEBUG: For debug purposes printing the stop phrases: ", stop_phrases)
+
         kwargs = {
             'tokens_to_generate': tokens_to_generate,
             'temperature': temperature,

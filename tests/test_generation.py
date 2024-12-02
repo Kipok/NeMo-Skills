@@ -101,6 +101,8 @@ def test_eval_mtbench_api():
         [f"/tmp/nemo-skills-tests/mtbench-api/eval-results/mt-bench/output.jsonl"],
     )["all"]["greedy"]
 
+    print("#DEBUG: ", metrics)
+
     # not having other categories since we just ran with 2 samples
     assert metrics['average'] >= 7
     assert metrics['average_turn1'] >= 7
