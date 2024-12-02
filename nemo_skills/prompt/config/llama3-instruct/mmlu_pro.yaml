@@ -1,0 +1,21 @@
+few_shot_examples:
+  prefix: ""
+  template: |-
+    Q: {question}
+    {options}
+
+    {solution}
+  suffix: ""
+
+
+user: |-
+  The following are multiple choice questions (with answers) about {topic}.
+
+
+  {examples}
+
+  Q: {question}
+  {options}
+
+
+  A: Let's think step by step.
