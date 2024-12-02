@@ -4,8 +4,7 @@ few_shot_examples:
 
     Question: {question}
     Options: {options}
-    Answer: Let's think step by step. {solution}
-    
+    {user_end}{assistant_begin}Answer: Let's think step by step.{solution}{assistant_end}{user_begin}
 
   suffix: ""
 
@@ -18,4 +17,3 @@ user: |-
 
   Question: {question}
   Options: {options}
-  Answer: Let's think step by step.
