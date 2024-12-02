@@ -212,14 +212,18 @@ def generate(cfg: GenerateSolutionsConfig):
                 break
             data_points.append(data_point)
 
+            print("#DEBUG: stop phrases debuging: ", prompt.stop_phrases)
+            print("#DEBUG: stop phrases extra: ", cfg.extra_stop_phrases)
+
             if len(data_points) == cfg.batch_size or idx == cfg.max_samples - 1:
                 if cfg.multi_turn_key is None:
                     outputs = llm.generate(
                         prompts=[prompt.fill(dp) for dp in data_points],
-                        stop_phrases=prompt.stop_phrases + cfg.extra_stop_phrases,
+                        stop_phrases = (prompt.stop_phrases if prompt.stop_phrases is None else (prompt.stop_phrases + cfg.extra_stop_phrases)),
                         **asdict(cfg.inference),
                         **extra_generate_params,
                     )
+
                 else:
                     # TODO: this will not be efficient if different elements have different number of turns
                     # (effective batch size gets smaller). Need to rewrite it to ensure batch size is filled
@@ -245,7 +249,7 @@ def generate(cfg: GenerateSolutionsConfig):
                                 prompt.fill(turn_data_points[dp_index], multi_turn_key=cfg.multi_turn_key)
                                 for dp_index in dp_indices
                             ],
-                            stop_phrases=prompt.stop_phrases + cfg.extra_stop_phrases,
+                            stop_phrases = (prompt.stop_phrases if prompt.stop_phrases is None else (prompt.stop_phrases + cfg.extra_stop_phrases)),
                             **asdict(cfg.inference),
                             **extra_generate_params,
                         )
