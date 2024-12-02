@@ -5,6 +5,7 @@ few_shot_examples:
     Question: {question}
     Options: {options}
     Answer: Let's think step by step. {solution}
+    
 
   suffix: ""
 
@@ -17,4 +18,4 @@ user: |-
 
   Question: {question}
   Options: {options}
-  Answer: Let's think step by step.\n\n
+  Answer: Let's think step by step.
