@@ -6,7 +6,6 @@ from tqdm import tqdm
 
 
 def format_entry(entry, type):
-
     return {
         "question": entry['question'],
         "options": "\n".join(f"{chr(65 + i)}. {option}" for i, option in enumerate(entry['options'])),
@@ -34,11 +33,6 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--split",
-        default="test",
-        choices=("validation", "test"),
-        help="Dataset split to process."
-    )
+    parser.add_argument("--split", default="test", choices=("validation", "test"), help="Dataset split to process.")
     args = parser.parse_args()
     main(args)
