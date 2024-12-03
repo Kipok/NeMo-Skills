@@ -185,8 +185,6 @@ def generate(
                     output_dir=output_dir,
                     extra_arguments=extra_arguments,
                     eval_args=eval_args,
-                    preprocess_cmd=preprocess_cmd,
-                    postprocess_cmd=postprocess_cmd,
                 )
                 prev_tasks = None
                 for _ in range(dependent_jobs + 1):
