@@ -119,6 +119,14 @@ class GenerateSolutionsConfig:
 cs = hydra.core.config_store.ConfigStore.instance()
 cs.store(name="base_generation_config", node=GenerateSolutionsConfig)
 
+def combine_stop_phrases(prompt_phrases, extra_phrases):
+    if prompt_phrases is None and extra_phrases is None:
+        return None
+    if prompt_phrases is None:
+        return extra_phrases
+    if extra_phrases is None:
+        return prompt_phrases
+    return prompt_phrases + extra_phrases
 
 @hydra.main(version_base=None, config_name='base_generation_config')
 def generate(cfg: GenerateSolutionsConfig):
@@ -218,7 +226,7 @@ def generate(cfg: GenerateSolutionsConfig):
                 if cfg.multi_turn_key is None:
                     outputs = llm.generate(
                         prompts=[prompt.fill(dp) for dp in data_points],
-                        stop_phrases = (prompt.stop_phrases if prompt.stop_phrases is None else (prompt.stop_phrases + extra_stop_phrases)),
+                        stop_phrases = combine_stop_phrases(prompt.stop_phrases, extra_stop_phrases),
                         **asdict(cfg.inference),
                         **extra_generate_params,
                     )
@@ -248,7 +256,7 @@ def generate(cfg: GenerateSolutionsConfig):
                                 prompt.fill(turn_data_points[dp_index], multi_turn_key=cfg.multi_turn_key)
                                 for dp_index in dp_indices
                             ],
-                            stop_phrases = (prompt.stop_phrases if prompt.stop_phrases is None else (prompt.stop_phrases + extra_stop_phrases)),
+                            stop_phrases = combine_stop_phrases(prompt.stop_phrases, extra_stop_phrases),
                             **asdict(cfg.inference),
                             **extra_generate_params,
                         )
