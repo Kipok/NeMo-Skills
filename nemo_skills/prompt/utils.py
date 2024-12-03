@@ -154,7 +154,9 @@ class Prompt:
     def build_examples_dict(self, input_dict):
         if self.config.few_shot_examples.examples_type:
             few_shots = examples_map[self.config.few_shot_examples.examples_type]
+            LOG.info("Using few-shot examples from %s", self.config.few_shot_examples.examples_type)
             if self.config.few_shot_examples.few_shot_selection_key:
+                LOG.info("Filtering few-shot examples by key %s", self.config.few_shot_examples.few_shot_selection_key)
                 few_shots = [x for x in few_shots if x[self.config.few_shot_examples.few_shot_selection_key] == input_dict[self.config.few_shot_examples.few_shot_selection_key]]
             return few_shots
 
