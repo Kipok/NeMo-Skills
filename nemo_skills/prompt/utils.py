@@ -346,5 +346,6 @@ def get_prompt(
     if examples_type is not None:
         prompt.config.few_shot_examples.examples_type = examples_type
     if few_shot_selection_key is not None:
+        LOG.info("Setting few-shot selection key to %s", few_shot_selection_key)
         prompt.config.few_shot_examples.few_shot_selection_key = few_shot_selection_key
     return prompt
