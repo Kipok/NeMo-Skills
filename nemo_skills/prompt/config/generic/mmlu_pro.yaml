@@ -7,6 +7,7 @@ few_shot_examples:
     {user_end}{assistant_begin}Answer: Let's think step by step.{solution}{assistant_end}{user_begin}
 
   suffix: ""
+  examples_type: "{examples_type}"
 
 
 user: |-
