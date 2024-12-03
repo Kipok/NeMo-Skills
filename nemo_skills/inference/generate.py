@@ -55,6 +55,7 @@ class GenerateSolutionsConfig:
     prompt_template: str | None = None  # not required for OpenAI server
     prompt_config: str | None = None  # we will fetch it from dataset dir if not provided
     examples_type: str | None = None  # to be able to customize few-shot examples
+    few_shot_selection_key: str | None = None  # to be able to choose few-shot examples based on some key
     inference: InferenceConfig = field(default_factory=InferenceConfig)  # LLM call parameters
 
     # Can specify one of the existing datasets.
