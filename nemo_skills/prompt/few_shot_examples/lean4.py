@@ -73,7 +73,7 @@ math_to_lean4_fewshot = [
         "formal_proof": "sorry",
     },
 ]
-math_to_lean4_full_gen_fewshot = [
+math_to_lean4_predict_header_fewshot = [
     {
         "header": "import Mathlib\n\nopen Finset\nopen scoped BigOperators\n\n",
         "problem": "What is the following value when expressed as a common fraction: $$\\frac{1}{2^{1}}+\\frac{1}{2^{2}}+\\frac{1}{2^{3}}+\\cdots + \\frac{1}{2^{8}}+\\frac{1}{2^{9}}+\\frac{1}{2^{10}}?$$",
@@ -121,5 +121,5 @@ math_to_lean4_full_gen_fewshot = [
 examples_map = {
     "minif2f_deepseek_fewshot": minif2f_deepseek_fewshot,
     "math_to_lean4_fewshot": math_to_lean4_fewshot,
-    "math_to_lean4_full_gen_fewshot": math_to_lean4_full_gen_fewshot,
+    "math_to_lean4_predict_header_fewshot": math_to_lean4_predict_header_fewshot,
 }
