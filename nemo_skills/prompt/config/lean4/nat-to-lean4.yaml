@@ -25,19 +25,4 @@ user: |-
   {examples}{problem}
   Answer is: {predicted_answer}
   ```lean4
-  import Mathlib
-  
-  open Topology Filter Real Complex TopologicalSpace Finset Function Metric
-  open scoped BigOperators
-  
-
-
-
-
-
-
-
-
-
-
-  
+  {header}  

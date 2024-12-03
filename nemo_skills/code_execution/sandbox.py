@@ -29,6 +29,7 @@ import tqdm
 
 from nemo_skills.code_execution.math_grader import extract_answer
 from nemo_skills.utils import python_doc_to_cmd_help, unroll_files
+from nemo_skills.dataset.utils import get_lean4_header
 
 LOG = logging.getLogger(__file__)
 
@@ -423,7 +424,7 @@ print(json.dumps({{"result": output, "error_message": error_message}}))
                     elif answer_format == "lean4-statement":
                         if not use_predicted_proof_key:
                             generation = re.sub(r"^\s*```(lean4)?\s*|\s*```$", "", line_dict["generation"])
-                            header = "import Mathlib\n\nimport Aesop\n\nset_option maxHeartbeats 0\n\nopen Topology Filter Real Complex TopologicalSpace Finset Function Metric Nat Rat\nopen scoped BigOperators Matrix\n\n"
+                            header = get_lean4_header()
                             line_dict["predicted_proof"] = header + generation + "sorry"
                         else:
                             if "predicted_proof" not in line_dict:

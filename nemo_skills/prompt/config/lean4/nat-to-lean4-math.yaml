@@ -26,22 +26,4 @@ user: |-
   {examples}{problem}
   Answer is: {expected_answer}
   ```lean4
-  import Mathlib
-  import Aesop
-
-  set_option maxHeartbeats 0
-
-  open Topology Filter Real Complex TopologicalSpace Finset Function Metric Nat Rat
-  open scoped BigOperators Matrix
-  
-
-
-
-
-
-
-
-
-
-
-  
+  {header}
