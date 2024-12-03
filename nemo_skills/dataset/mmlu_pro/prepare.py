@@ -10,7 +10,7 @@ def format_entry(entry):
         "question": entry['question'],
         "options": "\n".join(f"{chr(65 + i)}. {option}" for i, option in enumerate(entry['options'])),
         "expected_answer": entry['answer'],
-        "topic": entry['category'],
+        "examples_type": entry['category'],
         "subset_for_metrics": entry['category'],
     }
 

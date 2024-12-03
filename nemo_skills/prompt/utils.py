@@ -52,7 +52,6 @@ class FewShotExamplesConfig:
     suffix: str = ""
 
     examples_type: Optional[str] = None
-    few_shot_selection_key : Optional[str] = None
 
     retrieval_field: Optional[str] = None  # e.g. question, reference_solution, etc.
     retrieval_file: Optional[str] = None  # needs to be provided if retrieval_field is not None
@@ -109,6 +108,7 @@ class PromptConfig:
     template: PromptTemplate = None
     few_shot_examples: FewShotExamplesConfig = field(default_factory=FewShotExamplesConfig)
 
+
 class Prompt:
     SYSTEM_FORMAT = "{text_begin}{system_begin}{system}{system_end}"
     TURN_BEGIN_FORMAT = "{user_begin}{user}{user_end}{assistant_begin}"
@@ -153,12 +153,7 @@ class Prompt:
 
     def build_examples_dict(self, input_dict):
         if self.config.few_shot_examples.examples_type:
-            few_shots = examples_map[self.config.few_shot_examples.examples_type]
-            LOG.info("Using few-shot examples from %s", self.config.few_shot_examples.examples_type)
-            if self.config.few_shot_examples.few_shot_selection_key:
-                LOG.info("Filtering few-shot examples by key %s", self.config.few_shot_examples.few_shot_selection_key)
-                few_shots = [x for x in few_shots if x[self.config.few_shot_examples.few_shot_selection_key] == input_dict[self.config.few_shot_examples.few_shot_selection_key]]
-            return few_shots
+            return examples_map[self.config.few_shot_examples.examples_type]
 
         if self.config.few_shot_examples.retriever is None:
             return []
@@ -333,7 +328,6 @@ def get_prompt(
     examples_type: str | None = None,
     config_dir: str | None = None,
     template_dir: str | None = None,
-    few_shot_selection_key: str | None = None,
 ) -> Prompt:
     if template_dir is None:
         template_dir = Path(__file__).parent.absolute() / 'template'
@@ -345,7 +339,4 @@ def get_prompt(
         prompt = Prompt(PromptConfig(**config))
     if examples_type is not None:
         prompt.config.few_shot_examples.examples_type = examples_type
-    if few_shot_selection_key is not None:
-        LOG.info("Setting few-shot selection key to %s", few_shot_selection_key)
-        prompt.config.few_shot_examples.few_shot_selection_key = few_shot_selection_key
     return prompt
