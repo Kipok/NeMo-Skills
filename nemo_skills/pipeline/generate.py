@@ -152,8 +152,13 @@ def generate(
     if server_address is None:  # we need to host the model
         assert server_gpus is not None, "Need to specify server_gpus if hosting the model"
         # Note: for reward models, the port is hard-coded to 5000 in the
-        # get_reward_server_command function
-        server_address = "localhost:5000"
+        # get_reward_server_command function. Since RM has a proxy server on 5000
+        # and an actual GPU is being loaded on port 5001, we need to wait for 5001
+        # to come online before sending requests
+        if generation_type == GenerationType.reward:
+            server_address = "localhost:5001"
+        else:
+            server_address = "localhost:5000"
 
         server_config = {
             "model_path": model,
