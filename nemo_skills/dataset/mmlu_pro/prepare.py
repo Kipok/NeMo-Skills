@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 
 def format_entry(entry, type):
-    category = entry['category'].replace(" ", "_") # Fix computer science category
+    category = entry['category'].replace(" ", "_")  # Fix computer science category
     return {
         "question": entry['question'],
         "options": "\n".join(f"{chr(65 + i)}. {option}" for i, option in enumerate(entry['options'])),
