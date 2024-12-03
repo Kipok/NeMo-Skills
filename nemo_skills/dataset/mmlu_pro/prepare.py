@@ -6,12 +6,13 @@ from tqdm import tqdm
 
 
 def format_entry(entry, type):
+    category = entry['category'].replace(" ", "_") # Fix computer science category
     return {
         "question": entry['question'],
         "options": "\n".join(f"{chr(65 + i)}. {option}" for i, option in enumerate(entry['options'])),
         "expected_answer": entry['answer'],
-        "examples_type": f'mmlu_pro_few_shot_{type}_{entry["category"]}',
-        "subset_for_metrics": entry['category'],
+        "examples_type": f'mmlu_pro_few_shot_{type}_{category}',
+        "subset_for_metrics": category,
     }
 
 
