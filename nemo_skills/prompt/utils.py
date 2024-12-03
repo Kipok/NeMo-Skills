@@ -52,6 +52,7 @@ class FewShotExamplesConfig:
     suffix: str = ""
 
     examples_type: Optional[str] = None
+    few_shot_selection_key : Optional[str] = None
 
     retrieval_field: Optional[str] = None  # e.g. question, reference_solution, etc.
     retrieval_file: Optional[str] = None  # needs to be provided if retrieval_field is not None
@@ -107,8 +108,6 @@ class PromptConfig:
     system: str = ""
     template: PromptTemplate = None
     few_shot_examples: FewShotExamplesConfig = field(default_factory=FewShotExamplesConfig)
-    few_shot_selection_key : Optional[str] = None
-
 
 class Prompt:
     SYSTEM_FORMAT = "{text_begin}{system_begin}{system}{system_end}"
@@ -332,6 +331,7 @@ def get_prompt(
     examples_type: str | None = None,
     config_dir: str | None = None,
     template_dir: str | None = None,
+    few_shot_selection_key: str | None = None,
 ) -> Prompt:
     if template_dir is None:
         template_dir = Path(__file__).parent.absolute() / 'template'
@@ -343,4 +343,6 @@ def get_prompt(
         prompt = Prompt(PromptConfig(**config))
     if examples_type is not None:
         prompt.config.few_shot_examples.examples_type = examples_type
+    if few_shot_selection_key is not None:
+        prompt.config.few_shot_examples.few_shot_selection_key = few_shot_selection_key
     return prompt
