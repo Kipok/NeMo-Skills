@@ -107,6 +107,7 @@ class PromptConfig:
     system: str = ""
     template: PromptTemplate = None
     few_shot_examples: FewShotExamplesConfig = field(default_factory=FewShotExamplesConfig)
+    few_shot_selection_key : Optional[str] = None
 
 
 class Prompt:
@@ -153,7 +154,10 @@ class Prompt:
 
     def build_examples_dict(self, input_dict):
         if self.config.few_shot_examples.examples_type:
-            return examples_map[self.config.few_shot_examples.examples_type]
+            few_shots = examples_map[self.config.few_shot_examples.examples_type]
+            if self.config.few_shot_examples.few_shot_selection_key:
+                few_shots = [x for x in few_shots if x[self.config.few_shot_examples.few_shot_selection_key] == input_dict[self.config.few_shot_examples.few_shot_selection_key]]
+            return few_shots
 
         if self.config.few_shot_examples.retriever is None:
             return []
