@@ -16,7 +16,7 @@ import importlib
 import subprocess
 import sys
 from pathlib import Path
-from utils import get_lean4_header, add_header_to_jsonl_inplace
+from nemo_skills.dataset.utils import get_lean4_header, add_header_to_jsonl_inplace
 
 datasets = [d.name for d in (Path(__file__).parents[0]).glob("*") if d.is_dir() and d.name != "__pycache__"]
 

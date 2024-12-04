@@ -76,7 +76,7 @@ def summarize_results(
     """Summarize results of an evaluation job."""
     setup_logging(disable_hydra_logs=False, log_level=logging.WARNING if not debug else logging.DEBUG)
 
-    if benchmarks and " " in str(benchmarks):
+    if " " in str(benchmarks):
         raise ValueError("benchmarks should be separated with commas")
 
     cluster = cluster or os.environ.get("NEMO_SKILLS_CONFIG")
@@ -103,12 +103,9 @@ def summarize_results(
         )
         results_dir = Path(temp_dir) / Path(results_dir).name
 
-    # running compute_metrics.py to get results
+    # running compute_metrics.py to get greedy, majority and pass @k results for all benchmarks available
     # Check if there is an eval-results dir inside the results_dir
-    if eval_type: 
-        eval_results_dir = Path(results_dir) / 'eval-results'
-    else:
-        eval_results_dir = Path(results_dir)
+    eval_results_dir = Path(results_dir) / 'eval-results'
     if eval_results_dir.exists() and eval_results_dir.is_dir():
         results_dir = eval_results_dir
     benchmarks_paths = [path for path in glob.glob(f'{results_dir}/*') if '-logs' not in os.path.basename(path)]
