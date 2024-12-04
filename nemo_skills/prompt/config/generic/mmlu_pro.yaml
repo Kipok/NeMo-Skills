@@ -1,3 +1,6 @@
+# Prompt used by TigerLab for MMLU-Pro benchmark
+# https://github.com/TIGER-AI-Lab/MMLU-Pro/blob/main/evaluate_from_api.py
+
 few_shot_examples:
   prefix: ""
   template: |-

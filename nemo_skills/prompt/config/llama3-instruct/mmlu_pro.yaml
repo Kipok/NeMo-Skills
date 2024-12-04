@@ -1,3 +1,6 @@
+# Prompt used by Llama-instruct models for MMLU-Pro benchmark
+# https://huggingface.co/datasets/meta-llama/Meta-Llama-3.1-8B-Instruct-evals/viewer/Meta-Llama-3.1-8B-Instruct-evals__mmlu_pro__details?row=
+
 few_shot_examples:
   prefix: ""
   template: |-
