@@ -411,10 +411,10 @@ def test_math_to_lean4_fewshots(sandbox_type):
 
 
 @pytest.mark.parametrize("sandbox_type", ['local', 'piston'])
-def test_math_to_lean4_full_gen_fewshot(sandbox_type):
+def test_math_to_lean4_predict_header_fewshot(sandbox_type):
     sandbox = _get_sandbox(sandbox_type)
 
-    from nemo_skills.prompt.few_shot_examples.lean4 import math_to_lean4_full_gen_fewshot
+    from nemo_skills.prompt.few_shot_examples.lean4 import math_to_lean4_predict_header_fewshot
 
     # Test case for Lean4 code with syntax error
     session_id_list = []
@@ -422,7 +422,7 @@ def test_math_to_lean4_full_gen_fewshot(sandbox_type):
     stdout_list = []
     stderr_list = []
 
-    for i, entry in enumerate(math_to_lean4_full_gen_fewshot):
+    for i, entry in enumerate(math_to_lean4_predict_header_fewshot):
         code = entry["header"] + entry["formal_statement"] + entry["formal_proof"]
 
         output, session_id = sandbox.execute_code(code, language="lean4")

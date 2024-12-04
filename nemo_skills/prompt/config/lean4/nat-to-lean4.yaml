@@ -25,4 +25,4 @@ user: |-
   {examples}{problem}
   Answer is: {predicted_answer}
   ```lean4
-  {header}  
+  {header}
