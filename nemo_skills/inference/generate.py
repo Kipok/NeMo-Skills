@@ -226,7 +226,7 @@ def generate(cfg: GenerateSolutionsConfig):
                 if cfg.multi_turn_key is None:
                     outputs = llm.generate(
                         prompts=[prompt.fill(dp) for dp in data_points],
-                        stop_phrases = combine_stop_phrases(prompt.stop_phrases, extra_stop_phrases),
+                        stop_phrases=combine_stop_phrases(prompt.stop_phrases, extra_stop_phrases),
                         **asdict(cfg.inference),
                         **extra_generate_params,
                     )
@@ -256,7 +256,7 @@ def generate(cfg: GenerateSolutionsConfig):
                                 prompt.fill(turn_data_points[dp_index], multi_turn_key=cfg.multi_turn_key)
                                 for dp_index in dp_indices
                             ],
-                            stop_phrases = combine_stop_phrases(prompt.stop_phrases, extra_stop_phrases),
+                            stop_phrases=combine_stop_phrases(prompt.stop_phrases, extra_stop_phrases),
                             **asdict(cfg.inference),
                             **extra_generate_params,
                         )
