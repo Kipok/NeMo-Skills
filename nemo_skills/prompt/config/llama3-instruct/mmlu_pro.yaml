@@ -5,7 +5,7 @@ few_shot_examples:
     Question: {question}
     {options}
 
-    Your response should end with "The best answer is [the_answer_letter]." where [the_answer_letter] is a letter from the provided choices.
+    Your response should end with "The best answer is [the_answer_letter]." where the [the_answer_letter] is a letter from the provided choices.
 
     Let's think step by step.{user_end}{assistant_begin}{solution}{assistant_end}{user_begin}
   suffix: ""
@@ -17,6 +17,6 @@ user: |-
   Question: {question}
   {options}
 
-  Your response should end with "The best answer is [the_answer_letter]." where [the_answer_letter] is a letter from the provided choices.
+  Your response should end with "The best answer is [the_answer_letter]." where the [the_answer_letter] is a letter from the provided choices.
 
   Let's think step by step.
