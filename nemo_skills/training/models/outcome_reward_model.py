@@ -28,9 +28,9 @@ from omegaconf.dictconfig import DictConfig
 from pytorch_lightning.trainer.trainer import Trainer
 
 
-class RegressionRewardModel(MegatronGPTRewardModel):
+class OutcomeRewardModel(MegatronGPTRewardModel):
     """
-    Megatron GPT Regression Reward Model Training.
+    Outcome-based Reward Model Training.
     """
 
     def __init__(self, cfg: DictConfig, trainer: Trainer):
