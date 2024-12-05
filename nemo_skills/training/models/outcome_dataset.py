@@ -1,15 +1,20 @@
-from nemo_aligner.data.nlp.datasets import RewardModelDataset
+import os
+from typing import Dict, List
+
+import numpy as np
+import scipy
+import torch
+from nemo.core import Dataset
+from nemo.utils import logging
+from omegaconf import OmegaConf
 
 
-class RegressionRewardModelDataset(RewardModelDataset):
-    """This class assumes each line of the dataset file is a dictionary with "text" and "label" field,
-    where "text" is a string representing the input prompt, and "label" is a list of float or int values.
-    Note that when training the model with multiple datasets which contain different attributes,
-    we should set missing attributes to model.regression.loss_mask_val(according to training_rm.yaml)
-    in the dataset files so that their losses are masked. At least one attribute should be present for each sample.
-
-    WARNING: It's recommended to preprocess your data in advance to ensure all samples are within self.seq_length.
-             Otherwise if all samples in a batch are longer than self.seq_length, you may get NaN loss.
+class OutcomeRewardModelDataset(Dataset):
+    """This class works only with jsonl files. It assumes each line of the json file is a dictionary
+    with the prompt, along with the response (response only, no prompt), and the status denoting whether the response is
+    chosen or rejected. This Dataset will combine the prompt with the corresponding response, and then tokenize it. It
+    will also create a score field that has 1 if the sample is chosen and 0 if rejected. It also returns the labels for
+    each, which is the response tokens with -100 for the prompt part.
     """
 
     def __init__(
@@ -24,88 +29,71 @@ class RegressionRewardModelDataset(RewardModelDataset):
         seed,
         drop_last=True,
     ):
+        super().__init__()
+        self.cfg = cfg
+        self.name = name
+        self.data = data
+        self.drop_last = drop_last
+        self.seq_length = seq_length
+        self.tokenizer = tokenizer
 
-        assert cfg.data.data_impl.startswith(
-            "json"
-        ), f"data.data_impl must be either json or jsonl, but got {cfg.data.data_impl}"
+        self.reset_position_ids = cfg.data.get("reset_position_ids", False)
+        self.reset_attention_mask = cfg.data.get("reset_attention_mask", False)
+        self.eod_mask_loss = cfg.data.get("eod_mask_loss", False)
+        self.eos_id = tokenizer.eos_id
 
-        super().__init__(
-            cfg=cfg,
-            tokenizer=tokenizer,
-            name=name,
-            data_prefix=data_prefix,
-            documents=documents,
-            data=data,
-            seq_length=seq_length,
-            seed=seed,
-            drop_last=drop_last,
-        )
+        np_rng = np.random.default_rng(seed=seed)
+        np_rng.shuffle(self.data)
+
+        self.nograd_length = 32
+
+        # Checks
+        assert np.min(documents) >= 0
+        assert np.max(documents) < len(self.data)
 
     def __len__(self):
         return len(self.data)
 
+    def encode(self, text, append_eod=False):
+        text_ids = self.tokenizer.text_to_ids(text)
+
+        if len(text_ids) > 0 and append_eod:
+            text_ids.append(self.tokenizer.eos_id)
+
+        return text_ids, len(text_ids)
+
     def __getitem__(self, idx):
-        """
-        Returns one training sample, its label, and its respective length.
-        """
+        """Returns a sample = prompt + response, their respective lengths, and labels."""
+        payload = self.data[idx]
+        prompt, prompt_len = self.encode(payload["prompt"])
+        sample, sample_len = self.encode(payload["prompt"] + payload["response"])
+        labels = ([-100] * prompt_len) + sample[prompt_len:]
+        # Separate the response from the prompt
+        response = sample[prompt_len:]
+        preference = 1 if payload["preference"] == "chosen" else 0
 
-        orig_idx = idx = idx % len(self)
-        while True:
-            sample = self.data[idx]
-            sample_text, sample_length = self.encode(sample["text"])
-            sample_label = sample["label"]
-            if idx == orig_idx:
-                orig_length = sample_length
-            if sample_length <= self.seq_length:
-                break
+        assert (
+            sample[0:prompt_len] == prompt
+        ), "the tokenizer for OutcomeRewardModel has merged tokens between prompt and response"
 
-            idx = (idx + 1) % len(self)
-            if idx == orig_idx:
-                raise RuntimeError(f"All samples have length > {self.seq_length}")
-
-        assert isinstance(sample_label, list) and all(
-            isinstance(value, (float, int)) for value in sample_label
-        ), "label should be a list of float or int values"
-
-        sample_label = [float(value) for value in sample_label]
-
-        label_tensor = torch.tensor(sample_label, dtype=torch.float)
-
-        text_np = np.array(sample_text, dtype=np.int64)
-        text_np_pad = np.pad(
-            text_np, (0, max(0, self.seq_length - text_np.shape[0])), mode="constant", constant_values=self.eos_id
-        )
-
-        text_tensor = torch.tensor(text_np_pad)
-        attention_mask, loss_mask, position_ids = _create_ltor_masks_and_position_ids(
-            text_tensor,
-            self.eos_id,
-            self.reset_position_ids,
-            self.reset_attention_mask,
-            self.eod_mask_loss,
-        )
-
-        # Negative index comes when we pad the last batch in MegatronPretrainingBatchSampler
-        # We make the loss_mask zero to mask out loss from these samples
-        if idx == -1:
-            logging.waring("WARNING: Got -1 as item index. Masking loss from this sample")
-            loss_mask = torch.zeros_like(loss_mask)
-
-        # Replace current sample (when it exceeds max length) with another sample but mask its loss
-        if idx != orig_idx:
+        if sample_len > self.seq_length:
             logging.warning(
-                f"Sample {orig_idx} in dataset '{self.name}' has length "
-                f"{orig_length} > {self.seq_length} "
-                f"=> replacing it with sample {idx} and masking its loss"
+                f"WARNING: Tokenized text exceeds max seq length ({sample_len} vs {self.seq_length})."
+                + f"The example will be ignored."
             )
-            loss_mask = torch.zeros_like(loss_mask)
+            # Truncate the sample and labels to the first nograd_length tokens
+            sample_len = self.nograd_length
+            sample = sample[: self.nograd_length]
+            prompt_len = self.nograd_length // 2
+            prompt = prompt[:prompt_len]
+            response = sample[prompt_len:]
+            labels = torch.ones_like(torch.LongTensor(sample)) * (-100)
 
         output = {
-            "inputs": text_tensor,
-            "lengths": text_np.shape[0],
-            "position_ids": position_ids,
-            "attention_mask": attention_mask,
-            "loss_mask": loss_mask,
-            "labels": label_tensor,
+            "prompt_tokens": torch.LongTensor(prompt),
+            "response_tokens": torch.LongTensor(response),
+            "sample_length": sample_len,
+            "sample_labels": torch.LongTensor(labels),
+            "preference": preference,
         }
         return output
