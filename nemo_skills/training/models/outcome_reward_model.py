@@ -145,7 +145,7 @@ class OutcomeRewardModel(MegatronGPTModel, SupervisedInterface):
         return rewards
 
     @torch.no_grad()
-    def gather_and_split_rewards(self, pi_logprobs, ref_logprobs, labels, preferences, average_log_probs=False):
+    def gather_and_split_rewards(self, pi_logprobs, labels, preferences, average_log_probs=False):
         pi_logprobs = pi_logprobs.detach()
 
         dp_group = parallel_state.get_data_parallel_group()
@@ -178,35 +178,24 @@ class OutcomeRewardModel(MegatronGPTModel, SupervisedInterface):
                 required_keys.add("attention_mask")
 
                 if parallel_state.is_pipeline_first_stage():
-                    required_keys.update(("samples", "kl_samples", "position_ids"))
+                    required_keys.update(("samples", "position_ids"))
 
                 if parallel_state.is_pipeline_last_stage():
                     required_keys.update(
                         (
-                            "ref_policy_log_probs_samples",
-                            "ref_policy_log_probs_kl_samples",
                             "sample_labels",
-                            "kl_sample_labels",
                             "preference",
                         )
                     )
 
             batch = {key: val.cuda(non_blocking=True) if key in required_keys else None for key, val in batch.items()}
 
-            tokens, labels, ref_logprobs = None, None, None
-            if batch["samples"] is not None and batch["kl_samples"] is not None:
-                tokens = torch.cat((batch["samples"], batch["kl_samples"]), dim=0)
+            tokens, labels = None, None, None
+            if batch["samples"] is not None:
+                tokens = batch["samples"]
 
-            if batch["sample_labels"] is not None and batch["kl_sample_labels"] is not None:
-                labels = torch.cat((batch["sample_labels"], batch["kl_sample_labels"]), dim=0)
-
-            if (
-                batch.get("ref_policy_log_probs_samples") is not None
-                and batch.get("ref_policy_log_probs_kl_samples") is not None
-            ):
-                ref_logprobs = torch.cat(
-                    (batch["ref_policy_log_probs_samples"], batch["ref_policy_log_probs_kl_samples"]), dim=0
-                )
+            if batch["sample_labels"] is not None:
+                labels = batch["sample_labels"]
 
             if batch["preference"] is not None:
                 preferences = batch["preference"]
@@ -254,9 +243,8 @@ class OutcomeRewardModel(MegatronGPTModel, SupervisedInterface):
                     higher_stability=True,
                 )
 
-                loss, kl_divergence = self.loss_func(
+                loss = self.loss_func(
                     per_token_logps,
-                    ref_logprobs,
                     labels[:, 1:],
                     preferences,
                     average_log_probs=self.preference_avg_log_probs,
@@ -264,15 +252,14 @@ class OutcomeRewardModel(MegatronGPTModel, SupervisedInterface):
 
                 reduced_loss = average_losses_across_data_parallel_group([loss])
 
-                out_chosen, out_rejected, kl_div = self.gather_and_split_rewards(
-                    per_token_logps, ref_logprobs, labels, preferences, average_log_probs=self.preference_avg_log_probs
+                out_chosen, out_rejected = self.gather_and_split_rewards(
+                    per_token_logps, labels, preferences, average_log_probs=self.preference_avg_log_probs
                 )
 
                 return (
                     loss,
                     {
                         "avg": reduced_loss,
-                        "kl": kl_div,
                         "out_chosen": out_chosen,
                         "out_rejected": out_rejected,
                     },
@@ -286,17 +273,17 @@ class OutcomeRewardModel(MegatronGPTModel, SupervisedInterface):
         return fwd_output_and_loss_func
 
     def split_output_tensor(self, output_tensor, preferences=None):
-        logps, kl_logps = torch.split(output_tensor.float(), len(output_tensor) // 2, dim=0)
+        logps = output_tensor
         if preferences is None:
             # this is for the sample_logprobs
-            return logps, kl_logps
+            return logps
         else:
             chosen_idx = torch.where(preferences == 1)[0]
             rejected_idx = torch.where(preferences == 0)[0]
             chosen_logps = logps[chosen_idx, ...]
             reject_logps = logps[rejected_idx, ...]
 
-            return chosen_logps, reject_logps, kl_logps
+            return chosen_logps, reject_logps
 
     def get_reduced_masked_logps(self, logps, labels, average_log_probs=False):
         assert logps.shape == labels.shape, "logps and labels shape mismatch"
@@ -309,27 +296,19 @@ class OutcomeRewardModel(MegatronGPTModel, SupervisedInterface):
         else:
             return (logps * loss_mask).sum(-1)
 
-    def loss_func(self, pi_logprobs, ref_logprobs, labels, preferences, average_log_probs=False):
+    def loss_func(self, pi_logprobs, labels, preferences, average_log_probs=False):
 
-        rewards = self.get_reduced_masked_logps(
-            pi_logprobs - ref_logprobs, labels, average_log_probs=average_log_probs
-        )
-        chosen_rewards, reject_rewards, kl_rewards = self.split_output_tensor(rewards, preferences)
-
-        kl_divergence = average_losses_across_data_parallel_group([kl_rewards.mean().clamp(min=0).detach()])
+        rewards = self.get_reduced_masked_logps(pi_logprobs, labels, average_log_probs=average_log_probs)
+        chosen_rewards, reject_rewards = self.split_output_tensor(rewards, preferences)
         if chosen_rewards.shape[0] != 0:
-            chosen_losses = 1.0 - torch.nn.functional.sigmoid(
-                self.ref_policy_kl_penalty * (chosen_rewards - kl_divergence)
-            )
+            chosen_losses = 1.0 - torch.nn.functional.sigmoid(chosen_rewards)
             chosen_rewards = self.ref_policy_kl_penalty * chosen_rewards
         else:
             chosen_losses = torch.Tensor([]).to(rewards.dtype).to(rewards.device)
             chosen_rewards = torch.Tensor([]).to(rewards.dtype).to(rewards.device)
 
         if reject_rewards.shape[0] != 0:
-            reject_losses = 1.0 - torch.nn.functional.sigmoid(
-                self.ref_policy_kl_penalty * (kl_divergence - reject_rewards)
-            )
+            reject_losses = 1.0 - torch.nn.functional.sigmoid(-reject_rewards)
             reject_rewards = self.ref_policy_kl_penalty * reject_rewards
         else:
             reject_losses = torch.Tensor([]).to(rewards.dtype).to(rewards.device)
@@ -364,15 +343,12 @@ class OutcomeRewardModel(MegatronGPTModel, SupervisedInterface):
             # NOTE: assume that the returned values are already gathered across the DP workers
             rewards_chosen = torch.cat([item["out_chosen"] for item in losses_reduced_per_micro_batch])
             rewards_rejected = torch.cat([item["out_rejected"] for item in losses_reduced_per_micro_batch])
-            kl_div = torch.cat([item["kl"] for item in losses_reduced_per_micro_batch])
-            kl_mean = kl_div.mean()
 
             rewards_all = torch.cat((rewards_chosen, rewards_rejected))
             rewards_chosen_mean = rewards_chosen.mean()
             rewards_rejected_mean = rewards_rejected.mean()
             rewards_all_mean = rewards_all.mean()
             rewards_all_std = rewards_all.std()
-            rewards_margins = rewards_chosen_mean.nan_to_num(0) - rewards_rejected_mean.nan_to_num(0)
 
             # average loss across micro batches
             loss_mean = torch.as_tensor(
@@ -382,23 +358,18 @@ class OutcomeRewardModel(MegatronGPTModel, SupervisedInterface):
         else:
 
             loss_mean = torch.tensor(0.0, device=torch.cuda.current_device())
-            kl_mean = torch.tensor(0.0, device=torch.cuda.current_device())
 
             rewards_chosen_mean = torch.tensor(0.0, device=torch.cuda.current_device())
             rewards_rejected_mean = torch.tensor(0.0, device=torch.cuda.current_device())
             rewards_all_mean = torch.tensor(0.0, device=torch.cuda.current_device())
             rewards_all_std = torch.tensor(0.0, device=torch.cuda.current_device())
-            rewards_margins = torch.tensor(0.0, device=torch.cuda.current_device())
 
         # we can only log on one rank if it is rank zero so we broadcast from last rank
         torch.distributed.broadcast(loss_mean, get_last_rank())
-        torch.distributed.broadcast(kl_mean, get_last_rank())
-
         torch.distributed.broadcast(rewards_chosen_mean, get_last_rank())
         torch.distributed.broadcast(rewards_rejected_mean, get_last_rank())
         torch.distributed.broadcast(rewards_all_mean, get_last_rank())
         torch.distributed.broadcast(rewards_all_std, get_last_rank())
-        torch.distributed.broadcast(rewards_margins, get_last_rank())
 
         metrics = {
             "loss": loss_mean,
@@ -406,7 +377,6 @@ class OutcomeRewardModel(MegatronGPTModel, SupervisedInterface):
             "rewards_rejected_mean": rewards_rejected_mean,
             "rewards_all_mean": rewards_all_mean,
             "rewards_all_std": rewards_all_std,
-            "rewards_margin": rewards_margins,
         }
 
         # move to CPU
