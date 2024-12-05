@@ -4,6 +4,7 @@ from typing import Dict, List
 import numpy as np
 import scipy
 import torch
+from nemo.collections.nlp.modules.common.megatron.utils import get_ltor_masks_and_position_ids
 from nemo.core import Dataset
 from nemo.utils import logging
 from omegaconf import OmegaConf
@@ -97,3 +98,36 @@ class OutcomeRewardModelDataset(Dataset):
             "preference": preference,
         }
         return output
+
+
+def custom_collate(batch, eos_id, reset_position_ids=False, reset_attention_mask=False, eod_mask_loss=False):
+    sample_tokens = [torch.cat((item["prompt_tokens"], item["response_tokens"]), dim=0) for item in batch]
+    sample_lengths = torch.LongTensor([item["sample_length"] for item in batch])
+    sample_labels = [item["sample_labels"] for item in batch]
+    sample_preference = torch.tensor([item["preference"] for item in batch])
+
+    sample_tokens = torch.nn.utils.rnn.pad_sequence(sample_tokens, batch_first=True, padding_value=eos_id)
+    sample_labels = torch.nn.utils.rnn.pad_sequence(sample_labels, batch_first=True, padding_value=-100)
+
+    attention_mask, _, position_ids = get_ltor_masks_and_position_ids(
+        sample_tokens,
+        eos_id,
+        reset_position_ids,
+        reset_attention_mask,
+        eod_mask_loss,
+    )
+    assert attention_mask.ndim == 4, "attention_mask is incorrect shape for outcome-based custom_collate"
+    if attention_mask.shape[0] == 1:
+        # using .expand() here causes errors from pin_memory=True, so need to use .repeat()
+        # attention_mask = attention_mask.expand(len(batch), *((-1,) * (len(attention_mask.shape) - 1)))
+        attention_mask = attention_mask.repeat(len(batch), *((1,) * (len(attention_mask.shape) - 1)))
+
+    output = {
+        "samples": sample_tokens,
+        "sample_length": sample_lengths,
+        "sample_labels": sample_labels,
+        "attention_mask": attention_mask,
+        "position_ids": position_ids,
+        "preference": sample_preference,
+    }
+    return output

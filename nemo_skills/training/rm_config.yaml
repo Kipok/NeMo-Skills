@@ -27,7 +27,6 @@ trainer:
   rm:
     max_epochs: 1
     max_steps: -1
-    
     val_check_interval: ${.save_interval}
     save_interval: 100
 
@@ -46,7 +45,7 @@ trainer:
   max_steps: ${.rm.max_steps}
 
 exp_manager:
-  explicit_log_dir: /results
+  explicit_log_dir: null
   exp_dir: null
   name: megatron_gpt
   max_time_per_run: ${trainer.max_time}

@@ -14,6 +14,8 @@
 
 # copied from https://github.com/NVIDIA/NeMo-Aligner/blob/main/examples/nlp/gpt/train_reward_model.py
 
+from functools import partial
+
 import torch.multiprocessing as mp
 from nemo.core.config import hydra_runner
 from nemo.utils import logging
@@ -37,6 +39,8 @@ from nemo_aligner.utils.train_script_utils import (
 )
 from nemo_aligner.utils.utils import load_and_override_model_config, load_from_nemo
 from omegaconf.omegaconf import OmegaConf
+
+from nemo_skills.training.models.outcome_dataset import custom_collate
 
 """Script to start Reward Model training"""
 
@@ -114,6 +118,13 @@ def main(cfg) -> None:
         mbs=cfg.model.micro_batch_size,
         gbs=cfg.model.global_batch_size,
         load_gbs=True,
+        collate_fn=partial(
+            custom_collate,
+            eos_id=ptl_model.tokenizer.eos_id,
+            reset_position_ids=cfg.model.data.get("reset_position_ids", False),
+            reset_attention_mask=cfg.model.data.get("reset_attention_mask", False),
+            eod_mask_loss=cfg.model.data.get("eod_mask_loss", False),
+        ),
     )
 
     val_dataloader = build_dataloader(
