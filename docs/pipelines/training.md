@@ -2,9 +2,9 @@
 
 !!! info
 
-    This pipeline starting script is [nemo_skills/pipeline/train.py](https://github.com/Kipok/NeMo-Skills/blob/main/nemo_skills/pipeline/train.py)
+    This pipeline starting script is [nemo_skills/pipeline/train.py](https://github.com/NVIDIA/NeMo-Skills/blob/main/nemo_skills/pipeline/train.py)
 
-    All extra parameters are passed to either [nemo_skills/training/start_sft.py](https://github.com/Kipok/NeMo-Skills/blob/main/nemo_skills/training/start_sft.py) or [nemo_skills/training/start_dpo.py](https://github.com/Kipok/NeMo-Skills/blob/main/nemo_skills/training/start_dpo.py)
+    All extra parameters are passed to either [nemo_skills/training/start_sft.py](https://github.com/NVIDIA/NeMo-Skills/blob/main/nemo_skills/training/start_sft.py) or [nemo_skills/training/start_dpo.py](https://github.com/NVIDIA/NeMo-Skills/blob/main/nemo_skills/training/start_dpo.py)
 
 
 ## Preparing the data
@@ -16,8 +16,7 @@ python -m nemo_skills.training.prepare_sft_data \
     ++input_files="<path to the generated synthetic data>/output-rs*.jsonl"> \
     ++output_path=sft-data.jsonl \
     ++prompt_config=generic/math \
-    ++prompt_template=llama3-instruct \
-    ++generation_suffix='\"<|eot_id|>\"'
+    ++prompt_template=llama3-instruct
 ```
 
 !!! tip
@@ -30,7 +29,7 @@ it locally (this will be changed soon).
 
 You need to pass in the config/template files so that we can format the data accordingly. There are many more parameters
 that data preparation script supports which you can see
-[here](https://github.com/Kipok/NeMo-Skills/blob/main/nemo_skills/training/data_preparation_utils/prepare_sft_data.yaml).
+[here](https://github.com/NVIDIA/NeMo-Skills/blob/main/nemo_skills/training/data_preparation_utils/prepare_sft_data.yaml).
 We are using [SDP library](https://github.com/NVIDIA/NeMo-speech-data-processor) for preparing the data, so it's
 a good idea to check their documentation to understand how this config is structured.
 

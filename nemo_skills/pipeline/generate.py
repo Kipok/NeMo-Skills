@@ -20,6 +20,7 @@ import typer
 
 from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, get_generation_command, run_exp
 from nemo_skills.pipeline.app import app, typer_unpacker
+from nemo_skills.pipeline.utils import get_reward_server_command, get_server_command
 from nemo_skills.utils import setup_logging
 
 LOG = logging.getLogger(__file__)
@@ -55,6 +56,39 @@ def get_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
     return cmd
 
 
+def get_rm_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
+    cmd = (
+        f"python -m nemo_skills.inference.reward_model ++skip_filled=True "
+        f"++output_dir={output_dir} ++random_seed={random_seed} "
+    )
+    cmd += f" {extra_arguments} "
+    return cmd
+
+
+def wrap_cmd(cmd, preprocess_cmd, postprocess_cmd):
+    if preprocess_cmd:
+        cmd = f" {preprocess_cmd} && {cmd} "
+    if postprocess_cmd:
+        cmd = f" {cmd} && {postprocess_cmd} "
+    return cmd
+
+
+class GenerationType(str, Enum):
+    generate = "generate"
+    reward = "reward"
+
+
+server_command_factories = {
+    GenerationType.generate: get_server_command,
+    GenerationType.reward: get_reward_server_command,
+}
+
+client_command_factories = {
+    GenerationType.generate: get_cmd,
+    GenerationType.reward: get_rm_cmd,
+}
+
+
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 @typer_unpacker
 def generate(
@@ -70,6 +104,7 @@ def generate(
     server_address: str = typer.Option(
         None, help="Use ip:port for self-hosted models or the API url if using model providers"
     ),
+    generation_type: GenerationType = typer.Option(GenerationType.generate, help="Type of generation to perform"),
     server_type: SupportedServers = typer.Option(help="Type of server to use"),
     server_gpus: int = typer.Option(None, help="Number of GPUs to use if hosting the model"),
     server_nodes: int = typer.Option(1, help="Number of nodes required for hosting LLM server"),
@@ -79,9 +114,12 @@ def generate(
         None, help="Specify if want to run many generations with high temperature for the same input"
     ),
     starting_seed: int = typer.Option(0, help="Starting seed for random sampling"),
+    preprocess_cmd: str = typer.Option(None, help="Command to run before generation"),
+    postprocess_cmd: str = typer.Option(None, help="Command to run after generation"),
     partition: str = typer.Option(
         None, help="Can specify if need interactive jobs or a specific non-default partition"
     ),
+    time_min: str = typer.Option(None, help="If specified, will use as a time-min slurm parameter"),
     eval_args: str = typer.Option(
         None, help="Specify if need to run nemo_skills/evaluation/evaluate_results.py on the generation outputs"
     ),
@@ -113,7 +151,14 @@ def generate(
 
     if server_address is None:  # we need to host the model
         assert server_gpus is not None, "Need to specify server_gpus if hosting the model"
-        server_address = "localhost:5000"
+        # Note: for reward models, the port is hard-coded to 5000 in the
+        # get_reward_server_command function. Since RM has a proxy server on 5000
+        # and an actual GPU is being loaded on port 5001, we need to wait for 5001
+        # to come online before sending requests
+        if generation_type == GenerationType.reward:
+            server_address = "localhost:5001"
+        else:
+            server_address = "localhost:5000"
 
         server_config = {
             "model_path": model,
@@ -129,6 +174,9 @@ def generate(
             f" ++server.server_type={server_type} ++server.base_url={server_address} ++server.model={model} "
         )
 
+    get_server_command = server_command_factories[generation_type]
+    get_cmd = client_command_factories[generation_type]
+
     with run.Experiment(expname) as exp:
         if num_random_seeds:
             for seed in range(starting_seed, starting_seed + num_random_seeds):
@@ -142,16 +190,22 @@ def generate(
                 for _ in range(dependent_jobs + 1):
                     new_task = add_task(
                         exp,
-                        cmd=get_generation_command(server_address=server_address, generation_commands=cmd),
+                        cmd=wrap_cmd(
+                            get_generation_command(server_address=server_address, generation_commands=cmd),
+                            preprocess_cmd,
+                            postprocess_cmd,
+                        ),
                         task_name=f'generate-rs{seed}',
                         log_dir=log_dir,
                         container=cluster_config["containers"]["nemo-skills"],
                         cluster_config=cluster_config,
                         partition=partition,
+                        time_min=time_min,
                         server_config=server_config,
                         with_sandbox=True,
                         run_after=run_after,
                         task_dependencies=prev_tasks,
+                        get_server_command=get_server_command,
                     )
                     prev_tasks = [new_task]
         else:
@@ -165,16 +219,22 @@ def generate(
             for _ in range(dependent_jobs + 1):
                 new_task = add_task(
                     exp,
-                    cmd=get_generation_command(server_address=server_address, generation_commands=cmd),
+                    cmd=wrap_cmd(
+                        get_generation_command(server_address=server_address, generation_commands=cmd),
+                        preprocess_cmd,
+                        postprocess_cmd,
+                    ),
                     task_name="generate",
                     log_dir=log_dir,
                     container=cluster_config["containers"]["nemo-skills"],
                     cluster_config=cluster_config,
                     partition=partition,
+                    time_min=time_min,
                     server_config=server_config,
                     with_sandbox=True,
                     run_after=run_after,
                     task_dependencies=prev_tasks,
+                    get_server_command=get_server_command,
                 )
                 prev_tasks = [new_task]
         run_exp(exp, cluster_config)

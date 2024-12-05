@@ -32,7 +32,6 @@ def get_nemo_to_hf_cmd(
 ):
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"export HF_TOKEN={get_token()} && "
         f"cd /nemo_run/code && "
         f"python -m nemo_skills.conversion.nemo_to_hf_{model_type} "
         f"    --in-path {input_model} "
@@ -65,11 +64,7 @@ def get_hf_to_trtllm_cmd(
 
     tmp_engine_dir = f"{output_model}-tmp"
 
-    setup_cmd = (
-        f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"export HF_TOKEN={get_token()} && "
-        f"cd /nemo_run/code && "
-    )
+    setup_cmd = f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && cd /nemo_run/code && "
 
     hf_to_trtllm_cmd = (
         f"python -m nemo_skills.conversion.hf_to_trtllm_{model_type} "
@@ -96,7 +91,9 @@ def get_hf_to_trtllm_cmd(
     )
 
     if trt_reuse_tmp_engine:
-        cmd = setup_cmd + f"if [ ! -d {tmp_engine_dir} ]; then {hf_to_trtllm_cmd}; fi && {trtllm_build_cmd}"
+        cmd = (
+            setup_cmd + f"if [ ! -f {tmp_engine_dir}/config.json ]; then {hf_to_trtllm_cmd}; fi && {trtllm_build_cmd}"
+        )
     else:
         cmd = setup_cmd + hf_to_trtllm_cmd + " && " + trtllm_build_cmd
 
@@ -110,7 +107,6 @@ def get_hf_to_nemo_cmd(
 
     cmd = (
         f"export PYTHONPATH=$PYTHONPATH:/nemo_run/code && "
-        f"export HF_TOKEN={get_token()} && "
         f"cd /nemo_run/code && "
         f"python -m nemo_skills.conversion.hf_to_nemo_{model_type} "
         f"    --in-path {input_model} "
@@ -171,6 +167,7 @@ def convert(
     partition: str = typer.Option(
         None, help="Can specify if need interactive jobs or a specific non-default partition"
     ),
+    time_min: str = typer.Option(None, help="If specified, will use as a time-min slurm parameter"),
     run_after: str = typer.Option(
         None,
         help="Can specify an expname that needs to be completed before this one starts (will use as slurm dependency)",
@@ -247,6 +244,7 @@ def convert(
             num_tasks=1,
             cluster_config=cluster_config,
             partition=partition,
+            time_min=time_min,
             run_after=run_after,
         )
         run_exp(exp, cluster_config)

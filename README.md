@@ -4,17 +4,17 @@ NeMo-Skills is a collection of pipelines to improve "skills" of large language m
 We mainly focus on the ability to solve mathematical problems, but you can use our pipelines for many other tasks as well.
 Here are some of the things we support.
 
-- [Flexible inference](https://kipok.github.io/NeMo-Skills/basics/inference): Seamlessly switch between API providers, local server and large-scale slurm jobs for LLM inference.
-- [Multiple formats](https://kipok.github.io/NeMo-Skills/pipelines/checkpoint-conversion): Use any of the [NeMo](https://github.com/NVIDIA/NeMo), [vLLM](https://github.com/vllm-project/vllm)
+- [Flexible inference](https://nvidia.github.io/NeMo-Skills/basics/inference): Seamlessly switch between API providers, local server and large-scale slurm jobs for LLM inference.
+- [Multiple formats](https://nvidia.github.io/NeMo-Skills/pipelines/checkpoint-conversion): Use any of the [NeMo](https://github.com/NVIDIA/NeMo), [vLLM](https://github.com/vllm-project/vllm)
   and [TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM) servers and easily convert checkpoints from one format to another.
-- [Model evaluation](https://kipok.github.io/NeMo-Skills/pipelines/evaluation): Evaluate your models on many popular benchmarks
+- [Model evaluation](https://nvidia.github.io/NeMo-Skills/pipelines/evaluation): Evaluate your models on many popular benchmarks
     - Math problem solving: gsm8k, math, amc23, aime24, omni-math (and many more)
     - Coding skills: human-eval, mbpp
     - Chat/instruction following: ifeval, arena-hard
     - General knowledge: mmlu (generative)
-- [Model training](https://kipok.github.io/NeMo-Skills/pipelines/training): Train models at speed-of-light using [NeMo-Aligner](https://github.com/NVIDIA/NeMo-Aligner/).
+- [Model training](https://nvidia.github.io/NeMo-Skills/pipelines/training): Train models at speed-of-light using [NeMo-Aligner](https://github.com/NVIDIA/NeMo-Aligner/).
 
-You can find the full documentation [here](https://kipok.github.io/NeMo-Skills/).
+You can find the full documentation [here](https://nvidia.github.io/NeMo-Skills/).
 
 ## OpenMathInstruct-2
 
@@ -83,7 +83,7 @@ The models trained on this dataset achieve strong results on common mathematical
   </tr>
 </table>
 
-We provide all instructions to [fully reproduce our results](https://kipok.github.io/NeMo-Skills/openmathinstruct2).
+We provide all instructions to [fully reproduce our results](https://nvidia.github.io/NeMo-Skills/openmathinstruct2).
 
 See our [paper](https://arxiv.org/abs/2410.01560) for ablations studies and more details!
 
@@ -101,7 +101,7 @@ If you find our work useful, please consider citing us!
 
 ```bibtex
 @article{toshniwal2024openmathinstruct2,
-  title   = {OpenMathInstruct-2: Accelerating AI for Math with Massive Open-Source Instruction Data},
+  title   = {{OpenMathInstruct-2: Accelerating AI for Math with Massive Open-Source Instruction Data}},
   author  = {Shubham Toshniwal and Wei Du and Ivan Moshkov and Branislav Kisacanin and Alexan Ayrapetyan and Igor Gitman},
   year    = {2024},
   journal = {arXiv preprint arXiv: Arxiv-2410.01560}
@@ -109,11 +109,11 @@ If you find our work useful, please consider citing us!
 ```
 
 ```bibtex
-@article{toshniwal2024openmathinstruct1,
-  title   = {OpenMathInstruct-1: A 1.8 Million Math Instruction Tuning Dataset},
+@inproceedings{toshniwal2024openmathinstruct1,
+  title   = {{OpenMathInstruct-1: A 1.8 Million Math Instruction Tuning Dataset}},
   author  = {Shubham Toshniwal and Ivan Moshkov and Sean Narenthiran and Daria Gitman and Fei Jia and Igor Gitman},
   year    = {2024},
-  journal = {arXiv preprint arXiv: Arxiv-2402.10176}
+  booktitle = {Advances in Neural Information Processing Systems},
 }
 ```
 

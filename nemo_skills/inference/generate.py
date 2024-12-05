@@ -21,16 +21,11 @@ from dataclasses import asdict, field
 from pathlib import Path
 
 import hydra
-from omegaconf import open_dict
+from omegaconf import open_dict, OmegaConf
 from tqdm import tqdm
 
 from nemo_skills.code_execution.sandbox import get_sandbox, sandbox_params
-from nemo_skills.inference.server.code_execution_model import (
-    ErrorRecoveryConfig,
-    get_code_execution_model,
-    get_model,
-    server_params,
-)
+from nemo_skills.inference.server.code_execution_model import get_code_execution_model, get_model, server_params
 from nemo_skills.prompt.utils import get_prompt
 from nemo_skills.utils import get_fields_docstring, get_help_message, nested_dataclass, setup_logging
 
@@ -52,7 +47,7 @@ class GenerateSolutionsConfig:
     """LLM generation parameters."""
 
     output_file: str  # Where to save the generations
-    # Inference server configuration {server_params} {error_recovery_params}
+    # Inference server configuration {server_params}
     server: dict = field(default_factory=dict)
     # Sandbox configuration {sandbox_params}
     sandbox: dict = field(default_factory=dict)
@@ -92,6 +87,9 @@ class GenerateSolutionsConfig:
     # set to True if code execution needs to be supported
     code_execution: bool = False
 
+    # extra stop phrases for llms
+    extra_stop_phrases: list[str] = field(default_factory=list)
+
     def __post_init__(self):
         if self.input_file is not None:
             if self.dataset is not None or self.split is not None:
@@ -108,7 +106,7 @@ class GenerateSolutionsConfig:
             # TODO: fix that
             raise ValueError("Prompt template is required for trtllm servers")
 
-        if self.server["server_type"] == "nemo" and self.prompt_template is not None:
+        if self.server["server_type"] == "nemo" and self.prompt_template is None:
             LOG.warning(
                 "NeMo implementation of openai chat completions api doesn't support batching and thus is very slow. "
                 "Until this is fixed, we highly recommend that you provide prompt template explicitly."
@@ -121,6 +119,14 @@ class GenerateSolutionsConfig:
 cs = hydra.core.config_store.ConfigStore.instance()
 cs.store(name="base_generation_config", node=GenerateSolutionsConfig)
 
+def combine_stop_phrases(prompt_phrases, extra_phrases):
+    if prompt_phrases is None and extra_phrases is None:
+        return None
+    if prompt_phrases is None:
+        return extra_phrases
+    if extra_phrases is None:
+        return prompt_phrases
+    return prompt_phrases + extra_phrases
 
 @hydra.main(version_base=None, config_name='base_generation_config')
 def generate(cfg: GenerateSolutionsConfig):
@@ -202,15 +208,11 @@ def generate(cfg: GenerateSolutionsConfig):
 
     # if using code execution, we need some extra parameters for generate call
     if cfg.code_execution:
-        extra_generate_params = {
-            "code_begin": prompt.config.template.code_begin,
-            "code_end": prompt.config.template.code_end,
-            "code_output_begin": prompt.config.template.code_output_begin,
-            "code_output_end": prompt.config.template.code_output_end,
-            "code_output_format": prompt.config.template.code_output_format,
-        }
+        extra_generate_params = prompt.get_code_execution_args()
     else:
         extra_generate_params = {}
+
+    extra_stop_phrases = OmegaConf.to_container(cfg.extra_stop_phrases, resolve=True)
 
     # setting buffering=1 to force to dump the output after every line, so that we can see intermediate generations
     with open(cfg.output_file, "at" if cfg.skip_filled else "wt", encoding="utf-8", buffering=1) as fout:
@@ -218,17 +220,17 @@ def generate(cfg: GenerateSolutionsConfig):
         for idx, data_point in tqdm(enumerate(data), initial=starting_idx, total=len(data) + starting_idx):
             if idx >= cfg.max_samples:
                 break
-            data_point.pop(cfg.generation_key, None)
             data_points.append(data_point)
 
             if len(data_points) == cfg.batch_size or idx == cfg.max_samples - 1:
                 if cfg.multi_turn_key is None:
                     outputs = llm.generate(
                         prompts=[prompt.fill(dp) for dp in data_points],
-                        stop_phrases=prompt.stop_phrases,
+                        stop_phrases=combine_stop_phrases(prompt.stop_phrases, extra_stop_phrases),
                         **asdict(cfg.inference),
                         **extra_generate_params,
                     )
+
                 else:
                     # TODO: this will not be efficient if different elements have different number of turns
                     # (effective batch size gets smaller). Need to rewrite it to ensure batch size is filled
@@ -254,7 +256,7 @@ def generate(cfg: GenerateSolutionsConfig):
                                 prompt.fill(turn_data_points[dp_index], multi_turn_key=cfg.multi_turn_key)
                                 for dp_index in dp_indices
                             ],
-                            stop_phrases=prompt.stop_phrases,
+                            stop_phrases=combine_stop_phrases(prompt.stop_phrases, extra_stop_phrases),
                             **asdict(cfg.inference),
                             **extra_generate_params,
                         )
@@ -273,24 +275,17 @@ def generate(cfg: GenerateSolutionsConfig):
                     # to make it easier to follow up with evaluation and limit accidental errors, we are adding
                     # all of the ground-truth data to the output file alongside the generated solutions
                     output[cfg.generation_key] = output.pop("generation")
+                    original_data_point.pop(cfg.generation_key, None)
                     output.update(original_data_point)
 
                     fout.write(json.dumps(output) + "\n")
                 data_points = []
 
 
-error_recovery_params = '\n' + get_fields_docstring(
-    ErrorRecoveryConfig,
-    prefix='server.error_recovery.',
-    level=2,
-)
-
-
 HELP_MESSAGE = get_help_message(
     GenerateSolutionsConfig,
     server_params=server_params(),
     sandbox_params=sandbox_params(),
-    error_recovery_params=error_recovery_params,
 )
 
 
