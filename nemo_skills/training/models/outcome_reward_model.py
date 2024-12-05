@@ -14,25 +14,30 @@
 
 import warnings
 from functools import partial
+from typing import List, Tuple, Union
 
 import torch
 from megatron.core.num_microbatches_calculator import get_num_microbatches
 from megatron.core.pipeline_parallel.schedules import get_forward_backward_func
 from megatron.core.utils import divide
-from nemo.collections.nlp.models.language_modeling.megatron_gpt_model import MegatronGPTModel
+from nemo.collections.nlp.models.language_modeling.megatron_gpt_model import MegatronGPTModel, get_specs
 from nemo.collections.nlp.modules.common.megatron.utils import (
     average_losses_across_data_parallel_group,
     get_iterator_k_split,
+    get_ltor_masks_and_position_ids,
 )
 from nemo.collections.nlp.parts.mixins.nlp_adapter_mixins import NLPAdapterModelMixin
 from nemo.collections.nlp.parts.utils_funcs import get_last_rank
+from nemo.utils.dtype import str_to_dtype
 from nemo_aligner.models.alignable_interface import SupervisedInterface
+from nemo_aligner.models.nlp.gpt.gpt_reward_model import GPTRewardModel
 from nemo_aligner.utils import parallel_state
 from nemo_aligner.utils.distributed import (
     broadcast_2d_tensor,
     broadcast_2d_tensor_within_pp,
     from_parallel_logits_to_logprobs,
 )
+from nemo_aligner.utils.text_generation_utils import tokenize_batch
 from nemo_aligner.utils.train_utils import (
     finish_validation_step,
     grad_reductions,
@@ -69,6 +74,34 @@ class OutcomeRewardModel(MegatronGPTModel, SupervisedInterface):
 
         self.desirable_loss_weight = self.cfg.kto.get("desirable_loss_weight", 1.0)
         self.undesirable_loss_weight = self.cfg.kto.get("undesirable_loss_weight", 1.0)
+
+    def model_provider_func(self, pre_process, post_process):
+        """Model depends on pipeline paralellism."""
+
+        force_head_dtype = self.cfg.get("force_head_dtype", torch.float32)
+        head_dtype = None if force_head_dtype is None else str_to_dtype(force_head_dtype)
+
+        model = GPTRewardModel(
+            config=self.transformer_config,
+            transformer_layer_spec=get_specs(self.spec_name, self.transformer_config),
+            vocab_size=self.cfg.get("override_vocab_size", self.padded_vocab_size),
+            max_sequence_length=self.cfg.get("encoder_seq_length", 512),
+            pre_process=pre_process,
+            post_process=post_process,
+            parallel_output=True,
+            share_embeddings_and_output_weights=False,
+            position_embedding_type=self.cfg.get("position_embedding_type", "learned_absolute"),
+            rotary_percent=self.cfg.get("rotary_percentage", 1.0),
+            seq_len_interpolation_factor=self.cfg.get("seq_len_interpolation_factor", None),
+            rotary_base=self.cfg.get("rotary_base", 10000),
+            output_sequence=self.cfg.get("output_sequence", False),
+            use_avg_pool=self.cfg.get("use_avg_pool", False),
+            head_dtype=head_dtype,
+            num_attributes=self.cfg.get("regression", {}).get("num_attributes", 1),
+            attribute_weights=self.cfg.get("regression", {}).get("attribute_weights", None),
+            merge_attributes=self.cfg.get("regression", {}).get("merge_attributes", False),
+        )
+        return model
 
     def on_load_checkpoint(self, checkpoint) -> None:
         """NOTE: Have to set strict to False because we have a rm head"""
@@ -150,9 +183,7 @@ class OutcomeRewardModel(MegatronGPTModel, SupervisedInterface):
 
         dp_group = parallel_state.get_data_parallel_group()
 
-        batch_logs = self.get_reduced_masked_logps(
-            pi_logprobs - ref_logprobs, labels[:, 1:], average_log_probs=average_log_probs
-        )
+        batch_logs = self.get_reduced_masked_logps(pi_logprobs, labels[:, 1:], average_log_probs=average_log_probs)
 
         output_list = [torch.zeros_like(batch_logs) for _ in range(dp_group.size())]
 
@@ -161,12 +192,12 @@ class OutcomeRewardModel(MegatronGPTModel, SupervisedInterface):
         # split_iter = map(self.split_output_tensor, output_list)
         split_iter = map(partial(self.split_output_tensor, preferences=preferences), output_list)
 
-        out_chosen, out_rejected, kl_rewards = map(torch.cat, zip(*split_iter))
+        out_chosen, out_rejected = map(torch.cat, zip(*split_iter))
 
-        return out_chosen.flatten(), out_rejected.flatten(), kl_rewards.clamp(min=0)
+        return out_chosen.flatten(), out_rejected.flatten()
 
     def get_forward_output_and_loss_func(self, validation_step=False, logprobs_only=False):
-        def fwd_output_and_loss_func(dataloader_iter, model, checkpoint_activations_all_layers=None):
+        def fwd_output_and_loss_func(dataloader_iter, model):
             batch = next(dataloader_iter)
 
             required_keys = set()
@@ -297,28 +328,23 @@ class OutcomeRewardModel(MegatronGPTModel, SupervisedInterface):
             return (logps * loss_mask).sum(-1)
 
     def loss_func(self, pi_logprobs, labels, preferences, average_log_probs=False):
-
         rewards = self.get_reduced_masked_logps(pi_logprobs, labels, average_log_probs=average_log_probs)
         chosen_rewards, reject_rewards = self.split_output_tensor(rewards, preferences)
         if chosen_rewards.shape[0] != 0:
             chosen_losses = 1.0 - torch.nn.functional.sigmoid(chosen_rewards)
-            chosen_rewards = self.ref_policy_kl_penalty * chosen_rewards
         else:
             chosen_losses = torch.Tensor([]).to(rewards.dtype).to(rewards.device)
-            chosen_rewards = torch.Tensor([]).to(rewards.dtype).to(rewards.device)
 
         if reject_rewards.shape[0] != 0:
             reject_losses = 1.0 - torch.nn.functional.sigmoid(-reject_rewards)
-            reject_rewards = self.ref_policy_kl_penalty * reject_rewards
         else:
             reject_losses = torch.Tensor([]).to(rewards.dtype).to(rewards.device)
-            reject_rewards = torch.Tensor([]).to(rewards.dtype).to(rewards.device)
 
         loss = torch.cat(
             (self.desirable_loss_weight * chosen_losses, self.undesirable_loss_weight * reject_losses), dim=0
         )
 
-        return loss.mean(), kl_divergence
+        return loss.mean()
 
     def get_loss_and_metrics(self, batch, forward_only):
         seq_length = batch["samples"].shape[1]
@@ -381,7 +407,6 @@ class OutcomeRewardModel(MegatronGPTModel, SupervisedInterface):
 
         # move to CPU
         metrics = {k: v.item() for k, v in metrics.items()}
-
         return loss_mean.item(), metrics
 
     def prepare_for_training_step(self):
@@ -423,13 +448,11 @@ class OutcomeRewardModel(MegatronGPTModel, SupervisedInterface):
 
         if len(logprobs_list) > 0:
             sample_logprobs_list = []
-            kl_sample_logprobs_list = []
             for item in logprobs_list:
-                sample_logprobs, kl_sample_logprobs_logprobs = self.split_output_tensor(item["logprobs"])
+                sample_logprobs = self.split_output_tensor(item["logprobs"])
                 sample_logprobs_list.append(sample_logprobs)
-                kl_sample_logprobs_list.append(kl_sample_logprobs_logprobs)
 
-            logprobs = torch.cat([torch.cat(sample_logprobs_list), torch.cat(kl_sample_logprobs_list)], dim=0)
+            logprobs = torch.cat(sample_logprobs_list)
         else:
             logprobs = None
 
