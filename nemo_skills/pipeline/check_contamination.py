@@ -22,13 +22,19 @@ from nemo_skills.pipeline.app import app, typer_unpacker
 from nemo_skills.utils import setup_logging
 
 
-def get_check_contamination_cmd(input_file, output_file, extra_arguments=""):
-    return (
+def get_check_contamination_cmd(input_file, output_file, data_files, extra_arguments=""):
+    cmd = (
         f"python -m nemo_skills.inference.check_contamination "
         f"    ++input_file={input_file} "
         f"    ++output_file={output_file} "
         f"    {extra_arguments} "
     )
+    if data_files:
+        cmd += " && " + (
+            f"python -m nemo_skills.training.data_preparation_utils.add_contaminated_label "
+            f"    --label_file {output_file} "
+            f"    --data_files {data_files} "
+        )
 
 
 class SupportedServers(str, Enum):
@@ -51,6 +57,7 @@ def check_contamination(
         ..., help="Input file with the data to check for contamination. An output of the retrieve_similar.py script."
     ),
     output_file: str = typer.Option(..., help="Where to save results"),
+    data_files: str = typer.Option(None, help="Glob pattern(s) for the files to update with contaminated label."),
     expname: str = typer.Option("llm-math-judge", help="Nemo run experiment name"),
     model: str = typer.Option(None, help="Path to the model or model name in API."),
     server_address: str = typer.Option(
@@ -121,13 +128,16 @@ def check_contamination(
                 exp,
                 cmd=get_generation_command(
                     server_address=server_address,
-                    generation_commands=get_check_contamination_cmd(input_file, output_file, extra_arguments),
+                    generation_commands=get_check_contamination_cmd(
+                        input_file, output_file, data_files, extra_arguments
+                    ),
                 ),
                 task_name="check-contamination",
                 log_dir=log_dir,
                 container=cluster_config["containers"]["nemo-skills"],
                 cluster_config=cluster_config,
                 partition=partition,
+                time_min=time_min,
                 server_config=server_config,
                 task_dependencies=prev_tasks,
                 run_after=run_after,
