@@ -118,13 +118,14 @@ def main(cfg) -> None:
         mbs=cfg.model.micro_batch_size,
         gbs=cfg.model.global_batch_size,
         load_gbs=True,
-        collate_fn=partial(
-            custom_collate,
-            eos_id=ptl_model.tokenizer.eos_id,
-            reset_position_ids=cfg.model.data.get("reset_position_ids", False),
-            reset_attention_mask=cfg.model.data.get("reset_attention_mask", False),
-            eod_mask_loss=cfg.model.data.get("eod_mask_loss", False),
-        ),
+        use_random_sampler=True,
+        # collate_fn=partial(
+        #     custom_collate,
+        #     eos_id=ptl_model.tokenizer.eos_id,
+        #     reset_position_ids=cfg.model.data.get("reset_position_ids", False),
+        #     reset_attention_mask=cfg.model.data.get("reset_attention_mask", False),
+        #     eod_mask_loss=cfg.model.data.get("eod_mask_loss", False),
+        # ),
     )
 
     val_dataloader = build_dataloader(
