@@ -56,11 +56,13 @@ if __name__ == '__main__':
         print(f"Preparing {dataset}")
         dataset_path = datasets_dir / dataset
         subprocess.run(f"{sys.executable} {dataset_path / 'prepare.py'}", shell=True, check=True)
-
-        if args.add_lean4_header:
-            jsonl_files = list(dataset_path.glob("*.jsonl"))
-            header = get_lean4_header()
-            for jsonl_file in jsonl_files:
-                print(f"Adding Lean4 header to {jsonl_file}")
-                add_header_to_jsonl_inplace(jsonl_file, header)
+        dataset_module = importlib.import_module(f"nemo_skills.dataset.{dataset}")
+        
+        if dataset_module.DATASET_GROUP == "math":
+            if args.add_lean4_header:
+                jsonl_files = list(dataset_path.glob("*.jsonl"))
+                header = get_lean4_header()
+                for jsonl_file in jsonl_files:
+                    print(f"Adding Lean4 header to {jsonl_file}")
+                    add_header_to_jsonl_inplace(jsonl_file, header)
 

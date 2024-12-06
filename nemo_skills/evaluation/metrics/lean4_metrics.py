@@ -59,5 +59,3 @@ class Lean4Metrics(BaseMetrics):
     def max_aggregations_to_print(self):
     # Return 1 to print only the largest k (or "greedy" and the largest pass@k)
         return 1
-
-
