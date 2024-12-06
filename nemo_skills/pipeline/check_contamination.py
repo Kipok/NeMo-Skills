@@ -19,6 +19,7 @@ import typer
 
 from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, get_generation_command, run_exp
 from nemo_skills.pipeline.app import app, typer_unpacker
+from nemo_skills.pipeline.generate import wrap_cmd
 from nemo_skills.utils import setup_logging
 
 
@@ -35,6 +36,7 @@ def get_check_contamination_cmd(input_file, output_file, data_files, extra_argum
             f"    --label_file {output_file} "
             f"    --data_files {data_files} "
         )
+    return cmd
 
 
 class SupportedServers(str, Enum):
@@ -77,6 +79,8 @@ def check_contamination(
     ),
     config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
     dependent_jobs: int = typer.Option(0, help="Specify this to launch that number of dependent jobs"),
+    preprocess_cmd: str = typer.Option(None, help="Command to run before generation"),
+    postprocess_cmd: str = typer.Option(None, help="Command to run after generation"),
     log_dir: str = typer.Option(
         None,
         help="Can specify a custom location for slurm logs. "
@@ -126,11 +130,15 @@ def check_contamination(
         for _ in range(dependent_jobs + 1):
             new_task = add_task(
                 exp,
-                cmd=get_generation_command(
-                    server_address=server_address,
-                    generation_commands=get_check_contamination_cmd(
-                        input_file, output_file, data_files, extra_arguments
+                cmd=wrap_cmd(
+                    get_generation_command(
+                        server_address=server_address,
+                        generation_commands=get_check_contamination_cmd(
+                            input_file, output_file, data_files, extra_arguments
+                        ),
                     ),
+                    preprocess_cmd=preprocess_cmd,
+                    postprocess_cmd=postprocess_cmd,
                 ),
                 task_name="check-contamination",
                 log_dir=log_dir,
