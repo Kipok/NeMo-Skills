@@ -659,8 +659,6 @@ def get_executor(
             f"--ntasks={tasks_per_node * num_nodes}",
             f"--nodes={num_nodes}",
         ],
-        # TODO: can we relax this to allow partial node allocation?
-        exclusive=True,
         mem=0,
         job_details=CustomJobDetails(
             job_name=cluster_config.get("job_name_prefix", "") + job_name,
@@ -699,8 +697,9 @@ def add_task(
 
     Note that there are two parameters that control dependencies.
         - task_dependencies: list of tasks that this task depends on **within the same experiment**
-        - run_after: a single **experiment name** that this task should run after. Will schedule
+        - run_after: an **experiment name** that this task should run after. Will schedule
           dependencies on all tasks inside `run_after` experiment. It needs to already be launched and running.
+          Can also use multiple names separated with ||
 
     Example of how to set task_dependencies:
 
@@ -709,12 +708,18 @@ def add_task(
         task2 = add_task(exp, ..., task_dependencies=[task1])
     """
     if run_after is not None and cluster_config["executor"] == "slurm":
-        dependencies = tuple(get_exp_handles(run_after))
+        if "||" not in run_after:
+            dependencies = tuple(get_exp_handles(run_after))
+        else:
+            dependencies = tuple(
+                [handle for exp_name in run_after.split("||") for handle in get_exp_handles(exp_name)]
+            )
     else:
         dependencies = None
 
     if num_gpus is None and cluster_config['executor'] == "slurm":
-        num_gpus = 1
+        if not 'cpu' in (partition or cluster_config.get("partition", "")):
+            num_gpus = 1
 
     commands = []
     executors = []
