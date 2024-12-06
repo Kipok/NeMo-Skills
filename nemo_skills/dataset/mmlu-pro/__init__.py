@@ -15,7 +15,7 @@
 
 # settings that define how evaluation should be done by default (all can be changed from cmdline)
 
-PROMPT_CONFIG = 'generic/multichoice'
+PROMPT_CONFIG = 'llama3-instruct/mmlu_pro'
 DATASET_GROUP = 'multichoice'
 METRICS_TYPE = 'math'  # TODO: update this?
 DEFAULT_EVAL_ARGS = (
@@ -24,4 +24,4 @@ DEFAULT_EVAL_ARGS = (
 )
 
 
-DEFAULT_GENERATION_ARGS = ""
+DEFAULT_GENERATION_ARGS = "++split=test_llama"
