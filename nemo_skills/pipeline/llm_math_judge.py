@@ -21,6 +21,7 @@ import typer
 
 from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, get_generation_command, run_exp
 from nemo_skills.pipeline.app import app, typer_unpacker
+from nemo_skills.pipeline.generate import wrap_cmd
 from nemo_skills.utils import setup_logging
 
 LOG = logging.getLogger(__file__)
@@ -63,6 +64,8 @@ def llm_math_judge(
         None, help="Can specify if need interactive jobs or a specific non-default partition"
     ),
     time_min: str = typer.Option(None, help="If specified, will use as a time-min slurm parameter"),
+    preprocess_cmd: str = typer.Option(None, help="Command to run before generation"),
+    postprocess_cmd: str = typer.Option(None, help="Command to run after generation"),
     run_after: str = typer.Option(
         None,
         help="Can specify an expname that needs to be completed before this one starts (will use as slurm dependency)",
@@ -113,9 +116,13 @@ def llm_math_judge(
     with run.Experiment(expname) as exp:
         add_task(
             exp,
-            cmd=get_generation_command(
-                server_address=server_address,
-                generation_commands=get_judge_cmd(input_files_str, extra_arguments),
+            cmd=wrap_cmd(
+                get_generation_command(
+                    server_address=server_address,
+                    generation_commands=get_judge_cmd(input_files_str, extra_arguments),
+                ),
+                preprocess_cmd,
+                postprocess_cmd,
             ),
             task_name="llm-math-judge",
             log_dir=log_dir,

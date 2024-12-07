@@ -43,6 +43,9 @@ class FillMajorityAnswerConfig:
     # but change to predicted_answer, to follow up with a judge evaluation
     fill_key: str = "expected_answer"
 
+    # if True, will not change the fill_key if it's already filled with not None
+    ignore_if_not_none: bool = False
+
     # if True, will use string match to fill is_correct key
     fill_is_correct: bool = True
 
@@ -85,6 +88,9 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
     file_handles = [open(file, "wt", encoding="utf-8") for file in unroll_files(cfg.input_files)]
     for idx, predictions in enumerate(all_predictions):
         for lidx, handle in enumerate(file_handles):
+            if cfg.ignore_if_not_none and predictions[lidx][cfg.fill_key] is not None:
+                handle.write(json.dumps(predictions[lidx]) + "\n")
+                continue
             predictions[lidx][cfg.fill_key] = majority_answers[idx][0]
             predictions[lidx]["majority_votes"], predictions[lidx]["total_votes"] = majority_answers[idx][1]
             # this is just a string match check, so for full correctness need to rerun the evaluator
