@@ -77,13 +77,11 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
         all_predictions.append(data)
 
         # TODO: currently majority does not take into account equivalent answers written in a different way
-        valid_answers_and_results = [
-            (elem['predicted_answer'], elem['is_correct']) for elem in data if elem['predicted_answer'] is not None
-        ]
+        valid_answers = [elem['predicted_answer'] for elem in data if elem['predicted_answer'] is not None]
         majority_answers.append((None, (0, len(file_handles))))
-        if len(valid_answers_and_results) == 0:
+        if len(valid_answers) == 0:
             continue
-        (majority_answer, _), num_votes = Counter(valid_answers_and_results).most_common(1)[0]
+        majority_answer, num_votes = Counter(valid_answers).most_common(1)[0]
         majority_answers[-1] = (majority_answer, (num_votes, len(file_handles)))
 
     for file_handle in file_handles:
@@ -104,7 +102,7 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
                     predictions[lidx]["predicted_answer"] == predictions[lidx]["expected_answer"]
                 )
             else:
-                del predictions[lidx]["is_correct"]
+                predictions[lidx].pop("is_correct")
             handle.write(json.dumps(predictions[lidx]) + "\n")
 
     for file_handle in file_handles:
