@@ -23,6 +23,7 @@ import hydra
 from omegaconf import MISSING
 from tqdm import tqdm
 
+from nemo_skills.code_execution.math_grader import extract_answer
 from nemo_skills.evaluation.metrics import read_predictions
 from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging, unroll_files
 
@@ -70,7 +71,11 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
     all_predictions = []
     for idx, predictions in enumerate(tqdm(zip_longest(*file_handles))):
         data = read_predictions(predictions)
+        for elem in data:
+            if 'predicted_answer' not in elem:
+                elem['predicted_answer'] = extract_answer(elem['generation'])
         all_predictions.append(data)
+
         # TODO: currently majority does not take into account equivalent answers written in a different way
         valid_answers_and_results = [
             (elem['predicted_answer'], elem['is_correct']) for elem in data if elem['predicted_answer'] is not None
