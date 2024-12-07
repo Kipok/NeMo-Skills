@@ -47,7 +47,7 @@ def llm_math_judge(
         help="One of the configs inside config_dir or NEMO_SKILLS_CONFIG_DIR or ./cluster_configs. "
         "Can also use NEMO_SKILLS_CONFIG instead of specifying as argument.",
     ),
-    input_files: List[str] = typer.Option(
+    input_files: str = typer.Option(
         ...,
         help="Can also specify multiple glob patterns, like output-rs*.jsonl. Will add judgement field to each file",
     ),
@@ -89,11 +89,10 @@ def llm_math_judge(
         pass
 
     cluster_config = get_cluster_config(cluster, config_dir)
-    for input_file in input_files:
+    for input_file in input_files.split():
         check_if_mounted(cluster_config, input_file)
     if log_dir:
         check_if_mounted(cluster_config, log_dir)
-    input_files_str = f'"{" ".join(input_files)}"'
 
     if server_address is None:  # we need to host the model
         assert server_gpus is not None, "Need to specify server_gpus if hosting the model"
@@ -119,7 +118,7 @@ def llm_math_judge(
             cmd=wrap_cmd(
                 get_generation_command(
                     server_address=server_address,
-                    generation_commands=get_judge_cmd(input_files_str, extra_arguments),
+                    generation_commands=get_judge_cmd(input_files, extra_arguments),
                 ),
                 preprocess_cmd,
                 postprocess_cmd,
