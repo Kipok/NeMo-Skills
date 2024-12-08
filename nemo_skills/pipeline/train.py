@@ -21,9 +21,15 @@ from typing import Callable
 
 import nemo_run as run
 import typer
-from huggingface_hub import get_token
 
-from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, run_exp
+from nemo_skills.pipeline import (
+    add_task,
+    check_if_mounted,
+    get_cluster_config,
+    get_tunnel,
+    get_unmounted_path,
+    run_exp,
+)
 from nemo_skills.pipeline.app import app, typer_unpacker
 from nemo_skills.utils import setup_logging
 
@@ -147,6 +153,27 @@ def get_training_cmd(
     config_params = f"--config-name={config_name} --config-path={config_path} "
 
     training_script = f"python -m nemo_skills.training.start_{training_algo}"
+
+    # by default we are setting the job to run for 2 epochs and save 8 checkpoints
+    # assuming batch size of 512
+    # since nemo-aligner doesn't have a very good support for epoch-based setup out-of-the-box
+    # we are calculating the number of steps by checking the data file on cluster
+    # TODO: user can override all of this, but config values are ignored, should we add some parameter to opt-in?
+    tunnel = get_tunnel(cluster_config)
+    data_size = tunnel.run(f"wc -l {get_unmounted_path(cluster_config, training_data)}").stdout.strip().split()[0]
+    checkpoint_interval = int(data_size) // (512 * 4)
+    num_steps = checkpoint_interval * 8
+    LOG.info(
+        "Data size: %s, setting checkpoint interval to %s and num steps to %s",
+        data_size,
+        checkpoint_interval,
+        num_steps,
+    )
+    extra_arguments = (
+        f"++trainer.sft.save_interval={checkpoint_interval} "
+        f"++trainer.sft.max_steps={num_steps} "
+        f"++trainer.sft.max_epochs=100 " + extra_arguments
+    )
 
     training_params = TrainingParams(
         training_script=training_script,
