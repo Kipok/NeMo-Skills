@@ -72,6 +72,8 @@ pretrained_checkpoint:
 model:
   mcore_gpt: True
   share_embeddings_and_output_weights: False
+  tensor_model_parallel_size: 1 # intra-layer model parallelism
+  pipeline_model_parallel_size: 1 # inter-layer model parallelism
 
   reward_model_type: binary_ranking # ["binary_ranking, "regression"]
   regression:
