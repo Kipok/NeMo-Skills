@@ -129,6 +129,9 @@ def get_training_cmd(
     training_algo,
     disable_wandb,
     wandb_project,
+    global_batch_size,
+    num_epochs,
+    num_checkpoints,
     extra_arguments,
 ):
     if validation_data is None:
@@ -154,21 +157,18 @@ def get_training_cmd(
 
     training_script = f"python -m nemo_skills.training.start_{training_algo}"
 
-    # by default we are setting the job to run for 2 epochs and save 8 checkpoints
-    # assuming batch size of 512
-    # since nemo-aligner doesn't have a very good support for epoch-based setup out-of-the-box
-    # we are calculating the number of steps by checking the data file on cluster
-    # TODO: user can override all of this, but config values are ignored, should we add some parameter to opt-in?
+    # TODO: does rm/dpo need a different handling here?
     tunnel = get_tunnel(cluster_config)
     data_size = tunnel.run(f"wc -l {get_unmounted_path(cluster_config, training_data)}").stdout.strip().split()[0]
-    checkpoint_interval = int(data_size) // (512 * 4)
-    num_steps = checkpoint_interval * 8
+    checkpoint_interval = (int(data_size) * num_epochs) // (global_batch_size * num_checkpoints)
+    num_steps = checkpoint_interval * num_checkpoints
     LOG.info(
         "Data size: %s, setting checkpoint interval to %s and num steps to %s",
         data_size,
         checkpoint_interval,
         num_steps,
     )
+    # aligner doesn't seem to support max_epochs in a stable enough way, so setting through steps
     extra_arguments = (
         f"++trainer.sft.save_interval={checkpoint_interval} "
         f"++trainer.sft.max_steps={num_steps} "
@@ -253,6 +253,9 @@ def train(
     with_sandbox: bool = typer.Option(False, help="If sandbox is required for code generation"),
     partition: str = typer.Option(None, help="Specify partition for jobs"),
     time_min: str = typer.Option(None, help="If specified, will use as a time-min slurm parameter"),
+    global_batch_size: int = typer.Option(512, help="Global batch size"),
+    num_epochs: int = typer.Option(2, help="Number of epochs"),
+    num_checkpoints: int = typer.Option(4, help="Number of checkpoints to save"),
     average_steps: str = typer.Option(
         None, help="List of commas separated checkpoint steps to average. E.g 1000,5000"
     ),
@@ -314,6 +317,9 @@ def train(
         disable_wandb=disable_wandb,
         wandb_project=wandb_project,
         extra_arguments=extra_arguments,
+        global_batch_size=global_batch_size,
+        num_epochs=num_epochs,
+        num_checkpoints=num_checkpoints,
     )
 
     with run.Experiment(expname) as exp:
