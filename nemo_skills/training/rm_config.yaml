@@ -74,6 +74,9 @@ model:
   share_embeddings_and_output_weights: False
   tensor_model_parallel_size: 1 # intra-layer model parallelism
   pipeline_model_parallel_size: 1 # inter-layer model parallelism
+  
+  restore_from_path: ??? # Path to an existing p-tuned/prompt tuned .nemo model you wish to add new tasks to or run inference with
+  resume_from_checkpoint: null # The path to a checkpoint file to continue the training,
 
   reward_model_type: binary_ranking # ["binary_ranking, "regression"]
   regression:
