@@ -138,16 +138,16 @@ def main(cfg) -> None:
         with open_dict(cfg):
             cfg.trainer.sft.max_epochs = 10000  # always using steps internally
             # rounding steps to make sure last checkpoint is not repeated
-            cfg.trainer.sft.num_steps = (num_steps // num_checkpoints) * num_checkpoints
+            cfg.trainer.sft.max_steps = (num_steps // num_checkpoints) * num_checkpoints
             cfg.trainer.sft.save_interval = num_steps // num_checkpoints
             cfg.trainer.sft.val_check_interval = num_steps // num_checkpoints
         logging.info(
             (
                 "Adjusting config parameters in the following way:\n"
-                "max_epochs: %d\nnum_steps: %d\nsave_interval: %d\nval_check_interval: %d"
+                "max_epochs: %d\nmax_steps: %d\nsave_interval: %d\nval_check_interval: %d"
             ),
             cfg.trainer.sft.max_epochs,
-            cfg.trainer.sft.num_steps,
+            cfg.trainer.sft.max_steps,
             cfg.trainer.sft.save_interval,
             cfg.trainer.sft.val_check_interval,
         )

@@ -236,7 +236,7 @@ def convert(
         add_task(
             exp,
             cmd=conversion_cmd,
-            task_name={expname},
+            task_name=expname,
             log_dir=log_dir,
             container=container_map[(convert_from, convert_to)],
             num_gpus=num_gpus,
