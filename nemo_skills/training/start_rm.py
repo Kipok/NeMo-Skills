@@ -71,11 +71,9 @@ def _modify_config(gpt_cfg, cfg, add_cfg_to_tree=False):
         gpt_cfg.data = cfg.model.data
         gpt_cfg.optim = cfg.model.optim
         gpt_cfg.precision = cfg.trainer.precision
-        gpt_cfg.answer_only_loss = cfg.model.answer_only_loss
         gpt_cfg.restore_from_path = cfg.model.restore_from_path
         gpt_cfg.resume_from_checkpoint = cfg.model.resume_from_checkpoint
         gpt_cfg.save_nemo_on_validation_end = cfg.model.save_nemo_on_validation_end
-        gpt_cfg.gradient_as_bucket_view = cfg.model.gradient_as_bucket_view
         gpt_cfg.hidden_dropout = cfg.model.get("hidden_dropout", 0.0)
         gpt_cfg.attention_dropout = cfg.model.get("attention_dropout", 0.0)
         gpt_cfg.ffn_dropout = cfg.model.ffn_dropout
@@ -89,14 +87,6 @@ def _modify_config(gpt_cfg, cfg, add_cfg_to_tree=False):
 
         if cfg.model.get("use_flash_attention", None) is not None:
             gpt_cfg.use_flash_attention = cfg.model.use_flash_attention
-
-        if cfg.model.get("seq_len_interpolation_factor", None) is not None:
-            gpt_cfg.seq_len_interpolation_factor = cfg.model.seq_len_interpolation_factor
-
-        if cfg.model.get("dist_ckpt_load_strictness", None) is not None:
-            gpt_cfg.dist_ckpt_load_strictness = cfg.model.dist_ckpt_load_strictness
-
-        gpt_cfg.inference = cfg.model.get("inference", {})
 
         # This is needed when modifying a hparam file directly to load `.ckpt` files.
         # This is not needed to modify the cfg in `.nemo` files.
