@@ -71,7 +71,7 @@ def _modify_config(gpt_cfg, cfg, add_cfg_to_tree=False):
         gpt_cfg.data = cfg.model.data
         gpt_cfg.optim = cfg.model.optim
         gpt_cfg.precision = cfg.trainer.precision
-        gpt_cfg.restore_from_path = cfg.model.restore_from_path
+        # gpt_cfg.restore_from_path = cfg.model.restore_from_path
         gpt_cfg.resume_from_checkpoint = cfg.model.resume_from_checkpoint
         gpt_cfg.use_flash_attention = cfg.model.get("use_flash_attention", False)
         # if TP/PP size is -1, use default TP/PP size as original model
@@ -92,6 +92,7 @@ def _modify_config(gpt_cfg, cfg, add_cfg_to_tree=False):
 
         # OVERRRIDE: set the dist_ckpt_format to zarr explicitly unless specified in the config
         gpt_cfg.dist_ckpt_format = cfg.model.get("dist_ckpt_format", "zarr")
+        gpt_cfg.pretrained_checkpoint = cfg.pretrained_checkpoint
     return gpt_cfg
 
 
@@ -130,8 +131,8 @@ def main(cfg) -> None:
         trainer,
         strict=True,
         modify_config_fn=_modify_config,
-        restore_path=cfg.model.restore_from_path,
-        # return_updated_cfg=True,
+        load_base_model_only=True,
+        restore_path=cfg.pretrained_checkpoint.restore_from_path,
     )
 
     # pull values from checkpoint
