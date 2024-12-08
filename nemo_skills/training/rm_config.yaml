@@ -84,9 +84,14 @@ model:
   output_sequence: False  # Whether to output a single scalar or a sequence of scalars.
   use_avg_pool: False  # Whether to use avg pool to sum across the sequence dim in reward model
   force_head_dtype: float32  # enforce specific dtype for the final projection in the model head
+  gradient_as_bucket_view: True
   micro_batch_size: 1
   global_batch_size: 512
   megatron_amp_O2: True
+
+  hidden_dropout: 0.0
+  attention_dropout: 0.0
+  ffn_dropout: 0.0
 
   # if there is ever a need to run inference
   # then this flag will control the batch size
