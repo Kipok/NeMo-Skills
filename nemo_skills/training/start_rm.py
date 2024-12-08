@@ -41,6 +41,7 @@ from nemo_aligner.utils.utils import load_and_override_model_config, load_from_n
 from omegaconf.omegaconf import OmegaConf
 
 from nemo_skills.training.models.outcome_dataset import custom_collate
+from nemo_skills.training.start_sft import _modify_config
 
 """Script to start Reward Model training"""
 
@@ -61,7 +62,7 @@ def main(cfg) -> None:
     reward_model_type = RewardModelType(cfg.model.get("reward_model_type", "binary_ranking"))
     reward_model_cls = REWARD_MODEL_CLASS_DICT[reward_model_type]
 
-    cfg.model = load_and_override_model_config(cfg.pretrained_checkpoint.restore_from_path, cfg.model)
+    # cfg.model = load_and_override_model_config(cfg.pretrained_checkpoint.restore_from_path, cfg.model)
 
     logging.info("\n\n************** Experiment configuration ***********")
     logging.info(f"\n{OmegaConf.to_yaml(cfg)}")
@@ -70,14 +71,26 @@ def main(cfg) -> None:
     exp_manager(trainer, cfg.exp_manager)
     logger = CustomLoggerWrapper(trainer.loggers)
 
+    # ptl_model = load_from_nemo(
+    #     reward_model_cls,
+    #     cfg,
+    #     # cfg.model,
+    #     trainer,
+    #     strict=True,
+    #     load_base_model_only=True,
+    #     restore_path=cfg.pretrained_checkpoint.restore_from_path,
+    # )
     ptl_model = load_from_nemo(
         reward_model_cls,
-        cfg.model,
+        cfg,
         trainer,
         strict=True,
-        load_base_model_only=True,
-        restore_path=cfg.pretrained_checkpoint.restore_from_path,
+        modify_config_fn=_modify_config,
+        restore_path=cfg.model.restore_from_path,
+        # return_updated_cfg=True,
     )
+
+    # init_peft(ptl_model, updated_cfg)
 
     # pull values from checkpoint
     trainer_restore_path = trainer.ckpt_path
