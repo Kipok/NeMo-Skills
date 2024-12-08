@@ -140,7 +140,7 @@ def check_contamination(
                     preprocess_cmd=preprocess_cmd,
                     postprocess_cmd=postprocess_cmd,
                 ),
-                task_name="check-contamination",
+                task_name=expname,
                 log_dir=log_dir,
                 container=cluster_config["containers"]["nemo-skills"],
                 cluster_config=cluster_config,

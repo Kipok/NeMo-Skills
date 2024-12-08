@@ -68,7 +68,7 @@ def run_cmd(
         add_task(
             exp,
             cmd=get_cmd(extra_arguments=extra_arguments),
-            task_name="script",
+            task_name=expname,
             log_dir=log_dir,
             container=cluster_config["containers"][container],
             cluster_config=cluster_config,

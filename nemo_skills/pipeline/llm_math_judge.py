@@ -123,7 +123,7 @@ def llm_math_judge(
                 preprocess_cmd,
                 postprocess_cmd,
             ),
-            task_name="llm-math-judge",
+            task_name=expname,
             log_dir=log_dir,
             container=cluster_config["containers"]["nemo-skills"],
             cluster_config=cluster_config,

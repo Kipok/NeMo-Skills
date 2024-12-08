@@ -204,7 +204,7 @@ def eval(
             add_task(
                 exp,
                 cmd=get_generation_command(server_address=server_address, generation_commands=eval_cmd),
-                task_name=f'eval-{idx}',
+                task_name=f'{expname}-{idx}',
                 log_dir=log_dir,
                 container=cluster_config["containers"]["nemo-skills"],
                 cluster_config=cluster_config,

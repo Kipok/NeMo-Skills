@@ -322,7 +322,7 @@ def train(
             prev_task = add_task(
                 exp,
                 cmd=train_cmd,
-                task_name=f'{training_algo}-{job_id}',
+                task_name=f'{expname}-{training_algo}-{job_id}',
                 log_dir=f"{log_dir}/training-logs",
                 container=cluster_config["containers"]["nemo"],
                 num_gpus=num_gpus,
@@ -346,7 +346,7 @@ def train(
         add_task(
             exp,
             cmd=cmd,
-            task_name="prepare-eval",
+            task_name=f"{expname}-prepare-eval",
             log_dir=f"{log_dir}/prepare-eval-logs",
             container=cluster_config["containers"]['nemo'],
             cluster_config=cluster_config,
