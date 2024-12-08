@@ -96,7 +96,7 @@ def _modify_config(gpt_cfg, cfg, add_cfg_to_tree=False):
     return gpt_cfg
 
 
-@hydra_runner(config_path=".", config_name="training_rm")
+@hydra_runner(config_path=".", config_name="rm_config")
 def main(cfg) -> None:
     """
     Binary ranking reward models use comparison based objective similar to the one found in the
