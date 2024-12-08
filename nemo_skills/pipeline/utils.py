@@ -669,7 +669,7 @@ def get_executor(
         wait_time_for_group_job=0.01,
         monitor_group_job_wait_time=20,
         dependencies=dependencies,
-        dependency_type="afterany",
+        # dependency_type="afterany",
         env_vars=env_vars,
     )
 
