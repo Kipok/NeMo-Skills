@@ -267,12 +267,6 @@ class WriteFinalSftManifest(BaseProcessor):
         else:
             LOG.warning("Prompt details are missing! The processed data won't be formatted using any prompt.")
 
-        if self.chat_format and self.prompt is None:
-            error_str = ""
-            error_str += "prompt_config is missing! " if prompt_config is None else ""
-            error_str += "prompt_template is missing!" if prompt_template is None else ""
-            raise ValueError(f"chat_format requires prompt information: {error_str}")
-
     def process(self):
         samples_count = 0
         seen_predictions = defaultdict(set)
@@ -304,10 +298,15 @@ class WriteFinalSftManifest(BaseProcessor):
                         output_sample["output"] = generation + self.prompt.config.template.assistant_end
                     else:
                         output_sample["input"] = elem[self.input_key]
+                        output_sample["output"] = generation
 
                 elif self.chat_format.lower() == "nemotron":
                     output_sample['conversations'] = [
-                        {'value': self.prompt.config.user.format(**elem), 'from': 'User', 'canonical_form': ''},
+                        {
+                            'value': self.prompt.config.user.format(**elem) if self.prompt else elem[self.input_key],
+                            'from': 'User',
+                            'canonical_form': '',
+                        },
                         {'value': elem.pop(self.output_key), 'from': 'Assistant', 'canonical_form': ''},
                     ]
                     output_sample['system'] = self.prompt.config.system
@@ -315,7 +314,7 @@ class WriteFinalSftManifest(BaseProcessor):
                 elif self.chat_format.lower() == "llama":
                     output_sample['conversations'] = [
                         {
-                            'value': self.prompt.config.user.format(**elem),
+                            'value': self.prompt.config.user.format(**elem) if self.prompt else elem[self.input_key],
                             'from': '<|start_header_id|>user<|end_header_id|>',
                             'canonical_form': '',
                         },
