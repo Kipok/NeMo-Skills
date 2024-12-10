@@ -22,6 +22,7 @@ from typing import Dict, Optional
 from sdp.processors.base_processor import BaseProcessor
 from tqdm.contrib.concurrent import process_map
 
+from nemo_skills.evaluation.metrics.utils import is_correct_judgement
 from nemo_skills.prompt.utils import get_prompt
 from nemo_skills.utils import unroll_files
 
@@ -39,6 +40,7 @@ class ReadData(BaseProcessor):
         skip_first: int = 0,
         add_correct: bool = True,
         add_incorrect: bool = False,
+        use_judgement: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -49,6 +51,7 @@ class ReadData(BaseProcessor):
         self.skip_first = skip_first
         self.add_correct = add_correct
         self.add_incorrect = add_incorrect
+        self.use_judgement = use_judgement
 
         if isinstance(self.input_files, str):
             self.input_files = self.input_files.split(" ")
@@ -95,15 +98,26 @@ class ReadData(BaseProcessor):
                 continue
 
             # skipping any incomplete generations
-            if "is_correct" not in line_dict:
-                LOG.warning("Found incomplete generations (is_correct field is missing) - skipping")
-                continue
+            if not self.use_judgement:
+                if "is_correct" not in line_dict:
+                    LOG.warning("Found incomplete generations (is_correct field is missing) - skipping")
+                    continue
 
-            if not self.add_correct and line_dict["is_correct"]:
-                continue
+                if not self.add_correct and line_dict["is_correct"]:
+                    continue
 
-            if not self.add_incorrect and not line_dict["is_correct"]:
-                continue
+                if not self.add_incorrect and not line_dict["is_correct"]:
+                    continue
+            else:
+                if "judgement" not in line_dict:
+                    LOG.warning("Found incomplete generations (judgement field is missing) - skipping")
+                    continue
+
+                if not self.add_correct and is_correct_judgement(line_dict["judgement"]):
+                    continue
+
+                if not self.add_incorrect and not is_correct_judgement(line_dict["judgement"]):
+                    continue
 
             line_dict['filename'] = file_handle.name
             samples.append(line_dict)
@@ -289,12 +303,6 @@ class WriteFinalSftManifest(BaseProcessor):
         else:
             LOG.warning("Prompt details are missing! The processed data won't be formatted using any prompt.")
 
-        if self.chat_format and self.prompt is None:
-            error_str = ""
-            error_str += "prompt_config is missing! " if prompt_config is None else ""
-            error_str += "prompt_template is missing!" if prompt_template is None else ""
-            raise ValueError(f"chat_format requires prompt information: {error_str}")
-
     def process(self):
         samples_count = 0
         seen_predictions = defaultdict(set)
@@ -326,18 +334,23 @@ class WriteFinalSftManifest(BaseProcessor):
                         output_sample["output"] = generation + self.prompt.config.template.assistant_end
                     else:
                         output_sample["input"] = elem[self.input_key]
+                        output_sample["output"] = generation
 
                 elif self.chat_format.lower() == "nemotron":
                     output_sample['conversations'] = [
-                        {'value': self.prompt.config.user.format(**elem), 'from': 'User', 'canonical_form': ''},
+                        {
+                            'value': self.prompt.config.user.format(**elem) if self.prompt else elem[self.input_key],
+                            'from': 'User',
+                            'canonical_form': '',
+                        },
                         {'value': elem.pop(self.output_key), 'from': 'Assistant', 'canonical_form': ''},
                     ]
-                    output_sample['system'] = self.prompt.config.system
+                    output_sample['system'] = self.prompt.config.system if self.prompt else ''
                     output_sample['mask'] = 'User'
                 elif self.chat_format.lower() == "llama":
                     output_sample['conversations'] = [
                         {
-                            'value': self.prompt.config.user.format(**elem),
+                            'value': self.prompt.config.user.format(**elem) if self.prompt else elem[self.input_key],
                             'from': '<|start_header_id|>user<|end_header_id|>',
                             'canonical_form': '',
                         },
@@ -347,7 +360,7 @@ class WriteFinalSftManifest(BaseProcessor):
                             'canonical_form': '',
                         },
                     ]
-                    output_sample['system'] = self.prompt.config.system
+                    output_sample['system'] = self.prompt.config.system if self.prompt else ''
                     output_sample['mask'] = '<|start_header_id|>user<|end_header_id|>'
                 else:
                     raise ValueError(f"Chat format {self.chat_format} is not supported")

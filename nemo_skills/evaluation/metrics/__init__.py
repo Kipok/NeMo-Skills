@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-bs4
-evalplus @ git+https://github.com/evalplus/evalplus@c91370f
-pyyaml
-requests
+from nemo_skills.evaluation.metrics.compute_metrics import ComputeMetrics
+from nemo_skills.evaluation.metrics.utils import read_predictions
+from nemo_skills.evaluation.metrics.map_metrics import get_metrics

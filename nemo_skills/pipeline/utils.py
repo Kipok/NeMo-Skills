@@ -139,7 +139,8 @@ def get_reward_server_command(
             f"python -m nemo_skills.inference.server.serve_nemo_reward_model "
             # These ports could be configurable, but is hard coded to reduce
             # the divergence of the server command parameters from pipeline/generate.py
-            f" inference_port=5000  triton_server_address=localhost:5001 "
+            f"    inference_port=5000  "
+            f"    triton_server_address=localhost:5001 "
         )
 
         # somehow on slurm nemo needs multiple tasks, but locally only 1
@@ -339,7 +340,9 @@ def progress_callback(transferred: int, total: int) -> None:
     sys.stdout.flush()
 
 
-def cluster_download(tunnel: SSHTunnel, remote_dir: str, local_dir: str, remote_tar_dir: Optional[str] = None):
+def cluster_download(
+    tunnel: SSHTunnel, remote_dir: str, local_dir: str, remote_tar_dir: Optional[str] = None, verbose: bool = True
+):
     """
     Downloads a directory from a remote cluster by creating a tar archive and transferring it.
 
@@ -348,6 +351,7 @@ def cluster_download(tunnel: SSHTunnel, remote_dir: str, local_dir: str, remote_
         remote_dir: Path to the directory on remote server
         local_dir: Local path to save the downloaded directory
         remote_tar_dir: Optional directory for temporary tar file creation
+        verbose: Print download progress
     """
 
     remote_dir = remote_dir.rstrip('/')
@@ -376,7 +380,7 @@ def cluster_download(tunnel: SSHTunnel, remote_dir: str, local_dir: str, remote_
     except Exception:
         streaming_possible = False
 
-    if streaming_possible:
+    if streaming_possible and verbose:
         # We can do streaming compression
         # Command for streaming the compression progress
         command = (
@@ -386,16 +390,16 @@ def cluster_download(tunnel: SSHTunnel, remote_dir: str, local_dir: str, remote_
             f'gzip > {remote_tar}'
         )
         # Run the remote compression command and stream the progress
-        result = tunnel.run(command, watchers=[OutputWatcher()], pty=True, hide=False)
+        result = tunnel.run(command, watchers=[OutputWatcher()], pty=True, hide=(not verbose))
     else:
         command = f'cd {remote_dir_parent} && tar -czf {remote_tar} {remote_dir_name}'
-        result = tunnel.run(command, hide=False)
+        result = tunnel.run(command, hide=(not verbose))
 
     # Get SFTP client from tunnel's session's underlying client
     sftp = tunnel.session.client.open_sftp()
 
     # Use SFTP's get with callback
-    sftp.get(remote_tar, local_tar, callback=progress_callback)
+    sftp.get(remote_tar, local_tar, callback=progress_callback if verbose else None)
     print(f"\nTransfer complete: {local_tar}")
 
     # Extract the tarball locally
@@ -410,7 +414,7 @@ def cluster_download(tunnel: SSHTunnel, remote_dir: str, local_dir: str, remote_
     os.remove(local_tar)
 
 
-def cluster_upload(tunnel: SSHTunnel, local_file: str, remote_dir: str):
+def cluster_upload(tunnel: SSHTunnel, local_file: str, remote_dir: str, verbose: bool = True):
     """
     Uploads a file to cluster.
     TODO: extend to a folder.
@@ -419,9 +423,10 @@ def cluster_upload(tunnel: SSHTunnel, local_file: str, remote_dir: str):
         tunnel: SSHTunnel connection
         local_file: Path to the local file to upload
         remote_dir: Cluster path where to save the file
+        verbose: Print upload progress
     """
     sftp = tunnel.session.client.open_sftp()
-    sftp.put(str(local_file), str(remote_dir), callback=progress_callback)
+    sftp.put(str(local_file), str(remote_dir), callback=progress_callback if verbose else None)
     print(f"\nTransfer complete")
 
 
@@ -654,8 +659,6 @@ def get_executor(
             f"--ntasks={tasks_per_node * num_nodes}",
             f"--nodes={num_nodes}",
         ],
-        # TODO: can we relax this to allow partial node allocation?
-        exclusive=True,
         mem=0,
         job_details=CustomJobDetails(
             job_name=cluster_config.get("job_name_prefix", "") + job_name,
@@ -666,7 +669,6 @@ def get_executor(
         wait_time_for_group_job=0.01,
         monitor_group_job_wait_time=20,
         dependencies=dependencies,
-        dependency_type="afterany",
         env_vars=env_vars,
     )
 
@@ -686,7 +688,7 @@ def add_task(
     with_sandbox=False,
     server_config=None,
     task_dependencies: list[str] = None,
-    run_after=None,
+    run_after: str | list[str] | None = None,
     get_server_command=get_server_command,
     extra_package_dirs: list[str] | None = None,
 ):
@@ -694,8 +696,9 @@ def add_task(
 
     Note that there are two parameters that control dependencies.
         - task_dependencies: list of tasks that this task depends on **within the same experiment**
-        - run_after: a single **experiment name** that this task should run after. Will schedule
-          dependencies on all tasks inside `run_after` experiment. It needs to already be launched and running.
+        - run_after: a string with experiment name or a list of experiment names that this task
+          should run after. Will schedule dependencies on all tasks inside `run_after` experiments.
+          It needs to already be launched and running.
 
     Example of how to set task_dependencies:
 
@@ -704,12 +707,15 @@ def add_task(
         task2 = add_task(exp, ..., task_dependencies=[task1])
     """
     if run_after is not None and cluster_config["executor"] == "slurm":
-        dependencies = tuple(get_exp_handles(run_after))
+        if isinstance(run_after, str):
+            run_after = [run_after]
+        dependencies = tuple([handle for exp_name in run_after for handle in get_exp_handles(exp_name)])
     else:
         dependencies = None
 
     if num_gpus is None and cluster_config['executor'] == "slurm":
-        num_gpus = 1
+        if not 'cpu' in (partition or cluster_config.get("partition", "")):
+            num_gpus = 1
 
     commands = []
     executors = []
