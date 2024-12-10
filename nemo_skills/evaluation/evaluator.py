@@ -14,6 +14,7 @@
 
 import json
 import logging
+import re
 import shutil
 import subprocess
 from argparse import Namespace
@@ -32,6 +33,52 @@ from nemo_skills.utils import nested_dataclass, unroll_files
 
 LOG = logging.getLogger(__file__)
 
+
+@nested_dataclass(kw_only=True)
+class MMLUEvaluatorConfig:
+    # Eval type is either llama or tigerlab
+    parse_func: str
+
+
+def eval_mmlu(cfg):
+
+    def llama_parse(sample):
+        res = re.search(r"The best answer is ([A-J])\.", sample['generation'])
+        if res:
+            return res.group(1)
+        else:
+            return None
+
+    def tigerlab_parse(sample):
+        attempt_one = re.search(r"answer is \(([A-J])\)", sample['generation'])
+        if attempt_one:
+            return attempt_one.group(1)
+        attempt_two = re.search(r'.*[aA]nswer:\s*([A-J])', sample['generation'])
+        if attempt_two:
+            return attempt_two.group(1)
+        attempt_three = re.search(r"\b[A-J]\b(?!.*\b[A-J]\b)", sample['generation'], re.DOTALL)
+        if attempt_three:
+            return attempt_three.group(0)
+        return None
+
+    eval_config = MMLUEvaluatorConfig(**cfg.eval_config)
+    assert eval_config.parse_func in ['llama', 'tigerlab'], f"Unsupported eval type: {eval_config.parse_func}"
+
+    parse_funcs = {
+        'llama': llama_parse,
+        'tigerlab': tigerlab_parse,
+    }
+
+    for file in unroll_files(cfg.input_files):
+        with open(file, 'rt', encoding='utf-8') as fin:
+            data = [json.loads(line) for line in fin]
+        with open(file, 'wt', encoding='utf-8') as fout:
+            for sample in tqdm(data):
+                parse_result = parse_funcs[eval_config.parse_func](sample)
+                sample['is_correct'] = parse_result == sample['expected_answer']
+                sample['predicted_answer'] = parse_result
+                fout.write(json.dumps(sample) + "\n")
+                        
 
 @nested_dataclass(kw_only=True)
 class MathEvaluatorConfig:
@@ -431,6 +478,7 @@ EVALUATOR_MAP = {
     'lean4-proof': eval_lean4_proof,
     'lean4-statement': eval_lean4_statement,
     'lean4-statement-with-header': eval_lean4_statement_with_header,
+    'mmlu': eval_mmlu,
 }
 
 
