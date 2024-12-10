@@ -660,6 +660,7 @@ def get_executor(
             f"--nodes={num_nodes}",
         ],
         mem=0,
+        cpus_per_task=96,
         job_details=CustomJobDetails(
             job_name=cluster_config.get("job_name_prefix", "") + job_name,
             folder=get_unmounted_path(cluster_config, log_dir),

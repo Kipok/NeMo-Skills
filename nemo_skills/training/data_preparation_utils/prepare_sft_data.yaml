@@ -69,13 +69,15 @@ processors:
     add_correct: ${add_correct}
     add_incorrect: ${add_incorrect}
     use_judgement: ${use_judgement}
-    keys_to_keep:  # input/output/is_correct/judgement are automatically added
-      - ${contamination_key}
+    # input/output/is_correct/judgement are automatically added
+    keys_to_keep:
+      - "contaminated"
       - "total_votes"
       - "majority_votes"
       - "expected_answer"
       - "predicted_answer"
       - "answer_rm_score"
+    # TODO: remove this
     output_manifest_file: /data/tmp-manifest.jsonl
 
   # this will optimize processors inside to avoid serializing data to disk

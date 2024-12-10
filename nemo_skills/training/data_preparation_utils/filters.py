@@ -356,11 +356,11 @@ class BaseParallelProcessor(BaseProcessor):
 class BaseFilter(BaseParallelProcessor):
     def __init__(self, **kwargs):
         if 'in_memory_chunksize' not in kwargs:
-            kwargs['in_memory_chunksize'] = 50000000
+            kwargs['in_memory_chunksize'] = 1000000
         if 'chunksize' not in kwargs:
             kwargs['chunksize'] = 10000
         if 'max_workers' not in kwargs:
-            kwargs['max_workers'] = os.cpu_count()
+            kwargs['max_workers'] = max(100, os.cpu_count())
         super().__init__(**kwargs)
 
     def finalize(self, metrics: List):
