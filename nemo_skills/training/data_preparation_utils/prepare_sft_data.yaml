@@ -52,8 +52,8 @@ filters:
   majority_filter: false
   trim_prefix: true
   trim_solutions: true
-  drop_incorrect_arithmetic: true
-  split_arithmetic: true
+  drop_incorrect_arithmetic: false
+  split_arithmetic: false
   remove_len_outlier_problems: true
   remove_len_outlier_solutions: false
   code_text_filter: null
@@ -69,10 +69,18 @@ processors:
     add_correct: ${add_correct}
     add_incorrect: ${add_incorrect}
     use_judgement: ${use_judgement}
+    keys_to_keep:  # input/output/is_correct/judgement are automatically added
+      - ${contamination_key}
+      - "total_votes"
+      - "majority_votes"
+      - "expected_answer"
+      - "predicted_answer"
+      - "answer_rm_score"
     output_manifest_file: /data/tmp-manifest.jsonl
 
   # this will optimize processors inside to avoid serializing data to disk
   - _target_: nemo_skills.training.data_preparation_utils.merge_processor.MergeProcessor
+    input_manifest_file: /data/tmp-manifest.jsonl
     _recursive_: False
     processor_configs:
       - _target_: nemo_skills.training.data_preparation_utils.filters.DropMultiBoxed
