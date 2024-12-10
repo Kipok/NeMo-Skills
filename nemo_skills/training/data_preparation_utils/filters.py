@@ -45,7 +45,7 @@ class BaseFilter(BaseParallelProcessor):
         if 'in_memory_chunksize' not in kwargs:
             kwargs['in_memory_chunksize'] = 50000000
         if 'chunksize' not in kwargs:
-            kwargs['chunksize'] = 100000
+            kwargs['chunksize'] = 10000
         if 'max_workers' not in kwargs:
             kwargs['max_workers'] = os.cpu_count()
         super().__init__(**kwargs)
