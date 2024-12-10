@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 
 import nemo.collections.nlp.data.language_modeling.megatron.gpt_sft_chat_dataset as gpt_sft_chat_dataset
 import torch.multiprocessing as mp
@@ -130,8 +131,8 @@ def main(cfg) -> None:
             num_steps = cfg.trainer.sft.max_steps
         else:
             # counting the steps per epoch
-            with open(cfg.model.data.train_ds.file_path, 'rt') as fin:
-                data_size = len(fin.readlines())
+            # using wc -l since sft file might be large and we want to use optimized util
+            data_size = int(os.popen(f'wc -l "{cfg.model.data.train_ds.file_path}"').read().split()[0])
             assert cfg.trainer.sft.max_epochs > 0
             num_steps = (data_size * cfg.trainer.sft.max_epochs) // cfg.model.data.train_ds.global_batch_size
         num_checkpoints = cfg.trainer.sft.num_checkpoints_to_save
