@@ -17,19 +17,12 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Callable
+from typing import Callable, List
 
 import nemo_run as run
 import typer
 
-from nemo_skills.pipeline import (
-    add_task,
-    check_if_mounted,
-    get_cluster_config,
-    get_tunnel,
-    get_unmounted_path,
-    run_exp,
-)
+from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, run_exp
 from nemo_skills.pipeline.app import app, typer_unpacker
 from nemo_skills.utils import setup_logging
 
@@ -235,7 +228,9 @@ def train(
     average_steps: str = typer.Option(
         None, help="List of commas separated checkpoint steps to average. E.g 1000,5000"
     ),
-    run_after: str = typer.Option(None, help="Experiment to run after"),
+    run_after: List[str] = typer.Option(
+        None, help="Can specify a list of expnames that need to be completed before this one starts"
+    ),
     config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
     log_dir: str = typer.Option(None, help="Can specify a custom location for slurm logs. "),
 ):

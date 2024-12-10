@@ -66,9 +66,8 @@ def llm_math_judge(
     time_min: str = typer.Option(None, help="If specified, will use as a time-min slurm parameter"),
     preprocess_cmd: str = typer.Option(None, help="Command to run before generation"),
     postprocess_cmd: str = typer.Option(None, help="Command to run after generation"),
-    run_after: str = typer.Option(
-        None,
-        help="Can specify an expname that needs to be completed before this one starts (will use as slurm dependency)",
+    run_after: List[str] = typer.Option(
+        None, help="Can specify a list of expnames that need to be completed before this one starts"
     ),
     config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
     log_dir: str = typer.Option(None, help="Can specify a custom location for slurm logs. "),

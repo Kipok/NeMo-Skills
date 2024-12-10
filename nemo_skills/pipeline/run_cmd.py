@@ -13,11 +13,12 @@
 # limitations under the License.
 
 import logging
+from typing import List
 
 import nemo_run as run
 import typer
 
-from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, get_generation_command, run_exp
+from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config, run_exp
 from nemo_skills.pipeline.app import app, typer_unpacker
 from nemo_skills.utils import setup_logging
 
@@ -46,8 +47,8 @@ def run_cmd(
     ),
     time_min: str = typer.Option(None, help="If specified, will use as a time-min slurm parameter"),
     num_gpus: int | None = typer.Option(None, help="Number of GPUs to use"),
-    run_after: str = typer.Option(
-        None, help="Can specify an expname that needs to be completed before this one starts"
+    run_after: List[str] = typer.Option(
+        None, help="Can specify a list of expnames that need to be completed before this one starts"
     ),
     config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
     log_dir: str = typer.Option(
