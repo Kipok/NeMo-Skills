@@ -92,7 +92,7 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
         else:
             valid_answers_and_scores = [
                 (elem['predicted_answer'], elem['reward_model_score'])
-                for elem in predictions
+                for elem in data
                 if elem['predicted_answer'] is not None
             ]
             new_answers.append((None, 0))
