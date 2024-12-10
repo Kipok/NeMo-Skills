@@ -178,8 +178,8 @@ class ReadData(BaseProcessor):
         LOG.info("Total samples before deduplication: %d", len(samples))
 
         # Parallel deduplication
-        num_cores = os.cpu_count()
-        chunk_size = max(1000, len(samples) // (num_cores * 4))  # Adjust chunk size based on data size
+        chunk_size = 100000
+        num_cores = max(100, len(samples) // chunk_size)
 
         with ProcessPoolExecutor(max_workers=num_cores) as executor:
             # Process chunks in parallel
