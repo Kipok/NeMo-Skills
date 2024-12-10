@@ -309,7 +309,7 @@ class WriteFinalSftManifest(BaseProcessor):
                         },
                         {'value': elem.pop(self.output_key), 'from': 'Assistant', 'canonical_form': ''},
                     ]
-                    output_sample['system'] = self.prompt.config.system
+                    output_sample['system'] = self.prompt.config.system if self.prompt else ''
                     output_sample['mask'] = 'User'
                 elif self.chat_format.lower() == "llama":
                     output_sample['conversations'] = [
@@ -324,7 +324,7 @@ class WriteFinalSftManifest(BaseProcessor):
                             'canonical_form': '',
                         },
                     ]
-                    output_sample['system'] = self.prompt.config.system
+                    output_sample['system'] = self.prompt.config.system if self.prompt else ''
                     output_sample['mask'] = '<|start_header_id|>user<|end_header_id|>'
                 else:
                     raise ValueError(f"Chat format {self.chat_format} is not supported")
