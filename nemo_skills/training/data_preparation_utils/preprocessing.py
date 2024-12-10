@@ -58,6 +58,7 @@ class ReadData(BaseProcessor):
         self.keys_to_keep = keys_to_keep
 
         if self.keys_to_keep is not None:
+            self.keys_to_keep = set(self.keys_to_keep)
             self.keys_to_keep.add(self.input_key)
             self.keys_to_keep.add(self.output_key)
             self.keys_to_keep.add("is_correct")

@@ -69,9 +69,8 @@ processors:
     add_correct: ${add_correct}
     add_incorrect: ${add_incorrect}
     use_judgement: ${use_judgement}
-    # input/output/is_correct/judgement are automatically added
-    keys_to_keep:
-      - "contaminated"
+    keys_to_keep:  # input/output/is_correct/judgement are automatically added
+      - ${contamination_key}
       - "total_votes"
       - "majority_votes"
       - "expected_answer"
