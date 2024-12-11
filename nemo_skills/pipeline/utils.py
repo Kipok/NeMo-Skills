@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import logging
 import os
 import shlex
@@ -27,10 +26,8 @@ import nemo_run as run
 import yaml
 from huggingface_hub import get_token
 from invoke import StreamWatcher
-from nemo_run.config import NEMORUN_HOME
 from nemo_run.core.execution.docker import DockerExecutor
 from nemo_run.core.execution.slurm import SlurmJobDetails
-from nemo_run.core.serialization.zlib_json import ZlibJSONSerializer
 from nemo_run.core.tunnel import SSHTunnel
 from torchx.specs.api import AppState
 
@@ -64,29 +61,40 @@ def _get_latest_dir(path, expname, job_id) -> str:
     return os.path.join(path, latest_dir)
 
 
-def get_exp_handles(expname: str, ignore_finished=True) -> list[str]:
+def get_exp_handles(expname: str, ignore_finished=True, ignore_exp_not_exists=True) -> list[str]:
     """Will return the handles of the tasks in the experiment.
 
     If ignore_finished=True, will only return handles for the tasks
     that are not yet finished. Useful for filtering handles to set dependencies on.
+
+    If ignore_exp_not_exists=True, will not raise an error if the experiment does not exist.
+
+    TODO: it's still possible that job submission fails if the tasks exist when this function
+          is called, but finish before nemo-run submits a new job (which might take minutes)
     """
+
+    def _get_handles(exp):
+        handles = []
+        for job in exp.jobs:
+            if not ignore_finished or (
+                job.status(exp._runner) in [AppState.RUNNING, AppState.PENDING, AppState.SUBMITTED]
+            ):
+                handles.append(job.handle)
+                continue
+        return handles
+
     try:
-        exp = run.Experiment.from_title(expname)
+        with run.Experiment.from_title(expname) as exp:
+            return _get_handles(exp)
     except FileNotFoundError:
         try:
-            exp = run.Experiment.from_id(expname)
-        except FileNotFoundError:
-            raise ValueError(f"Experiment {expname} not found.")
-
-    handles = []
-    for job in exp.jobs:
-        if not ignore_finished or (
-            job.status(exp._runner) in [AppState.RUNNING, AppState.PENDING, AppState.SUBMITTED]
-        ):
-            handles.append(job.handle.split("/")[-1])
-            continue
-
-    return handles
+            with run.Experiment.from_id(expname) as exp:
+                return _get_handles(exp)
+        except AssertionError:
+            if ignore_exp_not_exists:
+                LOG.warning("Experiment %s not found!", expname)
+                return []
+            raise ValueError(f"Experiment {expname} not found!")
 
 
 def get_generation_command(server_address, generation_commands):
@@ -712,10 +720,12 @@ def add_task(
         if isinstance(run_after, str):
             run_after = [run_after]
         dependencies = []
-        for expname in run_after:
-            exp_handles = get_exp_handles(expname)
+        for dep_expname in run_after:
+            exp_handles = get_exp_handles(dep_expname)
             if len(exp_handles) == 0:
-                LOG.warning(f"No pending or running tasks found for experiment {expname}, cannot set dependencies.")
+                LOG.warning(
+                    "No pending or running tasks found for experiment %s, cannot set dependencies.", dep_expname
+                )
             dependencies.extend(exp_handles)
         if len(dependencies) == 0:
             dependencies = None
