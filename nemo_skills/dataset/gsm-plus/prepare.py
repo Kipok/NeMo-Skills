@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     with open(original_file, "rt") as original, open(output_file, "w") as test_full:
         original_data = [json.loads(line) for line in original.readlines()]
-        cleaning_options['none'] = set(list(range(len(original_data))))
+        cleaning_options['none'] = set(range(len(original_data)))
         for i, original_entry in enumerate(original_data):
             if (
                 original_entry["perturbation_type"].replace(' ', '_') in args.categories
