@@ -38,6 +38,7 @@ class MergeProcessor(BaseFilter):
             self.processors.append(processor)
 
     def process_dataset_entry(self, data_entry: dict) -> list[DataEntry]:
+        # TODO: properly track and report metrics for all processors
         num_modified = 0
         for processor in self.processors:
             data_entry = processor.process_dataset_entry(data_entry)[0]
