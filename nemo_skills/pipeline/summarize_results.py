@@ -237,9 +237,9 @@ def summarize_results(
 
             for eval_mode, metrics in benchmark_results.items():
                 # Check if this is a @k metric
-                k_match = re.search(r'@(\d+)$', eval_mode)
+                k_match = re.search(r'@(\d+)$|greedy', eval_mode)
                 if k_match:
-                    k = int(k_match.group(1))
+                    k = int(k_match.group(1)) if k_match.group(0) != "greedy" else "greedy"
                     base_name = eval_mode.rsplit('@', 1)[0]
 
                 # Store k and corresponding values for each metric, but log everything
