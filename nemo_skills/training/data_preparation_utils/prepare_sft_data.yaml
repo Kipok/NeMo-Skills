@@ -58,6 +58,7 @@ filters:
   remove_len_outlier_solutions: false
   code_text_filter: null
 
+deduplicate: true
 
 processors:
   - _target_: nemo_skills.training.data_preparation_utils.preprocessing.ReadData
@@ -69,6 +70,7 @@ processors:
     add_correct: ${add_correct}
     add_incorrect: ${add_incorrect}
     use_judgement: ${use_judgement}
+    deduplicate: ${deduplicate}
     keys_to_keep:  # input/output/is_correct/judgement are automatically added
       - ${contamination_key}
       - "total_votes"
