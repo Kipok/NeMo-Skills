@@ -81,7 +81,6 @@ processors:
 
   # this will optimize processors inside to avoid serializing data to disk
   - _target_: nemo_skills.training.data_preparation_utils.merge_processor.MergeProcessor
-    input_manifest_file: /data/tmp-manifest.jsonl
     _recursive_: False
     processor_configs:
       - _target_: nemo_skills.training.data_preparation_utils.filters.DropMultiBoxed
