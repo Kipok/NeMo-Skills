@@ -38,6 +38,7 @@ def get_judge_cmd(input_files, extra_arguments=""):
     return f'python -m nemo_skills.inference.llm_math_judge ++input_files={input_files} {extra_arguments}'
 
 
+# TODO: move this to generate.py with a separate argument
 @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 @typer_unpacker
 def llm_math_judge(
@@ -47,30 +48,36 @@ def llm_math_judge(
         help="One of the configs inside config_dir or NEMO_SKILLS_CONFIG_DIR or ./cluster_configs. "
         "Can also use NEMO_SKILLS_CONFIG instead of specifying as argument.",
     ),
-    input_files: str = typer.Option(
-        ...,
-        help="Can also specify multiple glob patterns, like output-rs*.jsonl. Will add judgement field to each file",
-    ),
-    expname: str = typer.Option("llm-math-judge", help="Nemo run experiment name"),
+    output_dir: str = typer.Option(..., help="Where to put results"),
+    expname: str = typer.Option("generate", help="Nemo run experiment name"),
     model: str = typer.Option(None, help="Path to the model or model name in API"),
     server_address: str = typer.Option(
         None, help="Use ip:port for self-hosted models or the API url if using model providers"
     ),
-    server_type: SupportedServers = typer.Option(SupportedServers.trtllm, help="Type of server to use"),
+    server_type: SupportedServers = typer.Option(help="Type of server to use"),
     server_gpus: int = typer.Option(None, help="Number of GPUs to use if hosting the model"),
-    server_nodes: int = typer.Option(1, help="Number of nodes to use if hosting the model"),
+    server_nodes: int = typer.Option(1, help="Number of nodes required for hosting LLM server"),
     server_args: str = typer.Option("", help="Any extra arguments to pass to the server"),
+    dependent_jobs: int = typer.Option(0, help="Specify this to launch that number of dependent jobs"),
+    num_random_seeds: int = typer.Option(
+        None, help="Specify if want to run many generations with high temperature for the same input"
+    ),
+    random_seeds: List[int] = typer.Option(None, help="List of random seeds to use for generation"),
+    starting_seed: int = typer.Option(0, help="Starting seed for random sampling"),
+    preprocess_cmd: str = typer.Option(None, help="Command to run before generation"),
+    postprocess_cmd: str = typer.Option(None, help="Command to run after generation"),
     partition: str = typer.Option(
         None, help="Can specify if need interactive jobs or a specific non-default partition"
     ),
     time_min: str = typer.Option(None, help="If specified, will use as a time-min slurm parameter"),
-    preprocess_cmd: str = typer.Option(None, help="Command to run before generation"),
-    postprocess_cmd: str = typer.Option(None, help="Command to run after generation"),
+    eval_args: str = typer.Option(
+        None, help="Specify if need to run nemo_skills/evaluation/evaluate_results.py on the generation outputs"
+    ),
     run_after: List[str] = typer.Option(
         None, help="Can specify a list of expnames that need to be completed before this one starts"
     ),
     config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
-    log_dir: str = typer.Option(None, help="Can specify a custom location for slurm logs. "),
+    log_dir: str = typer.Option(None, help="Can specify a custom location for slurm logs."),
 ):
     """Judge LLM math outputs using another LLM.
 

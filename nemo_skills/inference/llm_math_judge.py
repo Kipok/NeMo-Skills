@@ -31,12 +31,24 @@ from nemo_skills.utils import get_help_message, nested_dataclass, setup_logging,
 
 LOG = logging.getLogger(__file__)
 
+# TODO: should we move slightly confusing input/output dir and rs to the pipeline wrapper?
+
 
 @nested_dataclass(kw_only=True)
 class LlmMathJudgeConfig:
     """Top-level parameters for the script"""
 
-    input_files: Any  # will update them with judgements
+    input_file: str | None = None  # Can directly specify an input file, if using a custom dataset
+    output_file: str | None = None  # Where to save the generations if `input_file` is provided
+    # Can specify an input directory, where the file will be inferred output.jsonl if no seed
+    # is provided, and output-rs{{seed}}.jsonl. This pattern is used to match the output files from
+    # the `generate` pipeline
+    input_dir: str | None = None
+    # Where to save the generations (with the identical file name) if `input_dir` is provided
+    output_dir: str | None = None
+    # Used to identify the input file if `input_dir` is provided. If `random_seed` is not provided,
+    # the input will be assumed to be from 'greedy' generation
+    random_seed: str | None = None
     # Inference server configuration {server_params}
     server: dict = field(default_factory=dict)
     # Sandbox configuration {sandbox_params}
@@ -60,6 +72,18 @@ class LlmMathJudgeConfig:
     code_execution: bool = False
 
     def __post_init__(self):
+        if self.random_seed.strip() == 'None':
+            self.random_seed = None
+        if self.input_file is None and self.input_dir is not None:
+            seed = f'-rs{self.random_seed}' if self.random_seed is not None else ''
+            self.input_file = Path(self.input_dir) / f"output{seed}.jsonl"
+            self.output_file = Path(self.output_dir) / f"output{seed}.jsonl"
+        elif self.input_file is not None and self.input_dir is None:
+            if self.output_file is None:
+                raise ValueError("Output file should be provided if providing `input_file`")
+        else:
+            raise ValueError("`input_file` and `input_dir` cannot be provided at the same time")
+
         if isinstance(self.input_files, str):
             self.input_files = self.input_files.split(" ")
 
@@ -85,7 +109,6 @@ def prefill_judgement(data_point: dict) -> str | None:
     return None
 
 
-# TODO: should we change this to write to different files, so that it's easy to do things like majority voting?
 @hydra.main(version_base=None, config_name='base_llm_math_judge_config', config_path='.')
 def llm_math_judge(cfg: LlmMathJudgeConfig):
     cfg = LlmMathJudgeConfig(_init_nested=True, **cfg)
