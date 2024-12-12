@@ -66,10 +66,14 @@ def get_rm_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
     return cmd
 
 
-def wrap_cmd(cmd, preprocess_cmd, postprocess_cmd):
+def wrap_cmd(cmd, preprocess_cmd, postprocess_cmd, random_seed=None):
     if preprocess_cmd:
+        if random_seed is not None:
+            preprocess_cmd = preprocess_cmd.format(random_seed=random_seed)
         cmd = f" {preprocess_cmd} && {cmd} "
     if postprocess_cmd:
+        if random_seed is not None:
+            postprocess_cmd = postprocess_cmd.format(random_seed=random_seed)
         cmd = f" {cmd} && {postprocess_cmd} "
     return cmd
 
@@ -195,6 +199,7 @@ def generate(
                             get_generation_command(server_address=server_address, generation_commands=cmd),
                             preprocess_cmd,
                             postprocess_cmd,
+                            random_seed=seed,
                         ),
                         task_name=f'{expname}-rs{seed}',
                         log_dir=log_dir,
