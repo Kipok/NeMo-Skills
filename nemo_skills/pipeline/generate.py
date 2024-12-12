@@ -118,6 +118,7 @@ def generate(
     num_random_seeds: int = typer.Option(
         None, help="Specify if want to run many generations with high temperature for the same input"
     ),
+    random_seeds: List[int] = typer.Option(None, help="List of random seeds to use for generation"),
     starting_seed: int = typer.Option(0, help="Starting seed for random sampling"),
     preprocess_cmd: str = typer.Option(None, help="Command to run before generation"),
     postprocess_cmd: str = typer.Option(None, help="Command to run after generation"),
@@ -146,6 +147,11 @@ def generate(
         server_type = server_type.value
     except AttributeError:
         pass
+
+    if random_seeds and num_random_seeds:
+        raise ValueError("Cannot specify both random_seeds and num_random_seeds")
+    if num_random_seeds:
+        random_seeds = list(range(starting_seed, starting_seed + num_random_seeds))
 
     cluster_config = get_cluster_config(cluster, config_dir)
     check_if_mounted(cluster_config, output_dir)
@@ -183,8 +189,8 @@ def generate(
     get_cmd = client_command_factories[generation_type]
 
     with run.Experiment(expname) as exp:
-        if num_random_seeds:
-            for seed in range(starting_seed, starting_seed + num_random_seeds):
+        if random_seeds:
+            for seed in random_seeds:
                 cmd = get_cmd(
                     random_seed=seed,
                     output_dir=output_dir,
