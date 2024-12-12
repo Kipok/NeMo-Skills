@@ -69,7 +69,7 @@ the command below to work.
 ```bash
 for dataset in aime24 amc23 math gsm8k omni-math; do
     ns generate \
-        --generation_type math_judge \
+        --generation_type=math_judge \
         --cluster=local \
         --model=gpt-4o \
         --server_type=openai \
@@ -158,7 +158,7 @@ after it is finished. You need to define `OPENAI_API_KEY` for the command below 
 ```bash
 for dataset in aime24 amc23 math gsm8k omni-math; do
     ns generate \
-        --generation_type math_judge \
+        --generation_type=math_judge \
         --cluster=local \
         --model=gpt-4o \
         --server_type=openai \

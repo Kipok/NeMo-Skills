@@ -46,7 +46,7 @@ def test_trtllm_judge():
         f"    --cluster test-local --config_dir {Path(__file__).absolute().parent} "
         f"    --model {model_path} "
         f"    --server_type trtllm "
-        f"    --generation_type math_judge "
+        f"    --generation_type=math_judge "
         f"    --server_gpus 1 "
         f"    --server_nodes 1 "
         f"    ++input_file={input_file} "

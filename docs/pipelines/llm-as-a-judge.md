@@ -17,7 +17,7 @@ and evaluation output available in `/workspace/test-eval/eval-results`).
 
 ```bash
 ns generate \
-    --generation_type math_judge \
+    --generation_type=math_judge \
     --cluster=local \
     --model=gpt-4o \
     --server_type=openai \
