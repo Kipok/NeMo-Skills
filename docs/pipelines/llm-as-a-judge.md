@@ -26,8 +26,10 @@ ns generate \
     ++input_dir=/workspace/test-eval/eval-results/math
 ```
 
-This will run the judge pipeline on all data inside `eval-results/math` folder and judge solutions from `output.jsonl` file.
+This will run the judge pipeline on the data inside `eval-results/math` folder and judge solutions from `output.jsonl` file.
 If you ran the benchmark with N samples (e.g. using `math:8`) and want to judge all of them, add `--num_random_seeds=8`.
+Note that if you want to judge both greedy generations and samples, you'd need to run the command two times.
+
 In this example we use gpt-4o from OpenAI, but you can use Llama-405B (that you can host on cluster yourself) or any
 other models. If you have multiple benchmarks, you would need to run the command multiple times.
 After the judge pipeline has finished, you can see the results by running
