@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import logging
 import os
 import shlex
@@ -27,11 +26,10 @@ import nemo_run as run
 import yaml
 from huggingface_hub import get_token
 from invoke import StreamWatcher
-from nemo_run.config import NEMORUN_HOME
 from nemo_run.core.execution.docker import DockerExecutor
 from nemo_run.core.execution.slurm import SlurmJobDetails
-from nemo_run.core.serialization.zlib_json import ZlibJSONSerializer
 from nemo_run.core.tunnel import SSHTunnel
+from torchx.specs.api import AppState
 
 LOG = logging.getLogger(__file__)
 
@@ -54,39 +52,40 @@ def get_unmounted_path(cluster_config, path):
     raise ValueError(f"The path '{path}' is not mounted. Check cluster config.")
 
 
-def _get_latest_dir(path, expname, job_id) -> str:
-    if job_id is not None:
-        return os.path.join(path, f"{expname}_{job_id}")
+def get_exp_handles(expname: str, ignore_finished=True, ignore_exp_not_exists=True) -> list[str]:
+    """Will return the handles of the tasks in the experiment.
 
-    dirs = [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
-    latest_dir = max(dirs, key=lambda d: os.path.getctime(os.path.join(path, d)))
-    return os.path.join(path, latest_dir)
+    If ignore_finished=True, will only return handles for the tasks
+    that are not yet finished. Useful for filtering handles to set dependencies on.
 
+    If ignore_exp_not_exists=True, will not raise an error if the experiment does not exist.
 
-def get_exp_handles(expname):
-    # TODO: remove this after we can properly use .from_title api
-    job_id = None
-    if "_" in expname and expname.split("_")[-1].isdigit():
-        job_id = int(expname.split("_")[-1])
-        expname = expname[: expname.rfind("_")]
+    TODO: it's still possible that job submission fails if the tasks exist when this function
+          is called, but finish before nemo-run submits a new job (which might take minutes)
+    """
 
-    parent_dir = os.path.join(NEMORUN_HOME, "experiments", expname)
-    exp_dir = _get_latest_dir(parent_dir, expname, job_id)
+    def _get_handles(exp):
+        handles = []
+        for job in exp.jobs:
+            if not ignore_finished or (
+                job.status(exp._runner) in [AppState.RUNNING, AppState.PENDING, AppState.SUBMITTED]
+            ):
+                handles.append(job.handle)
+                continue
+        return handles
 
-    with open(os.path.join(exp_dir, '_TASKS')) as f:
-        serialized_jobs = json.load(f)
-
-    serializer = ZlibJSONSerializer()
-    handles = []
-    for job in serialized_jobs:
-        obj = serializer.deserialize(job[0])
-        if hasattr(obj, 'handle'):
-            handles.append(obj.handle)
-        elif hasattr(obj, 'handles'):
-            handles.extend(obj.handles)
-        else:
-            raise ValueError(f"Object {obj} does not have a handle or handles attribute.")
-    return handles
+    try:
+        with run.Experiment.from_title(expname) as exp:
+            return _get_handles(exp)
+    except FileNotFoundError:
+        try:
+            with run.Experiment.from_id(expname) as exp:
+                return _get_handles(exp)
+        except AssertionError:
+            if ignore_exp_not_exists:
+                LOG.warning("Experiment %s not found!", expname)
+                return []
+            raise ValueError(f"Experiment {expname} not found!")
 
 
 def get_generation_command(server_address, generation_commands):
@@ -609,6 +608,7 @@ def get_executor(
     time_min=None,
     dependencies=None,
     extra_package_dirs: list[str] | None = None,
+    slurm_kwargs: dict | None = None,
 ):
     env_vars = get_env_variables(cluster_config)
     config_mounts = get_mounts_from_config(cluster_config, env_vars)
@@ -659,7 +659,6 @@ def get_executor(
             f"--ntasks={tasks_per_node * num_nodes}",
             f"--nodes={num_nodes}",
         ],
-        mem=0,
         job_details=CustomJobDetails(
             job_name=cluster_config.get("job_name_prefix", "") + job_name,
             folder=get_unmounted_path(cluster_config, log_dir),
@@ -670,6 +669,7 @@ def get_executor(
         monitor_group_job_wait_time=20,
         dependencies=dependencies,
         env_vars=env_vars,
+        **(slurm_kwargs or {}),
     )
 
 
@@ -691,6 +691,7 @@ def add_task(
     run_after: str | list[str] | None = None,
     get_server_command=get_server_command,
     extra_package_dirs: list[str] | None = None,
+    slurm_kwargs: dict | None = None,
 ):
     """Wrapper for nemo-run exp.add to help setting up executors and dependencies.
 
@@ -709,7 +710,16 @@ def add_task(
     if run_after is not None and cluster_config["executor"] == "slurm":
         if isinstance(run_after, str):
             run_after = [run_after]
-        dependencies = tuple([handle for exp_name in run_after for handle in get_exp_handles(exp_name)])
+        dependencies = []
+        for dep_expname in run_after:
+            exp_handles = get_exp_handles(dep_expname)
+            if len(exp_handles) == 0:
+                LOG.warning(
+                    "No pending or running tasks found for experiment %s, cannot set dependencies.", dep_expname
+                )
+            dependencies.extend(exp_handles)
+        if len(dependencies) == 0:
+            dependencies = None
     else:
         dependencies = None
 
@@ -737,6 +747,7 @@ def add_task(
             log_dir=log_dir,
             log_prefix="server",
             extra_package_dirs=extra_package_dirs,
+            slurm_kwargs=slurm_kwargs,
         )
         if cluster_config["executor"] == "local" and num_server_tasks > 1:
             server_cmd = f"mpirun --allow-run-as-root -np {num_server_tasks} bash -c {shlex.quote(server_cmd)}"
@@ -762,6 +773,7 @@ def add_task(
                 log_dir=log_dir,
                 log_prefix="main",
                 extra_package_dirs=extra_package_dirs,
+                slurm_kwargs=slurm_kwargs,
             )
         )
 
@@ -781,6 +793,7 @@ def add_task(
             log_dir=log_dir,
             log_prefix="sandbox",
             extra_package_dirs=extra_package_dirs,
+            slurm_kwargs=slurm_kwargs,
         )
         commands.append(get_sandox_command())
         executors.append(sandbox_executor)
