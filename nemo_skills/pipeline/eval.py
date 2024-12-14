@@ -119,6 +119,7 @@ def eval(
         help="Path to a custom dataset folder that will be searched in addition to the main one. "
         "Can also specify through NEMO_SKILLS_EXTRA_DATASETS.",
     ),
+    exclusive: bool = typer.Option(False, help="If True, will use --exclusive flag for slurm"),
 ):
     """Evaluate a model on specified benchmarks.
 
@@ -217,6 +218,7 @@ def eval(
                 with_sandbox=True,
                 run_after=run_after,
                 extra_package_dirs=[extra_datasets] if extra_datasets else None,
+                slurm_kwargs={"exclusive": exclusive} if exclusive else None,
             )
         run_exp(exp, cluster_config)
 
