@@ -75,7 +75,7 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
     new_answers = []
     all_predictions = []
     for idx, predictions in enumerate(tqdm(zip_longest(*file_handles))):
-        data = read_predictions(predictions)
+        data = read_predictions(predictions, idx, file_handles)
         for elem in data:
             if 'predicted_answer' not in elem:
                 elem['predicted_answer'] = extract_answer(elem['generation'])
