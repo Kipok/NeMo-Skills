@@ -664,6 +664,12 @@ def get_executor(
     else:
         timeout = cluster_config["timeouts"][partition]
 
+    additional_parameters = {'time_min': time_min} if time_min is not None else {}
+    if cluster_config.get('mail_type') is not None:
+        additional_parameters['mail_type'] = cluster_config['mail_type']
+    if cluster_config.get('mail_user') is not None:
+        additional_parameters['mail_user'] = cluster_config['mail_user']
+
     return run.SlurmExecutor(
         account=cluster_config["account"],
         partition=partition,
@@ -673,7 +679,7 @@ def get_executor(
         container_image=container,
         container_mounts=mounts,
         time=timeout,
-        additional_parameters={'time_min': time_min} if time_min is not None else {},
+        additional_parameters=additional_parameters,
         packager=packager,
         gpus_per_node=gpus_per_node if not cluster_config.get("disable_gpus_per_node", False) else None,
         srun_args=[
