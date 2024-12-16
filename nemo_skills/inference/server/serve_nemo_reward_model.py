@@ -27,7 +27,7 @@ from dataclasses import dataclass
 
 import hydra
 import numpy as np
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, abort
 from mpi4py import MPI
 from pytriton.client import ModelClient
 
@@ -53,6 +53,15 @@ def proxy_rm(cfg: RewardModelGenerationConfig) -> None:
         app = Flask(__name__)
 
         client = ModelClient(cfg.triton_server_address, "reward_model")
+
+        @app.before_request
+        def simulate_connection_failure_until_triton_healthy():
+            if not client.is_healthy():
+                abort(503)
+
+        @app.route('/', methods=['PUT'])
+        def health():
+            return jsonify({'status': 'ok'})
 
         @app.route('/score', methods=['POST'])
         def infer():
