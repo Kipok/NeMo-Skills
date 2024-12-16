@@ -80,6 +80,8 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
         if len(file_handles) != cfg.require_num_files:
             raise ValueError(f"Expected {cfg.require_num_files} files, found {len(file_handles)}")
 
+    LOG.info("Filling answer for %d files: %s", len(file_handles), [file.name for file in file_handles])
+
     new_answers = []
     all_predictions = []
     for idx, predictions in enumerate(tqdm(zip_longest(*file_handles))):
