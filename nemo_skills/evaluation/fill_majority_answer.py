@@ -122,23 +122,41 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
     temp_files = [f"{file}-tmp" for file in input_files]
     file_handles = [open(temp_file, "wt", encoding="utf-8") for temp_file in temp_files]
 
+    total_solutions_changed = 0
+    total_problems_changed = 0
+
     for idx, predictions in enumerate(all_predictions):
-        for lidx, handle in enumerate(file_handles):
-            if cfg.ignore_if_not_none and predictions[lidx][cfg.fill_key] is not None:
-                handle.write(json.dumps(predictions[lidx]) + "\n")
+        changed = False
+        for fidx, handle in enumerate(file_handles):
+            if cfg.ignore_if_not_none and predictions[fidx][cfg.fill_key] is not None:
+                handle.write(json.dumps(predictions[fidx]) + "\n")
                 continue
-            predictions[lidx][cfg.fill_key] = new_answers[idx][0]
+
+            if predictions[fidx].get(cfg.fill_key) != new_answers[idx][0]:
+                total_solutions_changed += 1
+                changed = True
+
+            predictions[fidx][cfg.fill_key] = new_answers[idx][0]
             if not cfg.use_highest_rm_score:
-                predictions[lidx]["majority_votes"], predictions[lidx]["total_votes"] = new_answers[idx][1]
+                predictions[fidx]["majority_votes"], predictions[fidx]["total_votes"] = new_answers[idx][1]
             else:
-                predictions[lidx]["answer_rm_score"] = new_answers[idx][1]
+                predictions[fidx]["answer_rm_score"] = new_answers[idx][1]
             if cfg.fill_is_correct:
-                predictions[lidx]["is_correct"] = (
-                    predictions[lidx]["predicted_answer"] == predictions[lidx]["expected_answer"]
+                predictions[fidx]["is_correct"] = (
+                    predictions[fidx]["predicted_answer"] == predictions[fidx]["expected_answer"]
                 )
             else:
-                predictions[lidx].pop("is_correct")
-            handle.write(json.dumps(predictions[lidx]) + "\n")
+                predictions[fidx].pop("is_correct")
+            handle.write(json.dumps(predictions[fidx]) + "\n")
+
+        if changed:
+            total_problems_changed += 1
+
+    LOG.info(
+        "Total problems changed: %d, total solutions changed: %d",
+        total_problems_changed,
+        total_solutions_changed,
+    )
 
     # Close all files before moving
     for handle in file_handles:
