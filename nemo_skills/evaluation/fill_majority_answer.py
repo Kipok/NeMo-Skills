@@ -56,6 +56,10 @@ class FillMajorityAnswerConfig:
     # if True, will use the highest RM score instead of majority voting
     use_highest_rm_score: bool = False
 
+    # if provided, will fail if can't find this many files. Useful in scheduled
+    # pipelines to ensure this step doesn't run if some of the expected files are missing
+    require_num_files: int | None = None
+
     def __post_init__(self):
         """Building data_file from dataset/split if not provided directly."""
         if isinstance(self.input_files, str):
@@ -72,6 +76,9 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
     LOG.info("Config used: %s", cfg)
 
     file_handles = [open(file, "rt", encoding="utf-8") for file in unroll_files(cfg.input_files)]
+    if cfg.require_num_files is not None:
+        if len(file_handles) != cfg.require_num_files:
+            raise ValueError(f"Expected {cfg.require_num_files} files, found {len(file_handles)}")
 
     new_answers = []
     all_predictions = []
