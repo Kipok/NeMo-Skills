@@ -160,6 +160,8 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
         for idx, data_point in enumerate(tqdm(data, initial=starting_idx, total=len(data) + starting_idx)):
             if "predicted_answer" not in data_point:
                 data_point["predicted_answer"] = extract_answer(data_point["generation"])
+            if data_point["expected_answer"] is None:
+                raise ValueError(f"Expected answer is required for judgement, found None at line {idx}")
             judgement = prefill_judgement(data_point)
             if judgement is None:
                 data_points.append(data_point)
