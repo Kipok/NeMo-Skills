@@ -674,6 +674,7 @@ def get_executor(
         container_mounts=mounts,
         time=timeout,
         additional_parameters={'time_min': time_min} if time_min is not None else {},
+        exclusive=True,
         packager=packager,
         gpus_per_node=gpus_per_node if not cluster_config.get("disable_gpus_per_node", False) else None,
         srun_args=[
@@ -684,6 +685,7 @@ def get_executor(
             # we need to be explicit about this in srun as commands might need to run in parallel
             f"--ntasks={tasks_per_node * num_nodes}",
             f"--nodes={num_nodes}",
+            f"--gpus-per-node={gpus_per_node}",
         ],
         job_details=CustomJobDetails(
             job_name=cluster_config.get("job_name_prefix", "") + job_name,
