@@ -94,7 +94,7 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
         if not cfg.use_highest_rm_score:
             # TODO: currently majority does not take into account equivalent answers written in a different way
             valid_answers = [elem['predicted_answer'] for elem in data if elem['predicted_answer'] is not None]
-            new_answers.append((None, (0, len(file_handles))))
+            new_answers.append(("no_valid_answer_found", (0, len(file_handles))))
             if len(valid_answers) == 0:
                 continue
             majority_answer, num_votes = Counter(valid_answers).most_common(1)[0]
