@@ -14,7 +14,6 @@
 
 import logging
 from enum import Enum
-from functools import partial
 from typing import List
 
 import nemo_run as run
@@ -134,6 +133,7 @@ def configure_client(generation_type, server_gpus, server_type, server_address, 
             "num_gpus": server_gpus,
             "num_nodes": server_nodes,
             "server_args": server_args,
+            "server_port": server_port,
         }
         extra_arguments += f" ++server.server_type={server_type} "
     else:  # model is hosted elsewhere
@@ -255,7 +255,7 @@ def generate(
                         with_sandbox=True,
                         run_after=run_after,
                         task_dependencies=prev_tasks,
-                        get_server_command=partial(get_server_command, server_port=server_port),
+                        get_server_command=get_server_command,
                     )
                     prev_tasks = [new_task]
         else:
@@ -296,7 +296,7 @@ def generate(
                     with_sandbox=True,
                     run_after=run_after,
                     task_dependencies=prev_tasks,
-                    get_server_command=partial(get_server_command, server_port=server_port),
+                    get_server_command=get_server_command,
                 )
                 prev_tasks = [new_task]
         run_exp(exp, cluster_config)
