@@ -54,17 +54,10 @@ def proxy_rm(cfg: RewardModelGenerationConfig) -> None:
 
         client = ModelClient(cfg.triton_server_address, "reward_model")
 
-        @app.before_request
-        def simulate_connection_failure_until_triton_healthy():
-            if not client.is_healthy():
-                abort(503)
-
-        @app.route('/', methods=['PUT'])
-        def health():
-            return jsonify({'status': 'ok'})
 
         @app.route('/score', methods=['POST'])
         def infer():
+            client.wait_for_model()
             data = request.json
             input_data = np.array([[obj.encode('utf-8')] for obj in data['prompts']], dtype=np.bytes_)
 
