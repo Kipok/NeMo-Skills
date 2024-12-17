@@ -105,7 +105,7 @@ def fill_majority_answer(cfg: FillMajorityAnswerConfig):
                 for elem in data
                 if elem['predicted_answer'] is not None
             ]
-            new_answers.append((None, 0))
+            new_answers.append(("no_valid_answer_found", 0))
             if len(valid_answers_and_scores) == 0:
                 continue
 
