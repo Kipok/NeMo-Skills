@@ -723,6 +723,7 @@ def add_task(
     time_min=None,
     with_sandbox=False,
     server_config=None,
+    reuse_code_exp: str | run.Experiment | None = None,
     task_dependencies: list[str] = None,
     run_after: str | list[str] | None = None,
     get_server_command=get_server_command,
@@ -742,6 +743,10 @@ def add_task(
     with run.Experiment(expname) as exp:
         task1 = add_task(exp, ...)
         task2 = add_task(exp, ..., task_dependencies=[task1])
+
+    You can use `reuse_code_exp` to reuse the code from another experiment
+    (and thus avoid costly packaging/ssh uploading). You can provide either experiment
+    name or the experiment object itself.
     """
     if run_after is not None and cluster_config["executor"] == "slurm":
         if isinstance(run_after, str):
@@ -833,6 +838,23 @@ def add_task(
         )
         commands.append(get_sandox_command())
         executors.append(sandbox_executor)
+
+    for executor in executors:
+        tunnel = get_tunnel(cluster_config)
+        with run.Experiment.from_title('aops-forum-baseline-solution-gen-3-fill-answer-part0-split01') as reuse_exp:
+            reuse_dir = reuse_exp.tunnels[tunnel.key].packaging_jobs['nemo-run'].dst_path
+            if reuse_dir:
+                executor.packager.symlink_from_remote_dir = reuse_dir
+
+    if reuse_code_exp is not None:
+        tunnel = get_tunnel(cluster_config)
+        if isinstance(reuse_code_exp, run.Experiment):
+            reuse_dir = reuse_code_exp.tunnels[tunnel.key].packaging_jobs['nemo-run'].dst_path
+        else:
+            with run.Experiment.from_title(reuse_code_exp) as reuse_exp:
+                reuse_dir = reuse_exp.tunnels[tunnel.key].packaging_jobs['nemo-run'].dst_path
+        for executor in executors:
+            executor.packager.symlink_from_remote_dir = reuse_dir
 
     if len(commands) == 1:
         # to keep sbatch script simpler, we don't wrap in a list in this case
