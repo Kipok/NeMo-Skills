@@ -57,7 +57,7 @@ def proxy_rm(cfg: RewardModelGenerationConfig) -> None:
 
         @app.route('/score', methods=['POST'])
         def infer():
-            client.wait_for_model()
+            client.wait_for_model(3600)
             data = request.json
             input_data = np.array([[obj.encode('utf-8')] for obj in data['prompts']], dtype=np.bytes_)
 
