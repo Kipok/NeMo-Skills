@@ -296,7 +296,7 @@ def generate(
                     with_sandbox=True,
                     run_after=run_after,
                     task_dependencies=prev_tasks,
-                    get_server_command=partial(get_server_command, inference_port=server_port),
+                    get_server_command=partial(get_server_command, server_port=server_port),
                 )
                 prev_tasks = [new_task]
         run_exp(exp, cluster_config)
