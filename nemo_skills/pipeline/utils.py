@@ -839,17 +839,10 @@ def add_task(
         commands.append(get_sandox_command())
         executors.append(sandbox_executor)
 
-    for executor in executors:
-        tunnel = get_tunnel(cluster_config)
-        with run.Experiment.from_title('aops-forum-baseline-solution-gen-3-fill-answer-part0-split01') as reuse_exp:
-            reuse_dir = reuse_exp.tunnels[tunnel.key].packaging_jobs['nemo-run'].dst_path
-            if reuse_dir:
-                executor.packager.symlink_from_remote_dir = reuse_dir
-
     if reuse_code_exp is not None:
         tunnel = get_tunnel(cluster_config)
         if isinstance(reuse_code_exp, run.Experiment):
-            LOG.info("Reusing code from experiment %s", reuse_code_exp.title)
+            LOG.info("Reusing code from experiment %s", reuse_code_exp._title)
             reuse_dir = reuse_code_exp.tunnels[tunnel.key].packaging_jobs['nemo-run'].dst_path
         else:
             with run.Experiment.from_title(reuse_code_exp) as reuse_exp:
