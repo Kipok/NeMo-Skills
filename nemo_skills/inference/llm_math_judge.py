@@ -173,12 +173,13 @@ def llm_math_judge(cfg: LlmMathJudgeConfig):
                 prompts = [prompt.fill(dp) for dp in data_points]
                 stop_phrases = prompt.stop_phrases
 
-                outputs = llm.generate(
-                    prompts=prompts,
-                    stop_phrases=stop_phrases,
-                    **asdict(cfg.inference),
-                    **extra_generate_params,
-                )
+                if len(prompts) > 0:
+                    outputs = llm.generate(
+                        prompts=prompts,
+                        stop_phrases=stop_phrases,
+                        **asdict(cfg.inference),
+                        **extra_generate_params,
+                    )
 
                 prefilled_idx = 0
                 generated_idx = 0
