@@ -152,12 +152,18 @@ class MajorityFilter(BaseFilter):
 
 
 class RemoveContaminated(BaseFilter):
-    def __init__(self, contamination_key: str = "contaminated", **kwargs):
+    def __init__(self, contamination_file, check_key="problem", **kwargs):
+        if contamination_file is None:
+            raise ValueError("Specify 'contamination_file' to filter contaminated questions")
         super().__init__(**kwargs)
-        self.contamination_key = contamination_key
+        self.check_key = check_key
+        self.contaminated_entries = set()
+        with open(contamination_file, "rt", encoding="utf-8") as fin:
+            for line in fin:
+                self.contaminated_entries.add(json.loads(line)[self.check_key])
 
     def process_dataset_entry(self, data_entry) -> List:
-        if data_entry.get(self.contamination_key, False):
+        if data_entry[self.check_key] in self.contaminated_entries:
             return [DataEntry(data=None, metrics=dict(num_removed=1))]
 
         return [DataEntry(data=data_entry, metrics=dict(num_removed=0))]

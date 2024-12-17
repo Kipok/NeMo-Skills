@@ -24,19 +24,13 @@ from nemo_skills.pipeline.generate import wrap_cmd
 from nemo_skills.utils import setup_logging
 
 
-def get_check_contamination_cmd(input_file, output_file, data_files, extra_arguments=""):
+def get_check_contamination_cmd(input_file, output_file, extra_arguments=""):
     cmd = (
         f"python -m nemo_skills.inference.check_contamination "
         f"    ++input_file={input_file} "
         f"    ++output_file={output_file} "
         f"    {extra_arguments} "
     )
-    if data_files:
-        cmd += " && " + (
-            f"python -m nemo_skills.training.data_preparation_utils.add_contaminated_label "
-            f"    --label_file {output_file} "
-            f"    --data_files {data_files} "
-        )
     return cmd
 
 
@@ -60,7 +54,6 @@ def check_contamination(
         ..., help="Input file with the data to check for contamination. An output of the retrieve_similar.py script."
     ),
     output_file: str = typer.Option(..., help="Where to save results"),
-    data_files: str = typer.Option(None, help="Glob pattern(s) for the files to update with contaminated label."),
     expname: str = typer.Option("llm-math-judge", help="Nemo run experiment name"),
     model: str = typer.Option(None, help="Path to the model or model name in API."),
     server_address: str = typer.Option(
@@ -138,9 +131,7 @@ def check_contamination(
                 cmd=wrap_cmd(
                     get_generation_command(
                         server_address=server_address,
-                        generation_commands=get_check_contamination_cmd(
-                            input_file, output_file, data_files, extra_arguments
-                        ),
+                        generation_commands=get_check_contamination_cmd(input_file, output_file, extra_arguments),
                     ),
                     preprocess_cmd=preprocess_cmd,
                     postprocess_cmd=postprocess_cmd,

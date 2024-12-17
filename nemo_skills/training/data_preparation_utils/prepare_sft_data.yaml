@@ -38,7 +38,7 @@ input_key: problem
 output_key: generation
 
 # For synthesized questions
-contamination_key: contaminated
+contamination_file: null
 
 majority_filter:
   # minimum number of majority votes to use the answer
@@ -72,7 +72,6 @@ processors:
     use_judgement: ${use_judgement}
     deduplicate: ${deduplicate}
     keys_to_keep:  # input/output/is_correct/judgement are automatically added
-      - ${contamination_key}
       - "total_votes"
       - "majority_votes"
       - "expected_answer"
@@ -93,7 +92,7 @@ processors:
 
       - _target_: nemo_skills.training.data_preparation_utils.filters.RemoveContaminated
         should_run: ${filters.remove_contaminated}
-        contamination_key: ${contamination_key}
+        contamination_file: ${contamination_file}
 
       - _target_: nemo_skills.training.data_preparation_utils.filters.MajorityFilter
         should_run: ${filters.majority_filter}
