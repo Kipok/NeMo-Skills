@@ -160,7 +160,9 @@ class RemoveContaminated(BaseFilter):
         self.contaminated_entries = set()
         with open(contamination_file, "rt", encoding="utf-8") as fin:
             for line in fin:
-                self.contaminated_entries.add(json.loads(line)[self.check_key])
+                data = json.loads(line)
+                if data["contaminated"]:
+                    self.contaminated_entries.add(data[self.check_key])
 
     def process_dataset_entry(self, data_entry) -> List:
         if data_entry[self.check_key] in self.contaminated_entries:
