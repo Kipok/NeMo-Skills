@@ -776,7 +776,7 @@ def add_task(
     executors = []
     # assuming server always has the largest resources request, so it needs to go first
     if server_config is not None:
-        server_port = server_config.pop("server_port", 5000)
+        server_port = server_config["server_port"]
         server_cmd, num_server_tasks = get_server_command(**server_config, server_port=server_port, cluster_config=cluster_config)
         if 'container' not in server_config:
             server_container = cluster_config["containers"][server_config['server_type']]
