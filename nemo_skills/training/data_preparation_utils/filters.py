@@ -43,9 +43,9 @@ PATTERN_PYTHON_CODE = re.compile("```[pP]ython")
 class BaseFilter(BaseParallelProcessor):
     def __init__(self, **kwargs):
         if 'in_memory_chunksize' not in kwargs:
-            kwargs['in_memory_chunksize'] = 500000
+            kwargs['in_memory_chunksize'] = 250000
         if 'chunksize' not in kwargs:
-            kwargs['chunksize'] = 5000
+            kwargs['chunksize'] = 2500
         if 'max_workers' not in kwargs:
             kwargs['max_workers'] = max(100, os.cpu_count())
         super().__init__(**kwargs)
