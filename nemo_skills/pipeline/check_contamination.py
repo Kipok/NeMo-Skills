@@ -77,6 +77,11 @@ def check_contamination(
     run_after: List[str] = typer.Option(
         None, help="Can specify a list of expnames that need to be completed before this one starts"
     ),
+    reuse_code_exp: str = typer.Option(
+        None,
+        help="If specified, will reuse the code from this experiment. "
+        "Can provide an experiment name or an experiment object if running from code.",
+    ),
     config_dir: str = typer.Option(None, help="Can customize where we search for cluster configs"),
     dependent_jobs: int = typer.Option(0, help="Specify this to launch that number of dependent jobs"),
     preprocess_cmd: str = typer.Option(None, help="Command to run before generation"),
@@ -149,6 +154,7 @@ def check_contamination(
                 server_config=server_config,
                 task_dependencies=prev_tasks,
                 run_after=run_after,
+                reuse_code_exp=reuse_code_exp,
             )
             prev_tasks = [new_task]
         run_exp(exp, cluster_config)

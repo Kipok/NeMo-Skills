@@ -846,6 +846,7 @@ def add_task(
             if reuse_dir:
                 executor.packager.symlink_from_remote_dir = reuse_dir
 
+    reuse_code_exp = 'aops-forum-baseline-solution-gen-3-fill-answer-part0-split01'
     if reuse_code_exp is not None:
         tunnel = get_tunnel(cluster_config)
         if isinstance(reuse_code_exp, run.Experiment):
