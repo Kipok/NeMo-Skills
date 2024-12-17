@@ -344,6 +344,8 @@ def train(
         # explicitly setting sequential to False since we set dependencies directly
         run_exp(exp, cluster_config, sequential=False)
 
+    return exp
+
 
 if __name__ == "__main__":
     # workaround for https://github.com/fastapi/typer/issues/341

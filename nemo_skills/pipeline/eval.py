@@ -228,6 +228,8 @@ def eval(
             )
         run_exp(exp, cluster_config)
 
+    return exp
+
 
 if __name__ == "__main__":
     # workaround for https://github.com/fastapi/typer/issues/341

@@ -91,6 +91,8 @@ def run_cmd(
         )
         run_exp(exp, cluster_config)
 
+    return exp
+
 
 if __name__ == "__main__":
     typer.main.get_command_name = lambda name: name
