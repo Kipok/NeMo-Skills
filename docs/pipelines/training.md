@@ -140,6 +140,7 @@ convert(
     run_after=expname,
     convert_from="nemo",
     convert_to="hf",
+    model_type="llama",
     num_gpus=8,
     hf_model_name="meta-llama/Meta-Llama-3.1-8B",
 )
@@ -153,6 +154,7 @@ convert(
     run_after=f"{expname}-to-hf",
     convert_from="hf",
     convert_to="trtllm",
+    model_type="llama",
     num_gpus=8,
 )
 
