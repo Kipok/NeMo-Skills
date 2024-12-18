@@ -91,6 +91,7 @@ def get_exp_handles(expname: str, ignore_finished=True, ignore_exp_not_exists=Tr
                 return []
             raise ValueError(f"Experiment {expname} not found!")
 
+
 def get_free_port(exclude: list[int] | None = None):
     """Will return a free port on the host."""
     exclude = exclude or []
@@ -98,6 +99,7 @@ def get_free_port(exclude: list[int] | None = None):
     while port in exclude:
         port += 1
     return port
+
 
 def get_generation_command(server_address, generation_commands):
     cmd = (
@@ -695,6 +697,8 @@ def get_executor(
     if not cluster_config.get("disable_gpus_per_node", False) and gpus_per_node is not None:
         srun_args.append(f"--gpus-per-node={gpus_per_node}")
 
+    dependency_type = cluster_config.get("dependency_type", "afterok")
+
     return run.SlurmExecutor(
         account=cluster_config["account"],
         partition=partition,
@@ -718,6 +722,7 @@ def get_executor(
         wait_time_for_group_job=0.01,
         monitor_group_job_wait_time=20,
         dependencies=dependencies,
+        dependency_type=dependency_type,
         env_vars=env_vars,
         **(slurm_kwargs or {}),
     )
