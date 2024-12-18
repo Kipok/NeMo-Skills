@@ -56,6 +56,7 @@ filters:
   split_arithmetic: false
   remove_len_outlier_problems: true
   remove_len_outlier_solutions: false
+  remove_code_errors: false
   code_text_filter: null
 
 deduplicate: true
@@ -93,6 +94,19 @@ processors:
       - _target_: nemo_skills.training.data_preparation_utils.filters.RemoveContaminated
         should_run: ${filters.remove_contaminated}
         contamination_file: ${contamination_file}
+
+      - _target_: sdp.processors.DropIfRegexMatch
+        should_run: ${filters.remove_code_errors}
+        text_key: ${output_key}
+        regex_patterns:
+          - 'Traceback (most recent call last)'
+          - '<output cut>'
+          - 'Timed out'
+        test_cases:
+          - {input: {generation: "My solution:\n---Traceback (most recent call last)---\nSomething else"}, output: null}
+          - {input: {generation: "My solution:\nSome long output<output cut>\nSomething else"}, output: null}
+          - {input: {generation: "My solution:\nTimed out\nSomething else"}, output: null}
+          - {input: {generation: "My solution, no errors"}, output: {generation: "My solution, no errors"}}
 
       - _target_: nemo_skills.training.data_preparation_utils.filters.MajorityFilter
         should_run: ${filters.majority_filter}
