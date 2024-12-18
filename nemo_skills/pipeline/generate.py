@@ -115,7 +115,7 @@ client_command_factories = {
 
 def configure_client(generation_type, server_gpus, server_type, server_address, server_port, server_nodes, model, server_args, extra_arguments):
     if server_address is None:  # we need to host the model
-        server_port = get_free_port()
+        server_port = get_free_port(strategy="random")
         assert server_gpus is not None, "Need to specify server_gpus if hosting the model"
         server_address = f"localhost:{server_port}"
 
@@ -213,7 +213,7 @@ def generate(
     with run.Experiment(expname) as exp:
         if random_seeds:
             for seed in random_seeds:
-                server_port = get_free_port()
+                server_port = get_free_port(strategy="random")
                 server_config, extra_arguments, server_address, server_port = configure_client(
                     generation_type=generation_type,
                     server_gpus=server_gpus,
@@ -257,7 +257,7 @@ def generate(
                     )
                     prev_tasks = [new_task]
         else:
-            server_port = get_free_port()
+            server_port = get_free_port(strategy="random")
             server_config, extra_arguments, server_address, server_port = configure_client(
                 generation_type=generation_type,
                 server_gpus=server_gpus,

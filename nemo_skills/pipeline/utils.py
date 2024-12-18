@@ -95,10 +95,19 @@ def get_exp_handles(expname: str, ignore_finished=True, ignore_exp_not_exists=Tr
 def get_free_port(exclude: list[int] | None = None):
     """Will return a free port on the host."""
     exclude = exclude or []
-    port = 5000
-    while port in exclude:
-        port += 1
-    return port
+    if isinstance(strategy, int):
+        port = strategy
+        while port in exclude:
+            port += 1
+        return port
+    elif strategy == "random":
+        import random
+        port = random.randint(1024, 65535)
+        while port in exclude:
+            port = random.randint(1024, 65535)
+        return port
+    else:
+        raise ValueError(f"Strategy {strategy} not supported.")
 
 
 def get_generation_command(server_address, generation_commands):
@@ -136,7 +145,7 @@ def get_reward_server_command(
         check_if_mounted(cluster_config, model_path)
 
     if server_type == 'nemo':
-        nemo_aligner_reward_model_port = get_free_port(exclude=[server_port])
+        nemo_aligner_reward_model_port = get_free_port(strategy="random", exclude=[server_port])
         server_start_cmd = (
             # Note: The order of the two commands is important as the reward model server
             # needs to be the first command so it can get the HF_TOKEN from the environment
