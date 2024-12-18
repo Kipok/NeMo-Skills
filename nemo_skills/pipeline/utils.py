@@ -851,7 +851,7 @@ def add_task(
         sandbox_port = get_free_port(strategy="random")
         env_vars = cluster_config.get("env_vars", [])
         env_vars_copy = env_vars.copy()
-        env_vars.append(f"NEMO_SKILLS_SANDBOX_PORT={sandbox_port}")
+        env_vars.append(f"LISTEN_PORT={sandbox_port}")
         cluster_config["env_vars"] = env_vars
         sandbox_executor = get_executor(
             cluster_config=cluster_config,
