@@ -61,15 +61,6 @@ def get_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
 def get_rm_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
     if eval_args is not None:
         raise ValueError("Cannot specify eval_args for reward model")
-    if '++server.port' in extra_arguments and '++server.host' in extra_arguments:
-        match = re.search(r'\+\+server\.port=(\d+)', extra_arguments)
-        if match:
-            port = match.group(1)
-            extra_arguments = re.sub(r'\+\+server\.port=\d+', '', extra_arguments)
-        match = re.search(r'\+\+server\.host=(\S+)', extra_arguments)
-        if match:
-            host = match.group(1)
-            extra_arguments = re.sub(r'\+\+server\.host=\S+', '', extra_arguments)
 
     cmd = (
         f"python -m nemo_skills.inference.reward_model "
