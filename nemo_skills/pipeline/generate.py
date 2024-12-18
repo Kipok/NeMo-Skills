@@ -23,6 +23,7 @@ from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config,
 from nemo_skills.pipeline.app import app, typer_unpacker
 from nemo_skills.pipeline.utils import get_reward_server_command, get_server_command, get_free_port
 from nemo_skills.utils import setup_logging
+import re
 
 LOG = logging.getLogger(__file__)
 
@@ -34,7 +35,7 @@ class SupportedServers(str, Enum):
     openai = "openai"
 
 
-def get_cmd(output_dir, extra_arguments, host, port, random_seed=None, eval_args=None):
+def get_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
     if random_seed is not None:
         output_file = f"{output_dir}/generation/output-rs{random_seed}.jsonl"
     else:
@@ -46,8 +47,6 @@ def get_cmd(output_dir, extra_arguments, host, port, random_seed=None, eval_args
             f"    ++inference.temperature=1.0 "
             f"    ++inference.top_k=0 "
             f"    ++inference.top_p=0.95 "
-            f"    ++server.host={host} "
-            f"    ++server.port={port} "
         )
     cmd += f" {extra_arguments} "
     if eval_args:
@@ -59,22 +58,30 @@ def get_cmd(output_dir, extra_arguments, host, port, random_seed=None, eval_args
     return cmd
 
 
-def get_rm_cmd(output_dir, extra_arguments, host, port, random_seed=None, eval_args=None):
+def get_rm_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
     if eval_args is not None:
         raise ValueError("Cannot specify eval_args for reward model")
+    if '++server.port' in extra_arguments and '++server.host' in extra_arguments:
+        match = re.search(r'\+\+server\.port=(\d+)', extra_arguments)
+        if match:
+            port = match.group(1)
+            extra_arguments = re.sub(r'\+\+server\.port=\d+', '', extra_arguments)
+        match = re.search(r'\+\+server\.host=(\S+)', extra_arguments)
+        if match:
+            host = match.group(1)
+            extra_arguments = re.sub(r'\+\+server\.host=\S+', '', extra_arguments)
+
     cmd = (
         f"python -m nemo_skills.inference.reward_model "
         f"    ++skip_filled=True "
         f"    ++output_dir={output_dir} "
         f"    ++random_seed={random_seed} "
-        f"    ++server_host={host} "
-        f"    ++server_port={port} "
     )
     cmd += f" {extra_arguments} "
     return cmd
 
 
-def get_math_judge_cmd(output_dir, extra_arguments, host, port, random_seed=None, eval_args=None):
+def get_math_judge_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
     if eval_args is not None:
         raise ValueError("Cannot specify eval_args for math judge")
     cmd = (
@@ -82,8 +89,6 @@ def get_math_judge_cmd(output_dir, extra_arguments, host, port, random_seed=None
         f"    ++skip_filled=True "
         f"    ++output_dir={output_dir} "
         f"    ++random_seed={random_seed} "
-        f"    ++server.host={host} "
-        f"    ++server.port={port} "
     )
     cmd += f" {extra_arguments} "
     return cmd
@@ -134,6 +139,8 @@ def configure_client(generation_type, server_gpus, server_type, server_address, 
             "server_port": server_port,
         }
         extra_arguments += f" ++server.server_type={server_type} "
+        extra_arguments += f" ++server.host=localhost "
+        extra_arguments += f" ++server.port={server_port} "
     else:  # model is hosted elsewhere
         server_config = None
         extra_arguments += (
