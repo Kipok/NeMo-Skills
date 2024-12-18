@@ -23,7 +23,6 @@ from nemo_skills.pipeline import add_task, check_if_mounted, get_cluster_config,
 from nemo_skills.pipeline.app import app, typer_unpacker
 from nemo_skills.pipeline.utils import get_reward_server_command, get_server_command, get_free_port
 from nemo_skills.utils import setup_logging
-import re
 
 LOG = logging.getLogger(__file__)
 
