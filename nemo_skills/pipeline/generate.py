@@ -34,7 +34,7 @@ class SupportedServers(str, Enum):
     openai = "openai"
 
 
-def get_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
+def get_cmd(output_dir, extra_arguments, host, port, random_seed=None, eval_args=None):
     if random_seed is not None:
         output_file = f"{output_dir}/generation/output-rs{random_seed}.jsonl"
     else:
@@ -46,6 +46,8 @@ def get_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
             f"    ++inference.temperature=1.0 "
             f"    ++inference.top_k=0 "
             f"    ++inference.top_p=0.95 "
+            f"    ++server.host={host} "
+            f"    ++server.port={port} "
         )
     cmd += f" {extra_arguments} "
     if eval_args:
@@ -57,7 +59,7 @@ def get_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
     return cmd
 
 
-def get_rm_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
+def get_rm_cmd(output_dir, extra_arguments, host, port, random_seed=None, eval_args=None):
     if eval_args is not None:
         raise ValueError("Cannot specify eval_args for reward model")
     cmd = (
@@ -65,12 +67,14 @@ def get_rm_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
         f"    ++skip_filled=True "
         f"    ++output_dir={output_dir} "
         f"    ++random_seed={random_seed} "
+        f"    ++server_host={host} "
+        f"    ++server_port={port} "
     )
     cmd += f" {extra_arguments} "
     return cmd
 
 
-def get_math_judge_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
+def get_math_judge_cmd(output_dir, extra_arguments, host, port, random_seed=None, eval_args=None):
     if eval_args is not None:
         raise ValueError("Cannot specify eval_args for math judge")
     cmd = (
@@ -78,6 +82,8 @@ def get_math_judge_cmd(output_dir, extra_arguments, random_seed=None, eval_args=
         f"    ++skip_filled=True "
         f"    ++output_dir={output_dir} "
         f"    ++random_seed={random_seed} "
+        f"    ++server.host={host} "
+        f"    ++server.port={port} "
     )
     cmd += f" {extra_arguments} "
     return cmd
