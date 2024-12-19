@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 sys.path.append(str(Path(__file__).absolute().parents[1]))
-from nemo_skills.pipeline.app import wrap_arguments
+from nemo_skills.pipeline import wrap_arguments
 from nemo_skills.pipeline.cli import generate
 
 
