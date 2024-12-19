@@ -107,12 +107,12 @@ Click on :material-plus-circle: symbols in the snippet below to learn more detai
 
          ```python-console
          >>> print(prompts[0])
-         [{'role': 'system', 'content': ''}, {'role': 'user', 'content': "What's 2 + 2?"}]
+         [{'role': 'user', 'content': "What's 2 + 2?"}]
          ```
 
          If you don't want to use our prompt class, just create this list yourself
 
-    4.   This should print
+    3.   This should print
          ```python-console
          >>> print(outputs[0]["generation"])
          2 + 2 = 4.
