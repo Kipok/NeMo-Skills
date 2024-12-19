@@ -18,6 +18,7 @@ import shlex
 import subprocess
 import sys
 import tarfile
+from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -736,6 +737,17 @@ def get_executor(
         **(slurm_kwargs or {}),
     )
 
+@contextmanager
+def temporary_env_update(cluster_config, updates):
+    original_env_vars = cluster_config.get("env_vars", []).copy()
+    updated_env_vars = original_env_vars.copy()
+    for key, value in updates.items():
+        updated_env_vars.append(f"{key}={value}")
+        cluster_config["env_vars"] = updated_env_vars
+    try:
+        yield
+    finally:
+        cluster_config["env_vars"] = original_env_vars
 
 def add_task(
     exp,
@@ -796,6 +808,8 @@ def add_task(
         if not 'cpu' in (partition or cluster_config.get("partition", "")):
             num_gpus = 1
 
+    sandbox_port = get_free_port(strategy="random")
+
     commands = []
     executors = []
     # assuming server always has the largest resources request, so it needs to go first
@@ -827,32 +841,47 @@ def add_task(
     if cmd:
         if cluster_config["executor"] == "local" and num_tasks > 1:
             cmd = f"mpirun --allow-run-as-root -np {num_tasks} bash -c {shlex.quote(cmd)}"
-        commands.append(cmd)
-        executors.append(
-            get_executor(
-                cluster_config=cluster_config,
-                container=container,
-                num_nodes=num_nodes,
-                tasks_per_node=num_tasks,
-                gpus_per_node=num_gpus,
-                partition=partition,
-                time_min=time_min,
-                dependencies=dependencies,
-                job_name=task_name,
-                log_dir=log_dir,
-                log_prefix="main",
-                extra_package_dirs=extra_package_dirs,
-                slurm_kwargs=slurm_kwargs,
+        with temporary_env_update(cluster_config, {"NEMO_SKILLS_SANDBOX_PORT": sandbox_port}):
+            commands.append(cmd)
+            executors.append(
+                get_executor(
+                    cluster_config=cluster_config,
+                    container=container,
+                    num_nodes=num_nodes,
+                    tasks_per_node=num_tasks,
+                    gpus_per_node=num_gpus,
+                    partition=partition,
+                    time_min=time_min,
+                    dependencies=dependencies,
+                    job_name=task_name,
+                    log_dir=log_dir,
+                    log_prefix="main",
+                    extra_package_dirs=extra_package_dirs,
+                    slurm_kwargs=slurm_kwargs,
+                )
             )
-        )
 
     # finally a sandbox if needed
     if with_sandbox:
-        sandbox_port = get_free_port(strategy="random")
-        env_vars = cluster_config.get("env_vars", [])
-        env_vars_copy = env_vars.copy()
-        env_vars.append(f"LISTEN_PORT={sandbox_port}")
-        cluster_config["env_vars"] = env_vars
+        with temporary_env_update(cluster_config, {"LISTEN_PORT": sandbox_port}):
+            commands.append(get_sandox_command())
+            sandbox_executor = get_executor(
+            cluster_config=cluster_config,
+            container=cluster_config["containers"]["sandbox"],
+            num_nodes=executors[0].nodes if cluster_config["executor"] == "slurm" else 1,
+            tasks_per_node=1,
+            gpus_per_node=num_gpus,
+            partition=partition,
+            time_min=time_min,
+            mounts=tuple(),  # we don't want to mount anything
+            dependencies=dependencies,
+            job_name=task_name,
+            log_dir=log_dir,
+            log_prefix="sandbox",
+            extra_package_dirs=extra_package_dirs,
+            slurm_kwargs=slurm_kwargs,
+            )
+            executors.append(sandbox_executor)
         sandbox_executor = get_executor(
             cluster_config=cluster_config,
             container=cluster_config["containers"]["sandbox"],
@@ -869,7 +898,6 @@ def add_task(
             extra_package_dirs=extra_package_dirs,
             slurm_kwargs=slurm_kwargs,
         )
-        cluster_config["env_vars"] = env_vars_copy
         commands.append(get_sandox_command())
         executors.append(sandbox_executor)
 
