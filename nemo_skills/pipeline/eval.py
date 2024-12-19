@@ -164,6 +164,7 @@ def eval(
             "server_args": server_args,
             "server_port": server_port,
         }
+        # += is okay here because the args have already been copied in this context
         extra_arguments += f" ++server.server_type={server_type} "
         extra_arguments += f" ++server.host=localhost "
         extra_arguments += f" ++server.port={server_port} "

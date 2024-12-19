@@ -139,13 +139,15 @@ def configure_client(
             "server_args": server_args,
             "server_port": server_port,
         }
-        extra_arguments += f" ++server.server_type={server_type} "
-        extra_arguments += f" ++server.host=localhost "
-        extra_arguments += f" ++server.port={server_port} "
+        extra_arguments = (
+            f"{extra_arguments} ++server.server_type={server_type} "
+            f"++server.host=localhost ++server.port={server_port} "
+        )
     else:  # model is hosted elsewhere
         server_config = None
-        extra_arguments += (
-            f" ++server.server_type={server_type} ++server.base_url={server_address} ++server.model={model} "
+        extra_arguments = (
+            f"{extra_arguments} ++server.server_type={server_type} "
+            f"++server.base_url={server_address} ++server.model={model} "
         )
         server_port = None
     return server_config, extra_arguments, server_address, server_port
