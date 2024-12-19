@@ -93,7 +93,7 @@ def get_exp_handles(expname: str, ignore_finished=True, ignore_exp_not_exists=Tr
             raise ValueError(f"Experiment {expname} not found!")
 
 
-def get_free_port(exclude: list[int] | None = None):
+def get_free_port(exclude: list[int] | None = None, strategy: int | str = 5000) -> int:
     """Will return a free port on the host."""
     exclude = exclude or []
     if isinstance(strategy, int):
