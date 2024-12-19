@@ -60,6 +60,7 @@ def get_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
 def get_rm_cmd(output_dir, extra_arguments, random_seed=None, eval_args=None):
     if eval_args is not None:
         raise ValueError("Cannot specify eval_args for reward model")
+
     cmd = (
         f"python -m nemo_skills.inference.reward_model "
         f"    ++skip_filled=True "
@@ -115,7 +116,7 @@ client_command_factories = {
 
 def configure_client(generation_type, server_gpus, server_type, server_address, server_port, server_nodes, model, server_args, extra_arguments):
     if server_address is None:  # we need to host the model
-        server_port = get_free_port()
+        server_port = get_free_port(strategy="random")
         assert server_gpus is not None, "Need to specify server_gpus if hosting the model"
         server_address = f"localhost:{server_port}"
 
@@ -128,6 +129,8 @@ def configure_client(generation_type, server_gpus, server_type, server_address, 
             "server_port": server_port,
         }
         extra_arguments += f" ++server.server_type={server_type} "
+        extra_arguments += f" ++server.host=localhost "
+        extra_arguments += f" ++server.port={server_port} "
     else:  # model is hosted elsewhere
         server_config = None
         extra_arguments += (
@@ -213,7 +216,7 @@ def generate(
     with run.Experiment(expname) as exp:
         if random_seeds:
             for seed in random_seeds:
-                server_port = get_free_port()
+                server_port = get_free_port(strategy="random")
                 server_config, extra_arguments, server_address, server_port = configure_client(
                     generation_type=generation_type,
                     server_gpus=server_gpus,
@@ -257,7 +260,7 @@ def generate(
                     )
                     prev_tasks = [new_task]
         else:
-            server_port = get_free_port()
+            server_port = get_free_port(strategy="random")
             server_config, extra_arguments, server_address, server_port = configure_client(
                 generation_type=generation_type,
                 server_gpus=server_gpus,
