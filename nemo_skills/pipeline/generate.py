@@ -229,6 +229,7 @@ def generate(
     original_server_address = server_address
 
     with run.Experiment(expname) as exp:
+        extra_arguments_original = extra_arguments
         if random_seeds:
             for seed in random_seeds:
                 server_port = get_free_port(strategy="random")
@@ -241,7 +242,7 @@ def generate(
                     server_nodes=server_nodes,
                     model=model,
                     server_args=server_args,
-                    extra_arguments=extra_arguments,
+                    extra_arguments=extra_arguments_original,
                 )
 
                 cmd = get_cmd(
@@ -286,7 +287,7 @@ def generate(
                 server_nodes=server_nodes,
                 model=model,
                 server_args=server_args,
-                extra_arguments=extra_arguments,
+                extra_arguments=extra_arguments_original,
             )
             cmd = get_cmd(
                 random_seed=None,
