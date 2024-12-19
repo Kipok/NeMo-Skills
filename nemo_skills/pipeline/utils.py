@@ -882,24 +882,6 @@ def add_task(
             slurm_kwargs=slurm_kwargs,
             )
             executors.append(sandbox_executor)
-        sandbox_executor = get_executor(
-            cluster_config=cluster_config,
-            container=cluster_config["containers"]["sandbox"],
-            num_nodes=executors[0].nodes if cluster_config["executor"] == "slurm" else 1,
-            tasks_per_node=1,
-            gpus_per_node=num_gpus,
-            partition=partition,
-            time_min=time_min,
-            mounts=tuple(),  # we don't want to mount anything
-            dependencies=dependencies,
-            job_name=task_name,
-            log_dir=log_dir,
-            log_prefix="sandbox",
-            extra_package_dirs=extra_package_dirs,
-            slurm_kwargs=slurm_kwargs,
-        )
-        commands.append(get_sandox_command())
-        executors.append(sandbox_executor)
 
     if reuse_code_exp is not None:
         tunnel = get_tunnel(cluster_config)
