@@ -103,7 +103,7 @@ Click on :material-plus-circle: symbols in the snippet below to learn more detai
          or [create your own prompts](prompt-format.md)
 
 
-    2.   This should print
+    3.   This should print
 
          ```python-console
          >>> print(prompts[0])
@@ -112,7 +112,7 @@ Click on :material-plus-circle: symbols in the snippet below to learn more detai
 
          If you don't want to use our prompt class, just create this list yourself
 
-    3.   This should print
+    4.   This should print
          ```python-console
          >>> print(outputs[0]["generation"])
          2 + 2 = 4.

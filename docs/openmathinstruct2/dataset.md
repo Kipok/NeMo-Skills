@@ -188,7 +188,7 @@ for i in range(80):
         ctx=wrap_arguments(cmd),
         reuse_code_exp=exp,
         log_dir=f'{data_folder}/problem-set{i}/fill-majority-logs'
-        # if cluster has a cpu partition you can specify it with `partition` parameter
+        # if cluster has a cpu partition you can specify it with a `partition` parameter
     )
 
 # for GSM8K
@@ -203,7 +203,7 @@ for i in range(10):
         ctx=wrap_arguments(cmd),
         reuse_code_exp=exp,
         log_dir=f'{data_folder}/problem-set{i}/fill-majority-logs'
-        # if cluster has a cpu partition you can specify it with `partition` parameter
+        # if cluster has a cpu partition you can specify it with a `partition` parameter
     )
 ```
 
@@ -248,7 +248,7 @@ ns check_contamination \
     ++check_both_ways=True
 ```
 
-Note that this command doesn't require GPUs, so it's best to run in CPU partition or download data and run it locally.
+Note that this command doesn't require GPUs, so it's best to run in a CPU partition or download data and run it locally.
 Alternatively you can always modify the command to host the model yourself.
 
 
