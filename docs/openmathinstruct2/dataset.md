@@ -260,7 +260,7 @@ We also remove problems and solutions with length > 1024 Llama tokens.
 To avoid the models from generating extremely short solutions, we remove solutions shorter than 200 characters.
 
 ```bash
-ns run_cmd --cluster slurm \
+ns run_cmd --cluster=slurm \
 python -m nemo_skills.training.prepare_sft_data \
     ++prompt_template=llama3-instruct \
     ++prompt_config=generic/math \

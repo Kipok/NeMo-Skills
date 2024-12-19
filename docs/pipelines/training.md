@@ -22,7 +22,7 @@ python -m nemo_skills.training.prepare_sft_data \
 !!! tip
 
     Many scripts access `++input_files` argument. You can use any glob patterns there and also
-    reference multiple files/patterns separated by space.
+    reference multiple files/patterns separated by space or comma.
 
 Note that unlike most other scripts, this one doesn't accept a `--cluster` parameter and you can currently only run
 it locally (this will be changed soon).
