@@ -218,11 +218,11 @@ from nemo_skills.pipeline.cli import run_cmd
 
 
 test_sets = ['gsm8k', 'math', 'amc23', 'aime24']
-retrieve_from = " ".join(f"/nemo_run/code/nemo_skills/dataset/{test_set}/test.jsonl" for test_set in test_sets)
+retrieve_from = ",".join(f"/nemo_run/code/nemo_skills/dataset/{test_set}/test.jsonl" for test_set in test_sets)
 
 cmd = (
     f"python -m nemo_skills.inference.retrieve_similar "
-    f"    ++retrieve_from=\\\"{retrieve_from}\\\" "
+    f"    ++retrieve_from=\\\'{retrieve_from}\\\' "
     f"    ++compare_to='/workspace/new-problems-solution-augmentation/**/output-rs0.jsonl' "
     f"    ++output_file='/workspace/new-problems-solution-augmentation/contamination-retrieved.jsonl' "
     f"    ++top_k=5 "
@@ -236,7 +236,6 @@ run_cmd(
 ```
 Next, you need to run LLM inference to check those closest found problems from the output file.
 We use the Llama3.1-405B-Instruct model for this, and here's one way of doing it via Nvidia API catalog.
-Note that this command doesn't require GPUs, so it's best to run in CPU partition or download data and run it locally.
 
 ```bash
 ns check_contamination \
@@ -249,6 +248,9 @@ ns check_contamination \
     ++check_both_ways=True
 ```
 
+Note that this command doesn't require GPUs, so it's best to run in CPU partition or download data and run it locally.
+Alternatively you can always modify the command to host the model yourself.
+
 
 ## Converting to SFT format
 
@@ -258,11 +260,12 @@ We also remove problems and solutions with length > 1024 Llama tokens.
 To avoid the models from generating extremely short solutions, we remove solutions shorter than 200 characters.
 
 ```bash
+ns run_cmd --cluster slurm \
 python -m nemo_skills.training.prepare_sft_data \
     ++prompt_template=llama3-instruct \
     ++prompt_config=generic/math \
-    ++input_files="<path to workspace>/solution-augmentation/**/output-rs*.jsonl <path to workspace>/new-problems-solution-augmentation/**/output-rs*.jsonl" \
-    ++output_path=<path to workspace>/sft_data.jsonl \
+    ++input_files=\'/workspace/solution-augmentation/**/output-rs*.jsonl,/workspace/new-problems-solution-augmentation/**/output-rs*.jsonl\' \
+    ++output_path=/workspace/sft_data.jsonl \
     ++filters.remove_len_outlier_problems=true \
     ++max_problem_length=1024 \
     ++filters.remove_len_outlier_solutions=true \
@@ -271,7 +274,7 @@ python -m nemo_skills.training.prepare_sft_data \
     ++hf_model_name="meta-llama/Meta-Llama-3.1-8B" \
     ++max_solution_length=1024 \
     ++filters.remove_contaminated=true \
-    ++contamination_file=<path to workspace>/new-problems-solution-augmentation/contamination-llm.jsonl
+    ++contamination_file=/workspace/new-problems-solution-augmentation/contamination-llm.jsonl
 ```
 
 ## Dataset contamination explorer
