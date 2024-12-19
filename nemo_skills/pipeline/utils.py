@@ -721,7 +721,6 @@ def get_executor(
         container_mounts=mounts,
         time=timeout,
         additional_parameters=additional_parameters,
-        exclusive=True,  # TODO: remove after we fix port conflicts
         packager=packager,
         gpus_per_node=gpus_per_node if not cluster_config.get("disable_gpus_per_node", False) else None,
         srun_args=srun_args,
