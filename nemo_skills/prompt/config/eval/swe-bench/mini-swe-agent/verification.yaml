@@ -27,7 +27,8 @@ agent:
     <uploaded_files>
     /testbed
     </uploaded_files>
-    I've uploaded a python code repository in the directory /testbed. Consider the following PR description:
+
+    I've uploaded a code repository in the directory /testbed. Consider the following PR description:
 
     <pr_description>
     {{task}}
