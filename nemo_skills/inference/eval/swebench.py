@@ -1084,13 +1084,18 @@ class SweBenchGenerationTask(GenerationTask):
         prompt_config = self.cfg.agent_prompt_config
         if prompt_config is None:
             agent_config_name = Path(self.cfg.agent_config or "").stem
-            if (
-                self.cfg.agent_framework == SupportedAgentFrameworks.mini_swe_agent
-                and agent_config_name == MINI_SWE_AGENT_CHEATS_ALLOWED_CONFIG
-            ):
-                prompt_config = CHEATS_ALLOWED_AGENT_PROMPT_CONFIG
-            else:
-                prompt_config = DEFAULT_AGENT_PROMPT_CONFIG
+            if self.cfg.agent_task == SupportedAgentTasks.issue_resolution:
+                if (
+                    self.cfg.agent_framework == SupportedAgentFrameworks.mini_swe_agent
+                    and agent_config_name == MINI_SWE_AGENT_CHEATS_ALLOWED_CONFIG
+                ):
+                    prompt_config = CHEATS_ALLOWED_AGENT_PROMPT_CONFIG
+                else:
+                    prompt_config = DEFAULT_AGENT_PROMPT_CONFIG
+            elif self.cfg.agent_task == SupportedAgentTasks.rubric_generation:
+                prompt_config = "eval/swe-bench/common/rubric-independence"
+            elif self.cfg.agent_task == SupportedAgentTasks.verification:
+                prompt_config = "eval/swe-bench/common/review-independence"
         with open(get_config_path(prompt_config, config_extension="md"), "r") as f:
             return f.read()
 
