@@ -59,6 +59,12 @@ class SupportedAgentFrameworks(str, Enum):
     model_patch = "model_patch"
 
 
+class SupportedAgentTasks(str, Enum):
+    issue_resolution = "issue_resolution"
+    rubric_generation = "rubric_generation"
+    verification = "verification"
+
+
 # OpenCode is installed from npm (not git). Pin matches NeMo Gym v0.5.0's default.
 OPENCODE_NPM_PACKAGE = "opencode-ai"
 OPENCODE_DEFAULT_VERSION = "1.17.11"
@@ -424,6 +430,11 @@ class SweBenchGenerationConfig:
     # This does not affect evaluation, which still runs in the container_formatter containers.
     swe_zero_container: str | None = None
 
+    # Enables functionality for the rubric-based agentic verifier pipeline. Only works for mini-swe-agent.
+    # If set to 'rubric_generation' or 'verification', will use the corresponding default config file,
+    # the ludwig-n/mini-swe-agent fork, and enable other features, such as auto-skipping verification for empty patches.
+    agent_task: SupportedAgentTasks = SupportedAgentTasks.issue_resolution
+
     # Whether to run evaluation. If False, will only run inference (trajectory/patch generation).
     evaluate: bool = True
 
@@ -592,10 +603,16 @@ class SweBenchGenerationTask(GenerationTask):
             )
 
         elif self.cfg.agent_framework == SupportedAgentFrameworks.mini_swe_agent:
-            if self.cfg.agent_framework_repo is None:
-                self.cfg.agent_framework_repo = "https://github.com/SWE-agent/mini-swe-agent.git"
-            if self.cfg.agent_framework_commit is None:
-                self.cfg.agent_framework_commit = "v2.4.6"
+            if self.cfg.agent_task != SupportedAgentTasks.issue_resolution:
+                if self.cfg.agent_framework_repo is None:
+                    self.cfg.agent_framework_repo = "https://github.com/ludwig-n/mini-swe-agent.git"
+                if self.cfg.agent_framework_commit is None:
+                    self.cfg.agent_framework_commit = "agentic-verifiers"  # based on v2.4.5
+            else:
+                if self.cfg.agent_framework_repo is None:
+                    self.cfg.agent_framework_repo = "https://github.com/SWE-agent/mini-swe-agent.git"
+                if self.cfg.agent_framework_commit is None:
+                    self.cfg.agent_framework_commit = "v2.4.6"
             setup_commands.append(
                 # clone the mini-swe-agent repo
                 "rm -rf /root/mini-swe-agent && "
@@ -931,7 +948,7 @@ class SweBenchGenerationTask(GenerationTask):
             f"--mount {shlex.quote(mount_spec)}" for mount_spec in self._get_apptainer_mounts(mode, data_point)
         )
         apptainer_cmd = (
-            f"apptainer exec --writable-tmpfs --cleanenv --pid --no-mount home,tmp,bind-paths "
+            f"apptainer exec --writable-tmpfs --cleanenv --no-mount home,tmp,bind-paths "
             f"{mount_args} "
             f"{extra_apptainer_args} "
             f"{container_name} bash -c {shlex.quote(combined_command)}"
@@ -1190,6 +1207,14 @@ class SweBenchGenerationTask(GenerationTask):
         Runs mini-swe-agent on one instance.
         Returns the absolute (not mounted) path to a .jsonl file in the SWE-bench evaluation format.
         """
+        if self.cfg.agent_config is None:
+            if self.cfg.agent_task == SupportedAgentTasks.rubric_generation:
+                self.cfg.agent_config = "eval/swe-bench/mini-swe-agent/rubric-generation"
+            elif self.cfg.agent_task == SupportedAgentTasks.verification:
+                self.cfg.agent_config = "eval/swe-bench/mini-swe-agent/verification"
+            else:
+                self.cfg.agent_config = "eval/swe-bench/mini-swe-agent/swebench"
+
         completion_kwargs = {
             openai_param: getattr(self.cfg.inference, ns_param)
             for ns_param, openai_param in NS_TO_OPENAI_PARAM.items()
@@ -1201,18 +1226,35 @@ class SweBenchGenerationTask(GenerationTask):
         if "reasoning_effort" in completion_kwargs:
             completion_kwargs["allowed_openai_params"] = ["reasoning_effort"]
 
-        base_config_path = get_config_path(self.cfg.agent_config or "eval/swe-bench/mini-swe-agent/swebench")
+        base_config_path = get_config_path(self.cfg.agent_config)
         with open(base_config_path, "r") as f:
             full_config = yaml.safe_load(f)
 
+        # In agentic verifier mode, pass problem statement and data_point fields via config.
+        # Note that template_vars is only supported in the ludwig-n/mini-swe-agent fork.
+        # By default, keep old NS behavior.
+        problem_statement = self._get_agent_problem_statement(data_point)
+        if self.cfg.agent_task == SupportedAgentTasks.issue_resolution:
+            task_arg = f"--task {shlex.quote(problem_statement)}"
+        else:
+            if "run" not in full_config:
+                full_config["run"] = {}
+            if "template_vars" not in full_config["run"]:
+                full_config["run"]["template_vars"] = {}
+
+            full_config["run"]["task"] = problem_statement
+            full_config["run"]["template_vars"]["data_point"] = data_point
+            task_arg = ""
+
         if "agent" not in full_config:
             full_config["agent"] = {}
-        if "instance_template" not in full_config["agent"]:
-            raise ValueError("mini-SWE-agent config must define agent.instance_template.")
-        full_config["agent"]["instance_template"] = append_agent_prompt(
-            full_config["agent"]["instance_template"],
-            self._get_agent_prompt(),
-        )
+        if self.cfg.agent_task == SupportedAgentTasks.issue_resolution:
+            if "instance_template" not in full_config["agent"]:
+                raise ValueError("mini-SWE-agent config must define agent.instance_template.")
+            full_config["agent"]["instance_template"] = append_agent_prompt(
+                full_config["agent"]["instance_template"],
+                self._get_agent_prompt(),
+            )
         full_config["agent"]["step_limit"] = self.cfg.agent_max_turns
 
         if "model" not in full_config:
@@ -1239,7 +1281,6 @@ class SweBenchGenerationTask(GenerationTask):
         with open(host_tmp_path, "w") as f:
             yaml.dump(full_config, f)
 
-        problem_statement = self._get_agent_problem_statement(data_point)
         try:
             mini_swe_agent_cmd = (
                 "cp -r /root_mount/mini-swe-agent /root && "
@@ -1251,22 +1292,38 @@ class SweBenchGenerationTask(GenerationTask):
                 f"/root/mini-swe-agent/venv/bin/python -m minisweagent.run.mini "
                 f"--config {container_tmp_path} "
                 f"--model hosted_vllm/{self.cfg.server.model} "
-                f"--task {shlex.quote(problem_statement)} "
+                f"{task_arg} "
                 f"--output trajectories/{data_point['instance_id']}.traj.json "
                 f"--yolo "
                 f"--exit-immediately && "
                 "mkdir -p /trajectories_mount/trajectories && cp -r trajectories/* /trajectories_mount/trajectories/"
             )
 
-            # Execute mini-swe-agent command
             search_path = os.path.join(self.output_dir, "trajectories", f"{data_point['instance_id']}.traj.json")
 
-            pred_file = await self._execute_container_command(
-                data_point, mini_swe_agent_cmd, search_path, mode="agent"
-            )
-
-            with open(pred_file, "r") as f:
-                trajectory_dict = json.loads(f.read().strip())
+            # If we are doing verification and the model patch is empty or missing,
+            # skip the agent run and return a score of 0 for all rubric items.
+            if (
+                self.cfg.agent_task == SupportedAgentTasks.verification
+                and not (data_point.get("model_patch") or "").strip()
+            ):
+                pred_file = search_path
+                Path(pred_file).parent.mkdir(parents=True, exist_ok=True)
+                rubric = json.loads(data_point.get("rubric_json", "{}"))
+                zero_scores = {key: 0 for key in rubric}
+                trajectory_dict = {"info": {"submission": json.dumps(zero_scores)}}
+                LOG.info(
+                    "Skipping verification for instance %s because the model patch is empty or missing. "
+                    "Returning a score of 0 for all rubric items.",
+                    data_point["instance_id"],
+                )
+            else:
+                # Execute mini-swe-agent command
+                pred_file = await self._execute_container_command(
+                    data_point, mini_swe_agent_cmd, search_path, mode="agent"
+                )
+                with open(pred_file, "r") as f:
+                    trajectory_dict = json.loads(f.read().strip())
 
             pred_jsonl_file = pred_file.replace(".traj.json", ".jsonl")
             with open(pred_jsonl_file, "w") as f:
