@@ -1253,13 +1253,12 @@ class SweBenchGenerationTask(GenerationTask):
 
         if "agent" not in full_config:
             full_config["agent"] = {}
-        if self.cfg.agent_task == SupportedAgentTasks.issue_resolution:
-            if "instance_template" not in full_config["agent"]:
-                raise ValueError("mini-SWE-agent config must define agent.instance_template.")
-            full_config["agent"]["instance_template"] = append_agent_prompt(
-                full_config["agent"]["instance_template"],
-                self._get_agent_prompt(),
-            )
+        if "instance_template" not in full_config["agent"]:
+            raise ValueError("mini-SWE-agent config must define agent.instance_template.")
+        full_config["agent"]["instance_template"] = append_agent_prompt(
+            full_config["agent"]["instance_template"],
+            self._get_agent_prompt(),
+        )
         full_config["agent"]["step_limit"] = self.cfg.agent_max_turns
 
         if "model" not in full_config:
