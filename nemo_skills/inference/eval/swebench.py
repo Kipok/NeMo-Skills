@@ -21,6 +21,7 @@ import logging
 import os
 import random
 import shlex
+import shutil
 import socket
 import sys
 from dataclasses import field
@@ -128,6 +129,46 @@ def build_direct_agent_user_prompt(problem_statement: str, extra_instructions: s
         return problem_statement
     else:
         return f"{problem_statement.rstrip()}\n\n{extra_instructions}\n"
+
+
+def write_solution_dir(solution_dir: Path, model_patch: str, messages: list[dict]) -> None:
+    """Write a patch and its agent trajectory (OpenAI Chat Completions format) as files for the verifier."""
+    if solution_dir.exists():
+        shutil.rmtree(solution_dir)
+    (solution_dir / "trajectory").mkdir(parents=True)
+    (solution_dir / "model.patch").write_text(model_patch)
+
+    def to_text(content) -> str:
+        # Content is either a string or a list of text parts
+        return content if isinstance(content, str) else "".join(part["text"] for part in content)
+
+    turn_dir = None
+    num_turns = 0
+    for message in messages:
+        if message["role"] == "assistant":
+            num_turns += 1
+            turn_dir = solution_dir / "trajectory" / f"turn{num_turns:04d}"
+            turn_dir.mkdir()
+            if message.get("reasoning_content"):
+                (turn_dir / "reasoning.txt").write_text(message["reasoning_content"])
+            if message.get("content"):
+                (turn_dir / "message.txt").write_text(to_text(message["content"]))
+            tool_call_numbers = {}
+            for number, tool_call in enumerate(message.get("tool_calls") or [], start=1):
+                tool_call_numbers[tool_call["id"]] = number
+                (turn_dir / f"tool_call_{number}.json").write_text(json.dumps(tool_call["function"], indent=2))
+        elif turn_dir is None:
+            # Record the system and user prompts
+            with open(solution_dir / f"{message['role']}_prompt.txt", "a") as f:
+                f.write(to_text(message["content"]) + "\n")
+        elif message["role"] == "tool":
+            number = tool_call_numbers[message["tool_call_id"]]
+            (turn_dir / f"tool_output_{number}.txt").write_text(to_text(message["content"]))
+        elif message["role"] == "user":
+            with open(turn_dir / "user_message.txt", "a") as f:
+                f.write(to_text(message["content"]) + "\n")
+        else:
+            raise ValueError(f"Unexpected message role in trajectory: {message['role']}")
 
 
 def transform_litellm_reasoning_request(request: dict) -> dict:
@@ -460,6 +501,9 @@ class SweBenchGenerationConfig:
     # If set to 'rubric_generation' or 'verification', will use the corresponding default config file,
     # the ludwig-n/mini-swe-agent fork, and enable other features, such as auto-skipping verification for empty patches.
     agent_task: SupportedAgentTasks = SupportedAgentTasks.issue_resolution
+    # Only for agent_task=verification. If True, the verifier gets the solution as a /solution_<run_id> directory
+    # with model.patch and the agent trajectory split into per-turn files.
+    verifier_sees_traj: bool = False
 
     # Whether to run evaluation. If False, will only run inference (trajectory/patch generation).
     evaluate: bool = True
@@ -608,6 +652,8 @@ class SweBenchGenerationTask(GenerationTask):
                 raise ValueError("Agentic verifiers are only supported in mini-swe-agent.")
             if self.cfg.swe_zero_container is not None:
                 raise ValueError("Agentic verifiers with SWE-Zero are currently not supported.")
+        if self.cfg.verifier_sees_traj and self.cfg.agent_task != SupportedAgentTasks.verification:
+            raise ValueError("verifier_sees_traj is only supported with agent_task=verification.")
 
         # Install SWE-agent/OpenHands and the SWE-bench evaluation harness. Here's how it works:
         #
@@ -1273,6 +1319,8 @@ class SweBenchGenerationTask(GenerationTask):
         if self.cfg.agent_config is None:
             if self.cfg.agent_task == SupportedAgentTasks.rubric_generation:
                 self.cfg.agent_config = "eval/swe-bench/mini-swe-agent/rubric-generation"
+            elif self.cfg.agent_task == SupportedAgentTasks.verification and self.cfg.verifier_sees_traj:
+                self.cfg.agent_config = "eval/swe-bench/mini-swe-agent/verification-traj"
             elif self.cfg.agent_task == SupportedAgentTasks.verification:
                 self.cfg.agent_config = "eval/swe-bench/mini-swe-agent/verification"
             elif self.cfg.swe_zero_container is not None:
@@ -1308,8 +1356,20 @@ class SweBenchGenerationTask(GenerationTask):
                 full_config["run"]["template_vars"] = {}
 
             full_config["run"]["task"] = problem_statement
-            full_config["run"]["template_vars"]["data_point"] = data_point
+            full_config["run"]["template_vars"]["data_point"] = {
+                k: data_point[k] for k in ["rubric_json", "model_patch"] if k in data_point
+            }
             task_arg = ""
+
+        instance_id = data_point["instance_id"]
+
+        # Solution files are written to the mounted output dir, then copied into the container before the agent runs.
+        copy_solution_command = ""
+        if self.cfg.verifier_sees_traj:
+            solution_dirname = f"solution_{json.loads(data_point['original_run_metadata'])['run_id']}"
+            host_solution_dir = self.output_dir / "solutions" / instance_id / solution_dirname
+            full_config["run"]["template_vars"]["solution_dir"] = f"/{solution_dirname}"
+            copy_solution_command = f"cp -r /trajectories_mount/solutions/{instance_id}/{solution_dirname} / && "
 
         if "agent" not in full_config:
             full_config["agent"] = {}
@@ -1341,14 +1401,13 @@ class SweBenchGenerationTask(GenerationTask):
         # Inside the container, this path maps to /trajectories_mount/
         container_tmp_path = os.path.join("/trajectories_mount", tmp_config_filename)
 
-        instance_id = data_point["instance_id"]
-
         def build_mini_swe_agent_command(api_base):
             full_config["model"]["model_kwargs"]["api_base"] = api_base
             with open(host_tmp_path, "w") as f:
                 yaml.dump(full_config, f)
 
             return (
+                f"{copy_solution_command}"
                 "cp -r /root_mount/mini-swe-agent /root && "
                 "cp -r /root_mount/uv /root && "
                 "cd /root/mini-swe-agent && "
@@ -1385,6 +1444,8 @@ class SweBenchGenerationTask(GenerationTask):
                     instance_id,
                 )
             else:
+                if self.cfg.verifier_sees_traj:
+                    write_solution_dir(host_solution_dir, data_point["model_patch"], data_point["messages"])
                 # Execute mini-swe-agent command
                 pred_file = await self._execute_agent_command_with_capture(
                     data_point,
