@@ -602,6 +602,13 @@ class SweBenchGenerationTask(GenerationTask):
         ):
             self.cfg.extra_instructions.append("openhands-use-finish-tool")
 
+        # Assert agentic verifiers are only used in mini-swe-agent, without SWE-Zero.
+        if self.cfg.agent_task != SupportedAgentTasks.issue_resolution:
+            if self.cfg.agent_framework != SupportedAgentFrameworks.mini_swe_agent:
+                raise ValueError("Agentic verifiers are only supported in mini-swe-agent.")
+            if self.cfg.swe_zero_container is not None:
+                raise ValueError("Agentic verifiers with SWE-Zero are currently not supported.")
+
         # Install SWE-agent/OpenHands and the SWE-bench evaluation harness. Here's how it works:
         #
         # 1. This code installs SWE-agent/OpenHands and the eval harness in the Nemo-Skills container.
@@ -1265,10 +1272,8 @@ class SweBenchGenerationTask(GenerationTask):
         """
         if self.cfg.agent_config is None:
             if self.cfg.agent_task == SupportedAgentTasks.rubric_generation:
-                assert self.cfg.swe_zero_container is None, "Agentic verifiers + SWE-Zero is currently not supported."
                 self.cfg.agent_config = "eval/swe-bench/mini-swe-agent/rubric-generation"
             elif self.cfg.agent_task == SupportedAgentTasks.verification:
-                assert self.cfg.swe_zero_container is None, "Agentic verifiers + SWE-Zero is currently not supported."
                 self.cfg.agent_config = "eval/swe-bench/mini-swe-agent/verification"
             elif self.cfg.swe_zero_container is not None:
                 self.cfg.agent_config = "eval/swe-bench/mini-swe-agent/swe-zero"
