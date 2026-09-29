@@ -71,9 +71,6 @@ OPENCODE_DEFAULT_VERSION = "1.17.11"
 OPENCODE_NODE_VERSION = "22.15.0"
 OPENCODE_PROVIDER_ID = "nemo"
 OPENCODE_DEFAULT_OUTPUT_TOKEN_MAX = 131072
-DEFAULT_AGENT_PROMPT_CONFIG = "eval/swe-bench/common/solution-originality"
-CHEATS_ALLOWED_AGENT_PROMPT_CONFIG = "eval/swe-bench/common/cheats-allowed"
-MINI_SWE_AGENT_CHEATS_ALLOWED_CONFIG = "swebench_cheats_allowed"
 
 # Claude Code is installed from npm so benchmark runs can pin the harness version.
 CLAUDE_CODE_NPM_PACKAGE = "@anthropic-ai/claude-code"
@@ -111,26 +108,51 @@ def _deep_merge_dicts(base: dict, override: dict) -> dict:
     return base
 
 
-def append_agent_prompt(template: str, agent_prompt: str) -> str:
-    """Append a shared prompt, keeping it inside an ``<instructions>`` block when present."""
-    agent_prompt = agent_prompt.strip()
-    if not agent_prompt:
+def append_extra_instructions(template: str, extra_instructions: str) -> str:
+    """Append extra instructions, keeping them inside an ``<instructions>`` block when present."""
+    extra_instructions = extra_instructions.strip()
+    if not extra_instructions:
         return template
     template = template.rstrip()
     closing_tag = "</instructions>"
     if closing_tag in template:
         prefix, suffix = template.rsplit(closing_tag, maxsplit=1)
-        return f"{prefix.rstrip()}\n\n{agent_prompt}\n{closing_tag}{suffix}\n"
-    return f"{template}\n\n{agent_prompt}\n"
+        return f"{prefix.rstrip()}\n\n{extra_instructions}\n{closing_tag}{suffix}\n"
+    return f"{template}\n\n{extra_instructions}\n"
 
 
-def build_direct_agent_user_prompt(problem_statement: str, agent_prompt: str) -> str:
-    """Combine a benchmark problem and shared instructions into one user prompt."""
-    agent_prompt = agent_prompt.strip()
-    if not agent_prompt:
+def build_direct_agent_user_prompt(problem_statement: str, extra_instructions: str) -> str:
+    """Combine a benchmark problem and extra instructions into one user prompt."""
+    extra_instructions = extra_instructions.strip()
+    if not extra_instructions:
         return problem_statement
     else:
-        return f"{problem_statement.rstrip()}\n\n{agent_prompt}\n"
+        return f"{problem_statement.rstrip()}\n\n{extra_instructions}\n"
+
+
+def transform_litellm_reasoning_request(request: dict) -> dict:
+    """Promote LiteLLM reasoning fields to the top-level key expected by vLLM."""
+
+    def duplicate_reasoning_content_keys(value):
+        if isinstance(value, dict):
+            duplicated = {key: duplicate_reasoning_content_keys(item) for key, item in value.items()}
+            if "reasoning_content" in value and "reasoning" not in value:
+                duplicated["reasoning"] = duplicated["reasoning_content"]
+            return duplicated
+        if isinstance(value, list):
+            return [duplicate_reasoning_content_keys(item) for item in value]
+        return value
+
+    transformed = copy.deepcopy(request)
+    if "messages" in transformed:
+        transformed["messages"] = duplicate_reasoning_content_keys(transformed["messages"])
+        for message in transformed["messages"]:
+            if not isinstance(message, dict) or message.get("role") != "assistant" or message.get("reasoning"):
+                continue
+            provider_fields = message.get("provider_specific_fields")
+            if isinstance(provider_fields, dict) and provider_fields.get("reasoning"):
+                message["reasoning"] = provider_fields["reasoning"]
+    return transformed
 
 
 def get_claude_code_api_base(api_base: str) -> str:
@@ -404,10 +426,14 @@ class SweBenchGenerationConfig:
     # SWE-agent/OpenHands/OpenCode/Claude Code configuration file path.
     # If None, will use the default for the chosen framework
     agent_config: str | None = None
-    # Markdown prompt added to the native task instructions for every agent framework.
-    # Defaults to the solution-originality prompt.
-    agent_prompt_config: str | None = None
+    # Markdown prompts appended, in order, to the native task instructions for every agent framework.
+    # Names without a slash are resolved in eval/swe-bench/common. Use [] to add nothing.
+    # If None, defaults to [solution-originality, no-test-edits] for issue resolution,
+    # [rubric-independence] for rubric generation and [review-independence] for verification.
+    extra_instructions: list[str] | None = None
     agent_max_turns: int = 100  # Max agent iterations
+    # Save every transformed LLM request for proxy-backed harnesses. Intended only for debugging.
+    capture_all_llm_requests: bool = False
 
     opencode_context_window: int = 262144  # Context window advertised to OpenCode
     claude_code_context_window: int = 262144  # Context window advertised to Claude Code
@@ -551,6 +577,30 @@ class SweBenchGenerationTask(GenerationTask):
             except OSError:
                 LOG.warning("Could not resolve server host %s, passing it through unchanged", host)
             self.api_base = f"http://{host}:{self.cfg.server.port}/v1"
+
+        if self.cfg.extra_instructions is None:
+            if self.cfg.agent_task == SupportedAgentTasks.issue_resolution:
+                self.cfg.extra_instructions = ["solution-originality", "no-test-edits"]
+            elif self.cfg.agent_task == SupportedAgentTasks.rubric_generation:
+                self.cfg.extra_instructions = ["rubric-independence"]
+            elif self.cfg.agent_task == SupportedAgentTasks.verification:
+                self.cfg.extra_instructions = ["review-independence"]
+
+        # Add SWE-Zero instruction for OpenCode and Claude Code.
+        # For other harnesses we replace the agent_config entirely. See e.g. _run_openhands below.
+        if (
+            self.cfg.swe_zero_container is not None
+            and self.cfg.agent_framework in [SupportedAgentFrameworks.opencode, SupportedAgentFrameworks.claude_code]
+            and "swe-zero" not in self.cfg.extra_instructions
+        ):
+            self.cfg.extra_instructions.append("swe-zero")
+
+        # Add OpenHands "use finish tool" instruction.
+        if (
+            self.cfg.agent_framework == SupportedAgentFrameworks.openhands
+            and "openhands-use-finish-tool" not in self.cfg.extra_instructions
+        ):
+            self.cfg.extra_instructions.append("openhands-use-finish-tool")
 
         # Install SWE-agent/OpenHands and the SWE-bench evaluation harness. Here's how it works:
         #
@@ -877,7 +927,7 @@ class SweBenchGenerationTask(GenerationTask):
             # repo_formatter tells us where to get the repo from: either from a URL or from a local mirror.
             # If repo_formatter is not set, we try to fetch it from GitHub using the "repo" column of the dataset.
             repo_formatter = data_point.get("repo_formatter", "https://github.com/{repo}")
-            repo_url_or_path = repo_formatter.format(repo=data_point["repo"])
+            repo_url_or_path = repo_formatter.format(repo=data_point["repo"].removeprefix("https://github.com/"))
             if repo_url_or_path.startswith("/"):
                 # If the repo is local, we need to mount it inside of Apptainer
                 extra_apptainer_args += f" --mount type=bind,src={repo_url_or_path},dst=/instance_repo,ro "
@@ -948,7 +998,7 @@ class SweBenchGenerationTask(GenerationTask):
             f"--mount {shlex.quote(mount_spec)}" for mount_spec in self._get_apptainer_mounts(mode, data_point)
         )
         apptainer_cmd = (
-            f"apptainer exec --writable-tmpfs --cleanenv --no-mount home,tmp,bind-paths "
+            f"apptainer exec --writable-tmpfs --cleanenv --pid --no-mount home,tmp,bind-paths "
             f"{mount_args} "
             f"{extra_apptainer_args} "
             f"{container_name} bash -c {shlex.quote(combined_command)}"
@@ -1051,6 +1101,8 @@ class SweBenchGenerationTask(GenerationTask):
             "PASS_TO_PASS": [],
             "FAIL_TO_PASS": [],
         }
+        if data_point.get("language"):
+            data_point_for_openhands["language"] = data_point["language"]
         host_path.write_text(json.dumps(data_point_for_openhands, ensure_ascii=False) + "\n", encoding="utf-8")
         container_path = f"/trajectories_mount/.openhands_inputs/{host_path.name}"
         return host_path, container_path
@@ -1079,25 +1131,15 @@ class SweBenchGenerationTask(GenerationTask):
             f"Supported frameworks: {', '.join(f.value for f in SupportedAgentFrameworks)}."
         )
 
-    def _get_agent_prompt(self) -> str:
-        """Load the shared prompt selected for the current agent framework."""
-        prompt_config = self.cfg.agent_prompt_config
-        if prompt_config is None:
-            agent_config_name = Path(self.cfg.agent_config or "").stem
-            if self.cfg.agent_task == SupportedAgentTasks.issue_resolution:
-                if (
-                    self.cfg.agent_framework == SupportedAgentFrameworks.mini_swe_agent
-                    and agent_config_name == MINI_SWE_AGENT_CHEATS_ALLOWED_CONFIG
-                ):
-                    prompt_config = CHEATS_ALLOWED_AGENT_PROMPT_CONFIG
-                else:
-                    prompt_config = DEFAULT_AGENT_PROMPT_CONFIG
-            elif self.cfg.agent_task == SupportedAgentTasks.rubric_generation:
-                prompt_config = "eval/swe-bench/common/rubric-independence"
-            elif self.cfg.agent_task == SupportedAgentTasks.verification:
-                prompt_config = "eval/swe-bench/common/review-independence"
-        with open(get_config_path(prompt_config, config_extension="md"), "r") as f:
-            return f.read()
+    def _get_extra_instructions(self) -> str:
+        """Load and concatenate the prompts selected via extra_instructions."""
+        prompts = []
+        for prompt_config in self.cfg.extra_instructions:
+            if "/" not in prompt_config:
+                prompt_config = f"eval/swe-bench/common/{prompt_config}"
+            with open(get_config_path(prompt_config, config_extension="md"), "r") as f:
+                prompts.append(f.read().strip())
+        return "\n\n".join(prompts)
 
     def _get_terminal_error_metrics(self, error: Exception) -> dict:
         """Return fail-closed metrics for an agent rollout that raised."""
@@ -1131,7 +1173,9 @@ class SweBenchGenerationTask(GenerationTask):
         Returns the absolute (not mounted) path to a .jsonl file in the SWE-bench evaluation format.
         """
         if self.cfg.agent_config is None:
-            if self.cfg.multilingual:
+            if self.cfg.swe_zero_container is not None:
+                self.cfg.agent_config = "eval/swe-bench/swe-agent/swe-zero"
+            elif self.cfg.multilingual:
                 self.cfg.agent_config = "eval/swe-bench/swe-agent/multilingual"
             else:
                 self.cfg.agent_config = "eval/swe-bench/swe-agent/default"
@@ -1142,7 +1186,7 @@ class SweBenchGenerationTask(GenerationTask):
             instance_template = swe_agent_config["agent"]["templates"]["instance_template"]
         except (KeyError, TypeError) as error:
             raise ValueError("SWE-agent config must define agent.templates.instance_template.") from error
-        instance_template = append_agent_prompt(instance_template, self._get_agent_prompt())
+        instance_template = append_extra_instructions(instance_template, self._get_extra_instructions())
 
         completion_kwargs = {
             openai_param: getattr(self.cfg.inference, ns_param)
@@ -1157,41 +1201,48 @@ class SweBenchGenerationTask(GenerationTask):
 
         # Variables that will be available in prompt templates
         extra_fields = {}
-        if self.cfg.multilingual:
+        if self.cfg.multilingual or data_point.get("language"):
             extra_fields["language"] = data_point["language"]
 
         problem_statement = self._get_agent_problem_statement(data_point)
-        swe_agent_cmd = (
-            # copy installed repo & uv dir from /root_mount
-            "cp -r /root_mount/SWE-agent /root && "
-            "cp -r /root_mount/uv /root && "
-            "cd /root/SWE-agent && "
-            # run the agent
-            f"/root/SWE-agent/venv/bin/python -m sweagent run "
-            f"    --config {get_config_path(self.cfg.agent_config)} "
-            f"    --agent.templates.instance_template {shlex.quote(instance_template)} "
-            f"    --agent.model.name hosted_vllm/{self.cfg.server.model} "
-            f"    --agent.model.api_base {self.api_base} "
-            f"    --agent.model.temperature {self.cfg.inference.temperature} "
-            f"    --agent.model.top_p {self.cfg.inference.top_p} "
-            f"    --agent.model.completion_kwargs {shlex.quote(json.dumps(completion_kwargs))} "
-            f"    --agent.model.per_instance_call_limit {self.cfg.agent_max_turns} "
-            f"    --env.deployment.type local "
-            f"    --env.repo.type preexisting "
-            f"    --env.repo.repo_name testbed "
-            f"    --env.repo.base_commit {data_point['base_commit']} "
-            f"    --problem_statement.text {shlex.quote(problem_statement)} "
-            f"    --problem_statement.id {data_point['instance_id']} "
-            f"    --problem_statement.extra_fields {shlex.quote(json.dumps(extra_fields))} && "
-            # move trajectories to the mounted directory
-            f"cp -r trajectories /trajectories_mount/"
-        )
+
+        def build_swe_agent_command(api_base):
+            return (
+                # copy installed repo & uv dir from /root_mount
+                "cp -r /root_mount/SWE-agent /root && "
+                "cp -r /root_mount/uv /root && "
+                "cd /root/SWE-agent && "
+                # run the agent
+                f"/root/SWE-agent/venv/bin/python -m sweagent run "
+                f"    --config {get_config_path(self.cfg.agent_config)} "
+                f"    --agent.templates.instance_template {shlex.quote(instance_template)} "
+                f"    --agent.model.name hosted_vllm/{self.cfg.server.model} "
+                f"    --agent.model.api_base {shlex.quote(api_base)} "
+                f"    --agent.model.temperature {self.cfg.inference.temperature} "
+                f"    --agent.model.top_p {self.cfg.inference.top_p} "
+                f"    --agent.model.completion_kwargs {shlex.quote(json.dumps(completion_kwargs))} "
+                f"    --agent.model.per_instance_call_limit {self.cfg.agent_max_turns} "
+                f"    --env.deployment.type local "
+                f"    --env.repo.type preexisting "
+                f"    --env.repo.repo_name testbed "
+                f"    --env.repo.base_commit {data_point['base_commit']} "
+                f"    --problem_statement.text {shlex.quote(problem_statement)} "
+                f"    --problem_statement.id {data_point['instance_id']} "
+                f"    --problem_statement.extra_fields {shlex.quote(json.dumps(extra_fields))} && "
+                # move trajectories to the mounted directory
+                f"cp -r trajectories /trajectories_mount/"
+            )
 
         # Execute SWE-agent command
         search_path = os.path.join(
             self.output_dir, "trajectories", "*", "*", data_point["instance_id"], f"{data_point['instance_id']}.pred"
         )
-        pred_file = await self._execute_container_command(data_point, swe_agent_cmd, search_path, mode="agent")
+        pred_file = await self._execute_agent_command_with_capture(
+            data_point,
+            build_swe_agent_command,
+            search_path,
+            request_transform=transform_litellm_reasoning_request,
+        )
 
         with open(pred_file, "r") as f:
             trajectory_dict = json.loads(f.read().strip())
@@ -1214,9 +1265,13 @@ class SweBenchGenerationTask(GenerationTask):
         """
         if self.cfg.agent_config is None:
             if self.cfg.agent_task == SupportedAgentTasks.rubric_generation:
+                assert self.cfg.swe_zero_container is None, "Agentic verifiers + SWE-Zero is currently not supported."
                 self.cfg.agent_config = "eval/swe-bench/mini-swe-agent/rubric-generation"
             elif self.cfg.agent_task == SupportedAgentTasks.verification:
+                assert self.cfg.swe_zero_container is None, "Agentic verifiers + SWE-Zero is currently not supported."
                 self.cfg.agent_config = "eval/swe-bench/mini-swe-agent/verification"
+            elif self.cfg.swe_zero_container is not None:
+                self.cfg.agent_config = "eval/swe-bench/mini-swe-agent/swe-zero"
             else:
                 self.cfg.agent_config = "eval/swe-bench/mini-swe-agent/swebench"
 
@@ -1255,9 +1310,9 @@ class SweBenchGenerationTask(GenerationTask):
             full_config["agent"] = {}
         if "instance_template" not in full_config["agent"]:
             raise ValueError("mini-SWE-agent config must define agent.instance_template.")
-        full_config["agent"]["instance_template"] = append_agent_prompt(
+        full_config["agent"]["instance_template"] = append_extra_instructions(
             full_config["agent"]["instance_template"],
-            self._get_agent_prompt(),
+            self._get_extra_instructions(),
         )
         full_config["agent"]["step_limit"] = self.cfg.agent_max_turns
 
@@ -1269,7 +1324,6 @@ class SweBenchGenerationTask(GenerationTask):
         full_config["model"]["model_kwargs"].update(
             {
                 **completion_kwargs,
-                "api_base": self.api_base,
                 "temperature": self.cfg.inference.temperature,
                 "top_p": self.cfg.inference.top_p,
             }
@@ -1282,11 +1336,14 @@ class SweBenchGenerationTask(GenerationTask):
         # Inside the container, this path maps to /trajectories_mount/
         container_tmp_path = os.path.join("/trajectories_mount", tmp_config_filename)
 
-        with open(host_tmp_path, "w") as f:
-            yaml.dump(full_config, f)
+        instance_id = data_point["instance_id"]
 
-        try:
-            mini_swe_agent_cmd = (
+        def build_mini_swe_agent_command(api_base):
+            full_config["model"]["model_kwargs"]["api_base"] = api_base
+            with open(host_tmp_path, "w") as f:
+                yaml.dump(full_config, f)
+
+            return (
                 "cp -r /root_mount/mini-swe-agent /root && "
                 "cp -r /root_mount/uv /root && "
                 "cd /root/mini-swe-agent && "
@@ -1297,13 +1354,14 @@ class SweBenchGenerationTask(GenerationTask):
                 f"--config {container_tmp_path} "
                 f"--model hosted_vllm/{self.cfg.server.model} "
                 f"{task_arg} "
-                f"--output trajectories/{data_point['instance_id']}.traj.json "
+                f"--output trajectories/{instance_id}.traj.json "
                 f"--yolo "
                 f"--exit-immediately && "
                 "mkdir -p /trajectories_mount/trajectories && cp -r trajectories/* /trajectories_mount/trajectories/"
             )
 
-            search_path = os.path.join(self.output_dir, "trajectories", f"{data_point['instance_id']}.traj.json")
+        try:
+            search_path = os.path.join(self.output_dir, "trajectories", f"{instance_id}.traj.json")
 
             # If we are doing verification and the model patch is empty or missing,
             # skip the agent run and return a score of 0 for all rubric items.
@@ -1319,12 +1377,15 @@ class SweBenchGenerationTask(GenerationTask):
                 LOG.info(
                     "Skipping verification for instance %s because the model patch is empty or missing. "
                     "Returning a score of 0 for all rubric items.",
-                    data_point["instance_id"],
+                    instance_id,
                 )
             else:
                 # Execute mini-swe-agent command
-                pred_file = await self._execute_container_command(
-                    data_point, mini_swe_agent_cmd, search_path, mode="agent"
+                pred_file = await self._execute_agent_command_with_capture(
+                    data_point,
+                    build_mini_swe_agent_command,
+                    search_path,
+                    request_transform=transform_litellm_reasoning_request,
                 )
                 with open(pred_file, "r") as f:
                     trajectory_dict = json.loads(f.read().strip())
@@ -1362,11 +1423,10 @@ class SweBenchGenerationTask(GenerationTask):
 
         with open(get_config_path(self.cfg.agent_config, config_extension="toml"), "r") as f:
             config = tomlkit.parse(f.read())
-        agent_prompt = self._get_agent_prompt()
+        extra_instructions = self._get_extra_instructions()
 
         config["llm"]["model"] |= {
             "model": self.cfg.server.model,
-            "base_url": self.api_base,
             "temperature": self.cfg.inference.temperature,
             "top_p": self.cfg.inference.top_p,
         }
@@ -1391,94 +1451,101 @@ class SweBenchGenerationTask(GenerationTask):
         if completion_kwargs:
             config["llm"]["model"]["completion_kwargs"] = completion_kwargs
 
-        config_str = tomlkit.dumps(config)
-
         # Folder to copy the rollout record into.
         # It's important that the name includes the original HF dataset name,
         # because OpenHands has internal checks for substrings like "swe-bench-live" in the name (case-insensitive)
         data_dir = "/root/" + data_point["dataset_name"].replace("/", "__")
         rollout_input_path, rollout_input_container_path = self._write_openhands_rollout_input(data_point)
 
-        # The final 2 arguments are different between the swe_bench and multi_swe_bench scripts.
-        # We handle that with extra_args.
+        # The final 2 arguments to run_infer.sh and the user prompt template paths
+        # are different between the swe_bench and multi_swe_bench scripts.
         if self.cfg.multilingual and self.cfg.swe_zero_container is None:
             benchmark_name = "multi_swe_bench"
             extra_args = (
                 f" {data_dir}/dataset.jsonl "  # dataset file
                 f" {data_point['language']} "  # language
             )
+            prompt_files = ["evaluation/benchmarks/multi_swe_bench/prompts/swe_default.j2"]
         else:
             benchmark_name = "swe_bench"
             extra_args = (
                 f" {data_dir} "  # dataset folder
                 f" train "  # dataset split (always "train" for local datasets)
             )
+            prompt_files = [
+                "evaluation/benchmarks/swe_bench/prompts/swe_default.j2",
+                "evaluation/benchmarks/swe_bench/prompts/swe_gpt4.j2",
+            ]
 
         instruction_template = self._get_openhands_instruction_template()
         instruction_template_setup = ""
         if instruction_template is not None:
-            instruction_template_setup = (
-                f"cp {shlex.quote(instruction_template)} "
-                "evaluation/benchmarks/swe_bench/prompts/swe_default.j2 && "
-                f"cp {shlex.quote(instruction_template)} "
-                "evaluation/benchmarks/swe_bench/prompts/swe_gpt4.j2 && "
+            # Entirely replace the user prompt template with the custom one, if present
+            instruction_template_setup = "".join(
+                f"cp {shlex.quote(instruction_template)} {prompt_file} && " for prompt_file in prompt_files
             )
+        # Append extra instructions to the user prompt template
         instruction_template_setup += (
-            f"printf '\\n%s\\n' {shlex.quote(agent_prompt)} | tee -a "
-            "evaluation/benchmarks/swe_bench/prompts/swe_default.j2 "
-            "evaluation/benchmarks/swe_bench/prompts/swe_gpt4.j2 >/dev/null && "
+            f"printf '\\n%s\\n' {shlex.quote(extra_instructions)} | tee -a {' '.join(prompt_files)} >/dev/null && "
         )
 
-        openhands_cmd = (
-            # make sure /workspace isn't mounted as a safety precaution
-            # (mounting it in the nemo-skills cluster config is ok, just not inside of apptainer specifically)
-            "if awk '{print $2}' /proc/mounts | grep -qE '^/workspace(/|$)'; then "
-            "    echo 'Exiting because /workspace is mounted.' && "
-            "    echo 'Please make sure /workspace is not mounted inside of Apptainer before running OpenHands.' && "
-            "    echo 'This is because OpenHands DELETES EVERYTHING in the /workspace folder if it exists.' && "
-            "    exit 1; "
-            "fi && "
-            # copy installed repo, uv, tmux & jq dirs from /root_mount
-            "cp -r /root_mount/OpenHands /root && "
-            "cp -r /root_mount/uv /root && "
-            "cp -r /root_mount/tmux /root && "
-            "cp -r /root_mount/jq /root && "
-            "cd /root/OpenHands && "
-            f"{instruction_template_setup}"
-            # make soft links to poetry, tmux & jq in /usr/local/bin, so OpenHands can run them from the command line
-            "ln -sf /root/uv/tool-bin/poetry /usr/local/bin/poetry && "
-            "ln -sf /root/tmux/tmux /usr/local/bin/tmux && "
-            "ln -sf /root/jq/jq /usr/local/bin/jq && "
-            # activate openhands venv
-            "source /root/OpenHands/.venv/bin/activate && "
-            # copy only the current rollout record
-            f"mkdir {data_dir} && "
-            f"cp {shlex.quote(rollout_input_container_path)} {data_dir}/dataset.jsonl && "
-            # set up config files
-            f"echo {shlex.quote(config_str)} >config.toml && "
-            f"echo \"selected_ids = ['{data_point['instance_id']}']\" >evaluation/benchmarks/{benchmark_name}/config.toml && "
-            # set local runtime & force verbose logs
-            "export RUNTIME=local && "
-            "export LOG_ALL_EVENTS=true && "
-            "export LOG_LEVEL=DEBUG && "
-            # run the agent
-            f"./evaluation/benchmarks/{benchmark_name}/scripts/run_infer.sh "
-            f"    llm.model "  # name of llm config section in config.toml
-            f"    HEAD "  # openhands commit (HEAD = stay in the currently checked out commit)
-            f"    CodeActAgent "  # agent
-            f"    1 "  # number of instances
-            f"    {self.cfg.agent_max_turns} "  # max agent iterations
-            f"    1 "  # number of workers
-            f"    {extra_args} && "  # extra args (different depending on benchmark_name)
-            # move outputs to the mounted directory
-            f"mkdir -p /trajectories_mount/trajectories && "
-            f"cp -r evaluation/evaluation_outputs/outputs/*/*/* /trajectories_mount/trajectories/{data_point['instance_id']}"
-        )
+        def build_openhands_command(api_base):
+            config["llm"]["model"]["base_url"] = api_base
+            config_str = tomlkit.dumps(config)
+            return (
+                # make sure /workspace isn't mounted as a safety precaution
+                # (mounting it in the nemo-skills cluster config is ok, just not inside of apptainer specifically)
+                "if awk '{print $2}' /proc/mounts | grep -qE '^/workspace(/|$)'; then "
+                "    echo 'Exiting because /workspace is mounted.' && "
+                "    echo 'Please make sure /workspace is not mounted inside of Apptainer before running OpenHands.' && "
+                "    echo 'This is because OpenHands DELETES EVERYTHING in the /workspace folder if it exists.' && "
+                "    exit 1; "
+                "fi && "
+                # copy installed repo, uv, tmux & jq dirs from /root_mount
+                "cp -r /root_mount/OpenHands /root && "
+                "cp -r /root_mount/uv /root && "
+                "cp -r /root_mount/tmux /root && "
+                "cp -r /root_mount/jq /root && "
+                "cd /root/OpenHands && "
+                f"{instruction_template_setup}"
+                # make soft links to poetry, tmux & jq in /usr/local/bin, so OpenHands can run them from the command line
+                "ln -sf /root/uv/tool-bin/poetry /usr/local/bin/poetry && "
+                "ln -sf /root/tmux/tmux /usr/local/bin/tmux && "
+                "ln -sf /root/jq/jq /usr/local/bin/jq && "
+                # activate openhands venv
+                "source /root/OpenHands/.venv/bin/activate && "
+                # copy only the current rollout record
+                f"mkdir {data_dir} && "
+                f"cp {shlex.quote(rollout_input_container_path)} {data_dir}/dataset.jsonl && "
+                # set up config files
+                f"echo {shlex.quote(config_str)} >config.toml && "
+                f"echo \"selected_ids = ['{data_point['instance_id']}']\" >evaluation/benchmarks/{benchmark_name}/config.toml && "
+                # set local runtime & force verbose logs
+                "export RUNTIME=local && "
+                "export LOG_ALL_EVENTS=true && "
+                "export LOG_LEVEL=DEBUG && "
+                # run the agent
+                f"./evaluation/benchmarks/{benchmark_name}/scripts/run_infer.sh "
+                f"    llm.model "  # name of llm config section in config.toml
+                f"    HEAD "  # openhands commit (HEAD = stay in the currently checked out commit)
+                f"    CodeActAgent "  # agent
+                f"    1 "  # number of instances
+                f"    {self.cfg.agent_max_turns} "  # max agent iterations
+                f"    1 "  # number of workers
+                f"    {extra_args} && "  # extra args (different depending on benchmark_name)
+                # move outputs to the mounted directory
+                f"mkdir -p /trajectories_mount/trajectories/{data_point['instance_id']} && "
+                f"cp -r evaluation/evaluation_outputs/outputs/*/*/*/* /trajectories_mount/trajectories/{data_point['instance_id']}"
+            )
 
         # Execute OpenHands command
         search_path = os.path.join(self.output_dir, "trajectories", data_point["instance_id"], "output.jsonl")
         try:
-            out_file = await self._execute_container_command(data_point, openhands_cmd, search_path, mode="agent")
+            out_file = await self._execute_agent_command_with_capture(
+                data_point,
+                build_openhands_command,
+                search_path,
+            )
         finally:
             rollout_input_path.unlink(missing_ok=True)
 
@@ -1524,6 +1591,7 @@ class SweBenchGenerationTask(GenerationTask):
     ):
         """Run an agent command through a proxy that saves its first LLM request."""
         capture_file = self.output_dir / "trajectories" / data_point["instance_id"] / "first-llm-request.json"
+        all_requests_dir = capture_file.parent / "llm-requests" if self.cfg.capture_all_llm_requests else None
         for legacy_prompt_file in ("system-prompt.md", "user-prompt.md"):
             (capture_file.parent / legacy_prompt_file).unlink(missing_ok=True)
         async with capture_first_llm_request(
@@ -1531,6 +1599,7 @@ class SweBenchGenerationTask(GenerationTask):
             capture_file,
             served_model_name=served_model_name,
             request_transform=request_transform,
+            all_requests_dir=all_requests_dir,
         ) as proxy_api_base:
             return await self._execute_container_command(
                 data_point,
@@ -1549,7 +1618,7 @@ class SweBenchGenerationTask(GenerationTask):
 
         with open(get_config_path(self.cfg.agent_config, config_extension="json"), "r") as f:
             agent_config = json.load(f)
-        agent_prompt = self._get_agent_prompt()
+        extra_instructions = self._get_extra_instructions()
 
         output_token_max = (
             self.cfg.inference.tokens_to_generate
@@ -1563,7 +1632,7 @@ class SweBenchGenerationTask(GenerationTask):
                 f"OpenCode output-token limit ({output_token_max}) cannot exceed its context window "
                 f"({self.cfg.opencode_context_window})."
             )
-        instruction = build_direct_agent_user_prompt(self._get_agent_problem_statement(data_point), agent_prompt)
+        instruction = build_direct_agent_user_prompt(self._get_agent_problem_statement(data_point), extra_instructions)
         instance_id = data_point["instance_id"]
         # OpenCode splits --model on the first '/', so nemo/<model> keeps slashes in the model id.
         model_arg = f"{OPENCODE_PROVIDER_ID}/{self.cfg.server.model}"
@@ -1686,12 +1755,12 @@ class SweBenchGenerationTask(GenerationTask):
 
         with open(get_config_path(self.cfg.agent_config, config_extension="json"), "r") as f:
             agent_config = json.load(f)
-        agent_prompt = self._get_agent_prompt()
+        extra_instructions = self._get_extra_instructions()
 
         served_model_name = self.cfg.claude_code_model or self.cfg.server.model
         claude_model_name = served_model_name.replace("/", "__")
 
-        instruction = build_direct_agent_user_prompt(self._get_agent_problem_statement(data_point), agent_prompt)
+        instruction = build_direct_agent_user_prompt(self._get_agent_problem_statement(data_point), extra_instructions)
         instance_id = data_point["instance_id"]
         trajectory_dir = f"/trajectories_mount/trajectories/{instance_id}"
         extra_body = OmegaConf.to_container(self.cfg.inference.extra_body, resolve=True)
