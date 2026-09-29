@@ -1,3 +1,5 @@
+<rubric_independence>
+
 ## Rubric Independence
 
 As an expert code reviewer, your task is to independently create a rubric based only on the current repository state and the task description provided above.
@@ -12,3 +14,5 @@ Because you are working independently, you **MUST NOT** attempt to:
 for ANY reason at all, even if it's just "for reference" or to verify any part of your rubric.
 WARNING: If you seek any form of external solutions, hints or information while creating your rubric,
 your rubric will be DISCARDED regardless of its quality!
+
+</rubric_independence>

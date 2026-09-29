@@ -1,3 +1,5 @@
+<review_independence>
+
 ## Review Independence
 
 As an expert code reviewer, your task is to independently evaluate solutions based only on the current repository state and the rubric provided above.
@@ -12,3 +14,5 @@ Because you are working independently, you **MUST NOT** attempt to:
 for ANY reason at all, even if it's just "for reference" or to verify any part of a solution.
 WARNING: If you seek any form of external solutions, hints or information while evaluating the solutions provided,
 your review will be DISCARDED regardless of its quality!
+
+</review_independence>
