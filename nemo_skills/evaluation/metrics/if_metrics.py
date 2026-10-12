@@ -28,8 +28,16 @@ class IFMetrics(BaseMetrics):
         }
 
     def get_incorrect_sample(self, prediction: dict) -> dict:
+        # The IFEval keys live inside the strict_eval and loose_eval sub-dicts,
+        # which is where update() reads them from, and follow_all_instructions
+        # is a bool there rather than a list. Resetting a top-level key of that
+        # name raised KeyError instead of grading the sample incorrect.
         prediction = prediction.copy()
-        prediction["follow_all_instructions"] = [0 for _ in prediction["follow_all_instructions"]]
+        for eval_key in ("strict_eval", "loose_eval"):
+            eval_result = dict(prediction[eval_key])
+            eval_result["follow_all_instructions"] = False
+            eval_result["follow_instruction_list"] = [False] * len(eval_result["follow_instruction_list"])
+            prediction[eval_key] = eval_result
         return prediction
 
     def update(self, predictions):
