@@ -54,6 +54,7 @@ CORE_REQUIREMENTS = REPO_ROOT / "core" / "requirements.txt"
 PIPELINE_REQUIREMENTS = REPO_ROOT / "requirements" / "pipeline.txt"
 STEM_REQUIREMENTS = REPO_ROOT / "requirements" / "stem.txt"
 SANDBOX_LOCK = REPO_ROOT / "requirements" / "sandbox.lock"
+SANDBOX_DOCKERFILE = REPO_ROOT / "dockerfiles" / "Dockerfile.sandbox"
 MODEL_COMPARISON_REQUIREMENTS = REPO_ROOT / "recipes" / "data-integrity" / "model_comparison" / "requirements.txt"
 PYPROJECT_TOML = REPO_ROOT / "pyproject.toml"
 NLTK_VEX = REPO_ROOT / "security" / "nltk-cve-2026-81726.openvex.json"
@@ -319,6 +320,39 @@ class TestStemRequirements:
     def test_sandbox_lock_uses_same_nltk_security_commit(self):
         req, _ = _find_requirement(SANDBOX_LOCK, "nltk")
         _assert_nltk_security_commit(req)
+
+    def test_unused_legacy_cactus_dependency_is_not_reintroduced(self):
+        names = {
+            Requirement(code_part).name.lower()
+            for _, code_part, _ in _iter_requirement_lines(STEM_REQUIREMENTS)
+            if code_part
+        }
+        assert "cactus" not in names
+
+    def test_keras_floor_contains_current_security_fixes(self):
+        req, comment = _find_requirement(STEM_REQUIREMENTS, "keras")
+        specs = {spec.operator: spec.version for spec in req.specifier}
+        assert ">=" in specs
+        assert Version(specs[">="]) >= Version("3.15.1")
+        assert "CVE-2026-11816" in comment
+        assert "CVE-2026-1462" in comment
+
+    def test_sandbox_lock_contains_fixed_keras_and_no_legacy_django(self):
+        keras, _ = _find_requirement(SANDBOX_LOCK, "keras")
+        assert Version(next(iter(keras.specifier)).version) >= Version("3.15.1")
+        locked_names = {
+            Requirement(code_part).name.lower()
+            for _, code_part, _ in _iter_requirement_lines(SANDBOX_LOCK)
+            if code_part
+        }
+        assert "django" not in locked_names
+
+    def test_sandbox_uses_python_311_for_fixed_keras(self):
+        dockerfile = SANDBOX_DOCKERFILE.read_text()
+        assert "FROM tiangolo/uwsgi-nginx-flask:python3.11" in dockerfile
+        assert "--python-version 3.11" in dockerfile
+        assert "--index-strategy unsafe-best-match" in dockerfile
+        assert "FROM tiangolo/uwsgi-nginx-flask:python3.10" not in dockerfile
 
 
 class TestPyprojectUvDependencyPolicy:

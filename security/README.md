@@ -20,3 +20,24 @@ trivy fs --scanners vuln --include-dev-deps --skip-db-update \
 Do not apply this VEX to an arbitrary NLTK `3.10.3` installation. Remove the
 Git source pin and this statement together when an official NLTK release newer
 than `3.10.3` is adopted.
+
+## Sandbox lock scan
+
+Trivy does not currently discover Python packages in a file named
+`requirements/sandbox.lock`. Scan an exact temporary copy named
+`requirements.txt` so the sandbox environment is included in repository
+security checks:
+
+```bash
+sandbox_scan_dir="$(mktemp -d)"
+trap 'rm -rf "$sandbox_scan_dir"' EXIT
+cp requirements/sandbox.lock "$sandbox_scan_dir/requirements.txt"
+trivy fs --scanners vuln --include-dev-deps \
+  --format json --output trivy-sandbox-raw.json --exit-code 0 \
+  "$sandbox_scan_dir"
+```
+
+The sandbox lock is generated for Python 3.11 because the first Keras release
+containing the current security fixes requires Python 3.11 or newer. The
+obsolete `cactus` static-site generator must remain excluded: its hard
+`Django>=1.6,<1.7` dependency reintroduces multiple Critical and High findings.
