@@ -89,6 +89,10 @@ override-dependencies = [
     # Container scans found vulnerable transitive versions. Keep the complete
     # environment above the first fixed releases.
     "aiohttp>=3.14.3",
+    # sec-parser 0.58.1 declares lxml<6, but its exercised parser/render path is
+    # compatible with the first patched lxml release. Keep this exact until
+    # sec-parser publishes compatible metadata.
+    "lxml==6.1.1",
     "msgpack>=1.2.1",
     # CVE-2026-81726 has no fixed release. This is the first exact upstream
     # merge containing the complete TransitionParser, MaxEnt, and tagger fixes.

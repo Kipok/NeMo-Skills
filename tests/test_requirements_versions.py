@@ -20,7 +20,8 @@ This PR bumps several dependency floors/pins to close known CVEs:
   * datamodel-code-generator -> >=0.64.0 (fixes eight High findings)
   * wandb            -> ==0.28.1, paired with a patched wandb-core
                          (fixes bundled go-git and Go stdlib findings)
-  * lxml             -> >=6.1.0  (fixes GHSA-vfmq-68hx-4jfw)
+  * lxml             -> ==6.1.1  (fixes GHSA-vfmq-68hx-4jfw and preserves
+                                   a tested sec-parser pairing)
   * aiohttp          -> >=3.14.3 (fixes CVE-2026-69244)
   * msgpack          -> >=1.2.1  (fixes GHSA-6v7p-g79w-8964)
   * nltk             -> immutable upstream security commit for CVE-2026-81726
@@ -41,6 +42,7 @@ one of these floors) will fail CI, rather than only being caught during a
 manual dependency resolve.
 """
 
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -61,6 +63,7 @@ PYPROJECT_TOML = REPO_ROOT / "pyproject.toml"
 NLTK_VEX = REPO_ROOT / "security" / "nltk-cve-2026-81726.openvex.json"
 BFCL_MODULE = REPO_ROOT / "nemo_skills" / "inference" / "eval" / "bfcl.py"
 NEMO_SKILLS_DOCKERFILE = REPO_ROOT / "dockerfiles" / "Dockerfile.nemo-skills"
+PIP_SECURITY_PATCH = REPO_ROOT / "dockerfiles" / "pip-security-vendor.patch"
 BUILD_PYPROJECTS = [
     PYPROJECT_TOML,
     REPO_ROOT / "core" / "pyproject.toml",
@@ -68,6 +71,8 @@ BUILD_PYPROJECTS = [
 ]
 NLTK_SECURITY_COMMIT = "574270e2ad368c8816976e584da56ddfb3fefbad"
 NLTK_SECURITY_URL = f"git+https://github.com/nltk/nltk.git@{NLTK_SECURITY_COMMIT}"
+PIP_SECURITY_PATCH_SHA256 = "a93cdd2f8c0d96a3b7808190684b52ab2355cb52dccffccdccc57829b17d2285"
+PIP_SECURITY_WHEEL_SHA256 = "107b70e4b74cd9ac27ab19bebf9be2f13af12e739717f02d5c8ad23cef25f38e"
 
 
 def _load_toml(path: Path) -> dict:
@@ -186,29 +191,40 @@ class TestPatchedWandbCoreDockerBuild:
         return NEMO_SKILLS_DOCKERFILE.read_text()
 
     def test_immutable_upstream_security_commit_is_pinned(self, dockerfile):
-        assert "WANDB_CORE_COMMIT=e1184091520c9b44aa1096fdb27b2f4bf52f26d7" in dockerfile
+        assert "WANDB_CORE_COMMIT=bc2cf24b1bd9fa3a1b6cbeb920087b832afc526f" in dockerfile
+        assert (
+            "WANDB_CORE_ARCHIVE_SHA256="
+            "81e21f1057ca3312b9a676f77ba541e027b9a91950a0c8de5de5895b1dd9fa6e"
+        ) in dockerfile
         assert "WANDB_GO_GIT_VERSION=5.19.2" in dockerfile
         assert "WANDB_GO_CRYPTO_VERSION=0.55.0" in dockerfile
         assert "WANDB_GO_IMAGE_VERSION=0.45.0" in dockerfile
         assert "WANDB_GO_TEXT_VERSION=0.41.0" in dockerfile
-        assert "WANDB_GRPC_VERSION=1.83.1" in dockerfile
+        assert "WANDB_GO_NET_VERSION=0.60.0" in dockerfile
+        assert "WANDB_GRPC_VERSION=1.83.2" in dockerfile
 
     @pytest.mark.parametrize(
         "expected",
         [
-            "FROM --platform=$BUILDPLATFORM golang:1.26.6 AS wandb-core-builder",
+            "FROM --platform=$BUILDPLATFORM golang:1.27.2@sha256:",
             "ARG TARGETARCH",
+            "https://codeload.github.com/wandb/wandb/tar.gz/${WANDB_CORE_COMMIT}",
+            "${WANDB_CORE_ARCHIVE_SHA256}  /tmp/wandb.tar.gz",
             '"github.com/go-git/go-git/v5@v${WANDB_GO_GIT_VERSION}"',
+            '"golang.org/x/net@v${WANDB_GO_NET_VERSION}"',
             "go mod vendor",
             "go.mod",
             "vendor/modules.txt",
-            'go version -m /wandb-core | grep -F "go1.26.6"',
+            'go version -m /wandb-core | grep -F "go1.27.2"',
             "CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build",
+            "-trimpath",
+            "-buildvcs=false",
             "build[[:space:]]+GOOS=linux([[:space:]]|$)",
             "build[[:space:]]+GOARCH=${TARGETARCH}([[:space:]]|$)",
             "github\\.com/go-git/go-git/v5[[:space:]]+v${WANDB_GO_GIT_VERSION}",
             "golang\\.org/x/crypto[[:space:]]+v${WANDB_GO_CRYPTO_VERSION}",
             "golang\\.org/x/image[[:space:]]+v${WANDB_GO_IMAGE_VERSION}",
+            "golang\\.org/x/net[[:space:]]+v${WANDB_GO_NET_VERSION}",
             "google\\.golang\\.org/grpc[[:space:]]+v${WANDB_GRPC_VERSION}",
             "golang\\.org/x/text[[:space:]]+v${WANDB_GO_TEXT_VERSION}",
         ],
@@ -221,6 +237,10 @@ class TestPatchedWandbCoreDockerBuild:
         assert f"COPY --from=wandb-core-builder /wandb-core {destination}" in dockerfile
         assert f"RUN {destination} --help 2>&1" in dockerfile
         assert 'grep -F "Commit SHA: ${WANDB_CORE_COMMIT}"' in dockerfile
+        assert "version('wandb') == '0.28.1'" in dockerfile
+        assert "wandb.init(project='nvflow-security-smoke', mode='offline'" in dockerfile
+        assert "run.log({'probe': 1})" in dockerfile
+        assert "run.finish()" in dockerfile
 
     def test_uv_git_cache_is_removed_from_final_image(self, dockerfile):
         assert "rm -rf /root/.cache/uv" in dockerfile
@@ -239,17 +259,93 @@ class TestPatchedWandbCoreDockerBuild:
         assert "direct['vcs_info']['requested_revision'] == expected" in dockerfile
         assert "direct['vcs_info']['commit_id'] == expected" in dockerfile
 
-    def test_ray_private_aiohttp_and_uv_wheel_are_remediated(self, dockerfile):
+    def test_ray_private_aiohttp_closure_and_build_tools_are_remediated(self, dockerfile):
         assert "ray/_private/runtime_env/agent/thirdparty_files" in dockerfile
+        for module in (
+            "aiohappyeyeballs",
+            "aiohttp",
+            "aiosignal",
+            "attr",
+            "attrs",
+            "frozenlist",
+            "idna",
+            "multidict",
+            "propcache",
+            "yarl",
+        ):
+            assert module in dockerfile
         assert "FROM ghcr.io/astral-sh/uv:0.12.9 AS uv-installer" in dockerfile
         assert "COPY --from=uv-installer /uv /usr/local/bin/uv" in dockerfile
         assert "uv --version | grep -E '^uv 0\\.12\\.9([[:space:]]|$)'" in dockerfile
         assert "FROM runtime-base AS dependency-installer" in dockerfile
         assert "rm -f /usr/local/bin/uv" in dockerfile
-        assert "rm -f /usr/local/lib/python3*/dist-packages/pip/_vendor/bom.cdx.json" in dockerfile
+        assert "rm -f /usr/local/lib/python3*/dist-packages/pip/_vendor/bom.cdx.json" not in dockerfile
+        assert "! python -c 'import pip'" not in dockerfile
         assert "RUN rm -rf /usr/local" in dockerfile
         assert "COPY --from=dependency-installer /usr/local/ /usr/local/" in dockerfile
         assert '"uv>=0.11.10"' not in dockerfile
+
+    def test_lxml_security_floor_has_parser_runtime_gate(self, dockerfile):
+        assert "v('lxml') == '6.1.1'" in dockerfile
+        assert "sec_parser.Edgar10QParser().parse" in dockerfile
+        assert "sec_parser.TreeBuilder().build(elements)" in dockerfile
+        assert "sec_parser.render(tree)" in dockerfile
+        assert "assert 'Revenue rose 12 percent.' in rendered" in dockerfile
+        assert "sec-parser 0.58.1 has requirement lxml<6.0.0,>=5.2.2" in dockerfile
+
+
+class TestPatchedPipDockerBuild:
+    """pip stays functional while its three vulnerable vendored copies move forward."""
+
+    @pytest.fixture(scope="class")
+    def dockerfile(self):
+        return NEMO_SKILLS_DOCKERFILE.read_text()
+
+    def test_maintained_patch_is_exact_and_does_not_delete_the_sbom(self):
+        assert hashlib.sha256(PIP_SECURITY_PATCH.read_bytes()).hexdigest() == PIP_SECURITY_PATCH_SHA256
+        patch = PIP_SECURITY_PATCH.read_text()
+        assert '__version__ = "26.2.1+nvf.1"' in patch
+        assert "msgpack==1.2.1" in patch
+        assert "urllib3==2.8.0" in patch
+        assert "setuptools==80.10.2" in patch
+        assert "bom.cdx.json" not in patch
+
+    @pytest.mark.parametrize(
+        "expected",
+        [
+            "python:3.11.14-slim@sha256:c8271b1f627d0068857dce5b53e14a9558603b527e46f1f901722f935b786a39",
+            "PIP_SECURITY_SOURCE_COMMIT=634a6ec1a5d9dcc2433571cdb2f4c58a4bb29caf",
+            "PIP_SECURITY_SOURCE_SHA256=b6121e99b196e78b6e477924ffac99d814c5198acc4a9e53c1b4ddce72ecf5b5",
+            "https://codeload.github.com/pypa/pip/tar.gz/${PIP_SECURITY_SOURCE_COMMIT}",
+            f"PIP_SECURITY_PATCH_SHA256={PIP_SECURITY_PATCH_SHA256}",
+            f"PIP_SECURITY_WHEEL_SHA256={PIP_SECURITY_WHEEL_SHA256}",
+            "vendoring==1.4.0 build==1.4.0 flit-core==3.12.0",
+            "apt-get install -y --no-install-recommends build-essential ca-certificates curl git patch",
+            "SOURCE_DATE_EPOCH=1785882488",
+            "vendoring sync -v",
+            "PIP_VENDORED_MSGPACK_VERSION=1.2.1",
+            "PIP_VENDORED_URLLIB3_VERSION=2.8.0",
+            "PIP_VENDORED_SETUPTOOLS_VERSION=80.10.2",
+            "COPY --from=pip-security-builder /dist/pip-${PIP_SECURITY_VERSION}-py3-none-any.whl",
+            "python3 -m pip install --no-cache-dir --force-reinstall --no-deps",
+            "apt-get purge -y python3-pip python3-pip-whl",
+            "test \"$(command -v pip)\" = /usr/local/bin/pip",
+            "/usr/share/python-wheels",
+            "python -m pip --version | grep -F \"pip ${PIP_SECURITY_VERSION}\"",
+            "pip --version | grep -F \"pip ${PIP_SECURITY_VERSION}\"",
+            "pip._vendor.msgpack.__version__",
+            "pip._vendor.urllib3.__version__",
+            "_vendor/bom.cdx.json",
+            "item.get('version')",
+        ],
+    )
+    def test_source_patch_wheel_and_runtime_are_verified(self, dockerfile, expected):
+        assert expected in dockerfile
+
+    def test_pip_is_preserved_and_inventory_is_not_hidden(self, dockerfile):
+        assert not re.search(r"rm -rf /usr/local/lib/python3\S*/(?:dist|site)-packages/pip(?:\s|$)", dockerfile)
+        assert not re.search(r"rm\s+-f\s+\S*pip/_vendor/bom\.cdx\.json", dockerfile)
+        assert "! python -c 'import pip'" not in dockerfile
 
 
 class TestPipelineRequirements:
@@ -415,6 +511,10 @@ class TestPyprojectUvDependencyPolicy:
         assert ">=" in specs
         assert Version(specs[">="]) >= Version(minimum)
 
+    def test_lxml_override_is_exact_until_sec_parser_metadata_catches_up(self, uv_overrides):
+        specs = {spec.operator: spec.version for spec in uv_overrides["lxml"].specifier}
+        assert specs == {"==": "6.1.1"}
+
     def test_nltk_override_uses_unreleased_upstream_cve_fix(self, uv_overrides):
         assert "nltk" in uv_overrides
         _assert_nltk_security_commit(uv_overrides["nltk"])
@@ -502,6 +602,8 @@ def test_container_drops_non_runtime_scan_inputs():
     assert "! -name instruction_following_eval" in dockerfile
     assert "apt-get purge -y linux-libc-dev" in dockerfile
     assert "ray/jars" in dockerfile
+    assert "apt-get install --only-upgrade -y libssl3" in dockerfile
+    assert "3.0.2-0ubuntu1.30" in dockerfile
     assert "FROM ghcr.io/astral-sh/uv:0.12.9 AS uv-installer" in dockerfile
     assert "COPY --from=uv-installer /uv /usr/local/bin/uv" in dockerfile
     assert "RUN rm -rf /usr/local" in dockerfile
