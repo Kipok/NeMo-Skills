@@ -197,7 +197,7 @@ class TestPatchedWandbCoreDockerBuild:
             "81e21f1057ca3312b9a676f77ba541e027b9a91950a0c8de5de5895b1dd9fa6e"
         ) in dockerfile
         assert "WANDB_GO_GIT_VERSION=5.19.2" in dockerfile
-        assert "WANDB_GO_CRYPTO_VERSION=0.55.0" in dockerfile
+        assert "WANDB_GO_CRYPTO_VERSION=0.57.0" in dockerfile
         assert "WANDB_GO_IMAGE_VERSION=0.45.0" in dockerfile
         assert "WANDB_GO_TEXT_VERSION=0.41.0" in dockerfile
         assert "WANDB_GO_NET_VERSION=0.60.0" in dockerfile
