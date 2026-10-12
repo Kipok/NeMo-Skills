@@ -26,7 +26,8 @@ This PR bumps several dependency floors/pins to close known CVEs:
   * nltk             -> immutable upstream security commit for CVE-2026-81726
   * gradio           -> >=6.16.0 (fixes CVE-2026-49119)
   * starlette        -> >=1.3.1  (fixes CVE-2026-48818 and CVE-2026-54283)
-  * setuptools       -> >=78.1.1 (fixes CVE-2025-47273)
+  * setuptools       -> >=78.1.1,<82 (fixes CVE-2025-47273; compatible with
+                                      torch 2.11 CPU wheels)
   * typer            -> >=0.16   (click 8.2 compatible)
   * click            -> pin removed from requirements/pipeline.txt
 
@@ -347,6 +348,11 @@ class TestStemRequirements:
         }
         assert "django" not in locked_names
 
+    def test_sandbox_lock_uses_torch_compatible_secure_setuptools(self):
+        setuptools, _ = _find_requirement(SANDBOX_LOCK, "setuptools")
+        locked_version = Version(next(iter(setuptools.specifier)).version)
+        assert Version("78.1.1") <= locked_version < Version("82")
+
     def test_sandbox_uses_python_311_for_fixed_keras(self):
         dockerfile = SANDBOX_DOCKERFILE.read_text()
         assert "FROM tiangolo/uwsgi-nginx-flask:python3.11" in dockerfile
@@ -412,6 +418,10 @@ class TestPyprojectUvDependencyPolicy:
     def test_nltk_override_uses_unreleased_upstream_cve_fix(self, uv_overrides):
         assert "nltk" in uv_overrides
         _assert_nltk_security_commit(uv_overrides["nltk"])
+
+    def test_setuptools_override_respects_torch_cpu_cap(self, uv_overrides):
+        specs = {spec.operator: spec.version for spec in uv_overrides["setuptools"].specifier}
+        assert specs["<"] == "82"
 
     @pytest.mark.parametrize(
         ("package", "minimum"),

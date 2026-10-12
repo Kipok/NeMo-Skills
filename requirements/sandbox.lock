@@ -1968,7 +1968,7 @@ sentencepiece==0.2.1
     # via sanskrit-parser
 service-identity==24.2.0
     # via twisted
-setuptools==84.0.0
+setuptools==81.0.0
     # via
     #   --override (workspace)
     #   gutenbergpy

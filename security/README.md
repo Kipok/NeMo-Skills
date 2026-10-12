@@ -41,3 +41,12 @@ The sandbox lock is generated for Python 3.11 because the first Keras release
 containing the current security fixes requires Python 3.11 or newer. The
 obsolete `cactus` static-site generator must remain excluded: its hard
 `Django>=1.6,<1.7` dependency reintroduces multiple Critical and High findings.
+The workspace policy keeps setuptools at `>=78.1.1,<82`: the lower bound fixes
+CVE-2025-47273, while the upper bound is required by the PyTorch 2.11 CPU
+wheels selected from the sandbox's extra package index.
+
+This intersection does not contain the setuptools 83.0.0 fix for
+CVE-2026-59890, which applies to building source distributions on
+normalization-sensitive macOS filesystems. The Linux sandbox image neither
+builds nor publishes project source distributions. Revisit the cap when the
+sandbox can move to PyTorch 2.13 or newer, whose CPU wheels no longer impose it.

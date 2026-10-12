@@ -93,7 +93,9 @@ override-dependencies = [
     # CVE-2026-81726 has no fixed release. This is the first exact upstream
     # merge containing the complete TransitionParser, MaxEnt, and tagger fixes.
     "nltk @ git+https://github.com/nltk/nltk.git@574270e2ad368c8816976e584da56ddfb3fefbad",
-    "setuptools>=78.1.1",
+    # Torch 2.11 CPU wheels require setuptools<82. Keep the CVE-2025-47273
+    # security floor while allowing the sandbox lock to remain installable.
+    "setuptools>=78.1.1,<82",
 ]
 
 constraint-dependencies = [
