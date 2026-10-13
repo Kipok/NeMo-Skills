@@ -327,7 +327,7 @@ class TestPatchedPipDockerBuild:
             "PIP_VENDORED_SETUPTOOLS_VERSION=80.10.2",
             "COPY --from=pip-security-builder /dist/pip-${PIP_SECURITY_VERSION}-py3-none-any.whl",
             "python3 -m pip install --no-cache-dir --force-reinstall --no-deps",
-            "apt-get purge -y python3-pip python3-pip-whl",
+            'apt-get purge -y "${package}"',
             'test "$(command -v pip)" = /usr/local/bin/pip',
             "/usr/share/python-wheels",
             'python -m pip --version | grep -F "pip ${PIP_SECURITY_VERSION}"',
@@ -345,6 +345,21 @@ class TestPatchedPipDockerBuild:
         assert not re.search(r"rm -rf /usr/local/lib/python3\S*/(?:dist|site)-packages/pip(?:\s|$)", dockerfile)
         assert not re.search(r"rm\s+-f\s+\S*pip/_vendor/bom\.cdx\.json", dockerfile)
         assert "! python -c 'import pip'" not in dockerfile
+
+    def test_distribution_pip_purge_skips_packages_that_are_not_installed(self, dockerfile):
+        loop = "for package in python3-pip python3-pip-whl; do"
+        installed_guard = (
+            "if dpkg-query -W -f='${Status}' \"${package}\" 2>/dev/null | grep -q 'install ok installed'; then"
+        )
+        guarded_purge = 'apt-get purge -y "${package}"'
+
+        loop_position = dockerfile.index(loop)
+        guard_position = dockerfile.index(installed_guard, loop_position)
+        purge_position = dockerfile.index(guarded_purge, guard_position)
+        done_position = dockerfile.index("done;", purge_position)
+
+        assert loop_position < guard_position < purge_position < done_position
+        assert "apt-get purge -y python3-pip python3-pip-whl" not in dockerfile
 
 
 class TestPipelineRequirements:
