@@ -27,6 +27,15 @@ OPENCODE_PROVIDER_ID = "nemo"
 def build_opencode_install_command(version: str) -> str:
     """Build an installer that supports glibc and Alpine/musl on x86_64 and ARM64."""
     version = shlex.quote(version)
+    # Task containers only receive /root as /root_mount. Keep Alpine's Node
+    # runtime and its loader/libraries there rather than relying on /usr/bin.
+    node_wrapper = (
+        "#!/bin/sh\n"
+        'runtime_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)\n'
+        'case "$(uname -m)" in aarch64|arm64) musl_arch=aarch64 ;; *) musl_arch=x86_64 ;; esac\n'
+        'exec "$runtime_dir/lib/ld-musl-$musl_arch.so.1" --library-path "$runtime_dir/lib" '
+        '"$runtime_dir/bin/node-native" "$@"\n'
+    )
     return (
         "rm -rf /root/opencode /root/node && "
         "mkdir -p /root/opencode && "
@@ -50,7 +59,16 @@ def build_opencode_install_command(version: str) -> str:
         "    cp -L /lib/ld-musl-${OPENCODE_MUSL_ARCH}.so.1 "
         "        /root/opencode/lib/libc.musl-${OPENCODE_MUSL_ARCH}.so.1 && "
         "    cp -L /usr/lib/libstdc++.so.6 /usr/lib/libgcc_s.so.1 /root/opencode/lib/ && "
-        "    touch /root/opencode/.musl; "
+        "    touch /root/opencode/.musl && "
+        "    mkdir -p /root/node/bin /root/node/lib && "
+        '    cp -L "$(command -v node)" /root/node/bin/node-native && '
+        "    NODE_LIBRARIES=$(ldd /root/node/bin/node-native) && "
+        '    printf "%s\\n" "$NODE_LIBRARIES" | '
+        "        awk '$3 ~ /^\\// {print $3} $1 ~ /^\\// {print $1}' | "
+        '        while IFS= read -r library; do cp -L "$library" /root/node/lib/ || exit 1; done && '
+        f"    printf %s {shlex.quote(node_wrapper)} >/root/node/bin/node && "
+        "    chmod 755 /root/node/bin/node && "
+        "    /root/node/bin/node --version; "
         "else "
         f"   export NODE_VERSION={OPENCODE_NODE_VERSION} && "
         "    export NODE_ARCH=linux-${OPENCODE_ARCH} && "
