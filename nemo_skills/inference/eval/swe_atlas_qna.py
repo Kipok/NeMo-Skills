@@ -182,6 +182,8 @@ inside two <<FINAL_ANSWER>> markers using the finish tool. Do not call tools aft
         template_name = "nemo_swe_atlas_qna.j2"
         template_path = f"evaluation/benchmarks/swe_bench/prompts/{template_name}"
         return (
+            "python /nemo_run/code/nemo_skills/inference/eval/openhands_atlas.py "
+            "--runner evaluation/benchmarks/swe_bench/run_infer.py && "
             f"printf '%s\\n' {shlex.quote(template)} >{shlex.quote(template_path)} && "
             f"export INSTRUCTION_TEMPLATE_NAME={shlex.quote(template_name)} && "
         )

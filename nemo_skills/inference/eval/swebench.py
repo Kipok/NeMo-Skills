@@ -34,6 +34,7 @@ import tomlkit
 import yaml
 from omegaconf import OmegaConf
 
+from nemo_skills.inference.eval.apptainer_utils import run_apptainer_command
 from nemo_skills.inference.eval.claude_code_trajectory import (
     convert_claude_code_stream_to_atif,
     extract_final_assistant_text_from_events,
@@ -324,6 +325,9 @@ class SweBenchGenerationConfig:
 
     # How many times to try running inference & evaluation commands until they produce a valid output file
     max_retries: int = 3
+
+    # Total attempts for transient image downloads, independent of agent rollout retries.
+    image_pull_max_retries: int = 3
 
     # Interval between retries, in seconds.
     # Selected randomly between min_retry_interval and max_retry_interval every time an instance is retried,
@@ -801,21 +805,20 @@ class SweBenchGenerationTask(GenerationTask):
                         shutil.rmtree(staged_output, ignore_errors=True)
                         staged_output.mkdir()
 
-                    # Stream output to log file as it appears
-                    with open(log_file_path, "w") as log_file:
-                        try:
-                            process = await asyncio.create_subprocess_shell(
-                                apptainer_cmd, stdout=log_file, stderr=log_file
-                            )
-                            await asyncio.wait_for(process.communicate(), timeout=timeout)
-                            if process.returncode != 0:
-                                raise ValueError(f"Command failed with return code {process.returncode}")
-                        except asyncio.TimeoutError:
-                            if process.returncode is None:
-                                process.kill()
-                                await process.wait()
-                            timed_out = True
-                            raise ValueError("Command timed out")
+                    try:
+                        returncode = await run_apptainer_command(
+                            apptainer_cmd,
+                            log_file_path,
+                            timeout=timeout,
+                            image_pull_max_retries=self.cfg.image_pull_max_retries,
+                            min_retry_interval=self.cfg.min_retry_interval,
+                            max_retry_interval=self.cfg.max_retry_interval,
+                        )
+                    except asyncio.TimeoutError as error:
+                        timed_out = True
+                        raise ValueError("Command timed out") from error
+                    if returncode != 0:
+                        raise ValueError(f"Command failed with return code {returncode}")
 
                     await asyncio.to_thread(
                         shutil.copytree,
