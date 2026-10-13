@@ -1,10 +1,13 @@
 # using the oldest version of alpine among swe-bench pro containers for maximum compatibility
 FROM alpine:3.17.1
 
-# installs python 3.10
+# installs python 3.10 and the Node.js/npm and ripgrep tools used by OpenCode
 RUN apk update && apk add --no-cache \
     python3 \
     py3-pip \
+    nodejs \
+    npm \
+    ripgrep \
     curl \
     wget \
     git \
