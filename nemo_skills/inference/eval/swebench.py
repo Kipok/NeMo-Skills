@@ -531,7 +531,10 @@ class SweBenchGenerationTask(GenerationTask):
                 # this will make a venv using poetry & install openhands dependencies
                 # we no longer use 'make build' because it installs lots of unnecessary dependencies, e.g. frontend
                 "make install-python-dependencies && "
-                "poetry run python -m pip install datasets"
+                "poetry run python -m pip install datasets && "
+                # Use a lockfile-verified wheel compatible with Debian 11 task containers.
+                "poetry run python /nemo_run/code/nemo_skills/inference/eval/openhands_compat.py "
+                "--lockfile /root/OpenHands/poetry.lock"
             )
 
         elif self.cfg.agent_framework == SupportedAgentFrameworks.opencode:
