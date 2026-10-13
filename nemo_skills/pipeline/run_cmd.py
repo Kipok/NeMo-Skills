@@ -64,6 +64,10 @@ def run_cmd(
     num_gpus: int | None = typer.Option(None, help="Number of GPUs per node to use"),
     num_nodes: int = typer.Option(1, help="Number of nodes to use"),
     num_tasks: int = typer.Option(1, help="Number of tasks per node"),
+    with_ray: bool = typer.Option(
+        False, help="Run the command once on the head of a Ray cluster inside the Slurm allocation."
+    ),
+    ray_template: str | None = typer.Option(None, help="Path to a checked-in NeMo-Run Ray Slurm template."),
     model: str = typer.Option(None, help="Path to the model to evaluate"),
     server_address: str = typer.Option(None, help="Address of the server hosting the model"),
     server_type: pipeline_utils.SupportedServers | None = typer.Option(None, help="Type of server to use"),
@@ -217,6 +221,8 @@ def run_cmd(
                 num_gpus=num_gpus,
                 num_nodes=num_nodes,
                 num_tasks=[num_tasks] * len(commands),
+                with_ray=with_ray,
+                ray_template=ray_template,
                 sbatch_kwargs=parse_kwargs(sbatch_kwargs, exclusive=exclusive, qos=qos, time_min=time_min),
                 installation_command=installation_command,
                 skip_hf_home_check=skip_hf_home_check,

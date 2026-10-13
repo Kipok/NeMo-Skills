@@ -68,3 +68,39 @@ ns run_cmd \
 ```
 
 This will launch the LLM inference server, the sandbox server and then run the inference code.
+
+### Run once inside a Slurm Ray cluster
+
+Pass `--with_ray` to run the command on the Ray head inside a multi-node Slurm
+allocation. This uses the existing NeMo-Run Ray launcher and leaves ordinary
+`run_cmd` jobs unchanged. For example:
+
+```bash
+ns run_cmd --cluster=my-cluster --container=my-public-image \
+  --num_nodes=4 --num_gpus=8 --with_ray \
+  'cd /nemo_run/code/my-project && uv run --locked driver.py'
+```
+
+Python callers pass `with_ray=True`. The environment invoking `run_cmd` must
+install the Skills version exposing this option; packaged runtime source does
+not change the host launcher's Python signature.
+
+Python callers can also pass `ray_template` (CLI `--ray_template`) through the
+existing task/executor template API. The checked-in
+`nemo_skills/pipeline/nemo_rl/ray_templates/nemo_skills_sandbox_ray.sub.j2`
+works with ordinary Ray jobs and optional sandbox roles, without rewriting
+installed Ray source. Nsight support must come from the chosen Ray package.
+Set the allocation's `RAY_EXECUTABLE` to the absolute `bin/ray` in the same
+prepared environment used by the driver. All start/status commands use it;
+the default remains `ray`. Build and verify that environment before allocating
+training GPUs. This setting does not change the host launcher's Python/PATH.
+
+If the image requires normal package setup in each Ray container, declare
+`RAY_NODE_SETUP_SCRIPT` in the cluster environment. The checked-in template
+executes that script inside both head and worker containers before starting Ray,
+and stops that container if setup fails. The script must be available through a
+normal packaged or mounted path. This supports image-specific public package
+installation without changing the Ray bootstrap; leave it unset when the image
+is already prepared. Also declare any environment settings required by Ray and
+its actors in the cluster configuration, since changes made by the setup script
+are local to its subprocess.

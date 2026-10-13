@@ -21,6 +21,13 @@ export SLURM_UNBUFFEREDIO=1
 {{env_var}}
 {%- endfor %}
 
+{# Pyxis image defaults otherwise override batch-shell values on first start. #}
+{% macro container_env_argument() -%}
+{%- if env_vars -%}
+--container-env={% for env_var in env_vars %}{{ env_var.split('=', 1)[0].split(' ', 1)[1] }}{% if not loop.last %},{% endif %}{% endfor %}
+{%- endif -%}
+{%- endmacro %}
+
 # Ports for all nodes (should be odd numbers since we place head/worker[0] on the same node) so all workers get the odd ports, but the head will get +1 the ports
 NODE_MANAGER_PORT=${NODE_MANAGER_PORT:-53001}
 OBJECT_MANAGER_PORT=${OBJECT_MANAGER_PORT:-53003}
@@ -199,6 +206,15 @@ env
 {{ pre_ray_start_commands }}
 {%- endif %}
 
+# Optional normal package setup inside each container, before starting Ray.
+# The script path is propagated through the declared container environment.
+if [[ -n "\${RAY_NODE_SETUP_SCRIPT:-}" ]]; then
+  if ! bash "\$RAY_NODE_SETUP_SCRIPT"; then
+    echo "Node package setup failed; Ray was not started" >&2
+    exit 1
+  fi
+fi
+
 exit-dramatically() {
     # Use SIGTERM to forcefully terminate the srun process
     pkill -P $$ || true
@@ -252,11 +268,8 @@ log-sync-sidecar() {
 }
 log-sync-sidecar &
 
-# Patch nsight.py before starting Ray head
-sed -i 's/context\.py_executable = " "\.join(self\.nsight_cmd) + " python"/context.py_executable = " ".join(self.nsight_cmd) + f" {context.py_executable}"/g' /opt/nemo_rl_venv/lib64/python*/site-packages/ray/_private/runtime_env/nsight.py
-
 cat <<EOFINNER | tee /launch-head.sh
-ray start --head \
+"${RAY_EXECUTABLE:-ray}" start --head \
     --disable-usage-stats \
     --temp-dir=${RAY_TEMP_DIR} \
     --resources="{\"worker_units\": $gpus_per_node, \"slurm_managed_ray_cluster\": 1}" \
@@ -287,12 +300,12 @@ touch $LOG_DIR/ENDED
 exit 1
 EOF
 )
-srun {% if heterogeneous %}--het-group=0 {% endif %}{{ common_srun_args }} --container-name=ray-head --nodes=1 --ntasks=1 --cpus-per-task=$CPUS_PER_WORKER -w "$head_node" -o $LOG_DIR/{{ ray_log_prefix }}head.log bash -x -c "$head_cmd" &
+srun {% if heterogeneous %}--het-group=0 {% endif %}{{ common_srun_args }} {{ container_env_argument() }} --container-name=ray-head --nodes=1 --ntasks=1 --cpus-per-task=$CPUS_PER_WORKER -w "$head_node" -o $LOG_DIR/{{ ray_log_prefix }}head.log bash -x -c "$head_cmd" &
 SRUN_PIDS["ray-head"]=$!
 
 # Wait for the head node container to start and for Ray to be ready
 elapsed_time=0
-while ! (srun {% if heterogeneous %}--het-group=0 {% endif %}--overlap --nodes=1 --ntasks=1 -w $head_node test -f $LOG_DIR/STARTED_RAY_HEAD && srun {% if heterogeneous %}--het-group=0 {% endif %}--overlap --container-name=ray-head --nodes=1 --ntasks=1 -w $head_node ray status --address $ip_head 2>/dev/null); do
+while ! (srun {% if heterogeneous %}--het-group=0 {% endif %}--overlap --nodes=1 --ntasks=1 -w $head_node test -f $LOG_DIR/STARTED_RAY_HEAD && srun {% if heterogeneous %}--het-group=0 {% endif %}--overlap --container-name=ray-head --nodes=1 --ntasks=1 -w $head_node "${RAY_EXECUTABLE:-ray}" status --address $ip_head 2>/dev/null); do
   if [[ $elapsed_time -ge $RAY_HEAD_START_TIMEOUT ]]; then
     echo "[ERROR][$(date)] Ray head node failed to start within $RAY_HEAD_START_TIMEOUT seconds. Exiting..."
     touch $LOG_DIR/ENDED
@@ -346,6 +359,15 @@ env
 {{ pre_ray_start_commands }}
 {%- endif %}
 
+# Optional normal package setup inside each container, before starting Ray.
+# The script path is propagated through the declared container environment.
+if [[ -n "\${RAY_NODE_SETUP_SCRIPT:-}" ]]; then
+  if ! bash "\$RAY_NODE_SETUP_SCRIPT"; then
+    echo "Node package setup failed; Ray was not started" >&2
+    exit 1
+  fi
+fi
+
 exit-dramatically() {
     # Use SIGTERM to forcefully terminate the srun process
     pkill -P $$ || true
@@ -367,12 +389,9 @@ monitor-sidecar() {
 }
 monitor-sidecar &
 
-# Patch nsight.py before starting Ray worker
-sed -i 's/context\.py_executable = " "\.join(self\.nsight_cmd) + " python"/context.py_executable = " ".join(self.nsight_cmd) + f" {context.py_executable}"/g' /opt/nemo_rl_venv/lib64/python*/site-packages/ray/_private/runtime_env/nsight.py
-
 cat <<EOFINNER | tee /launch-worker.sh
 sleep 5
-ray start --address "$ip_head" \
+"${RAY_EXECUTABLE:-ray}" start --address "$ip_head" \
           --disable-usage-stats \
           --resources="{\"worker_units\": $gpus_per_node, \"slurm_managed_ray_cluster\": 1}" \
           --min-worker-port=${MIN_WORKER_PORT} \
@@ -403,7 +422,7 @@ EOF
   if [[ $i -eq 0 ]]; then
     OVERLAP_HEAD_AND_WORKER_ARG="--overlap"
   fi
-  srun {% if heterogeneous %}--het-group=0 {% endif %}{{ common_srun_args }} ${OVERLAP_HEAD_AND_WORKER_ARG:-} --container-name=ray-worker-$i --exact --nodes=1 --ntasks=1 --cpus-per-task=$CPUS_PER_WORKER -w "$node_i" -o $LOG_DIR/{{ ray_log_prefix }}worker-$i.log bash -x -c "$worker_cmd" &
+  srun {% if heterogeneous %}--het-group=0 {% endif %}{{ common_srun_args }} {{ container_env_argument() }} ${OVERLAP_HEAD_AND_WORKER_ARG:-} --container-name=ray-worker-$i --exact --nodes=1 --ntasks=1 --cpus-per-task=$CPUS_PER_WORKER -w "$node_i" -o $LOG_DIR/{{ ray_log_prefix }}worker-$i.log bash -x -c "$worker_cmd" &
   SRUN_PIDS["ray-worker-$i"]=$!
   sleep 3
 done
@@ -412,7 +431,7 @@ done
 # Before we launch a job on this cluster we need to make sure that the bringup is complete
 # We do so by querying the number of worker_units in the ray cluster and asserting = NUM_ACTORS
 extract_worker_units() {
-  status_output=$(srun {% if heterogeneous %}--het-group=0 {% endif %}--overlap --container-name=ray-head --nodes=1 --ntasks=1 -w "$head_node" ray status --address $ip_head)
+  status_output=$(srun {% if heterogeneous %}--het-group=0 {% endif %}--overlap --container-name=ray-head --nodes=1 --ntasks=1 -w "$head_node" "${RAY_EXECUTABLE:-ray}" status --address $ip_head)
   if echo "$status_output" | grep -q "worker_units"; then
     worker_units=$(echo "$status_output" | grep "worker_units" | awk -F'[/. ]' '{print $4}')
     echo $worker_units
