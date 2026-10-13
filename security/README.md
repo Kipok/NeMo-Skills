@@ -1,11 +1,12 @@
 # Security scan assertions
 
-`nltk-cve-2026-81726.openvex.json` is a narrow `fixed` statement for the
-repository's exact, audited NLTK source commit. NLTK has not published a release
-for CVE-2026-81726, so the patched checkout still reports version `3.10.3` and a
+`nltk-cve-2026-81726.openvex.json` contains separate, narrowly scoped `fixed`
+statements for CVE-2026-81726 and GHSA-j456-xh4h-cpf2, tied to the repository's
+exact, audited NLTK source commit. NLTK has not published a release containing
+either fix, so the patched checkout still reports version `3.10.3` and a
 version-only scanner cannot distinguish it from the vulnerable PyPI artifact.
 
-Run the dependency/provenance regression tests before applying the statement,
+Run the dependency/provenance regression tests before applying the statements,
 and keep an unfiltered report for audit:
 
 ```bash
@@ -18,8 +19,8 @@ trivy fs --scanners vuln --include-dev-deps --skip-db-update \
 ```
 
 Do not apply this VEX to an arbitrary NLTK `3.10.3` installation. Remove the
-Git source pin and this statement together when an official NLTK release newer
-than `3.10.3` is adopted.
+Git source pin and both statements together when an official NLTK release
+containing both fixes is adopted.
 
 ## Sandbox lock scan
 
