@@ -64,6 +64,8 @@ def extract_openhands_final_response(history: list[dict] | None) -> str:
             continue
         args = event.get("args") if isinstance(event.get("args"), dict) else {}
         if event.get("action") == "finish":
+            if isinstance(args.get("final_thought"), str) and args["final_thought"].strip():
+                candidates.append(args["final_thought"])
             outputs = args.get("outputs")
             if isinstance(outputs, dict):
                 for key in ("content", "final_response", "answer"):
@@ -151,6 +153,7 @@ class SweAtlasQnAGenerationTask(SweBenchGenerationTask):
             "base_commit": data_point["base_commit"],
             "repo": data_point.get("repo", "swe-atlas-qna"),
             "version": data_point.get("version", data_point["instance_id"]),
+            "container_repo_dir": data_point.get("container_repo_dir", "/testbed"),
             # The SWE-bench harness expects test lists even for Atlas Q&A tasks.
             "PASS_TO_PASS": [],
             "FAIL_TO_PASS": [],
@@ -161,10 +164,16 @@ class SweAtlasQnAGenerationTask(SweBenchGenerationTask):
             f"printf '%s\\n' {shlex.quote(serialized_row)} >{shlex.quote(data_dir + '/dataset.jsonl')}"
         )
 
+    def _get_openhands_environment_setup(self) -> str:
+        return (
+            "/root/OpenHands/.venv/bin/python /nemo_run/code/nemo_skills/inference/eval/openhands_atlas.py "
+            "--capture-environment /root/nemo-atlas-task-environment.json && "
+        )
+
     def _get_openhands_prompt_setup(self, data_point: dict) -> str:
         extra_instructions = self._get_extra_instructions()
         template = """<uploaded_files>
-/workspace/{{ workspace_dir_name }}
+{{ instance.container_repo_dir }}
 </uploaded_files>
 
 You are answering a software engineering question about the uploaded repository.

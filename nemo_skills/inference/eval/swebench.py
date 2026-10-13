@@ -329,6 +329,9 @@ class SweBenchGenerationConfig:
     # Total attempts for transient image downloads, independent of agent rollout retries.
     image_pull_max_retries: int = 3
 
+    # Setup downloads can fail before a rollout starts; keep their retry budget separate.
+    setup_max_retries: int = 3
+
     # Interval between retries, in seconds.
     # Selected randomly between min_retry_interval and max_retry_interval every time an instance is retried,
     # in order to avoid too many instances making network requests at the same time.
@@ -647,7 +650,7 @@ class SweBenchGenerationTask(GenerationTask):
 
     async def _execute_local_command(self, command, timeout=None):
         """Execute a command locally with retry logic."""
-        for attempt in range(self.cfg.max_retries):
+        for attempt in range(self.cfg.setup_max_retries):
             try:
                 # Create async subprocess
                 process = await asyncio.create_subprocess_shell(f"/bin/bash -c {shlex.quote(command)}")
@@ -658,11 +661,14 @@ class SweBenchGenerationTask(GenerationTask):
                 if process.returncode != 0:
                     raise ValueError(f"Command failed with return code {process.returncode}")
 
-            except asyncio.TimeoutError:
-                raise ValueError(f"Command timed out after {timeout} seconds: '{command}'")
+            except asyncio.TimeoutError as error:
+                if process.returncode is None:
+                    process.kill()
+                    await process.wait()
+                raise ValueError(f"Command timed out after {timeout} seconds: '{command}'") from error
 
             except Exception:
-                if attempt < self.cfg.max_retries - 1:
+                if attempt < self.cfg.setup_max_retries - 1:
                     retry_interval = random.randint(self.cfg.min_retry_interval, self.cfg.max_retry_interval)
                     LOG.warning(
                         "Attempt %d failed for command: '%s'. Retrying in %d seconds...",
@@ -674,7 +680,7 @@ class SweBenchGenerationTask(GenerationTask):
                         await asyncio.sleep(retry_interval)
                     continue
                 else:
-                    raise ValueError(f"All {self.cfg.max_retries} attempts failed for command: '{command}'")
+                    raise ValueError(f"All {self.cfg.setup_max_retries} attempts failed for command: '{command}'")
 
             else:
                 return
@@ -870,6 +876,10 @@ class SweBenchGenerationTask(GenerationTask):
     def _get_openhands_dataset_setup(self, data_point: dict, data_dir: str) -> str:
         """Build the command that places the benchmark dataset in the container."""
         return f"mkdir {data_dir} && cp /input_mount/{Path(self.cfg.input_file).name} {data_dir}/dataset.jsonl"
+
+    def _get_openhands_environment_setup(self) -> str:
+        """Return optional setup before OpenHands activates its Python environment."""
+        return ""
 
     def _get_openhands_prompt_setup(self, data_point: dict) -> str:
         """Return optional commands and environment for a custom OpenHands prompt."""
@@ -1194,6 +1204,7 @@ class SweBenchGenerationTask(GenerationTask):
                 "ln -sf /root/uv/tool-bin/poetry /usr/local/bin/poetry && "
                 "ln -sf /root/tmux/tmux /usr/local/bin/tmux && "
                 "ln -sf /root/jq/jq /usr/local/bin/jq && "
+                f"{self._get_openhands_environment_setup()}"
                 "source /root/OpenHands/.venv/bin/activate && "
                 f"{dataset_setup} && "
                 f"echo {shlex.quote(config_str)} >config.toml && "

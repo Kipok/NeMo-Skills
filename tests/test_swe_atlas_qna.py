@@ -696,6 +696,7 @@ def test_swe_atlas_qna_openhands_uses_sanitized_dataset_and_qna_prompt():
         "base_commit": "abc123",
         "repo": "swe-atlas-qna",
         "version": "task-1",
+        "container_repo_dir": "/testbed",
         "PASS_TO_PASS": [],
         "FAIL_TO_PASS": [],
     }
