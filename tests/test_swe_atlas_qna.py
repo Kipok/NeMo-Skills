@@ -14,6 +14,7 @@
 
 import asyncio
 import json
+import shlex
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -687,7 +688,17 @@ def test_swe_atlas_qna_openhands_uses_sanitized_dataset_and_qna_prompt():
     dataset_setup = task._get_openhands_dataset_setup(data_point, "/root/ScaleAI__SWE-Atlas-QnA")
     prompt_setup = task._get_openhands_prompt_setup(data_point)
 
-    assert "How does this work?" in dataset_setup
+    dataset_tokens = shlex.split(dataset_setup)
+    serialized_row = json.loads(dataset_tokens[dataset_tokens.index("printf") + 2])
+    assert serialized_row == {
+        "instance_id": "task-1",
+        "problem_statement": "How does this work?",
+        "base_commit": "abc123",
+        "repo": "swe-atlas-qna",
+        "version": "task-1",
+        "PASS_TO_PASS": [],
+        "FAIL_TO_PASS": [],
+    }
     assert "PRIVATE REFERENCE" not in dataset_setup
     assert "PRIVATE RUBRIC" not in dataset_setup
     assert "reference_answer" not in dataset_setup

@@ -151,6 +151,9 @@ class SweAtlasQnAGenerationTask(SweBenchGenerationTask):
             "base_commit": data_point["base_commit"],
             "repo": data_point.get("repo", "swe-atlas-qna"),
             "version": data_point.get("version", data_point["instance_id"]),
+            # The SWE-bench harness expects test lists even for Atlas Q&A tasks.
+            "PASS_TO_PASS": [],
+            "FAIL_TO_PASS": [],
         }
         serialized_row = json.dumps(safe_row, ensure_ascii=False)
         return (
