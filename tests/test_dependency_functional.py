@@ -34,7 +34,8 @@ Bumps under test:
                                so guarded by importorskip)
   * aiohttp          >=3.14.3 (fixes CVE-2026-69244)
   * msgpack          >=1.2.1  (fixes GHSA-6v7p-g79w-8964)
-  * nltk             pinned to upstream commit 574270e (fixes CVE-2026-81726)
+  * nltk             pinned to upstream commit 6a17606 (fixes CVE-2026-81726
+                                 and GHSA-j456-xh4h-cpf2)
   * starlette        >=1.3.1  (fixes CVE-2026-48818 and CVE-2026-54283)
   * setuptools       >=78.1.1 (fixes CVE-2025-47273)
 
@@ -51,7 +52,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-NLTK_SECURITY_COMMIT = "574270e2ad368c8816976e584da56ddfb3fefbad"
+NLTK_SECURITY_COMMIT = "6a17606293fe9d3ea1006f99dd3fed2e2b25d519"
 
 # ---------------------------------------------------------------------------
 # GitPython >=3.1.58 and datamodel-code-generator >=0.64.0
@@ -168,6 +169,34 @@ def test_nltk_model_artifact_paths_stay_inside_pathsec(tmp_path, monkeypatch):
     with pytest.raises(PermissionError):
         TransitionParser("arc-standard").train([graph], str(trained_model), verbose=False)
     assert not trained_model.exists()
+
+
+def test_nltk_weka_model_paths_stay_inside_pathsec(tmp_path, monkeypatch):
+    """Drive the GHSA-j456-xh4h-cpf2 Weka read/write sinks outside pathsec."""
+    import nltk.data
+    from nltk import pathsec
+    from nltk.classify.weka import WekaClassifier
+
+    allowed = tmp_path / "allowed"
+    outside = tmp_path / "outside"
+    allowed.mkdir()
+    outside.mkdir()
+    monkeypatch.setattr(nltk.data, "path", [str(allowed)])
+    monkeypatch.setattr(pathsec, "ENFORCE", True)
+    monkeypatch.setattr(pathsec, "_get_allowed_roots", lambda: (str(allowed.resolve()),))
+
+    model = outside / "weka.model"
+    with pytest.raises(PermissionError):
+        WekaClassifier(None, str(model))
+
+    with pytest.raises(PermissionError):
+        WekaClassifier.train(str(model), [({"feature": 1}, "positive")])
+
+    classifier = object.__new__(WekaClassifier)
+    classifier._formatter = None
+    classifier._model = str(model)
+    with pytest.raises(PermissionError):
+        classifier.classify_many([{"feature": 1}])
 
 
 def test_nltk_tokenizers_still_work_after_security_patch():

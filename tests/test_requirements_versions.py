@@ -20,8 +20,7 @@ This PR bumps several dependency floors/pins to close known CVEs:
   * datamodel-code-generator -> >=0.64.0 (fixes eight High findings)
   * wandb            -> ==0.28.1, paired with a patched wandb-core
                          (fixes bundled go-git and Go stdlib findings)
-  * lxml             -> ==6.1.1  (fixes GHSA-vfmq-68hx-4jfw and preserves
-                                   a tested sec-parser pairing)
+  * lxml             -> ==6.1.1  (fixes GHSA-vfmq-68hx-4jfw)
   * aiohttp          -> >=3.14.3 (fixes CVE-2026-69244)
   * msgpack          -> >=1.2.1  (fixes GHSA-6v7p-g79w-8964)
   * nltk             -> immutable upstream security commit for CVE-2026-81726
@@ -69,7 +68,7 @@ BUILD_PYPROJECTS = [
     REPO_ROOT / "core" / "pyproject.toml",
     REPO_ROOT / "tools" / "pyproject.toml",
 ]
-NLTK_SECURITY_COMMIT = "574270e2ad368c8816976e584da56ddfb3fefbad"
+NLTK_SECURITY_COMMIT = "6a17606293fe9d3ea1006f99dd3fed2e2b25d519"
 NLTK_SECURITY_URL = f"git+https://github.com/nltk/nltk.git@{NLTK_SECURITY_COMMIT}"
 PIP_SECURITY_PATCH_SHA256 = "a93cdd2f8c0d96a3b7808190684b52ab2355cb52dccffccdccc57829b17d2285"
 PIP_SECURITY_WHEEL_SHA256 = "107b70e4b74cd9ac27ab19bebf9be2f13af12e739717f02d5c8ad23cef25f38e"
@@ -160,6 +159,21 @@ class TestCoreRequirements:
         assert ">=" in specs, f"expected a floor (>=) specifier for gradio, got {req.specifier}"
         assert Version(specs[">="]) >= Version("6.16.0")
         assert "CVE-2026-49119" in comment
+
+    @pytest.mark.parametrize(
+        ("package", "minimum"),
+        [
+            ("datasets", "5.0.1"),
+            ("fsspec", "2026.6.0"),
+            ("sentence-transformers", "5.7.0"),
+            ("transformers", "5.19.0"),
+        ],
+    )
+    def test_nspect_dependency_floor(self, package, minimum):
+        req, _ = _find_requirement(CORE_REQUIREMENTS, package)
+        specs = {spec.operator: spec.version for spec in req.specifier}
+        assert ">=" in specs
+        assert Version(specs[">="]) >= Version(minimum)
 
     def test_nltk_uses_unreleased_upstream_cve_fix(self):
         req, comment = _find_requirement(CORE_REQUIREMENTS, "nltk")
@@ -284,13 +298,27 @@ class TestPatchedWandbCoreDockerBuild:
         assert "COPY --from=dependency-installer /usr/local/ /usr/local/" in dockerfile
         assert '"uv>=0.11.10"' not in dockerfile
 
-    def test_lxml_security_floor_has_parser_runtime_gate(self, dockerfile):
+    def test_lxml_security_floor_has_runtime_gate(self, dockerfile):
         assert "v('lxml') == '6.1.1'" in dockerfile
-        assert "sec_parser.Edgar10QParser().parse" in dockerfile
-        assert "sec_parser.TreeBuilder().build(elements)" in dockerfile
-        assert "sec_parser.render(tree)" in dockerfile
-        assert "assert 'Revenue rose 12 percent.' in rendered" in dockerfile
-        assert "sec-parser 0.58.1 has requirement lxml<6.0.0,>=5.2.2" in dockerfile
+        assert "document.xpath('string(//p)') == 'Revenue rose 12 percent.'" in dockerfile
+        assert "assert etree.LXML_VERSION[:3] == (6, 1, 1)" in dockerfile
+        assert "lxml compatibility OK:" in dockerfile
+
+    @pytest.mark.parametrize(
+        ("package", "minimum"),
+        [
+            ("anyio", "4.15.1"),
+            ("datasets", "5.0.1"),
+            ("fsspec", "2026.6.0"),
+            ("PyJWT", "2.15.1"),
+            ("sentence-transformers", "5.7.0"),
+            ("transformers", "5.19.0"),
+            ("urllib3", "2.8.0"),
+            ("virtualenv", "21.14.7"),
+        ],
+    )
+    def test_nspect_security_floor_has_runtime_gate(self, dockerfile, package, minimum):
+        assert f"V(v('{package}')) >= V('{minimum}')" in dockerfile
 
 
 class TestPatchedPipDockerBuild:
@@ -507,13 +535,13 @@ class TestPyprojectUvDependencyPolicy:
         req = uv_overrides["urllib3"]
         specs = {spec.operator: spec.version for spec in req.specifier}
         assert ">=" in specs
-        assert Version(specs[">="]) >= Version("2.6.3")
+        assert Version(specs[">="]) >= Version("2.8.0")
 
     @pytest.mark.parametrize(
         ("package", "minimum"),
         [
             ("aiohttp", "3.14.3"),
-            ("anyio", "4.14.2"),
+            ("anyio", "4.15.1"),
             ("msgpack", "1.2.1"),
             ("prometheus-fastapi-instrumentator", "8.1.0"),
             ("setuptools", "78.1.1"),
@@ -525,7 +553,7 @@ class TestPyprojectUvDependencyPolicy:
         assert ">=" in specs
         assert Version(specs[">="]) >= Version(minimum)
 
-    def test_lxml_override_is_exact_until_sec_parser_metadata_catches_up(self, uv_overrides):
+    def test_lxml_security_override_is_exact(self, uv_overrides):
         specs = {spec.operator: spec.version for spec in uv_overrides["lxml"].specifier}
         assert specs == {"==": "6.1.1"}
 
@@ -542,7 +570,9 @@ class TestPyprojectUvDependencyPolicy:
         [
             ("httpcore2", "2.10.0"),
             ("httpx2", "2.12.0"),
+            ("pyjwt", "2.15.1"),
             ("starlette", "1.3.1"),
+            ("virtualenv", "21.14.7"),
         ],
     )
     def test_container_security_constraint_present(self, uv_constraints, package, minimum):
@@ -560,13 +590,15 @@ class TestPyprojectUvDependencyPolicy:
 def test_nltk_vex_is_narrow_and_tied_to_the_audited_commit():
     document = json.loads(NLTK_VEX.read_text())
     assert document["@context"] == "https://openvex.dev/ns/v0.2.0"
-    assert document["version"] == 1
-    assert len(document["statements"]) == 1
-    statement = document["statements"][0]
-    assert statement["vulnerability"]["name"] == "CVE-2026-81726"
-    assert statement["products"] == [{"@id": "pkg:pypi/nltk@3.10.3"}]
-    assert statement["status"] == "fixed"
-    assert NLTK_SECURITY_COMMIT in statement["status_notes"]
+    assert document["@id"].endswith("/nltk-security-fixes/2")
+    assert document["timestamp"] == "2026-10-13T17:32:20Z"
+    assert document["version"] == 2
+    statements = {statement["vulnerability"]["name"]: statement for statement in document["statements"]}
+    assert set(statements) == {"CVE-2026-81726", "GHSA-j456-xh4h-cpf2"}
+    for statement in statements.values():
+        assert statement["products"] == [{"@id": "pkg:pypi/nltk@3.10.3"}]
+        assert statement["status"] == "fixed"
+        assert NLTK_SECURITY_COMMIT in statement["status_notes"]
 
 
 def test_data_integrity_recipe_uses_same_nltk_security_commit():

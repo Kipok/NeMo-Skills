@@ -126,7 +126,7 @@ FROM ghcr.io/astral-sh/uv:0.12.9 AS uv-installer
 # using ubuntu instead of debian for easier apptainer installation on arm64
 FROM ubuntu:22.04 AS runtime-base
 ARG WANDB_CORE_COMMIT
-ARG NLTK_SECURITY_COMMIT=574270e2ad368c8816976e584da56ddfb3fefbad
+ARG NLTK_SECURITY_COMMIT=6a17606293fe9d3ea1006f99dd3fed2e2b25d519
 ARG PIP_SECURITY_VERSION
 ARG PIP_VENDORED_MSGPACK_VERSION
 ARG PIP_VENDORED_URLLIB3_VERSION
@@ -286,11 +286,19 @@ RUN python -c "import json; from importlib.metadata import distribution as d, ve
                assert V(v('msgpack')) >= V('1.2.1'), v('msgpack'); \
                assert V(v('nltk')) >= V('3.10.3'), v('nltk'); \
                assert v('lxml') == '6.1.1', v('lxml'); \
+               assert V(v('anyio')) >= V('4.15.1'), v('anyio'); \
+               assert V(v('datasets')) >= V('5.0.1'), v('datasets'); \
+               assert V(v('fsspec')) >= V('2026.6.0'), v('fsspec'); \
+               assert V(v('PyJWT')) >= V('2.15.1'), v('PyJWT'); \
+               assert V(v('sentence-transformers')) >= V('5.7.0'), v('sentence-transformers'); \
                direct = json.loads(d('nltk').read_text('direct_url.json')); expected = '${NLTK_SECURITY_COMMIT}'; \
                assert direct['vcs_info']['requested_revision'] == expected, direct; \
                assert direct['vcs_info']['commit_id'] == expected, direct; \
                assert V(v('starlette')) >= V('1.3.1'), v('starlette'); \
                assert V(v('setuptools')) >= V('78.1.1'), v('setuptools'); \
+               assert V(v('transformers')) >= V('5.19.0'), v('transformers'); \
+               assert V(v('urllib3')) >= V('2.8.0'), v('urllib3'); \
+               assert V(v('virtualenv')) >= V('21.14.7'), v('virtualenv'); \
                assert pip.__version__ == '${PIP_SECURITY_VERSION}', pip.__version__; assert v('pip') == '${PIP_SECURITY_VERSION}', v('pip'); \
                assert pip._vendor.msgpack.__version__ == '${PIP_VENDORED_MSGPACK_VERSION}', pip._vendor.msgpack.__version__; assert pip._vendor.urllib3.__version__ == '${PIP_VENDORED_URLLIB3_VERSION}', pip._vendor.urllib3.__version__; \
                components = {item['name']: item.get('version') for item in json.loads((Path(pip.__file__).parent / '_vendor/bom.cdx.json').read_text())['components']}; expected_bom = {'msgpack': '${PIP_VENDORED_MSGPACK_VERSION}', 'urllib3': '${PIP_VENDORED_URLLIB3_VERSION}', 'setuptools': '${PIP_VENDORED_SETUPTOOLS_VERSION}'}; assert all(components.get(name) == value for name, value in expected_bom.items()), (components, expected_bom); \
@@ -298,14 +306,13 @@ RUN python -c "import json; from importlib.metadata import distribution as d, ve
     python -m pip --version | grep -F "pip ${PIP_SECURITY_VERSION}" && \
     pip --version | grep -F "pip ${PIP_SECURITY_VERSION}" && \
     python -c "from fastapi import FastAPI; FastAPI(); print('FastAPI/Starlette compatibility OK')" && \
-    python -c "from importlib.metadata import version; from lxml import etree, html; import sec_parser; source = '<html><body><p style=\"font-weight:bold\">PART I - FINANCIAL INFORMATION</p><p style=\"font-weight:bold\">Item 2. Management Discussion and Analysis</p><p>Revenue <b>rose</b> 12 percent.</p></body></html>'; document = html.fromstring(source); assert document.xpath('string(//p[last()])') == 'Revenue rose 12 percent.'; elements = sec_parser.Edgar10QParser().parse(source); observed = [(element.__class__.__name__, element.text) for element in elements]; expected = [('TopSectionTitle', 'PART I - FINANCIAL INFORMATION'), ('TopSectionTitle', 'Item 2. Management Discussion and Analysis'), ('TextElement', 'Revenue rose 12 percent.')]; assert observed == expected, observed; tree = sec_parser.TreeBuilder().build(elements); rendered = sec_parser.render(tree); assert 'Item 2. Management Discussion and Analysis' in rendered, rendered; assert 'Revenue rose 12 percent.' in rendered, rendered; assert version('sec-parser') == '0.58.1', version('sec-parser'); assert version('lxml') == '6.1.1', version('lxml'); assert etree.LXML_VERSION[:3] == (6, 1, 1), etree.LXML_VERSION; print('lxml/sec-parser compatibility OK:', version('lxml'), len(elements))" && \
+    python -c "from importlib.metadata import version; from lxml import etree, html; source = '<html><body><p>Revenue <b>rose</b> 12 percent.</p></body></html>'; document = html.fromstring(source); assert document.xpath('string(//p)') == 'Revenue rose 12 percent.'; assert version('lxml') == '6.1.1', version('lxml'); assert etree.LXML_VERSION[:3] == (6, 1, 1), etree.LXML_VERSION; print('lxml compatibility OK:', version('lxml'))" && \
     python -c "import sys; from importlib.util import find_spec; from pathlib import Path; from packaging.version import Version; thirdparty = Path(find_spec('ray').submodule_search_locations[0]) / '_private/runtime_env/agent/thirdparty_files'; sys.path.insert(0, str(thirdparty)); import aiohappyeyeballs, aiohttp, aiosignal, attr, attrs, frozenlist, idna, multidict, propcache, yarl, ray; modules = (aiohappyeyeballs, aiohttp, aiosignal, attr, attrs, frozenlist, idna, multidict, propcache, yarl); assert all(Path(module.__file__).is_relative_to(thirdparty) for module in modules), [(module.__name__, module.__file__) for module in modules]; assert Version(aiohttp.__version__) >= Version('3.14.3'), aiohttp.__version__; print('Ray private aiohttp closure OK:', ray.__version__, aiohttp.__version__)" && \
     [ ! -e /usr/local/bin/uv ] && \
     [ -z "$(find /usr/local/lib/python3*/dist-packages -maxdepth 1 -type d -name 'uv-*.dist-info' 2>/dev/null)" ]
 
 # Check the complete environment. The broad patterns below correspond to
-# resolver overrides already documented in pyproject.toml; the lxml exception
-# is deliberately exact and backed by the parser/render smoke above.
+# resolver overrides already documented in pyproject.toml.
 RUN set -eu; \
     printf '%s\n' \
         'leptonai .* requirement httpx' \
@@ -315,21 +322,14 @@ RUN set -eu; \
         'sdp .* requirement numpy' \
         'No broken requirements found' \
         > /tmp/pipcheck-pattern-allow.txt; \
-    printf '%s\n' \
-        'sec-parser 0.58.1 has requirement lxml<6.0.0,>=5.2.2, but you have lxml 6.1.1.' \
-        > /tmp/pipcheck-exact-allow.txt; \
     pipcheck_status=0; \
     python -m pip check > /tmp/pipcheck.txt 2>&1 || pipcheck_status=$?; \
     test "${pipcheck_status}" -le 1; \
-    grep -Fx -f /tmp/pipcheck-exact-allow.txt /tmp/pipcheck.txt > /tmp/pipcheck-exact-found.txt; \
-    cmp -s /tmp/pipcheck-exact-allow.txt /tmp/pipcheck-exact-found.txt; \
-    { grep -Fvx -f /tmp/pipcheck-exact-allow.txt /tmp/pipcheck.txt > /tmp/pipcheck-remaining.txt || [ "$?" -eq 1 ]; }; \
-    if grep -vEf /tmp/pipcheck-pattern-allow.txt /tmp/pipcheck-remaining.txt | grep -q '[^[:space:]]'; then \
+    if grep -vEf /tmp/pipcheck-pattern-allow.txt /tmp/pipcheck.txt | grep -q '[^[:space:]]'; then \
         echo "ERROR: unexpected dependency inconsistency:"; cat /tmp/pipcheck.txt; exit 1; \
     fi; \
     cat /tmp/pipcheck.txt; \
-    rm -f /tmp/pipcheck.txt /tmp/pipcheck-pattern-allow.txt /tmp/pipcheck-exact-allow.txt \
-        /tmp/pipcheck-exact-found.txt /tmp/pipcheck-remaining.txt
+    rm -f /tmp/pipcheck.txt /tmp/pipcheck-pattern-allow.txt
 
 # nSpect's global policy flags Git metadata left by uv's source-distribution
 # cache. Ray's Java runtime is not used by the Python jobs in this image, and
