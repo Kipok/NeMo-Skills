@@ -193,8 +193,7 @@ class TestPatchedWandbCoreDockerBuild:
     def test_immutable_upstream_security_commit_is_pinned(self, dockerfile):
         assert "WANDB_CORE_COMMIT=bc2cf24b1bd9fa3a1b6cbeb920087b832afc526f" in dockerfile
         assert (
-            "WANDB_CORE_ARCHIVE_SHA256="
-            "81e21f1057ca3312b9a676f77ba541e027b9a91950a0c8de5de5895b1dd9fa6e"
+            "WANDB_CORE_ARCHIVE_SHA256=81e21f1057ca3312b9a676f77ba541e027b9a91950a0c8de5de5895b1dd9fa6e"
         ) in dockerfile
         assert "WANDB_GO_GIT_VERSION=5.19.2" in dockerfile
         assert "WANDB_GO_CRYPTO_VERSION=0.57.0" in dockerfile
@@ -329,10 +328,10 @@ class TestPatchedPipDockerBuild:
             "COPY --from=pip-security-builder /dist/pip-${PIP_SECURITY_VERSION}-py3-none-any.whl",
             "python3 -m pip install --no-cache-dir --force-reinstall --no-deps",
             "apt-get purge -y python3-pip python3-pip-whl",
-            "test \"$(command -v pip)\" = /usr/local/bin/pip",
+            'test "$(command -v pip)" = /usr/local/bin/pip',
             "/usr/share/python-wheels",
-            "python -m pip --version | grep -F \"pip ${PIP_SECURITY_VERSION}\"",
-            "pip --version | grep -F \"pip ${PIP_SECURITY_VERSION}\"",
+            'python -m pip --version | grep -F "pip ${PIP_SECURITY_VERSION}"',
+            'pip --version | grep -F "pip ${PIP_SECURITY_VERSION}"',
             "pip._vendor.msgpack.__version__",
             "pip._vendor.urllib3.__version__",
             "_vendor/bom.cdx.json",
