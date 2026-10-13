@@ -764,9 +764,11 @@ class SweBenchGenerationTask(GenerationTask):
         elif self.cfg.agent_framework == SupportedAgentFrameworks.openhands and self._openhands_requires_input_mount():
             # OpenHands still consumes its benchmark row from the input file.
             input_mount = f"--mount type=bind,src={self.input_dir},dst=/input_mount,ro "
+        # Keep DNS available when automatic bind-path mounts are disabled.
         apptainer_cmd = (
             "apptainer exec --writable-tmpfs --cleanenv --pid "
             "--no-mount home,tmp,bind-paths,cwd --pwd / "
+            "--mount type=bind,src=/etc/resolv.conf,dst=/etc/resolv.conf,ro "
             f"{input_mount}"
             "--mount type=bind,src=/nemo_run/code,dst=/nemo_run/code,ro "
             "--mount type=bind,src=/root,dst=/root_mount,ro "
@@ -1560,9 +1562,9 @@ class SweBenchGenerationTask(GenerationTask):
     def get_api_base(self):
         """Build the LLM endpoint URL that agents use from inside their Apptainer containers.
 
-        Agent containers are launched with `--no-mount bind-paths`, so they have no
-        /etc/resolv.conf and cannot resolve node hostnames. Resolve the host here, where
-        DNS works, so the agent only ever receives a literal address.
+        Resolve the model server host in the parent container so agents receive a
+        literal address. Task containers also receive an explicit read-only resolver
+        mount for other network requests, such as SWE-agent's repository fetch.
         """
         if "base_url" in self.cfg.server:
             return self.cfg.server.base_url
