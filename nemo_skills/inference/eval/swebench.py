@@ -537,8 +537,16 @@ class SweBenchGenerationTask(GenerationTask):
                 "export POETRY_VIRTUALENVS_IN_PROJECT=true && "
                 # this will make a venv using poetry & install openhands dependencies
                 # we no longer use 'make build' because it installs lots of unnecessary dependencies, e.g. frontend
+                "if [ -f /etc/alpine-release ]; then "
+                '    "$(uv tool dir)/poetry/bin/python" /nemo_run/code/nemo_skills/inference/eval/openhands_alpine.py '
+                "        --repo /root/OpenHands && "
+                "    poetry lock && "
+                '    "$(uv tool dir)/poetry/bin/python" /nemo_run/code/nemo_skills/inference/eval/openhands_alpine.py '
+                "        --repo /root/OpenHands --check-lockfile && "
+                "    export POETRY_GROUP=main,runtime; "
+                "fi && "
                 "make install-python-dependencies && "
-                "poetry run python -m pip install datasets && "
+                "if [ ! -f /etc/alpine-release ]; then poetry run python -m pip install datasets; fi && "
                 # Use a lockfile-verified wheel compatible with Debian 11 task containers.
                 "poetry run python /nemo_run/code/nemo_skills/inference/eval/openhands_compat.py "
                 "--lockfile /root/OpenHands/poetry.lock"
@@ -1204,6 +1212,8 @@ class SweBenchGenerationTask(GenerationTask):
                 "ln -sf /root/uv/tool-bin/poetry /usr/local/bin/poetry && "
                 "ln -sf /root/tmux/tmux /usr/local/bin/tmux && "
                 "ln -sf /root/jq/jq /usr/local/bin/jq && "
+                # Restore UTF-8 after --cleanenv and use Bash instead of root's default ash shell.
+                "if [ -f /etc/alpine-release ]; then export LANG=C.UTF-8 LC_ALL=C.UTF-8 SU_TO_USER=false; fi && "
                 f"{self._get_openhands_environment_setup()}"
                 "source /root/OpenHands/.venv/bin/activate && "
                 f"{dataset_setup} && "
