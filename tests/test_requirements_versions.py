@@ -182,7 +182,7 @@ class TestCoreRequirements:
 
     def test_bfcl_does_not_reinstall_vulnerable_datamodel_code_generator(self):
         content = BFCL_MODULE.read_text()
-        assert '"datamodel-code-generator==0.64.0"' in content
+        assert '"datamodel-code-generator>=0.64.0"' in content
         assert "datamodel-code-generator==0.25.7" not in content
 
     def test_wandb_python_version_is_pinned_to_patched_core_pair(self):
