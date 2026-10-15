@@ -292,6 +292,7 @@ class SweBenchGenerationConfig:
     # Names without a slash resolve under the benchmark's common prompt directory.
     extra_instructions: list[str] = field(default_factory=list)
     agent_max_turns: int = 100  # Max iterations for the agent
+    agent_timeout: int = 60 * 90  # Wall-clock timeout per agent task, in seconds
     agent_cwd: str | None = None  # Override the working directory from the mini-SWE-agent YAML config
     opencode_context_window: int = 262144  # Context window advertised to OpenCode
     claude_code_context_window: int = 262144  # Context window advertised to Claude Code
@@ -1275,6 +1276,7 @@ class SweBenchGenerationTask(GenerationTask):
                 command_builder(proxy_api_base),
                 expected_file_pattern,
                 mode="agent",
+                timeout=self.cfg.agent_timeout,
             )
 
     async def _run_opencode(self, data_point, api_base):

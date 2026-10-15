@@ -13,7 +13,9 @@
 # limitations under the License.
 
 import asyncio
+import os
 import shlex
+import signal
 import sys
 import tempfile
 import unittest
@@ -50,7 +52,8 @@ class TestPullRetries(unittest.IsolatedAsyncioTestCase):
     def create_processes(self, outputs):
         self.outputs = iter(outputs)
 
-        async def create(command, stdout, stderr):
+        async def create(command, stdout, stderr, start_new_session):
+            self.assertTrue(start_new_session)
             code, output = next(self.outputs)
             stdout.write(output + "\n")
             stdout.flush()
@@ -109,17 +112,68 @@ class TestPullRetries(unittest.IsolatedAsyncioTestCase):
     async def test_timeout_kills_process_without_retry(self):
         process = AsyncMock()
         process.returncode = None
-        process.kill = unittest.mock.Mock()
+        process.pid = 12345
 
         async def communicate():
             await asyncio.sleep(10)
 
         process.communicate.side_effect = communicate
-        with patch("nemo_skills.inference.eval.apptainer_utils.asyncio.create_subprocess_shell", return_value=process):
+        with (
+            patch(
+                "nemo_skills.inference.eval.apptainer_utils.asyncio.create_subprocess_shell", return_value=process
+            ) as create,
+            patch("nemo_skills.inference.eval.apptainer_utils.os.killpg") as killpg,
+        ):
             with self.assertRaises(asyncio.TimeoutError):
                 await run_apptainer_command("apptainer exec task", self.log, 0.01, 3, 0, 0)
-        process.kill.assert_called_once()
+        create.assert_awaited_once()
+        self.assertTrue(create.call_args.kwargs["start_new_session"])
+        killpg.assert_called_once_with(process.pid, signal.SIGKILL)
         process.wait.assert_awaited_once()
+
+    async def test_real_timeout_stops_shell_and_agent_descendants(self):
+        marker = self.log.parent / "agent-pids"
+        script = (
+            "import os, subprocess, sys, time; from pathlib import Path; "
+            "child=subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)']); "
+            "Path(sys.argv[1]).write_text(f'{os.getpid()} {child.pid}'); "
+            "time.sleep(60)"
+        )
+        command = shlex.join([sys.executable, "-c", script, str(marker)])
+        original_create = asyncio.create_subprocess_shell
+        processes = []
+
+        async def create(*args, **kwargs):
+            process = await original_create(*args, **kwargs)
+            processes.append(process)
+            return process
+
+        try:
+            with patch(
+                "nemo_skills.inference.eval.apptainer_utils.asyncio.create_subprocess_shell", side_effect=create
+            ):
+                with self.assertRaises(asyncio.TimeoutError):
+                    await run_apptainer_command(command, self.log, 1, 3, 0, 0)
+            self.assertEqual(len(processes), 1, "Timeout must not retry the task")
+            self.assertTrue(marker.exists(), "Agent did not start before the timeout")
+            for pid in map(int, marker.read_text().split()):
+                for _ in range(100):
+                    try:
+                        status = Path(f"/proc/{pid}/stat").read_text()
+                    except (FileNotFoundError, ProcessLookupError):
+                        break
+                    if status.rsplit(")", 1)[1].split()[0] == "Z":
+                        break
+                    await asyncio.sleep(0.01)
+                else:
+                    self.fail(f"Agent descendant {pid} survived the timeout")
+        finally:
+            for process in processes:
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                await process.wait()
 
 
 if __name__ == "__main__":

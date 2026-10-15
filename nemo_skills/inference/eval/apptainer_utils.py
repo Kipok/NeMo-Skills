@@ -16,7 +16,9 @@
 
 import asyncio
 import logging
+import os
 import random
+import signal
 from pathlib import Path
 
 LOG = logging.getLogger(__name__)
@@ -63,13 +65,17 @@ async def run_apptainer_command(
                 log.write(f"\nRetrying transient image pull (attempt {attempt + 1}/{image_pull_max_retries})\n")
                 log.flush()
             offset = log.tell()
-            process = await asyncio.create_subprocess_shell(command, stdout=log, stderr=log)
+            process = await asyncio.create_subprocess_shell(command, stdout=log, stderr=log, start_new_session=True)
             try:
                 await asyncio.wait_for(process.communicate(), timeout=timeout)
             except asyncio.TimeoutError:
-                if process.returncode is None:
-                    process.kill()
-                    await process.wait()
+                # The shell launches Apptainer and the agent as descendants.
+                # Kill their isolated process group so a hung agent cannot outlive the timeout.
+                try:
+                    os.killpg(process.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                await process.wait()
                 raise
         if process.returncode == 0:
             return 0
