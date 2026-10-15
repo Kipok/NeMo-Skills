@@ -23,6 +23,7 @@ from typing import Any
 import numpy as np
 
 from nemo_skills.evaluation.evaluator.base import BaseEvaluator, BaseEvaluatorConfig
+from nemo_skills.evaluation.evaluator.cer_whitespace import CERWhitespaceMode, normalize_cer_whitespace
 from nemo_skills.utils import get_logger_name, nested_dataclass
 
 LOG = logging.getLogger(get_logger_name(__file__))
@@ -162,7 +163,10 @@ class MultilingualTextNormalizer:
         s = normalize_whitespace(s)
 
         if lang is not None:
-            s = self._normalize_numbers(s, lang)
+            # Number expansion may introduce diacritics or punctuation. Apply
+            # the same cleaning as spoken input before comparing transcripts.
+            s = self.clean(self._normalize_numbers(s, lang)).lower()
+            s = normalize_whitespace(re.sub(r"[^\w\s]", "", s))
         return s
 
 
@@ -614,15 +618,27 @@ def evaluate_cer(
     normalization_mode: str = "none",
     key_prefix: str = "cer",
     normalize_compound: bool = False,
+    whitespace_mode: CERWhitespaceMode = "keep",
     **kwargs,
 ) -> dict[str, Any]:
-    """Evaluate CER: character-level edit distance."""
+    """Evaluate CER; optionally ignore whitespace adjacent to Han characters.
+
+    ``keep`` preserves all normalized spaces; ``all`` drops them globally;
+    ``han_adjacent`` ignores formatting around Han while retaining Latin boundaries.
+    """
+
+    normalize_cer_whitespace("", whitespace_mode)
+    if normalize_compound and whitespace_mode == "han_adjacent":
+        raise ValueError("Compound normalization cannot be combined with han_adjacent whitespace")
 
     ref = preprocess_asr_text(reference, mode=normalization_mode, **kwargs)
     hyp = preprocess_asr_text(hypothesis, mode=normalization_mode, **kwargs)
 
     if normalize_compound:
         ref, hyp = normalize_compound_pairs(ref, hyp)
+
+    ref = normalize_cer_whitespace(ref, whitespace_mode)
+    hyp = normalize_cer_whitespace(hyp, whitespace_mode)
 
     # Mirror evaluate_asr: drop samples whose normalized reference is empty rather
     # than dividing by zero in the character edit distance.

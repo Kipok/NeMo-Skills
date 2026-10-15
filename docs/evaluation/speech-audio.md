@@ -7,6 +7,31 @@ This section details how to evaluate speech and audio benchmarks, including unde
     `--no-audio` flag. In this case you can also set `--skip_data_dir_check`
     as data is very lightweight when audio files aren't being used.
 
+## Text normalization and CER whitespace
+
+The multilingual normalizer applies the same cleaning after number expansion
+as it applies to spoken words. For example, Spanish `22` and `veintidós` compare
+equally whether diacritic removal is enabled or disabled.
+
+The Python `evaluate_cer` scorer accepts `whitespace_mode="keep"` (the default),
+`"all"` (remove all whitespace), or `"han_adjacent"` (remove whitespace adjacent
+to Han characters while preserving other word boundaries). This opt-in mode
+supports mixed Chinese and Latin transcripts:
+
+```python
+from nemo_skills.evaluation.evaluator.audio import evaluate_cer
+
+score = evaluate_cer(
+    "今 天 use AI", "今天 use AI",
+    normalization_mode="standard", whitespace_mode="han_adjacent",
+)
+assert score["cer"] == 0
+```
+
+Choose the same whitespace policy for references and hypotheses. Existing
+benchmark defaults are unchanged; `han_adjacent` cannot be combined with
+compound-word normalization.
+
 ## Supported benchmarks
 
 ### ASR Leaderboard
