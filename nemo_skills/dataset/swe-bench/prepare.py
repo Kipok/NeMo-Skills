@@ -58,7 +58,7 @@ if __name__ == "__main__":
     dataset = dataset.map(lambda example: {**example, "container_formatter": container_formatter})
     dataset = dataset.map(lambda example: {**example, "repo_formatter": repo_formatter})
     if "image" in dataset.column_names:
-        dataset = dataset.map(lambda example: {**example, "docker_image": example["image"]})
+        dataset = dataset.rename_column("image", "docker_image")
     dataset = dataset.add_column("container_id", list(range(len(dataset))))
     dataset = dataset.add_column("dataset_name", [dataset_name] * len(dataset))
     dataset = dataset.add_column("split", [split] * len(dataset))
