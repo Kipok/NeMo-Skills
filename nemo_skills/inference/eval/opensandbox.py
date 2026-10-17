@@ -215,13 +215,12 @@ class OpenSandboxExecutor:
                 f"{agent_framework} does not run an agent sandbox; use OpenSandbox only for evaluation."
             )
 
-        image = (
-            data_point["container_formatter"]
-            .format(instance_id=data_point["instance_id"].replace("__", "_1776_"))
-            .removeprefix("docker://")
-        )
+        image = data_point.get("docker_image")
+        if not image:
+            raise RuntimeError("OpenSandbox requires a docker_image in each dataset row.")
+        image = image.removeprefix("docker://")
         if image.startswith("/") or image.endswith(".sif") or "://" in image:
-            raise RuntimeError("OpenSandbox requires an OCI image reference; prepare data with docker:// images.")
+            raise RuntimeError("OpenSandbox requires docker_image to be an OCI image reference.")
         timeout = min(timeout, self.command_timeout_s)
         logs_dir = output_dir / "opensandbox_logs"
         logs_dir.mkdir(exist_ok=True, parents=True)

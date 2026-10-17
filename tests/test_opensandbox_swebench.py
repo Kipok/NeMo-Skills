@@ -72,7 +72,7 @@ def _arguments(tmp_path, mode="agent"):
     return dict(
         data_point={
             "instance_id": "owner__repo-1",
-            "container_formatter": "docker://swebench/sweb.eval.x86_64.{instance_id}",
+            "docker_image": "swebench/sweb.eval.x86_64.owner_1776_repo-1",
             "problem_statement": "Fix café",
             "patch": "gold patch",
             "test_patch": "hidden test patch",
@@ -224,8 +224,17 @@ def test_cleanup_closes_sdk_even_when_termination_fails(executor, monkeypatch, t
 def test_sif_image_is_rejected_before_allocating_worker(executor, monkeypatch, tmp_path):
     _, create = _sandbox(executor, monkeypatch)
     args = _arguments(tmp_path)
-    args["data_point"]["container_formatter"] = "/images/{instance_id}.sif"
+    args["data_point"]["docker_image"] = "/images/instance.sif"
     with pytest.raises(RuntimeError, match="OCI image"):
+        asyncio.run(executor.execute(**args))
+    create.assert_not_called()
+
+
+def test_missing_docker_image_is_rejected_before_allocating_worker(executor, monkeypatch, tmp_path):
+    _, create = _sandbox(executor, monkeypatch)
+    args = _arguments(tmp_path)
+    del args["data_point"]["docker_image"]
+    with pytest.raises(RuntimeError, match="requires a docker_image"):
         asyncio.run(executor.execute(**args))
     create.assert_not_called()
 
@@ -339,7 +348,7 @@ def test_supplied_patch_runs_only_remote_evaluation(
     instance_id = "owner__repo-1"
     data_point = {
         "instance_id": instance_id,
-        "container_formatter": "docker://swebench/sweb.eval.x86_64.{instance_id}",
+        "docker_image": "swebench/sweb.eval.x86_64.owner_1776_repo-1",
         "problem_statement": "Fix the bug",
         "patch": "gold patch",
         "test_patch": "hidden test patch",
