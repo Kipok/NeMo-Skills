@@ -38,6 +38,7 @@ from omegaconf import OmegaConf
 
 from nemo_skills.inference.eval.claude_code_trajectory import convert_claude_code_stream_to_atif
 from nemo_skills.inference.eval.first_request_proxy import capture_first_llm_request
+from nemo_skills.inference.eval.git_sanitization import rewrite_legacy_git_cleanup
 from nemo_skills.inference.eval.opencode_trajectory import convert_opencode_session_to_atif
 from nemo_skills.inference.generate import GenerationTask
 from nemo_skills.inference.model import server_params
@@ -1102,8 +1103,9 @@ class SweBenchGenerationTask(GenerationTask):
                 # Get the folder where the repo is cloned inside the container
                 container_repo_dir = data_point.get("container_repo_dir", "/testbed")
 
-                # If pre_commands are specified, execute them before running the agent
-                pre_commands = data_point.get("pre_commands", "").strip()
+                # Normalize legacy dataset cleanup before any harness runs: deleting
+                # packed-refs directly can remove the current branch as well.
+                pre_commands = rewrite_legacy_git_cleanup(data_point.get("pre_commands", "").strip())
                 if pre_commands:
                     container_commands.append(f"cd {container_repo_dir}")
                     container_commands.append(pre_commands)
