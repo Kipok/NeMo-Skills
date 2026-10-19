@@ -87,10 +87,7 @@ class ScaleSweGenerationTask(SweBenchGenerationTask):
 
     def __init__(self, cfg: SweBenchGenerationConfig):
         if cfg.swe_zero_container is not None:
-            raise ValueError(
-                "Scale-SWE does not support swe_zero_container because native pre_commands and "
-                "the per-instance parent_commit are required for valid rollouts."
-            )
+            raise ValueError("Scale-SWE does not support swe_zero_container.")
         if cfg.agent_config is None:
             cfg.agent_config = _DEFAULT_AGENT_CONFIGS.get(cfg.agent_framework)
         super().__init__(cfg)

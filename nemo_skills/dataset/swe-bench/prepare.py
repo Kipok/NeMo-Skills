@@ -17,6 +17,8 @@ from pathlib import Path
 
 import datasets
 
+from nemo_skills.dataset.utils import get_swe_sanitization_command
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -62,6 +64,7 @@ if __name__ == "__main__":
     dataset = dataset.add_column("container_id", list(range(len(dataset))))
     dataset = dataset.add_column("dataset_name", [dataset_name] * len(dataset))
     dataset = dataset.add_column("split", [split] * len(dataset))
+    dataset = dataset.add_column("pre_commands", [get_swe_sanitization_command()] * len(dataset))
 
     if dataset_name in {"SWE-bench/SWE-bench_Verified"}:
         # Add language column for more convenient use with multilingual pipelines

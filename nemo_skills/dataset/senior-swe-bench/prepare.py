@@ -41,6 +41,8 @@ from pathlib import Path
 
 import tomlkit
 
+from nemo_skills.dataset.utils import get_swe_sanitization_command
+
 DEFAULT_REPO = "https://github.com/snorkel-ai/senior-swe-bench-v2026.06.git"
 # Prefer pre-built .sif paths on Slurm via --container_formatter.
 # base_image in task.toml is a local Harbor build tag, not a registry URI.
@@ -206,6 +208,7 @@ def _load_task(task_dir: Path, container_formatter: str) -> dict:
         # Used by ++agent_framework=gold_patch
         "patch": solution_patch,
         "dataset_name": "snorkel-ai/senior-swe-bench-v2026.06",
+        "pre_commands": get_swe_sanitization_command(),
     }
 
 

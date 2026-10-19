@@ -17,12 +17,11 @@ from pathlib import Path
 
 import datasets
 
+from nemo_skills.dataset.utils import get_swe_sanitization_command
+
 
 def prepare_example(example, container_formatter):
     """Add the field aliases consumed by the existing SWE-bench flow."""
-    pre_commands = str(example.get("pre_commands") or "").strip()
-    if pre_commands.endswith("\\n"):
-        pre_commands = pre_commands[:-2].rstrip()
     repo = str(example["repo"])
     full_repo = f"{example['user']}/{repo}" if example.get("user") and "/" not in repo else repo
     return {
@@ -34,7 +33,12 @@ def prepare_example(example, container_formatter):
             instance_id=example["instance_id"],
         ),
         "container_repo_dir": example["workdir"],
-        "pre_commands": pre_commands,
+        "pre_commands": (
+            "git clean -fd -e '*.egg-info' -e '.tox' -e '.venv' && "
+            f"git checkout {example['parent_commit']} -f && "
+            "git reset --hard HEAD && "
+            f"{get_swe_sanitization_command()}"
+        ),
     }
 
 

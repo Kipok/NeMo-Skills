@@ -320,7 +320,7 @@ ns prepare_data scale-swe
 
 This loads `PrimeIntellect/Scale-SWE-Verified` and its `train` split by default. The
 generated data preserves each instance's `image_url`, `workdir`,
-`pre_commands`, and F2P/P2P fields, and renames `parent_commit` to
+and F2P/P2P fields, and renames `parent_commit` to
 `base_commit`. The default container
 formatter lets Apptainer pull `image_url` directly. For larger evaluations,
 pre-convert the required images to SIF files and pass a formatter that uses
@@ -343,9 +343,7 @@ ns eval \
 Use `++agent_framework=gold_patch ++max_samples=5` as an initial environment
 and evaluator smoke test. `++evaluate=False` runs rollout generation without
 grading, and `++swebench_tests_timeout` controls the per-instance test timeout
-(1800 seconds by default). SWE-Zero is not supported because valid Scale-SWE
-rollouts require each instance's native image, `parent_commit`, and
-`pre_commands`.
+(1800 seconds by default). SWE-Zero is not supported.
 
 To evaluate patches generated previously, use
 `++agent_framework=model_patch ++model_patch_file=<GENERATIONS_JSONL>`.

@@ -17,6 +17,8 @@ from pathlib import Path
 
 import datasets
 
+from nemo_skills.dataset.utils import get_swe_sanitization_command
+
 # Convert language codes to the same format as swe-bench-multilingual.
 # This enables correct language-specific prompting and ignoring compilation files in git patches.
 LANGUAGE_MAP = {
@@ -189,6 +191,7 @@ if __name__ == "__main__":
     dataset = dataset.add_column("dataset_name", [dataset_name] * len(dataset))
     dataset = dataset.add_column("split", [split] * len(dataset))
     dataset = dataset.add_column("container_repo_dir", ["/app"] * len(dataset))
+    dataset = dataset.add_column("pre_commands", [get_swe_sanitization_command()] * len(dataset))
 
     alpine_dataset = dataset.filter(lambda x: x["instance_id"] in ALPINE_INSTANCE_IDS)
     alpine_dataset.to_json(output_file_alpine, orient="records", lines=True)

@@ -19,6 +19,8 @@ from pathlib import Path
 
 import datasets
 
+from nemo_skills.dataset.utils import get_swe_sanitization_command
+
 # SWE-bench Multilingual repositories
 # Source: https://www.swebench.com/multilingual.html#appendix-a
 REPO_TO_LANGUAGE = {
@@ -130,4 +132,5 @@ if __name__ == "__main__":
     dataset = dataset.add_column("container_id", list(range(len(dataset))))
     dataset = dataset.add_column("dataset_name", [dataset_name] * len(dataset))
     dataset = dataset.add_column("split", [split] * len(dataset))
+    dataset = dataset.add_column("pre_commands", [get_swe_sanitization_command()] * len(dataset))
     dataset.to_json(output_file, orient="records", lines=True)

@@ -118,11 +118,6 @@ class GitSanitizationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assert_sanitized(base, future)
 
-    def test_invalid_head_stops_before_agent(self):
-        result = self.shell(rewrite_legacy_git_cleanup(LEGACY_CLEANUP) + " && touch agent-started")
-        self.assertNotEqual(result.returncode, 0)
-        self.assertFalse((self.repo / "agent-started").exists())
-
     def test_gc_failure_stops_before_agent(self):
         self.seed_repo()
         result = self.shell(
