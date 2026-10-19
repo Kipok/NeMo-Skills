@@ -71,7 +71,7 @@ class OpenSandboxExecutor:
         resources: dict | None = None,
         ready_timeout_s: int = 1200,
         request_timeout_s: int = 60,
-        command_timeout_s: int = 10800,
+        command_timeout_s: int = 14400,
         repo_setup_timeout_s: int = 300,
         poll_interval_s: float = 5,
     ):
