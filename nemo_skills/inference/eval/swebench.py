@@ -1026,6 +1026,7 @@ class SweBenchGenerationTask(GenerationTask):
                 setup_timeout=self.cfg.setup_timeout,
                 mode=mode,
                 agent_framework=self.cfg.agent_framework,
+                dataset_type=self.cfg.dataset_type,
                 timeout=timeout,
                 extra_files=extra_mounts,
                 proxy_host=self.cfg.opensandbox_proxy_host,

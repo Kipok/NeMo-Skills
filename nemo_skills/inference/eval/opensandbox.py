@@ -205,6 +205,7 @@ class OpenSandboxExecutor:
         setup_timeout,
         mode,
         agent_framework,
+        dataset_type,
         timeout,
         extra_files,
         proxy_host,
@@ -257,14 +258,23 @@ class OpenSandboxExecutor:
                 network_policy=network_policy,
             )
             try:
-                runtime_dirs = {
-                    "mini_swe_agent": ("mini-swe-agent", "uv"),
-                    "swe_agent": ("SWE-agent", "uv"),
-                    "openhands": ("OpenHands", "uv", "tmux", "jq"),
-                    "opencode": ("node",),
-                    "claude_code": ("node",),
-                }
-                directories = runtime_dirs[agent_framework] if mode == "agent" else ("SWE-bench", "uv")
+                if mode == "agent":
+                    directories = {
+                        "mini_swe_agent": ("mini-swe-agent", "uv"),
+                        "swe_agent": ("SWE-agent", "uv"),
+                        "openhands": ("OpenHands", "uv", "tmux", "jq"),
+                        "opencode": ("node",),
+                        "claude_code": ("node",),
+                    }[agent_framework]
+                else:
+                    directories = {
+                        "swe_bench": ("SWE-bench", "uv"),
+                        "swe_rebench_v2": ("SWE-bench", "uv"),
+                        "swe_bench_pro": ("SWE-bench", "uv"),
+                        "deep_swe": (),
+                        "senior_swe_bench": (),
+                        "scale_swe": (),
+                    }[dataset_type]
                 stage_runtime = "mkdir -p /root_mount /trajectories_mount && " + " && ".join(
                     f"cp -a /root/{directory} /root_mount/" for directory in directories
                 )
