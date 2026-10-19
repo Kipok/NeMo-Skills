@@ -739,6 +739,7 @@ class SweBenchGenerationTask(GenerationTask):
                 "uv venv --python 3.12 --managed-python venv && "
                 "source venv/bin/activate && "
                 "uv pip install -e . && "
+                "uv pip install litellm[mcp] && "  # fixes mcp import issue
                 # force downgrade rich - newer versions cause the mini-swe-agent logger to hang in some instances
                 "uv pip install rich==14.2.0"
             )
