@@ -277,6 +277,217 @@ def test_eval_judge_sbatch_kwargs_override(monkeypatch, tmp_path):
     assert captured["sbatch_kwargs"] == {"segment": 1}
 
 
+def test_eval_expands_swe_bench_pro_splits_and_merges_before_summarizing(monkeypatch, tmp_path):
+    def benchmark_args(split, suffix):
+        return eval_utils.BenchmarkArgs(
+            name="swe-bench-pro",
+            input_file=f"/data/swe-bench-pro/{split}.jsonl",
+            generation_args=f"++eval_config.split={split}",
+            judge_args="",
+            judge_pipeline_args={},
+            requires_sandbox=False,
+            keep_mounts_for_sandbox=False,
+            generation_module="nemo_skills.inference.eval.swe_bench",
+            num_samples=0,
+            num_chunks=None,
+            eval_subfolder=f"eval-results/swe-bench-pro/{suffix}",
+            metrics_type="swe-bench",
+        )
+
+    _patch_eval_for_sbatch_tests(monkeypatch, lambda: benchmark_args("default.ubuntu", "unused"))
+
+    def fake_prepare_eval_commands(*, split, num_chunks, eval_subfolder_suffix=None, **kwargs):
+        args = benchmark_args(split, eval_subfolder_suffix)
+        args.num_chunks = num_chunks
+        batch_count = num_chunks or 1
+        batches = []
+        for chunk_id in range(batch_count):
+            unit = eval_utils.EvalGenerationUnit(
+                output_dir=str(tmp_path / args.eval_subfolder),
+                input_file=args.input_file,
+                extra_arguments=args.generation_args,
+                random_seed=None,
+                chunk_id=chunk_id if num_chunks else None,
+                num_chunks=num_chunks,
+                script=args.generation_module,
+                requirements=[],
+                wandb_parameters=None,
+                with_sandbox=False,
+            )
+            batches.append(([unit], {"swe-bench-pro"}, False, False, []))
+            args.job_ids.append(chunk_id)
+        return {"swe-bench-pro": args}, batches
+
+    monkeypatch.setattr(eval_pipeline, "prepare_eval_commands", fake_prepare_eval_commands)
+    monkeypatch.setattr(
+        eval_pipeline,
+        "_count_jsonl_rows",
+        lambda cluster_config, input_file: 300 if "ubuntu" in input_file else 200,
+    )
+
+    submitted_pipelines = []
+
+    def fake_pipeline_run(self, **kwargs):
+        submitted_pipelines.append(self)
+        return [f"generation-{idx}" for idx in range(len(self.jobs))]
+
+    monkeypatch.setattr(eval_pipeline.Pipeline, "run", fake_pipeline_run)
+    added_tasks = []
+
+    def fake_add_task(*args, **kwargs):
+        added_tasks.append(kwargs)
+        return f"task-{len(added_tasks)}"
+
+    monkeypatch.setattr(eval_pipeline.pipeline_utils, "add_task", fake_add_task)
+
+    eval_pipeline.eval(
+        ctx=SimpleNamespace(args=[]),
+        cluster="test-cluster",
+        output_dir=str(tmp_path),
+        benchmarks="swe-bench-pro",
+        split="default.ubuntu,default.alpine",
+        num_chunks=10,
+        main_container="ubuntu-container",
+        alpine_container="alpine-container",
+        model="model",
+        server_type="openai",
+        server_address="http://server",
+        skip_hf_home_check=True,
+    )
+
+    jobs = submitted_pipelines[0].jobs
+    assert len(jobs) == 10
+    client_containers = [job["group"].commands[-1].container for job in jobs]
+    assert client_containers == ["ubuntu-container"] * 6 + ["alpine-container"] * 4
+
+    assert len(added_tasks) == 2
+    merge_task, summarize_task = added_tasks
+    assert "default.ubuntu" in merge_task["cmd"]
+    assert "default.alpine" in merge_task["cmd"]
+    assert merge_task["container"] == "ubuntu-container"
+    assert merge_task["task_dependencies"] == [f"generation-{idx}" for idx in range(10)]
+    assert summarize_task["task_dependencies"] == ["task-1"]
+
+
+def test_eval_requires_alpine_container_for_multi_split_swe_bench_pro(monkeypatch, tmp_path):
+    def benchmark_args():
+        return eval_utils.BenchmarkArgs(
+            name="swe-bench-pro",
+            input_file="/data/swe-bench-pro/default.alpine.jsonl",
+            generation_args="",
+            judge_args="",
+            judge_pipeline_args={},
+            requires_sandbox=False,
+            keep_mounts_for_sandbox=False,
+            generation_module="nemo_skills.inference.eval.swe_bench",
+            num_samples=0,
+            num_chunks=None,
+            eval_subfolder="eval-results/swe-bench-pro",
+        )
+
+    _patch_eval_for_sbatch_tests(monkeypatch, benchmark_args)
+
+    with pytest.raises(ValueError, match="--alpine-container is required"):
+        eval_pipeline.eval(
+            ctx=SimpleNamespace(args=[]),
+            cluster="test-cluster",
+            output_dir=str(tmp_path),
+            benchmarks="swe-bench-pro",
+            split="default.ubuntu,default.alpine",
+            model="model",
+            server_type="openai",
+            server_address="http://server",
+        )
+
+
+def test_eval_single_alpine_split_keeps_main_container_compatibility(monkeypatch, tmp_path):
+    args = eval_utils.BenchmarkArgs(
+        name="swe-bench-pro",
+        input_file="/data/swe-bench-pro/default.alpine.jsonl",
+        generation_args="",
+        judge_args="",
+        judge_pipeline_args={},
+        requires_sandbox=False,
+        keep_mounts_for_sandbox=False,
+        generation_module="nemo_skills.inference.eval.swe_bench",
+        num_samples=0,
+        num_chunks=None,
+        eval_subfolder="eval-results/swe-bench-pro",
+    )
+    _patch_eval_for_sbatch_tests(monkeypatch, lambda: args)
+    unit = eval_utils.EvalGenerationUnit(
+        output_dir=str(tmp_path / args.eval_subfolder),
+        input_file=args.input_file,
+        extra_arguments="",
+        random_seed=None,
+        chunk_id=None,
+        num_chunks=None,
+        script=args.generation_module,
+        requirements=[],
+        wandb_parameters=None,
+        with_sandbox=False,
+    )
+    args.job_ids = [0]
+    monkeypatch.setattr(
+        eval_pipeline,
+        "prepare_eval_commands",
+        lambda **kwargs: ({"swe-bench-pro": args}, [([unit], {"swe-bench-pro"}, False, False, [])]),
+    )
+    submitted_pipelines = []
+    monkeypatch.setattr(
+        eval_pipeline.Pipeline,
+        "run",
+        lambda self, **kwargs: submitted_pipelines.append(self) or ["generation-0"],
+    )
+
+    eval_pipeline.eval(
+        ctx=SimpleNamespace(args=[]),
+        cluster="test-cluster",
+        output_dir=str(tmp_path),
+        benchmarks="swe-bench-pro",
+        split="default.alpine",
+        main_container="legacy-alpine-container",
+        model="model",
+        server_type="openai",
+        server_address="http://server",
+        auto_summarize_results=False,
+        skip_hf_home_check=True,
+    )
+
+    assert submitted_pipelines[0].jobs[0]["group"].commands[-1].container == "legacy-alpine-container"
+
+
+def test_eval_rejects_multiple_splits_for_other_benchmarks(monkeypatch, tmp_path):
+    def benchmark_args():
+        return eval_utils.BenchmarkArgs(
+            name="gsm8k",
+            input_file="/data/gsm8k/test.jsonl",
+            generation_args="",
+            judge_args="",
+            judge_pipeline_args={},
+            requires_sandbox=False,
+            keep_mounts_for_sandbox=False,
+            generation_module="nemo_skills.inference.generate",
+            num_samples=0,
+            num_chunks=None,
+            eval_subfolder="eval-results/gsm8k",
+        )
+
+    _patch_eval_for_sbatch_tests(monkeypatch, benchmark_args)
+
+    with pytest.raises(ValueError, match="only when evaluating swe-bench-pro"):
+        eval_pipeline.eval(
+            ctx=SimpleNamespace(args=[]),
+            cluster="test-cluster",
+            output_dir=str(tmp_path),
+            benchmarks="gsm8k",
+            split="test,validation",
+            model="model",
+            server_type="openai",
+            server_address="http://server",
+        )
+
+
 @pytest.mark.timeout(300)
 @pytest.mark.skipif("NVIDIA_API_KEY" not in os.environ, reason="requires NVIDIA_API_KEY")
 def test_eval_multi_model_generation_module_smoke(tmp_path):

@@ -539,7 +539,7 @@ Missing rubric/taste fields fail closed for tasteful solve (counted as not taste
 SWE-bench Pro uses mostly the same logic as regular SWE-bench, so most of the [SWE-bench docs](#swe-bench) apply to it as well. The differences are as follows:
 
 1. Since it is a multilingual benchmark, we use the multilingual inference logic for it, same as for [SWE-bench Multilingual](#swe-bench-multilingual).
-2. 88 of 731 instances have to be run in a separate evaluation job with a different Nemo-Skills container based on Alpine Linux. The dockerfile for this container is provided [here](https://github.com/NVIDIA-NeMo/Skills/tree/main/dockerfiles/swe-bench/Dockerfile.nemo-skills.alpine). You can use the `--main_container` option of Nemo-Skills to change the container for this subset of instances, and run the rest as usual. See below for an example.
+2. 88 of 731 instances require a different Nemo-Skills container based on Alpine Linux. The dockerfile for this container is provided [here](https://github.com/NVIDIA-NeMo/Skills/tree/main/dockerfiles/swe-bench/Dockerfile.nemo-skills.alpine). A single evaluation can run both subsets by using `--main_container` for Ubuntu tasks and `--alpine_container` for Alpine tasks.
 3. Due to technical issues, OpenHands is not supported for this benchmark. SWE-agent, mini-SWE-agent and OpenCode are supported on the Ubuntu subset. OpenCode needs a glibc Node.js runtime, so it is not expected to work on the Alpine subset.
 
 #### Sample run
@@ -562,44 +562,22 @@ Here's how to run a sample evaluation of [Qwen3-Coder-Next](https://huggingface.
 
     The data preparation command will create 2 dataset files: `default.alpine.jsonl` for the Alpine-based instances and `default.ubuntu.jsonl` for the Ubuntu-based instances.
 
-2. Run 2 jobs:
-
-    Alpine subset:
+2. Run both subsets in one evaluation:
 
     ```
     ns eval \
         --cluster=<CLUSTER_NAME> \
-        --main_container=<PATH_TO_ALPINE_NS_CONTAINER> \
+        --main_container=<PATH_TO_UBUNTU_NS_CONTAINER> \
+        --alpine_container=<PATH_TO_ALPINE_NS_CONTAINER> \
         --model=Qwen/Qwen3-Coder-Next \
         --server_type=vllm \
         --server_args="--enable-auto-tool-choice --tool-call-parser qwen3_coder" \
         --server_nodes=1 \
         --server_gpus=8 \
         --benchmarks=swe-bench-pro \
-        --output_dir=<OUTPUT_DIR_ALPINE> \
-        --split=default.alpine \
-        --num_chunks=13 \
-        ++agent_framework=swe_agent \
-        ++inference.temperature=1.0 \
-        ++inference.top_p=0.95 \
-        ++inference.top_k=40 \
-        ++agent_max_turns=300
-    ```
-
-    Ubuntu subset:
-
-    ```
-    ns eval \
-        --cluster=<CLUSTER_NAME> \
-        --model=Qwen/Qwen3-Coder-Next \
-        --server_type=vllm \
-        --server_args="--enable-auto-tool-choice --tool-call-parser qwen3_coder" \
-        --server_nodes=1 \
-        --server_gpus=8 \
-        --benchmarks=swe-bench-pro \
-        --output_dir=<OUTPUT_DIR_UBUNTU> \
-        --split=default.ubuntu \
-        --num_chunks=2 \
+        --output_dir=<OUTPUT_DIR> \
+        --split=default.ubuntu,default.alpine \
+        --num_chunks=15 \
         ++agent_framework=swe_agent \
         ++inference.temperature=1.0 \
         ++inference.top_p=0.95 \
@@ -609,7 +587,7 @@ Here's how to run a sample evaluation of [Qwen3-Coder-Next](https://huggingface.
 
     replacing <...> with your desired parameters.
 
-After all jobs are complete, you can check the results in `<OUTPUT_DIR_ALPINE>/eval-results/swe-bench-pro/metrics.json` and `<OUTPUT_DIR_UBUNTU>/eval-results/swe-bench-pro/metrics.json`. The combined score on both subsets should be around 40%.
+NeMo-Skills allocates chunks proportionally between the two splits, runs each rollout with the correct client container, and merges the outputs before computing metrics. After all jobs are complete, check the combined result in `<OUTPUT_DIR>/eval-results/swe-bench-pro/metrics.json`. The score should be around 40%.
 
 Keep in mind there is some variance between runs, so we recommend running evaluation multiple times and averaging out the resolve rate. To do that automatically, you can set `--benchmarks=swe-bench-pro:N`, where N is your desired number of repeats.
 
