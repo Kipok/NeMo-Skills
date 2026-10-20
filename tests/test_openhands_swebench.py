@@ -14,7 +14,30 @@
 
 import json
 
-from nemo_skills.inference.eval.swebench import SweBenchGenerationTask
+import pytest
+
+from nemo_skills.inference.eval.swebench import (
+    SupportedDatasetTypes,
+    SweBenchGenerationConfig,
+    SweBenchGenerationTask,
+)
+
+
+@pytest.mark.parametrize(
+    "dataset_type",
+    [SupportedDatasetTypes.swe_bench_pro, SupportedDatasetTypes.swe_bench_pro_v2],
+)
+def test_openhands_is_rejected_for_swe_bench_pro(tmp_path, dataset_type):
+    cfg = SweBenchGenerationConfig(
+        _init_nested=True,
+        input_file=str(tmp_path / "input.jsonl"),
+        output_file=str(tmp_path / "output.jsonl"),
+        agent_framework="openhands",
+        dataset_type=dataset_type,
+    )
+
+    with pytest.raises(ValueError, match="OpenHands is not supported for SWE-bench Pro V1 or V2"):
+        SweBenchGenerationTask(cfg)
 
 
 def test_openhands_rollout_input_contains_only_current_record(tmp_path):

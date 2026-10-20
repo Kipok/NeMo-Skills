@@ -672,6 +672,19 @@ class SweBenchGenerationTask(GenerationTask):
                 "SWE-bench generation task does not support eval_type parameter. Evaluation is done automatically."
             )
 
+        if (
+            self.cfg.dataset_type
+            in {
+                SupportedDatasetTypes.swe_bench_pro,
+                SupportedDatasetTypes.swe_bench_pro_v2,
+            }
+            and self.cfg.agent_framework == SupportedAgentFrameworks.openhands
+        ):
+            raise ValueError(
+                "OpenHands is not supported for SWE-bench Pro V1 or V2. "
+                "Use swe_agent, mini_swe_agent, opencode, or claude_code."
+            )
+
         self.should_run_evaluation = False
         self.evaluator = None
         self._reasoning_warning_shown = False

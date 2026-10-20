@@ -670,7 +670,8 @@ ns eval \
 
 Use `--split=hard.ubuntu` or `hard.alpine` for HARD-51. The default locked networking mode requires mini-SWE-agent
 with the Apptainer backend. OpenSandbox support is currently limited to SWE-bench Pro V1 because the V2 verifier
-requires mounting a task directory. Other agents can be used by explicitly disabling `++block_network`.
+requires mounting a task directory. Other agents can be used by explicitly disabling `++block_network`, except
+OpenHands, which is not supported for SWE-bench Pro V2.
 
 ### compute-eval
 
