@@ -626,6 +626,48 @@ replace `swe_agent` with `mini_swe_agent` or `opencode` in the Ubuntu command. O
 !!! note
     For evaluation, we use a [custom fork](https://github.com/wasiahmad/SWE-bench_Pro-os) of the SWE-bench Pro repository that supports running evaluation inside of an existing container. It may not always have the latest updates from the upstream repo.
 
+### swe-bench-pro-v2
+
+- Benchmark data is defined in [`nemo_skills/dataset/swe-bench-pro-v2`](https://github.com/NVIDIA-NeMo/Skills/tree/main/nemo_skills/dataset/swe-bench-pro-v2).
+- The official V2 task release and protocol are [here](https://github.com/scaleapi/SWE-bench_Pro-os/tree/main/v2).
+
+SWE-bench Pro V2 uses Harbor verifier tasks and fresh-sandbox grading. Preparation downloads the Hugging Face
+`default` (642 tasks) and `hard` (HARD-51) configs, then clones the official repository at the pinned `v2.0.0`
+release and materializes its verifier tasks under `<DATA_DIR>/swe-bench-pro-v2/tasks`. The temporary Git checkout is
+removed after preparation.
+
+```bash
+ns prepare_data swe-bench-pro-v2 \
+    --cluster=<CLUSTER_NAME> \
+    --data_dir=<DATA_DIR>
+```
+
+This creates `default.alpine.jsonl`, `default.ubuntu.jsonl`, `hard.alpine.jsonl`, and `hard.ubuntu.jsonl`. As with
+V1, run Alpine and Ubuntu subsets separately. Pass `--container_formatter` when using locally converted SIF images.
+
+Evaluation follows the official locked protocol:
+
+1. mini-SWE-agent runs without network access; model calls are forwarded through NeMo-Skills' local proxy.
+2. Only the captured `model.patch` leaves the agent sandbox.
+3. The patch is applied to a pristine task image and the unchanged `tests/test.sh` verifier is run.
+4. The verifier retains public network access because some tasks fetch dependencies while testing.
+
+```bash
+ns eval \
+    --cluster=<CLUSTER_NAME> \
+    --data_dir=<DATA_DIR> \
+    --model=<MODEL> \
+    --server_type=vllm \
+    --server_gpus=8 \
+    --benchmarks=swe-bench-pro-v2 \
+    --split=default.ubuntu \
+    --output_dir=<OUTPUT_DIR>
+```
+
+Use `--split=hard.ubuntu` or `hard.alpine` for HARD-51. The default locked networking mode requires mini-SWE-agent
+with the Apptainer backend. Other agents can be used with an execution backend that supports network isolation, or
+by explicitly disabling `++block_network`.
+
 ### compute-eval
 
 - Benchmark is defined in [`nemo_skills/dataset/compute-eval/__init__.py`](https://github.com/NVIDIA-NeMo/Skills/blob/main/nemo_skills/dataset/compute-eval/__init__.py)

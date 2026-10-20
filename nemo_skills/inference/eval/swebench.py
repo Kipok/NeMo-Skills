@@ -372,6 +372,7 @@ def build_opencode_config(
 class SupportedDatasetTypes(str, Enum):
     swe_bench = "swe_bench"
     swe_bench_pro = "swe_bench_pro"
+    swe_bench_pro_v2 = "swe_bench_pro_v2"
     swe_rebench_v2 = "swe_rebench_v2"
     deep_swe = "deep_swe"  # note: deepswe evaluation logic is implemented in deepswe.py
     senior_swe_bench = "senior_swe_bench"  # Harbor grading in senior_swe_bench.py
@@ -1103,18 +1104,41 @@ class SweBenchGenerationTask(GenerationTask):
             )
 
             if mode == "agent":
-                # Get the folder where the repo is cloned inside the container
-                container_repo_dir = data_point.get("container_repo_dir", "/testbed")
+                # Get the folder where the repo is cloned inside the container. Some
+                # benchmark releases use more than one image layout, so they can
+                # provide an ordered list of candidate directories.
+                container_repo_dirs = data_point.get("container_repo_dirs")
+                dynamic_repo_dir = bool(container_repo_dirs)
+                if dynamic_repo_dir:
+                    candidates = " ".join(shlex.quote(path) for path in container_repo_dirs)
+                    container_commands.append(
+                        'container_repo_dir=""; '
+                        f"for candidate in {candidates}; do "
+                        'if git -C "$candidate" rev-parse --show-toplevel >/dev/null 2>&1; then '
+                        'container_repo_dir="$candidate"; break; fi; '
+                        "done; "
+                        'test -n "$container_repo_dir"'
+                    )
+                    repo_cd = 'cd "$container_repo_dir"'
+                else:
+                    container_repo_dir = data_point.get("container_repo_dir", "/testbed")
+                    repo_cd = f"cd {container_repo_dir}"
 
                 # Normalize legacy dataset cleanup before any harness runs: deleting
                 # packed-refs directly can remove the current branch as well.
                 pre_commands = rewrite_legacy_git_cleanup(data_point.get("pre_commands", "").strip())
                 if pre_commands:
-                    container_commands.append(f"cd {container_repo_dir}")
+                    container_commands.append(repo_cd)
                     container_commands.append(pre_commands)
 
                 # If the repo is not in /testbed, copy it before running the agent
-                if container_repo_dir != "/testbed":
+                if dynamic_repo_dir:
+                    container_commands.append(
+                        'if [ "$container_repo_dir" != /testbed ]; then '
+                        'rm -rf /testbed && cp -r "$container_repo_dir" /testbed; '
+                        "fi"
+                    )
+                elif container_repo_dir != "/testbed":
                     container_commands.append(f"cp -r {container_repo_dir} /testbed")
 
         container_commands.append(command)
