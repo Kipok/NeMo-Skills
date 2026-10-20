@@ -101,6 +101,11 @@ def _count_jsonl_rows(cluster_config: dict, input_file: str) -> int:
     raise ValueError(f"Cannot count tasks because dataset file {host_path} is not locally accessible.")
 
 
+def _uses_opensandbox(extra_arguments: str) -> bool:
+    """Return whether Hydra overrides select the OpenSandbox execution backend."""
+    return any(argument.lstrip("+") == "execution_backend=opensandbox" for argument in shlex.split(extra_arguments))
+
+
 def _resolve_child_sbatch_kwargs(sbatch_kwargs, child_sbatch_kwargs):
     if child_sbatch_kwargs is None:
         return sbatch_kwargs
@@ -434,6 +439,7 @@ def eval(
     """
     setup_logging(disable_hydra_logs=False, use_rich=True)
     extra_arguments = f"{' '.join(ctx.args)}"
+    uses_opensandbox = _uses_opensandbox(extra_arguments)
     LOG.info("Starting evaluation job")
     LOG.info("Extra arguments that will be passed to the underlying script: %s", extra_arguments)
 
@@ -547,9 +553,15 @@ def eval(
         raise ValueError(
             f"Multiple --split values are supported only when evaluating {_MULTI_SPLIT_BENCHMARK} by itself."
         )
-    if len(requested_splits) > 1 and any("alpine" in value.lower() for value in requested_splits):
+    if (
+        len(requested_splits) > 1
+        and not uses_opensandbox
+        and any("alpine" in value.lower() for value in requested_splits)
+    ):
         if not alpine_container:
-            raise ValueError("--alpine-container is required when running multiple swe-bench-pro splits.")
+            raise ValueError(
+                "--alpine-container is required when running multiple swe-bench-pro splits with Apptainer."
+            )
     if len(requested_splits) > 1 and chunk_ids:
         raise ValueError("--chunk-ids is not supported with multiple swe-bench-pro splits.")
 
@@ -597,7 +609,7 @@ def eval(
             parent_job_ids.extend(job_id_offset + job_id for job_id in split_args.job_ids)
             split_eval_subfolders.append(split_args.eval_subfolder)
 
-            use_alpine_container = "alpine" in split_name.lower()
+            use_alpine_container = not uses_opensandbox and "alpine" in split_name.lower()
             for batch in split_batches:
                 for unit in batch[0]:
                     unit.client_container = alpine_container if use_alpine_container else None
@@ -618,7 +630,12 @@ def eval(
             num_chunks=num_chunks,
             num_jobs=num_jobs,
         )
-        if is_swe_bench_pro_only and requested_splits and "alpine" in requested_splits[0].lower():
+        if (
+            is_swe_bench_pro_only
+            and not uses_opensandbox
+            and requested_splits
+            and "alpine" in requested_splits[0].lower()
+        ):
             for batch in job_batches_units:
                 for unit in batch[0]:
                     unit.client_container = alpine_container

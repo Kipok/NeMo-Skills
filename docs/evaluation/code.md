@@ -130,8 +130,9 @@ Agent infrastructure failures propagate. Evaluator command failures return
 unresolved patch metrics so one failed verifier does not abort the shard.
 
 Support covers the five agent harnesses and both supplied-patch modes on standard
-SWE-bench and SWE-bench Multilingual OCI images. Supplied-patch grading also
-supports SWE-rebench V2; agent rollouts on SWE-rebench V2 remain unsupported.
+SWE-bench and SWE-bench Multilingual OCI images. The backend also supports SWE-bench
+Pro V1 subject to its benchmark-specific agent caveats below. Supplied-patch grading
+also supports SWE-rebench V2; agent rollouts on SWE-rebench V2 remain unsupported.
 Select an agent harness with `++agent_framework=mini_swe_agent`, `swe_agent`,
 `openhands`, `opencode`, or `claude_code`; use that harness's agent config or
 leave `agent_config` unset for its default. To smoke-test a remote evaluator
@@ -589,6 +590,31 @@ Here's how to run a sample evaluation of [Qwen3-Coder-Next](https://huggingface.
 
 NeMo-Skills allocates chunks proportionally between the two splits, runs each rollout with the correct client container, and merges the outputs before computing metrics. After all jobs are complete, check the combined result in `<OUTPUT_DIR>/eval-results/swe-bench-pro/metrics.json`. The score should be around 40%.
 
+The command above uses the default Apptainer backend. To run the task images remotely with OpenSandbox, prepare
+the dataset with the default command so each row retains its OCI `docker_image`, export `OPENSANDBOX_DOMAIN` and
+`OPENSANDBOX_API_KEY`, and add `++execution_backend=opensandbox`. Both subsets can share the regular NeMo-Skills
+coordinator container, so `--alpine_container` is not needed:
+
+```
+ns eval \
+    --cluster=<CLUSTER_NAME> \
+    --model=Qwen/Qwen3-Coder-Next \
+    --server_type=vllm \
+    --server_args="--enable-auto-tool-choice --tool-call-parser qwen3_coder" \
+    --server_nodes=1 \
+    --server_gpus=8 \
+    --benchmarks=swe-bench-pro \
+    --output_dir=<OUTPUT_DIR> \
+    --split=default.ubuntu,default.alpine \
+    --num_chunks=15 \
+    ++agent_framework=mini_swe_agent \
+    ++execution_backend=opensandbox \
+    ++max_concurrent_requests=2
+```
+
+OpenSandbox creates each agent and verifier from the row's Ubuntu or Alpine task image. Apptainer continues to use
+`container_formatter`, including local `.sif` paths, and remains the default.
+
 Keep in mind there is some variance between runs, so we recommend running evaluation multiple times and averaging out the resolve rate. To do that automatically, you can set `--benchmarks=swe-bench-pro:N`, where N is your desired number of repeats.
 
 To evaluate the same model with mini-SWE-agent or OpenCode,
@@ -643,8 +669,8 @@ ns eval \
 ```
 
 Use `--split=hard.ubuntu` or `hard.alpine` for HARD-51. The default locked networking mode requires mini-SWE-agent
-with the Apptainer backend. Other agents can be used with an execution backend that supports network isolation, or
-by explicitly disabling `++block_network`.
+with the Apptainer backend. OpenSandbox support is currently limited to SWE-bench Pro V1 because the V2 verifier
+requires mounting a task directory. Other agents can be used by explicitly disabling `++block_network`.
 
 ### compute-eval
 

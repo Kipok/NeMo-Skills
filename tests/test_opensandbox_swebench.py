@@ -178,6 +178,20 @@ def test_repository_preparation_timeout_and_sandbox_lifetime(
     assert create.call_args.kwargs["timeout"].total_seconds() == expected_lifetime
 
 
+def test_swe_bench_pro_repository_is_staged_from_app(executor, monkeypatch, tmp_path):
+    sandbox, _ = _sandbox(executor, monkeypatch, _archive())
+    args = _arguments(tmp_path)
+    args["data_point"]["container_repo_dir"] = "/app"
+    args["data_point"]["pre_commands"] = "git status --short"
+
+    asyncio.run(executor.execute(**args))
+
+    commands = [call.args[0] for call in sandbox.commands.run.call_args_list]
+    repo_setup_command = next(command for command in commands if "git status --short" in command)
+    assert "cd /app" in repo_setup_command
+    assert "cp -r /app /testbed" in repo_setup_command
+
+
 @pytest.mark.parametrize("repo_setup_timeout_s", [0, -1])
 def test_repository_preparation_timeout_must_be_positive(executor, repo_setup_timeout_s):
     with pytest.raises(ValueError, match="must be positive"):
@@ -297,6 +311,34 @@ def test_opensandbox_setup_stays_remote_and_separates_agent_from_verifier(
     assert detect.call_count == (1 if proxy_host is None else 0)
 
 
+def test_swe_bench_pro_agent_and_verifier_setup_stays_in_opensandbox(executor, monkeypatch, tmp_path):
+    monkeypatch.setattr(executor, "detect_proxy_host", MagicMock(return_value="10.0.0.3"))
+    monkeypatch.setattr(SweBenchGenerationTask, "_execute_local_command", AsyncMock())
+    monkeypatch.setattr("nemo_skills.inference.eval.opensandbox.OpenSandboxExecutor", lambda **kwargs: executor)
+    monkeypatch.setattr("nemo_skills.inference.eval.swebench.SCRATCH_DIR", tmp_path)
+    dataset = tmp_path / "dataset.jsonl"
+    dataset.write_text("{}\n")
+    cfg = SweBenchGenerationConfig(
+        _init_nested=True,
+        input_file=str(dataset),
+        output_file=str(tmp_path / "output.jsonl"),
+        agent_framework="mini_swe_agent",
+        multilingual=True,
+        dataset_type=SupportedDatasetTypes.swe_bench_pro,
+        eval_harness_repo="https://github.com/wasiahmad/SWE-bench_Pro-os.git",
+        execution_backend="opensandbox",
+        server=OmegaConf.create({"base_url": "http://gpu.example:8000/v1"}),
+    )
+
+    task = SweBenchGenerationTask(cfg)
+
+    task._execute_local_command.assert_not_called()
+    assert "mini-swe-agent" in task.opensandbox_setup_commands["agent"]
+    assert "SWE-bench_Pro-os.git" in task.opensandbox_setup_commands["eval"]
+    assert "apk add" in task.opensandbox_setup_commands["agent"]
+    assert "apk add" in task.opensandbox_setup_commands["eval"]
+
+
 @pytest.mark.parametrize("framework", ["gold_patch", "model_patch"])
 def test_supplied_patch_setup_skips_model_proxy(executor, monkeypatch, tmp_path, framework):
     detect = MagicMock(side_effect=AssertionError("supplied patches do not need a model proxy"))
@@ -336,14 +378,35 @@ def test_supplied_patch_setup_skips_model_proxy(executor, monkeypatch, tmp_path,
     ],
 )
 @pytest.mark.parametrize(
-    "dataset_type,evaluator_entrypoint",
+    "dataset_type,evaluator_entrypoint,evaluator_argument",
     [
-        (SupportedDatasetTypes.swe_bench, "swebench.harness.run_local_evaluation"),
-        (SupportedDatasetTypes.swe_rebench_v2, "scripts/local_eval.py"),
+        (
+            SupportedDatasetTypes.swe_bench,
+            "swebench.harness.run_local_evaluation",
+            "--dataset_name",
+        ),
+        (
+            SupportedDatasetTypes.swe_bench_pro,
+            "swebench.harness.run_local_evaluation",
+            "--raw_sample_path",
+        ),
+        (
+            SupportedDatasetTypes.swe_rebench_v2,
+            "scripts/local_eval.py",
+            "--json",
+        ),
     ],
 )
 def test_supplied_patch_runs_only_remote_evaluation(
-    executor, monkeypatch, tmp_path, framework, patch, patch_directory, dataset_type, evaluator_entrypoint
+    executor,
+    monkeypatch,
+    tmp_path,
+    framework,
+    patch,
+    patch_directory,
+    dataset_type,
+    evaluator_entrypoint,
+    evaluator_argument,
 ):
     instance_id = "owner__repo-1"
     data_point = {
@@ -404,21 +467,13 @@ def test_supplied_patch_runs_only_remote_evaluation(
     assert uploaded_paths == [f"/predictions_mount/{instance_id}.jsonl", "/input_mount/dataset.jsonl"]
     commands = "\n".join(call.args[0] for call in sandbox.commands.run.call_args_list)
     assert evaluator_entrypoint in commands
+    assert evaluator_argument in commands
     assert (tmp_path / f"results/opensandbox_logs/{instance_id}_eval.log").is_file()
     assert not (tmp_path / f"results/opensandbox_logs/{instance_id}_agent.log").exists()
 
 
 @pytest.mark.parametrize("framework", ["gold_patch", "model_patch"])
-@pytest.mark.parametrize(
-    "dataset_type,swe_zero_container",
-    [
-        (SupportedDatasetTypes.swe_bench_pro, None),
-        (SupportedDatasetTypes.swe_bench, "docker://swe-zero"),
-    ],
-)
-def test_supplied_patch_keeps_opensandbox_dataset_restrictions(
-    executor, monkeypatch, tmp_path, framework, dataset_type, swe_zero_container
-):
+def test_supplied_patch_keeps_opensandbox_dataset_restrictions(executor, monkeypatch, tmp_path, framework):
     monkeypatch.setattr("nemo_skills.inference.eval.opensandbox.OpenSandboxExecutor", lambda **kwargs: executor)
     dataset = tmp_path / "dataset.jsonl"
     dataset.write_text("{}\n")
@@ -428,12 +483,12 @@ def test_supplied_patch_keeps_opensandbox_dataset_restrictions(
         output_file=str(tmp_path / "output.jsonl"),
         agent_framework=framework,
         model_patch_file=str(tmp_path / "patches.jsonl") if framework == "model_patch" else None,
-        dataset_type=dataset_type,
-        swe_zero_container=swe_zero_container,
+        dataset_type=SupportedDatasetTypes.swe_bench,
+        swe_zero_container="docker://swe-zero",
         execution_backend="opensandbox",
     )
 
-    with pytest.raises(ValueError, match="standard SWE-bench and Multilingual"):
+    with pytest.raises(ValueError, match="SWE-bench Pro V1"):
         SweBenchGenerationTask(cfg)
 
 
@@ -450,6 +505,22 @@ def test_agent_harness_cannot_use_opensandbox_for_swe_rebench_v2(tmp_path):
     )
 
     with pytest.raises(ValueError, match="SWE-rebench V2 for supplied-patch grading"):
+        SweBenchGenerationTask(cfg)
+
+
+def test_swe_bench_pro_v2_cannot_use_opensandbox(tmp_path):
+    dataset = tmp_path / "dataset.jsonl"
+    dataset.write_text("{}\n")
+    cfg = SweBenchGenerationConfig(
+        _init_nested=True,
+        input_file=str(dataset),
+        output_file=str(tmp_path / "output.jsonl"),
+        agent_framework="mini_swe_agent",
+        dataset_type=SupportedDatasetTypes.swe_bench_pro_v2,
+        execution_backend="opensandbox",
+    )
+
+    with pytest.raises(ValueError, match="SWE-bench Pro V1"):
         SweBenchGenerationTask(cfg)
 
 

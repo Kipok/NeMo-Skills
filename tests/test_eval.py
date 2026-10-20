@@ -277,7 +277,25 @@ def test_eval_judge_sbatch_kwargs_override(monkeypatch, tmp_path):
     assert captured["sbatch_kwargs"] == {"segment": 1}
 
 
-def test_eval_expands_swe_bench_pro_splits_and_merges_before_summarizing(monkeypatch, tmp_path):
+@pytest.mark.parametrize(
+    "ctx_args,alpine_container,expected_client_containers",
+    [
+        (
+            [],
+            "alpine-container",
+            ["ubuntu-container"] * 6 + ["alpine-container"] * 4,
+        ),
+        (
+            ["++execution_backend=opensandbox"],
+            None,
+            ["ubuntu-container"] * 10,
+        ),
+    ],
+    ids=["apptainer", "opensandbox"],
+)
+def test_eval_expands_swe_bench_pro_splits_and_merges_before_summarizing(
+    monkeypatch, tmp_path, ctx_args, alpine_container, expected_client_containers
+):
     def benchmark_args(split, suffix):
         return eval_utils.BenchmarkArgs(
             name="swe-bench-pro",
@@ -341,7 +359,7 @@ def test_eval_expands_swe_bench_pro_splits_and_merges_before_summarizing(monkeyp
     monkeypatch.setattr(eval_pipeline.pipeline_utils, "add_task", fake_add_task)
 
     eval_pipeline.eval(
-        ctx=SimpleNamespace(args=[]),
+        ctx=SimpleNamespace(args=ctx_args),
         cluster="test-cluster",
         output_dir=str(tmp_path),
         benchmarks="swe-bench-pro",
@@ -358,7 +376,7 @@ def test_eval_expands_swe_bench_pro_splits_and_merges_before_summarizing(monkeyp
     jobs = submitted_pipelines[0].jobs
     assert len(jobs) == 10
     client_containers = [job["group"].commands[-1].container for job in jobs]
-    assert client_containers == ["ubuntu-container"] * 6 + ["alpine-container"] * 4
+    assert client_containers == expected_client_containers
 
     assert len(added_tasks) == 2
     merge_task, summarize_task = added_tasks

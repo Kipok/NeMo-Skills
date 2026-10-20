@@ -587,14 +587,17 @@ class SweBenchGenerationTask(GenerationTask):
 
             if self.cfg.agent_framework not in OPENSANDBOX_AGENT_FRAMEWORKS | SUPPLIED_PATCH_FRAMEWORKS:
                 raise ValueError(f"Unsupported OpenSandbox agent framework: {self.cfg.agent_framework}.")
-            supports_dataset = self.cfg.dataset_type == SupportedDatasetTypes.swe_bench or (
+            supports_dataset = self.cfg.dataset_type in {
+                SupportedDatasetTypes.swe_bench,
+                SupportedDatasetTypes.swe_bench_pro,
+            } or (
                 self.cfg.dataset_type == SupportedDatasetTypes.swe_rebench_v2
                 and self.cfg.agent_framework in SUPPLIED_PATCH_FRAMEWORKS
             )
             if not supports_dataset or self.cfg.swe_zero_container:
                 raise ValueError(
-                    "OpenSandbox supports standard SWE-bench and Multilingual task images, plus "
-                    "SWE-rebench V2 for supplied-patch grading."
+                    "OpenSandbox supports standard SWE-bench, SWE-bench Multilingual, and SWE-bench Pro V1 "
+                    "task images, plus SWE-rebench V2 for supplied-patch grading."
                 )
             self.opensandbox_executor = OpenSandboxExecutor(**self.cfg.opensandbox)
             if self.cfg.agent_framework in OPENSANDBOX_AGENT_FRAMEWORKS:
