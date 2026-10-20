@@ -275,10 +275,10 @@ class OpenSandboxExecutor:
                         "senior_swe_bench": (),
                         "scale_swe": (),
                     }[dataset_type]
-                stage_runtime = "mkdir -p /root_mount /trajectories_mount && " + " && ".join(
-                    f"cp -a /root/{directory} /root_mount/" for directory in directories
-                )
-                await self._run(sandbox, setup_command + " && " + stage_runtime, setup_timeout, log_file)
+                setup_command += " && mkdir -p /root_mount /trajectories_mount"
+                for directory in directories:
+                    setup_command += f" && cp -a /root/{directory} /root_mount/"
+                await self._run(sandbox, setup_command, setup_timeout, log_file)
 
                 for source, target, read_only in extra_files:
                     if not read_only or not Path(source).is_file():
