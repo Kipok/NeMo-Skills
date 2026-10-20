@@ -764,11 +764,15 @@ def test_native_harness_runs_through_remote_backend_and_returns_prediction(
         "mini_swe_agent": ["mini-swe-agent", "uv"],
         "swe_agent": ["SWE-agent", "uv"],
         "openhands": ["OpenHands", "uv", "tmux", "jq"],
-        "opencode": ["node"],
-        "claude_code": ["node"],
+        "opencode": ["opencode", "node"],
+        "claude_code": ["claude-code", "node"],
     }[framework]
     for path in paths:
         assert f"cp -a /root/{path} /root_mount/" in commands
+    if framework == "opencode":
+        assert "PATH=/root_mount/opencode/bin:/root_mount/node/bin" in commands
+    if framework == "claude_code":
+        assert "PATH=/root_mount/claude-code/bin:/root_mount/node/bin" in commands
     assert "cp -a /root/SWE-bench /root_mount/" not in commands
     if framework in {"opencode", "claude_code"}:
         assert "cp -a /root/uv /root_mount/" not in commands

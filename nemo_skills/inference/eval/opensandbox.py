@@ -261,8 +261,8 @@ class OpenSandboxExecutor:
                     "mini_swe_agent": ("mini-swe-agent", "uv"),
                     "swe_agent": ("SWE-agent", "uv"),
                     "openhands": ("OpenHands", "uv", "tmux", "jq"),
-                    "opencode": ("node",),
-                    "claude_code": ("node",),
+                    "opencode": ("opencode", "node"),
+                    "claude_code": ("claude-code", "node"),
                 }
                 directories = runtime_dirs[agent_framework] if mode == "agent" else ("SWE-bench", "uv")
                 stage_runtime = "mkdir -p /root_mount /trajectories_mount && " + " && ".join(

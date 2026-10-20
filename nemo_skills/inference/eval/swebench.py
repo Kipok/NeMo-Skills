@@ -94,6 +94,103 @@ CLAUDE_CODE_NODE_VERSION = "22.15.0"
 CLAUDE_CODE_ALLOWED_TOOLS = "Bash,Read,Edit,Write,Glob,Grep"
 CLAUDE_CODE_EFFORT_LEVELS = frozenset({"low", "medium", "high", "xhigh", "max", "auto"})
 
+
+def _build_musl_node_runtime_command() -> str:
+    """Copy Alpine's Node runtime into /root/node so it survives task-container mounting."""
+    node_wrapper = (
+        "#!/bin/sh\n"
+        'runtime_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)\n'
+        'case "$(uname -m)" in aarch64|arm64) musl_arch=aarch64 ;; *) musl_arch=x86_64 ;; esac\n'
+        'exec "$runtime_dir/lib/ld-musl-$musl_arch.so.1" --library-path "$runtime_dir/lib" '
+        '"$runtime_dir/bin/node-native" "$@"\n'
+    )
+    return (
+        "mkdir -p /root/node/bin /root/node/lib && "
+        'cp -L "$(command -v node)" /root/node/bin/node-native && '
+        "cp -L /lib/ld-musl-${MUSL_ARCH}.so.1 /root/node/lib/ && "
+        "cp -L /lib/ld-musl-${MUSL_ARCH}.so.1 /root/node/lib/libc.musl-${MUSL_ARCH}.so.1 && "
+        "NODE_LIBRARIES=$(ldd /root/node/bin/node-native) && "
+        'printf "%s\\n" "$NODE_LIBRARIES" | '
+        "awk '$3 ~ /^\\// {print $3} $1 ~ /^\\// {print $1}' | "
+        'while IFS= read -r library; do cp -L "$library" /root/node/lib/ || exit 1; done && '
+        f"printf %s {shlex.quote(node_wrapper)} >/root/node/bin/node && "
+        "chmod 755 /root/node/bin/node && "
+        "/root/node/bin/node --version"
+    )
+
+
+def build_opencode_install_command(version: str) -> str:
+    """Build an OpenCode installer for glibc and Alpine/musl task containers."""
+    version = shlex.quote(version)
+    return (
+        "rm -rf /root/opencode /root/node && "
+        "mkdir -p /root/opencode && "
+        'case "$(uname -m)" in '
+        "    aarch64|arm64) export NODE_ARCH=arm64 MUSL_ARCH=aarch64 "
+        "        OPENCODE_MUSL_PACKAGE=opencode-linux-arm64-musl ;; "
+        "    *) export NODE_ARCH=x64 MUSL_ARCH=x86_64 "
+        "        OPENCODE_MUSL_PACKAGE=opencode-linux-x64-baseline-musl ;; "
+        "esac && "
+        "if [ -f /etc/alpine-release ]; then "
+        "    apk add --no-cache nodejs npm && "
+        f"   npm install -g --prefix /root/opencode {OPENCODE_NPM_PACKAGE}@{version} "
+        f"${{OPENCODE_MUSL_PACKAGE}}@{version} && "
+        "    cp /root/opencode/lib/node_modules/${OPENCODE_MUSL_PACKAGE}/bin/opencode "
+        "        /root/opencode/bin/opencode-native && "
+        "    chmod 755 /root/opencode/bin/opencode-native && "
+        "    ln -sf opencode-native /root/opencode/bin/opencode && "
+        "    mkdir -p /root/opencode/lib && "
+        "    cp -L /lib/ld-musl-${MUSL_ARCH}.so.1 /root/opencode/lib/ && "
+        "    cp -L /lib/ld-musl-${MUSL_ARCH}.so.1 "
+        "        /root/opencode/lib/libc.musl-${MUSL_ARCH}.so.1 && "
+        "    cp -L /usr/lib/libstdc++.so.6 /usr/lib/libgcc_s.so.1 /root/opencode/lib/ && "
+        "    touch /root/opencode/.musl && "
+        f"   {_build_musl_node_runtime_command()}; "
+        "else "
+        f"   export NODE_VERSION={OPENCODE_NODE_VERSION} && "
+        "    export NODE_ARCH=linux-${NODE_ARCH} && "
+        "    mkdir -p /root/node && "
+        "    curl -Lf "
+        '        "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-${NODE_ARCH}.tar.gz" '
+        "        -o /tmp/node.tar.gz && "
+        "    tar -xzf /tmp/node.tar.gz -C /root/node --strip-components=1 && "
+        "    export PATH=/root/node/bin:$PATH && "
+        f"   npm install -g --prefix /root/opencode {OPENCODE_NPM_PACKAGE}@{version}; "
+        "fi && "
+        "export PATH=/root/opencode/bin:/root/node/bin:$PATH && "
+        "opencode --version"
+    )
+
+
+def build_claude_code_install_command(version: str) -> str:
+    """Build a Claude Code installer for glibc and Alpine/musl task containers."""
+    version = shlex.quote(version)
+    return (
+        "rm -rf /root/claude-code /root/node && "
+        'case "$(uname -m)" in '
+        "    aarch64|arm64) export NODE_ARCH=arm64 MUSL_ARCH=aarch64 ;; "
+        "    *) export NODE_ARCH=x64 MUSL_ARCH=x86_64 ;; "
+        "esac && "
+        "if [ -f /etc/alpine-release ]; then "
+        "    apk add --no-cache nodejs npm && "
+        f"   npm install -g --prefix /root/claude-code {CLAUDE_CODE_NPM_PACKAGE}@{version} && "
+        f"   {_build_musl_node_runtime_command()}; "
+        "else "
+        f"   export NODE_VERSION={CLAUDE_CODE_NODE_VERSION} && "
+        "    export NODE_ARCH=linux-${NODE_ARCH} && "
+        "    mkdir -p /root/node && "
+        "    curl -Lf "
+        '        "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-${NODE_ARCH}.tar.gz" '
+        "        -o /tmp/node.tar.gz && "
+        "    tar -xzf /tmp/node.tar.gz -C /root/node --strip-components=1 && "
+        "    export PATH=/root/node/bin:$PATH && "
+        f"   npm install -g --prefix /root/claude-code {CLAUDE_CODE_NPM_PACKAGE}@{version}; "
+        "fi && "
+        "export PATH=/root/claude-code/bin:/root/node/bin:$PATH && "
+        "claude --version"
+    )
+
+
 # These verifiers bind fixed localhost ports. Run only their verifier
 # containers in private, network-disabled namespaces so concurrent
 # multilingual evaluations cannot collide on the host network.
@@ -817,23 +914,7 @@ class SweBenchGenerationTask(GenerationTask):
                 )
             if self.cfg.agent_framework_commit is None:
                 self.cfg.agent_framework_commit = OPENCODE_DEFAULT_VERSION
-            agent_setup_commands.append(
-                "if [[ $(uname -m) == 'aarch64' || $(uname -m) == 'arm64' ]]; then "
-                "    export NODE_ARCH=linux-arm64; "
-                "else "
-                "    export NODE_ARCH=linux-x64; "
-                "fi && "
-                f"export NODE_VERSION={OPENCODE_NODE_VERSION} && "
-                "rm -rf /root/node && "
-                "mkdir -p /root/node && "
-                "curl -Lf "
-                '"https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-${NODE_ARCH}.tar.gz" '
-                "-o /tmp/node.tar.gz && "
-                "tar -xzf /tmp/node.tar.gz -C /root/node --strip-components=1 && "
-                "export PATH=/root/node/bin:$PATH && "
-                f"npm install -g {OPENCODE_NPM_PACKAGE}@{self.cfg.agent_framework_commit} && "
-                "opencode --version"
-            )
+            agent_setup_commands.append(build_opencode_install_command(self.cfg.agent_framework_commit))
 
         elif self.cfg.agent_framework == SupportedAgentFrameworks.claude_code:
             if self.cfg.agent_framework_repo is not None:
@@ -844,23 +925,7 @@ class SweBenchGenerationTask(GenerationTask):
                 )
             if self.cfg.agent_framework_commit is None:
                 self.cfg.agent_framework_commit = CLAUDE_CODE_DEFAULT_VERSION
-            agent_setup_commands.append(
-                "if [[ $(uname -m) == 'aarch64' || $(uname -m) == 'arm64' ]]; then "
-                "    export NODE_ARCH=linux-arm64; "
-                "else "
-                "    export NODE_ARCH=linux-x64; "
-                "fi && "
-                f"export NODE_VERSION={CLAUDE_CODE_NODE_VERSION} && "
-                "rm -rf /root/node && "
-                "mkdir -p /root/node && "
-                "curl -Lf "
-                '"https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-${NODE_ARCH}.tar.gz" '
-                "-o /tmp/node.tar.gz && "
-                "tar -xzf /tmp/node.tar.gz -C /root/node --strip-components=1 && "
-                "export PATH=/root/node/bin:$PATH && "
-                f"npm install -g {CLAUDE_CODE_NPM_PACKAGE}@{self.cfg.agent_framework_commit} && "
-                "claude --version"
-            )
+            agent_setup_commands.append(build_claude_code_install_command(self.cfg.agent_framework_commit))
 
         elif self.cfg.agent_framework in {
             SupportedAgentFrameworks.gold_patch,
@@ -1813,7 +1878,18 @@ class SweBenchGenerationTask(GenerationTask):
             config_json = json.dumps(opencode_config)
             patch_setup, patch_collect = build_clean_patch_commands(f"{trajectory_dir}/model.patch")
             return (
-                "export PATH=/root_mount/node/bin:$PATH && "
+                "export PATH=/root_mount/opencode/bin:/root_mount/node/bin:$PATH && "
+                "if [ -f /root_mount/opencode/.musl ]; then "
+                '    case "$(uname -m)" in '
+                "        aarch64|arm64) "
+                "            export OPENCODE_LOADER=/root_mount/opencode/lib/ld-musl-aarch64.so.1 ;; "
+                "        *) export OPENCODE_LOADER=/root_mount/opencode/lib/ld-musl-x86_64.so.1 ;; "
+                "    esac && "
+                "    opencode() { "
+                '        "$OPENCODE_LOADER" --library-path /root_mount/opencode/lib '
+                '            /root_mount/opencode/bin/opencode-native "$@"; '
+                "    }; "
+                "fi && "
                 "export HOME=/root && "
                 "export XDG_CONFIG_HOME=/root/.config && "
                 "export OPENCODE_DISABLE_AUTOUPDATE=1 && "
@@ -1934,7 +2010,7 @@ class SweBenchGenerationTask(GenerationTask):
             settings_json = json.dumps(settings)
             patch_setup, patch_collect = build_clean_patch_commands(f"{trajectory_dir}/model.patch")
             return (
-                "export PATH=/root_mount/node/bin:$PATH && "
+                "export PATH=/root_mount/claude-code/bin:/root_mount/node/bin:$PATH && "
                 "export HOME=/root && "
                 "mkdir -p /root/.claude && "
                 f"printf %s {shlex.quote(settings_json)} >/root/.claude/settings.json && "

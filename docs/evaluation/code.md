@@ -541,7 +541,7 @@ SWE-bench Pro uses mostly the same logic as regular SWE-bench, so most of the [S
 
 1. Since it is a multilingual benchmark, we use the multilingual inference logic for it, same as for [SWE-bench Multilingual](#swe-bench-multilingual).
 2. 88 of 731 instances require a different Nemo-Skills container based on Alpine Linux. The dockerfile for this container is provided [here](https://github.com/NVIDIA-NeMo/Skills/tree/main/dockerfiles/swe-bench/Dockerfile.nemo-skills.alpine). A single evaluation can run both subsets by using `--main_container` for Ubuntu tasks and `--alpine_container` for Alpine tasks.
-3. Due to technical issues, OpenHands is not supported for this benchmark. SWE-agent, mini-SWE-agent and OpenCode are supported on the Ubuntu subset. OpenCode needs a glibc Node.js runtime, so it is not expected to work on the Alpine subset.
+3. Due to technical issues, OpenHands is not supported for this benchmark. SWE-agent, mini-SWE-agent, OpenCode, and Claude Code support both the Ubuntu and Alpine subsets. NeMo-Skills installs musl-compatible OpenCode and Node.js runtimes for Alpine tasks.
 
 #### Sample run
 
@@ -617,8 +617,8 @@ OpenSandbox creates each agent and verifier from the row's Ubuntu or Alpine task
 
 Keep in mind there is some variance between runs, so we recommend running evaluation multiple times and averaging out the resolve rate. To do that automatically, you can set `--benchmarks=swe-bench-pro:N`, where N is your desired number of repeats.
 
-To evaluate the same model with mini-SWE-agent or OpenCode,
-replace `swe_agent` with `mini_swe_agent` or `opencode` in the Ubuntu command. OpenHands is not supported for this benchmark. OpenCode is not expected to work on the Alpine subset.
+To use another supported agent, replace `swe_agent` with `mini_swe_agent`, `opencode`, or `claude_code`.
+These agents support both subsets with Apptainer and OpenSandbox. OpenHands is not supported for this benchmark.
 
 !!! note
     There are some instances where the gold (ground truth) patches do not pass the evaluation tests. Therefore, it's likely that on those instances even patches that resolve the issue will be incorrectly evaluated as "unresolved". We have observed 18 such instances in SWE-bench Pro:
