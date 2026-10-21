@@ -15,6 +15,8 @@
 import asyncio
 import io
 import json
+import shlex
+import subprocess
 import tarfile
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -24,6 +26,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from omegaconf import OmegaConf
 
+from nemo_skills.inference.eval.git_sanitization import _LEGACY_GIT_CLEANUP
 from nemo_skills.inference.eval.opensandbox import OpenSandboxExecutor, _extract_outputs
 from nemo_skills.inference.eval.swebench import (
     SupportedDatasetTypes,
@@ -196,6 +199,54 @@ def test_swe_bench_pro_repository_is_staged_from_app(executor, monkeypatch, tmp_
 def test_repository_preparation_timeout_must_be_positive(executor, repo_setup_timeout_s):
     with pytest.raises(ValueError, match="must be positive"):
         OpenSandboxExecutor(repo_setup_timeout_s=repo_setup_timeout_s)
+
+
+@pytest.mark.parametrize("exit_code", [-1, 0])
+def test_command_failure_preserves_remote_error(executor, monkeypatch, tmp_path, exit_code):
+    sandbox, _ = _sandbox(executor, monkeypatch)
+    status = sandbox.commands.get_command_status.return_value
+    status.exit_code = exit_code
+    status.error = "context deadline exceeded during repository preparation"
+
+    with pytest.raises(RuntimeError, match="context deadline exceeded during repository preparation"):
+        asyncio.run(executor.execute(**_arguments(tmp_path)))
+
+    sandbox.commands.run.assert_awaited_once()
+    sandbox.kill.assert_awaited_once()
+    sandbox.close.assert_awaited_once()
+
+
+def test_legacy_cleanup_preserves_packed_main_in_opensandbox(executor, monkeypatch, tmp_path):
+    repo = tmp_path / "repository"
+
+    def git(*args):
+        return subprocess.run(
+            ["git", "-C", str(repo), *args], check=True, capture_output=True, text=True
+        ).stdout.strip()
+
+    subprocess.run(["git", "init", "-b", "main", str(repo)], check=True, capture_output=True)
+    git("-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "--allow-empty", "-m", "base")
+    original_head = git("rev-parse", "HEAD")
+    git("tag", "future")
+    git("branch", "other")
+    git("pack-refs", "--all")
+    assert not (repo / ".git/refs/heads/main").exists()
+
+    sandbox, _ = _sandbox(executor, monkeypatch, _archive())
+    args = _arguments(tmp_path)
+    args["data_point"]["pre_commands"] = "git checkout -B main && " + _LEGACY_GIT_CLEANUP
+    asyncio.run(executor.execute(**args))
+
+    preparation = next(call.args[0] for call in sandbox.commands.run.call_args_list if "git gc" in call.args[0])
+    preparation = shlex.split(preparation)[2].replace("cd /testbed", "cd " + shlex.quote(str(repo)), 1)
+    subprocess.run(
+        ["bash", "-c", preparation],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert git("rev-parse", "HEAD") == original_head
+    assert git("for-each-ref", "--format=%(refname)") == "refs/heads/main"
 
 
 def test_failed_mutating_command_is_not_replayed_and_worker_is_cleaned_up(executor, monkeypatch, tmp_path):

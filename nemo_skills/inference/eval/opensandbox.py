@@ -28,6 +28,8 @@ from datetime import timedelta
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 
+from nemo_skills.inference.eval.git_sanitization import rewrite_legacy_git_cleanup
+
 SETUP_ALLOWED_DOMAINS = ["*.com", "*.org", "*.net", "*.io", "*.sh", "*.dev", "*.rs", "*.co", "*.edu", "*.cn"]
 
 
@@ -184,14 +186,18 @@ class OpenSandboxExecutor:
                 cursor = logs.cursor
                 if status.running is False:
                     if status.exit_code != 0 or status.error:
-                        raise RuntimeError(f"OpenSandbox command failed (exit {status.exit_code}); check {log_file}.")
+                        detail = f": {status.error}" if status.error else ""
+                        raise RuntimeError(
+                            f"OpenSandbox command failed (exit {status.exit_code}){detail}; "
+                            f"timeout={timeout:g}s; check {log_file}."
+                        )
                     return
                 await asyncio.sleep(self.poll_interval_s)
 
         try:
             await asyncio.wait_for(poll(), timeout=timeout + 5)
         except asyncio.TimeoutError as error:
-            raise RuntimeError(f"OpenSandbox command timed out; check {log_file}.") from error
+            raise RuntimeError(f"OpenSandbox command timed out (timeout={timeout:g}s); check {log_file}.") from error
 
     async def execute(
         self,
@@ -288,7 +294,7 @@ class OpenSandboxExecutor:
                 else:
                     # Run pre_commands and copy the repo to /testbed if needed.
                     repo_dir = data_point.get("container_repo_dir", "/testbed")
-                    pre_commands = data_point.get("pre_commands", "").strip()
+                    pre_commands = rewrite_legacy_git_cleanup(data_point.get("pre_commands", "").strip())
                     repo_setup_commands = []
                     if pre_commands:
                         repo_setup_commands.append(f"cd {shlex.quote(repo_dir)}")
