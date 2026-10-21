@@ -18,7 +18,9 @@ import asyncio
 import io
 import ipaddress
 import json
+import logging
 import os
+import random
 import shlex
 import shutil
 import socket
@@ -29,6 +31,9 @@ from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 
 from nemo_skills.inference.eval.git_sanitization import rewrite_legacy_git_cleanup
+from nemo_skills.utils import get_logger_name
+
+LOG = logging.getLogger(get_logger_name(__file__))
 
 SETUP_ALLOWED_DOMAINS = ["*.com", "*.org", "*.net", "*.io", "*.sh", "*.dev", "*.rs", "*.co", "*.edu", "*.cn"]
 
@@ -42,6 +47,21 @@ def _load_sdk():
     except ImportError as error:
         raise RuntimeError("Install nemo_skills[opensandbox] in the NeMo-Skills coordinator runtime.") from error
     return Sandbox, ConnectionConfig, RunCommandOpts, NetworkPolicy, NetworkRule
+
+
+def _is_transient_create_error(error: Exception) -> bool:
+    """True for sandbox creation failures caused by cluster load (timeouts, slot exhaustion, pod failures)."""
+    names = {cls.__name__ for cls in type(error).__mro__}
+    if names & {
+        "SandboxReadyTimeoutException",
+        "SandboxTimeoutException",
+        "SandboxConnectionException",
+    }:
+        return True
+    if "SandboxApiException" in names:
+        status_code = getattr(error, "status_code", None)
+        return status_code is None or status_code in {408, 429} or status_code >= 500
+    return False
 
 
 def _extract_outputs(data: bytes, destination: Path) -> None:
@@ -87,6 +107,9 @@ class OpenSandboxExecutor:
         command_timeout_s: int = 10800,
         repo_setup_timeout_s: int = 300,
         poll_interval_s: float = 5,
+        create_retries: int = 3,
+        create_retry_min_s: float = 30,
+        create_retry_max_s: float = 120,
     ):
         domain = domain or os.environ.get("OPENSANDBOX_DOMAIN")
         api_key = os.environ.get("OPENSANDBOX_API_KEY")
@@ -119,6 +142,11 @@ class OpenSandboxExecutor:
         self.command_timeout_s = command_timeout_s
         self.repo_setup_timeout_s = repo_setup_timeout_s
         self.poll_interval_s = poll_interval_s
+        if create_retries < 0 or not 0 <= create_retry_min_s <= create_retry_max_s:
+            raise ValueError("create_retries must be >= 0 and 0 <= create_retry_min_s <= create_retry_max_s.")
+        self.create_retries = create_retries
+        self.create_retry_min_s = create_retry_min_s
+        self.create_retry_max_s = create_retry_max_s
 
     @asynccontextmanager
     async def _connection_config(self):
@@ -259,21 +287,45 @@ class OpenSandboxExecutor:
 
         # A new client transport and a fresh task image for every agent/verifier invocation.
         async with self._connection_config() as connection:
-            sandbox = await self.Sandbox.create(
-                image=image,
-                connection_config=connection,
-                timeout=timedelta(
-                    seconds=self.ready_timeout_s
-                    + setup_timeout
-                    + (self.repo_setup_timeout_s if mode == "agent" else 0)
-                    + timeout
-                    + 300
-                ),
-                ready_timeout=timedelta(seconds=self.ready_timeout_s),
-                resource=self.resources,
-                metadata={"benchmark": "swe-bench", "instance_id": data_point["instance_id"][:63], "mode": mode},
-                network_policy=network_policy,
-            )
+            sandbox = None
+            for attempt in range(self.create_retries + 1):
+                try:
+                    sandbox = await self.Sandbox.create(
+                        image=image,
+                        connection_config=connection,
+                        timeout=timedelta(
+                            seconds=self.ready_timeout_s
+                            + setup_timeout
+                            + (self.repo_setup_timeout_s if mode == "agent" else 0)
+                            + timeout
+                            + 300
+                        ),
+                        ready_timeout=timedelta(seconds=self.ready_timeout_s),
+                        resource=self.resources,
+                        metadata={
+                            "benchmark": "swe-bench",
+                            "instance_id": data_point["instance_id"][:63],
+                            "mode": mode,
+                        },
+                        network_policy=network_policy,
+                    )
+                    break
+                except Exception as error:
+                    # On failure the SDK does not hand back a sandbox handle, so there is nothing to kill here;
+                    # the server expires leaked sandboxes via the `timeout` above.
+                    if attempt >= self.create_retries or not _is_transient_create_error(error):
+                        raise
+                    delay = random.uniform(self.create_retry_min_s, self.create_retry_max_s)
+                    LOG.warning(
+                        "Sandbox creation failed for %s (%s: %.200s); retry %d/%d in %.0fs",
+                        data_point["instance_id"],
+                        type(error).__name__,
+                        str(error),
+                        attempt + 1,
+                        self.create_retries,
+                        delay,
+                    )
+                    await asyncio.sleep(delay)
             try:
                 runtime_dirs = {
                     "mini_swe_agent": ("mini-swe-agent", "uv"),

@@ -31,6 +31,7 @@ from nemo_skills.inference.eval.opensandbox import (
     OpenSandboxExecutor,
     _archive_input_directory,
     _extract_outputs,
+    _is_transient_create_error,
 )
 from nemo_skills.inference.eval.swebench import (
     SupportedDatasetTypes,
@@ -109,6 +110,15 @@ def _configure_task_scratch(task, tmp_path):
     task._scratch_artifacts = {}
 
 
+def _sandbox_error(name, *, status_code=None):
+    bases = (Exception,)
+    if name != "SandboxApiException":
+        bases = (type("SandboxApiException", (Exception,), {}),)
+    error = type(name, bases, {})()
+    error.status_code = status_code
+    return error
+
+
 def test_sdk_connection_reads_env_without_injecting_keys_into_worker(executor):
     connection = executor.ConnectionConfig(**executor.connection_options)
     assert connection.domain == "sandbox.example:443"
@@ -121,6 +131,61 @@ def test_missing_credentials_fail_before_creating_sandbox(monkeypatch):
     monkeypatch.delenv("OPENSANDBOX_API_KEY", raising=False)
     with pytest.raises(ValueError, match="OPENSANDBOX_API_KEY"):
         OpenSandboxExecutor(domain="sandbox.example")
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        _sandbox_error("SandboxReadyTimeoutException"),
+        _sandbox_error("SandboxTimeoutException"),
+        _sandbox_error("SandboxConnectionException"),
+        _sandbox_error("SandboxApiException", status_code=None),
+        _sandbox_error("SandboxApiException", status_code=408),
+        _sandbox_error("SandboxApiException", status_code=429),
+        _sandbox_error("SandboxApiException", status_code=503),
+    ],
+)
+def test_transient_sandbox_creation_errors_are_retryable(error):
+    assert _is_transient_create_error(error) is True
+
+
+@pytest.mark.parametrize("status_code", [400, 401, 403, 404, 422])
+def test_client_sandbox_creation_errors_are_not_retryable(status_code):
+    assert _is_transient_create_error(_sandbox_error("SandboxApiException", status_code=status_code)) is False
+
+
+def test_transient_sandbox_creation_failure_retries_then_succeeds(executor, monkeypatch, tmp_path):
+    sandbox, create = _sandbox(executor, monkeypatch, _archive())
+    create.side_effect = [_sandbox_error("SandboxReadyTimeoutException"), sandbox]
+    executor.create_retry_min_s = executor.create_retry_max_s = 0
+
+    asyncio.run(executor.execute(**_arguments(tmp_path)))
+
+    assert create.await_count == 2
+
+
+def test_sandbox_creation_retry_exhaustion_reraises_last_error(executor, monkeypatch, tmp_path):
+    error = _sandbox_error("SandboxConnectionException")
+    _, create = _sandbox(executor, monkeypatch)
+    create.side_effect = error
+    executor.create_retries = 2
+    executor.create_retry_min_s = executor.create_retry_max_s = 0
+
+    with pytest.raises(type(error)):
+        asyncio.run(executor.execute(**_arguments(tmp_path)))
+
+    assert create.await_count == 3
+
+
+def test_non_retryable_sandbox_creation_failure_is_not_retried(executor, monkeypatch, tmp_path):
+    error = _sandbox_error("SandboxApiException", status_code=401)
+    _, create = _sandbox(executor, monkeypatch)
+    create.side_effect = error
+
+    with pytest.raises(type(error)):
+        asyncio.run(executor.execute(**_arguments(tmp_path)))
+
+    create.assert_awaited_once()
 
 
 def test_remote_agent_downloads_artifact_and_never_uploads_gold_data(executor, monkeypatch, tmp_path):
