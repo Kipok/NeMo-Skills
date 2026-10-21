@@ -13,6 +13,9 @@
 # limitations under the License.
 
 import json
+import shutil
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -43,6 +46,10 @@ def test_openhands_is_rejected_for_swe_bench_pro(tmp_path, dataset_type):
 def test_openhands_rollout_input_contains_only_current_record(tmp_path):
     task = object.__new__(SweBenchGenerationTask)
     task.scratch_dir = tmp_path
+    task.input_dir = tmp_path / "input"
+    task.cfg = SimpleNamespace(input_file=str(tmp_path / "dataset.jsonl"))
+    Path(task.cfg.input_file).write_text("{}\n")
+    task._scratch_artifacts = {}
     data_point = {
         "instance_id": "owner__repo-123",
         "dataset_name": "princeton-nlp/SWE-bench_Verified",
@@ -68,3 +75,28 @@ def test_openhands_rollout_input_contains_only_current_record(tmp_path):
         "PASS_TO_PASS": [],
         "FAIL_TO_PASS": [],
     }
+
+
+def test_scratch_recovery_restores_staged_and_generated_inputs(tmp_path):
+    source = tmp_path / "dataset.jsonl"
+    source.write_text('{"instance_id":"owner__repo-123"}\n')
+    task = object.__new__(SweBenchGenerationTask)
+    task.scratch_dir = tmp_path / "scratch"
+    task.input_dir = task.scratch_dir / "input"
+    task.cfg = SimpleNamespace(input_file=str(source))
+    task._scratch_artifacts = {}
+    data_point = {
+        "instance_id": "owner__repo-123",
+        "dataset_name": "princeton-nlp/SWE-bench_Verified",
+        "problem_statement": "Fix the bug",
+        "base_commit": "abc123",
+    }
+
+    rollout_input = task._write_openhands_rollout_input(data_point)
+    expected_rollout = rollout_input.read_bytes()
+    shutil.rmtree(task.scratch_dir)
+
+    task._ensure_scratch_dir()
+
+    assert (task.input_dir / source.name).read_bytes() == source.read_bytes()
+    assert rollout_input.read_bytes() == expected_rollout

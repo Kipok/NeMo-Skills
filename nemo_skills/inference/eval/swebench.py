@@ -1003,8 +1003,30 @@ class SweBenchGenerationTask(GenerationTask):
             scratch_root.mkdir(exist_ok=True)
         self.scratch_dir = Path(tempfile.mkdtemp(dir=scratch_root, prefix="nemo-skills-swe-"))
         self.input_dir = self.scratch_dir / "input"
-        self.input_dir.mkdir()
-        shutil.copy2(self.cfg.input_file, self.input_dir)
+        self._scratch_artifacts: dict[Path, bytes] = {}
+        self._ensure_scratch_dir()
+
+    def _ensure_scratch_dir(self):
+        """(Re)create the scratch dir and staged input if it vanished (e.g. node-local /raid/scratch got cleaned up)."""
+        if not self.scratch_dir.is_dir():
+            LOG.warning("Scratch dir %s disappeared, re-creating it.", self.scratch_dir)
+        self.scratch_dir.mkdir(parents=True, exist_ok=True)
+        if not (self.input_dir / Path(self.cfg.input_file).name).is_file():
+            self.input_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(self.cfg.input_file, self.input_dir)
+        for path, content in self._scratch_artifacts.items():
+            if not path.is_file():
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(content)
+
+    def _write_scratch_artifact(self, path: Path, content: str | bytes) -> None:
+        """Write and retain a generated input so scratch cleanup can be recovered before execution."""
+        if isinstance(content, str):
+            content = content.encode()
+        self._scratch_artifacts[path] = content
+        self._ensure_scratch_dir()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
 
     def generate(self):
         try:
@@ -1108,6 +1130,7 @@ class SweBenchGenerationTask(GenerationTask):
         NOTE: expected_file_pattern is expected to be a static path.
         Glob patterns (e.g. 'dir/*/*.json') are no longer accepted, since they can cause issues on Lustre filesystems.
         """
+        self._ensure_scratch_dir()
         if getattr(self, "opensandbox_executor", None) is not None:
             # Fixed-port multilingual verifiers get a separate sandbox network rather
             # than sharing Apptainer's default host network.
@@ -1356,7 +1379,7 @@ class SweBenchGenerationTask(GenerationTask):
         }
         if data_point.get("language"):
             data_point_for_openhands["language"] = data_point["language"]
-        host_path.write_text(json.dumps(data_point_for_openhands, ensure_ascii=False) + "\n", encoding="utf-8")
+        self._write_scratch_artifact(host_path, json.dumps(data_point_for_openhands, ensure_ascii=False) + "\n")
         return host_path
 
     async def _run_agent(self, data_point) -> str:
@@ -1594,8 +1617,7 @@ class SweBenchGenerationTask(GenerationTask):
                 # Our proxy will listen there and forward requests to the actual LLM.
                 api_base = urlsplit(api_base)._replace(netloc="127.0.0.1:8000").geturl()
             full_config["model"]["model_kwargs"]["api_base"] = api_base
-            with open(host_config_path, "w") as f:
-                yaml.dump(full_config, f)
+            self._write_scratch_artifact(host_config_path, yaml.dump(full_config))
 
             return (
                 "cp -r /root_mount/mini-swe-agent /root && "

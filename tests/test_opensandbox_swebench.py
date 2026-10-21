@@ -78,6 +78,8 @@ def _arguments(tmp_path, mode="agent"):
     output_dir = tmp_path / "results"
     config = tmp_path / "agent.yaml"
     config.write_text("agent-config")
+    dataset = tmp_path / "dataset.jsonl"
+    dataset.write_text("{}\n")
     return dict(
         data_point={
             "instance_id": "owner__repo-1",
@@ -89,7 +91,7 @@ def _arguments(tmp_path, mode="agent"):
         command="run-agent" if mode == "agent" else "run-verifier",
         expected_file=output_dir / "trajectories/sample.traj.json",
         output_dir=output_dir,
-        input_file=tmp_path / "dataset.jsonl",
+        input_file=dataset,
         setup_command="install-runtime",
         setup_timeout=1200,
         mode=mode,
@@ -99,6 +101,12 @@ def _arguments(tmp_path, mode="agent"):
         proxy_host="10.0.0.2",
         block_network=False,
     )
+
+
+def _configure_task_scratch(task, tmp_path):
+    task.scratch_dir = tmp_path / "task-scratch"
+    task.input_dir = task.scratch_dir / "input"
+    task._scratch_artifacts = {}
 
 
 def test_sdk_connection_reads_env_without_injecting_keys_into_worker(executor):
@@ -434,6 +442,7 @@ def test_swe_bench_pro_v2_verifier_returns_remote_reward(executor, monkeypatch, 
     task = object.__new__(SweBenchProV2GenerationTask)
     task.output_dir = tmp_path / "results"
     task.output_dir.mkdir()
+    _configure_task_scratch(task, tmp_path)
     task.opensandbox_executor = executor
     task.opensandbox_setup_commands = {"eval": "install-runtime"}
     task.cfg = SimpleNamespace(
@@ -756,6 +765,7 @@ def test_backend_dispatch_preserves_native_artifact_contract(
     task.opensandbox_executor = executor
     task.opensandbox_setup_commands = {"eval": "install-runtime"}
     task.output_dir = args["output_dir"]
+    _configure_task_scratch(task, tmp_path)
     result = asyncio.run(
         task._execute_container_command(
             args["data_point"],
