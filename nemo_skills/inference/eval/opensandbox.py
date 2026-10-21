@@ -64,6 +64,17 @@ def _extract_outputs(data: bytes, destination: Path) -> None:
                 raise RuntimeError(f"Unsupported sandbox artifact type: {member.name}")
 
 
+def _archive_input_directory(source: Path) -> bytes:
+    """Archive a trusted local input tree without following links or special files."""
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w:gz") as archive:
+        for path in sorted(source.rglob("*")):
+            if path.is_symlink() or not (path.is_file() or path.is_dir()):
+                raise RuntimeError(f"OpenSandbox directory inputs cannot contain links or special files: {path}")
+            archive.add(path, arcname=path.relative_to(source), recursive=False)
+    return buffer.getvalue()
+
+
 class OpenSandboxExecutor:
     def __init__(
         self,
@@ -215,6 +226,7 @@ class OpenSandboxExecutor:
         extra_files,
         proxy_host,
         block_network,
+        stage_eval_harness=True,
     ) -> str:
         if mode == "agent" and agent_framework in {"gold_patch", "model_patch"}:
             raise RuntimeError(
@@ -270,19 +282,42 @@ class OpenSandboxExecutor:
                     "opencode": ("opencode", "node"),
                     "claude_code": ("claude-code", "node"),
                 }
-                directories = runtime_dirs[agent_framework] if mode == "agent" else ("SWE-bench", "uv")
-                stage_runtime = "mkdir -p /root_mount /trajectories_mount && " + " && ".join(
-                    f"cp -a /root/{directory} /root_mount/" for directory in directories
+                directories = (
+                    runtime_dirs[agent_framework]
+                    if mode == "agent"
+                    else (("SWE-bench", "uv") if stage_eval_harness else ())
                 )
+                stage_runtime_commands = ["mkdir -p /root_mount /trajectories_mount"]
+                stage_runtime_commands.extend(f"cp -a /root/{directory} /root_mount/" for directory in directories)
+                stage_runtime = " && ".join(stage_runtime_commands)
                 await self._run(sandbox, setup_command + " && " + stage_runtime, setup_timeout, log_file)
 
-                for source, target, read_only in extra_files:
-                    if not read_only or not Path(source).is_file():
-                        raise RuntimeError("OpenSandbox extra inputs must be regular read-only files.")
-                    await self._run(
-                        sandbox, f"mkdir -p {shlex.quote(str(PurePosixPath(target).parent))}", 60, log_file
-                    )
-                    await sandbox.files.write_file(target, await asyncio.to_thread(Path(source).read_bytes), mode=644)
+                for index, (source, target, read_only) in enumerate(extra_files):
+                    source = Path(source)
+                    target = PurePosixPath(target)
+                    if not target.is_absolute() or ".." in target.parts:
+                        raise RuntimeError(f"OpenSandbox input target must be an absolute safe path: {target}")
+                    if not read_only:
+                        raise RuntimeError("OpenSandbox extra inputs must be read-only.")
+                    if source.is_file():
+                        await self._run(sandbox, f"mkdir -p {shlex.quote(str(target.parent))}", 60, log_file)
+                        await sandbox.files.write_file(
+                            str(target), await asyncio.to_thread(source.read_bytes), mode=644
+                        )
+                    elif source.is_dir():
+                        archive_path = f"/tmp/nemo-skills-input-{index}.tar.gz"
+                        archive = await asyncio.to_thread(_archive_input_directory, source)
+                        await sandbox.files.write_file(archive_path, archive, mode=600)
+                        await self._run(
+                            sandbox,
+                            f"mkdir -p {shlex.quote(str(target))} && "
+                            f"tar -xzf {shlex.quote(archive_path)} -C {shlex.quote(str(target))} && "
+                            f"rm -f {shlex.quote(archive_path)}",
+                            60,
+                            log_file,
+                        )
+                    else:
+                        raise RuntimeError(f"OpenSandbox extra input does not exist or is unsupported: {source}")
 
                 if mode == "eval":
                     # Mounts the input dataset row for this instance. Used during evaluation.
@@ -293,14 +328,33 @@ class OpenSandboxExecutor:
                     )
                 else:
                     # Run pre_commands and copy the repo to /testbed if needed.
-                    repo_dir = data_point.get("container_repo_dir", "/testbed")
                     pre_commands = rewrite_legacy_git_cleanup(data_point.get("pre_commands", "").strip())
                     repo_setup_commands = []
+                    repo_dirs = data_point.get("container_repo_dirs")
+                    if repo_dirs:
+                        candidates = " ".join(shlex.quote(path) for path in repo_dirs)
+                        repo_setup_commands.append(
+                            'container_repo_dir=""; '
+                            f"for candidate in {candidates}; do "
+                            'if git -C "$candidate" rev-parse --show-toplevel >/dev/null 2>&1; then '
+                            'container_repo_dir="$candidate"; break; fi; '
+                            "done; "
+                            'test -n "$container_repo_dir"'
+                        )
+                        repo_dir = '"$container_repo_dir"'
+                    else:
+                        repo_dir = shlex.quote(data_point.get("container_repo_dir", "/testbed"))
                     if pre_commands:
-                        repo_setup_commands.append(f"cd {shlex.quote(repo_dir)}")
+                        repo_setup_commands.append(f"cd {repo_dir}")
                         repo_setup_commands.append(pre_commands)
-                    if repo_dir != "/testbed":
-                        repo_setup_commands.append(f"cp -r {shlex.quote(repo_dir)} /testbed")
+                    if repo_dirs:
+                        repo_setup_commands.append(
+                            'if [ "$container_repo_dir" != /testbed ]; then '
+                            'rm -rf /testbed && cp -r "$container_repo_dir" /testbed; '
+                            "fi"
+                        )
+                    elif data_point.get("container_repo_dir", "/testbed") != "/testbed":
+                        repo_setup_commands.append(f"rm -rf /testbed && cp -r {repo_dir} /testbed")
                     if repo_setup_commands:
                         await self._run(sandbox, " && ".join(repo_setup_commands), self.repo_setup_timeout_s, log_file)
 

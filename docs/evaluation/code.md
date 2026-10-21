@@ -669,9 +669,25 @@ ns eval \
 ```
 
 Use `--split=hard.ubuntu` or `hard.alpine` for HARD-51. The default locked networking mode requires mini-SWE-agent
-with the Apptainer backend. OpenSandbox support is currently limited to SWE-bench Pro V1 because the V2 verifier
-requires mounting a task directory. Other agents can be used by explicitly disabling `++block_network`, except
-OpenHands, which is not supported for SWE-bench Pro V2.
+with the Apptainer backend, or mini-SWE-agent with OpenSandbox:
+
+```bash
+ns eval \
+    --cluster=<CLUSTER_NAME> \
+    --data_dir=<DATA_DIR> \
+    --model=<MODEL> \
+    --server_type=vllm \
+    --server_gpus=8 \
+    --benchmarks=swe-bench-pro-v2 \
+    --split=default.ubuntu \
+    --output_dir=<OUTPUT_DIR> \
+    ++execution_backend=opensandbox
+```
+
+OpenSandbox uploads the task's verifier files only to a fresh grading sandbox; they are not exposed to the
+network-restricted agent sandbox. It requires the prepared OCI `docker_image` references and does not accept local
+SIF images. Other agents can be used by explicitly disabling `++block_network`, except OpenHands, which is not
+supported for SWE-bench Pro V2.
 
 ### compute-eval
 

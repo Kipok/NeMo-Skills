@@ -27,12 +27,17 @@ import pytest
 from omegaconf import OmegaConf
 
 from nemo_skills.inference.eval.git_sanitization import _LEGACY_GIT_CLEANUP
-from nemo_skills.inference.eval.opensandbox import OpenSandboxExecutor, _extract_outputs
+from nemo_skills.inference.eval.opensandbox import (
+    OpenSandboxExecutor,
+    _archive_input_directory,
+    _extract_outputs,
+)
 from nemo_skills.inference.eval.swebench import (
     SupportedDatasetTypes,
     SweBenchGenerationConfig,
     SweBenchGenerationTask,
 )
+from nemo_skills.inference.eval.swebench_pro_v2 import SweBenchProV2GenerationTask
 
 
 def _archive(name="sample.traj.json", content=b'{"info":{"submission":"patch"}}'):
@@ -60,6 +65,7 @@ def _sandbox(executor, monkeypatch, output=b"{}"):
             get_background_command_logs=AsyncMock(return_value=SimpleNamespace(content="command log\n", cursor=1)),
         ),
         files=SimpleNamespace(write_file=AsyncMock(), read_bytes=AsyncMock(return_value=output)),
+        delete_egress_rules=AsyncMock(),
         kill=AsyncMock(),
         close=AsyncMock(),
     )
@@ -145,6 +151,25 @@ def test_verifier_receives_only_its_record_in_a_fresh_sandbox(executor, monkeypa
     sandbox.kill.assert_awaited_once()
 
 
+def test_locked_agent_and_verifier_use_separate_network_policies(executor, monkeypatch, tmp_path):
+    agent_sandbox, agent_create = _sandbox(executor, monkeypatch, _archive())
+    agent_args = _arguments(tmp_path, mode="agent")
+    agent_args["block_network"] = True
+    asyncio.run(executor.execute(**agent_args))
+
+    assert agent_create.call_args.kwargs["network_policy"] is not None
+    agent_sandbox.delete_egress_rules.assert_awaited_once()
+
+    verifier_sandbox, verifier_create = _sandbox(executor, monkeypatch, _archive())
+    verifier_args = _arguments(tmp_path, mode="eval")
+    verifier_args["block_network"] = True
+    verifier_args["stage_eval_harness"] = False
+    asyncio.run(executor.execute(**verifier_args))
+
+    assert verifier_create.call_args.kwargs["network_policy"] is None
+    verifier_sandbox.delete_egress_rules.assert_not_awaited()
+
+
 @pytest.mark.parametrize("framework", ["gold_patch", "model_patch"])
 def test_supplied_patch_cannot_run_in_agent_sandbox(executor, monkeypatch, tmp_path, framework):
     _, create = _sandbox(executor, monkeypatch)
@@ -193,6 +218,21 @@ def test_swe_bench_pro_repository_is_staged_from_app(executor, monkeypatch, tmp_
     repo_setup_command = next(command for command in commands if "git status --short" in command)
     assert "cd /app" in repo_setup_command
     assert "cp -r /app /testbed" in repo_setup_command
+
+
+def test_repository_is_discovered_from_ordered_candidates(executor, monkeypatch, tmp_path):
+    sandbox, _ = _sandbox(executor, monkeypatch, _archive())
+    args = _arguments(tmp_path)
+    args["data_point"]["container_repo_dirs"] = ["/app", "/testbed"]
+    args["data_point"]["pre_commands"] = "git status --short"
+
+    asyncio.run(executor.execute(**args))
+
+    commands = [call.args[0] for call in sandbox.commands.run.call_args_list]
+    repo_setup_command = next(command for command in commands if "git status --short" in command)
+    assert "for candidate in /app /testbed" in repo_setup_command
+    assert 'cd "$container_repo_dir"' in repo_setup_command
+    assert 'cp -r "$container_repo_dir" /testbed' in repo_setup_command
 
 
 @pytest.mark.parametrize("repo_setup_timeout_s", [0, -1])
@@ -320,6 +360,111 @@ def test_remote_artifact_symlinks_are_rejected(tmp_path):
         archive.addfile(member)
     with pytest.raises(RuntimeError, match="Unsupported sandbox artifact"):
         _extract_outputs(buffer.getvalue(), tmp_path)
+
+
+def test_directory_input_archive_preserves_tree_and_modes(tmp_path):
+    source = tmp_path / "tests"
+    nested = source / "nested"
+    nested.mkdir(parents=True)
+    script = source / "test.sh"
+    script.write_text("#!/bin/bash\n")
+    script.chmod(0o755)
+    (nested / "config.json").write_text("{}")
+
+    with tarfile.open(fileobj=io.BytesIO(_archive_input_directory(source)), mode="r:gz") as archive:
+        assert {member.name for member in archive.getmembers()} == {"nested", "nested/config.json", "test.sh"}
+        assert archive.getmember("test.sh").mode & 0o777 == 0o755
+        assert archive.extractfile("nested/config.json").read() == b"{}"
+
+
+def test_directory_input_archive_rejects_symlinks(tmp_path):
+    source = tmp_path / "tests"
+    source.mkdir()
+    (source / "target").write_text("content")
+    (source / "link").symlink_to("target")
+
+    with pytest.raises(RuntimeError, match="cannot contain links"):
+        _archive_input_directory(source)
+
+
+def test_harbor_verifier_stages_directory_without_swebench_runtime(executor, monkeypatch, tmp_path):
+    sandbox, _ = _sandbox(executor, monkeypatch, _archive())
+    args = _arguments(tmp_path, mode="eval")
+    tests_dir = tmp_path / "tests"
+    tests_dir.mkdir()
+    (tests_dir / "test.sh").write_text("#!/bin/bash\n")
+    patch = tmp_path / "model.patch"
+    patch.write_text("diff --git a/a b/a\n")
+    args["extra_files"] = [
+        (tests_dir, "/tests", True),
+        (patch, "/patch_mount/model.patch", True),
+    ]
+    args["stage_eval_harness"] = False
+
+    asyncio.run(executor.execute(**args))
+
+    commands = [call.args[0] for call in sandbox.commands.run.call_args_list]
+    assert "SWE-bench" not in commands[0]
+    assert any("tar -xzf /tmp/nemo-skills-input-0.tar.gz -C /tests" in command for command in commands)
+    uploads = sandbox.files.write_file.call_args_list
+    assert uploads[0].args[0] == "/tmp/nemo-skills-input-0.tar.gz"
+    assert uploads[1].args == ("/patch_mount/model.patch", patch.read_bytes())
+    assert uploads[2].args[0] == "/input_mount/dataset.jsonl"
+
+
+def test_swe_bench_pro_v2_verifier_returns_remote_reward(executor, monkeypatch, tmp_path):
+    instance_id = "instance_owner__repo-abc"
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w:gz") as archive:
+        for name, content in {
+            ".eval_done": b"",
+            "reward.json": b'{"reward": 1}',
+            "verifier.log": b"passed",
+        }.items():
+            member = tarfile.TarInfo(name)
+            member.size = len(content)
+            archive.addfile(member, io.BytesIO(content))
+    sandbox, create = _sandbox(executor, monkeypatch, buffer.getvalue())
+    tests_dir = tmp_path / "tasks" / instance_id / "tests"
+    tests_dir.mkdir(parents=True)
+    (tests_dir / "test.sh").write_text("#!/bin/bash\n")
+    dataset = tmp_path / "dataset.jsonl"
+    dataset.write_text("{}\n")
+
+    task = object.__new__(SweBenchProV2GenerationTask)
+    task.output_dir = tmp_path / "results"
+    task.output_dir.mkdir()
+    task.opensandbox_executor = executor
+    task.opensandbox_setup_commands = {"eval": "install-runtime"}
+    task.cfg = SimpleNamespace(
+        tasks_dir=str(tmp_path / "tasks"),
+        eval_config={},
+        use_agent_timeouts=True,
+        use_verifier_timeouts=True,
+        swebench_tests_timeout=60,
+        input_file=str(dataset),
+        setup_timeout=1200,
+        agent_framework="mini_swe_agent",
+        opensandbox_proxy_host="10.0.0.2",
+        block_network=True,
+        dataset_type=SupportedDatasetTypes.swe_bench_pro_v2,
+    )
+    data_point = {
+        "instance_id": instance_id,
+        "docker_image": "ghcr.io/scaleapi/swe-bench_pro-v2:instance_owner__repo-abc",
+        "verifier_timeout_sec": 60,
+    }
+
+    metrics = asyncio.run(task._run_v2_verifier(data_point, "diff --git a/a b/a\n"))
+
+    assert metrics["resolved"] is True
+    assert metrics["reward"] == 1.0
+    assert create.call_args.kwargs["metadata"]["mode"] == "eval"
+    assert create.call_args.kwargs["network_policy"] is None
+    assert (task.output_dir / f"eval-outputs/{instance_id}/verifier.log").read_text() == "passed"
+    commands = "\n".join(call.args[0] for call in sandbox.commands.run.call_args_list)
+    assert "SWE-bench" not in commands
+    assert "bash /tests/test.sh" in commands
 
 
 @pytest.mark.parametrize("proxy_host", [None, "10.0.0.2"])
@@ -559,7 +704,11 @@ def test_agent_harness_cannot_use_opensandbox_for_swe_rebench_v2(tmp_path):
         SweBenchGenerationTask(cfg)
 
 
-def test_swe_bench_pro_v2_cannot_use_opensandbox(tmp_path):
+def test_swe_bench_pro_v2_uses_opensandbox_without_eval_harness(executor, monkeypatch, tmp_path):
+    monkeypatch.setattr(executor, "detect_proxy_host", MagicMock(return_value="10.0.0.3"))
+    monkeypatch.setattr(SweBenchGenerationTask, "_execute_local_command", AsyncMock())
+    monkeypatch.setattr("nemo_skills.inference.eval.opensandbox.OpenSandboxExecutor", lambda **kwargs: executor)
+    monkeypatch.setattr("nemo_skills.inference.eval.swebench.SCRATCH_DIR", tmp_path)
     dataset = tmp_path / "dataset.jsonl"
     dataset.write_text("{}\n")
     cfg = SweBenchGenerationConfig(
@@ -569,14 +718,28 @@ def test_swe_bench_pro_v2_cannot_use_opensandbox(tmp_path):
         agent_framework="mini_swe_agent",
         dataset_type=SupportedDatasetTypes.swe_bench_pro_v2,
         execution_backend="opensandbox",
+        server=OmegaConf.create({"base_url": "http://gpu.example:8000/v1"}),
     )
 
-    with pytest.raises(ValueError, match="SWE-bench Pro V1"):
-        SweBenchGenerationTask(cfg)
+    task = SweBenchGenerationTask(cfg)
+
+    task._execute_local_command.assert_not_called()
+    assert "mini-swe-agent" in task.opensandbox_setup_commands["agent"]
+    assert "SWE-bench" not in task.opensandbox_setup_commands["eval"]
+    assert "astral.sh/uv" not in task.opensandbox_setup_commands["eval"]
 
 
+@pytest.mark.parametrize(
+    "dataset_type,stage_eval_harness",
+    [
+        (SupportedDatasetTypes.swe_bench, True),
+        (SupportedDatasetTypes.swe_bench_pro_v2, False),
+    ],
+)
 @pytest.mark.parametrize("instance_id", ["owner__repo-1", "axios__axios-4731"])
-def test_backend_dispatch_preserves_native_artifact_contract(executor, monkeypatch, tmp_path, instance_id):
+def test_backend_dispatch_preserves_native_artifact_contract(
+    executor, monkeypatch, tmp_path, instance_id, dataset_type, stage_eval_harness
+):
     sandbox, _ = _sandbox(executor, monkeypatch, _archive())
     args = _arguments(tmp_path)
     args["data_point"]["instance_id"] = instance_id
@@ -586,6 +749,7 @@ def test_backend_dispatch_preserves_native_artifact_contract(executor, monkeypat
         input_file=str(args["input_file"]),
         setup_timeout=args["setup_timeout"],
         agent_framework="mini_swe_agent",
+        dataset_type=dataset_type,
         opensandbox_proxy_host=args["proxy_host"],
         block_network=False,
     )
@@ -603,6 +767,8 @@ def test_backend_dispatch_preserves_native_artifact_contract(executor, monkeypat
         )
     )
     assert json.loads(Path(result).read_text())["info"]["submission"] == "patch"
+    setup_command = sandbox.commands.run.call_args_list[0].args[0]
+    assert ("SWE-bench" in setup_command) is stage_eval_harness
     sandbox.kill.assert_awaited_once()
 
 

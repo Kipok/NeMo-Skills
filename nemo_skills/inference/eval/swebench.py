@@ -700,13 +700,14 @@ class SweBenchGenerationTask(GenerationTask):
             supports_dataset = self.cfg.dataset_type in {
                 SupportedDatasetTypes.swe_bench,
                 SupportedDatasetTypes.swe_bench_pro,
+                SupportedDatasetTypes.swe_bench_pro_v2,
             } or (
                 self.cfg.dataset_type == SupportedDatasetTypes.swe_rebench_v2
                 and self.cfg.agent_framework in SUPPLIED_PATCH_FRAMEWORKS
             )
             if not supports_dataset or self.cfg.swe_zero_container:
                 raise ValueError(
-                    "OpenSandbox supports standard SWE-bench, SWE-bench Multilingual, and SWE-bench Pro V1 "
+                    "OpenSandbox supports standard SWE-bench, SWE-bench Multilingual, and SWE-bench Pro V1/V2 "
                     "task images, plus SWE-rebench V2 for supplied-patch grading."
                 )
             self.opensandbox_executor = OpenSandboxExecutor(**self.cfg.opensandbox)
@@ -798,6 +799,9 @@ class SweBenchGenerationTask(GenerationTask):
                 "    -y --no-install-recommends --no-upgrade git curl ca-certificates make); "
                 "fi"
             )
+
+        # Harbor-style OpenSandbox verifiers need the system tools above, but no Python runtime or evaluation harness.
+        opensandbox_base_setup_commands = list(common_setup_commands)
 
         # Install uv.
         common_setup_commands.append(
@@ -979,9 +983,12 @@ class SweBenchGenerationTask(GenerationTask):
             asyncio.run(self._execute_local_command(combined_setup_command, timeout=self.cfg.setup_timeout))
         else:
             # For OpenSandbox, we don't run the setup yet, only save the commands to be executed later.
+            eval_common_setup_commands = (
+                common_setup_commands if eval_setup_commands else opensandbox_base_setup_commands
+            )
             self.opensandbox_setup_commands = {
                 "agent": " && ".join(common_setup_commands + agent_setup_commands),
-                "eval": " && ".join(common_setup_commands + eval_setup_commands),
+                "eval": " && ".join(eval_common_setup_commands + eval_setup_commands),
             }
 
         # Set up the scratch dir where Apptainer mounts are staged (see _execute_container_command)
@@ -1120,6 +1127,12 @@ class SweBenchGenerationTask(GenerationTask):
                 extra_files=extra_mounts,
                 proxy_host=self.cfg.opensandbox_proxy_host,
                 block_network=self.cfg.block_network,
+                stage_eval_harness=self.cfg.dataset_type
+                in {
+                    SupportedDatasetTypes.swe_bench,
+                    SupportedDatasetTypes.swe_bench_pro,
+                    SupportedDatasetTypes.swe_rebench_v2,
+                },
             )
 
         mounts = self._get_apptainer_mounts(mode, data_point) + list(extra_mounts)
