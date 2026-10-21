@@ -789,7 +789,8 @@ class SweBenchGenerationTask(GenerationTask):
                 f"git checkout {self.cfg.agent_framework_commit} && "
                 # skip installing playwright, it is only needed for browsing features
                 "export INSTALL_PLAYWRIGHT=0 && "
-                # tell poetry to store venvs inside of the project folder (/root/OpenHands)
+                # tell poetry to create venvs and store them inside of the project folder (/root/OpenHands)
+                "export POETRY_VIRTUALENVS_CREATE=true && "
                 "export POETRY_VIRTUALENVS_IN_PROJECT=true && "
                 # this will make a venv using poetry & install openhands dependencies
                 # we no longer use 'make build' because it installs lots of unnecessary dependencies, e.g. frontend
