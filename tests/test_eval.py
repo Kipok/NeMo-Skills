@@ -418,6 +418,35 @@ def test_eval_requires_alpine_container_for_multi_split_swe_bench_pro(monkeypatc
         )
 
 
+def test_eval_requires_container_for_single_alpine_swe_bench_pro(monkeypatch, tmp_path):
+    args = eval_utils.BenchmarkArgs(
+        name="swe-bench-pro",
+        input_file="/data/swe-bench-pro/default.alpine.jsonl",
+        generation_args="",
+        judge_args="",
+        judge_pipeline_args={},
+        requires_sandbox=False,
+        keep_mounts_for_sandbox=False,
+        generation_module="nemo_skills.inference.eval.swe_bench",
+        num_samples=0,
+        num_chunks=None,
+        eval_subfolder="eval-results/swe-bench-pro",
+    )
+    _patch_eval_for_sbatch_tests(monkeypatch, lambda: args)
+
+    with pytest.raises(ValueError, match="An Alpine NeMo-Skills container is required"):
+        eval_pipeline.eval(
+            ctx=SimpleNamespace(args=[]),
+            cluster="test-cluster",
+            output_dir=str(tmp_path),
+            benchmarks="swe-bench-pro",
+            split="default.alpine",
+            model="model",
+            server_type="openai",
+            server_address="http://server",
+        )
+
+
 def test_eval_single_alpine_split_keeps_main_container_compatibility(monkeypatch, tmp_path):
     args = eval_utils.BenchmarkArgs(
         name="swe-bench-pro",

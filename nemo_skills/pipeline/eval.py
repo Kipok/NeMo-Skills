@@ -292,7 +292,8 @@ def eval(
         None,
         help=(
             "Container for Alpine tasks when evaluating swe-bench-pro. "
-            "Required when a requested split name contains 'alpine'."
+            "Required for mixed Ubuntu/Alpine Apptainer runs. A single Alpine split may instead use "
+            "--main-container for backward compatibility."
         ),
     ),
     sandbox_container: str = typer.Option(None, help="Override container image for the sandbox"),
@@ -553,14 +554,16 @@ def eval(
         raise ValueError(
             f"Multiple --split values are supported only when evaluating {_MULTI_SPLIT_BENCHMARK} by itself."
         )
-    if (
-        len(requested_splits) > 1
-        and not uses_opensandbox
-        and any("alpine" in value.lower() for value in requested_splits)
-    ):
-        if not alpine_container:
+    requests_alpine = any("alpine" in value.lower() for value in requested_splits)
+    if requests_alpine and not uses_opensandbox:
+        if len(requested_splits) > 1 and not alpine_container:
             raise ValueError(
                 "--alpine-container is required when running multiple swe-bench-pro splits with Apptainer."
+            )
+        if len(requested_splits) == 1 and not (alpine_container or main_container):
+            raise ValueError(
+                "An Alpine NeMo-Skills container is required for an Alpine swe-bench-pro split with Apptainer. "
+                "Set --alpine-container or --main-container."
             )
     if len(requested_splits) > 1 and chunk_ids:
         raise ValueError("--chunk-ids is not supported with multiple swe-bench-pro splits.")
