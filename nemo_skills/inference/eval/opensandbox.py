@@ -21,6 +21,7 @@ import json
 import logging
 import os
 import random
+import re
 import shlex
 import shutil
 import socket
@@ -28,7 +29,7 @@ import tarfile
 from contextlib import asynccontextmanager
 from datetime import timedelta
 from pathlib import Path, PurePosixPath
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 from nemo_skills.inference.eval.git_sanitization import rewrite_legacy_git_cleanup
 from nemo_skills.utils import get_logger_name
@@ -47,6 +48,53 @@ def _load_sdk():
     except ImportError as error:
         raise RuntimeError("Install nemo_skills[opensandbox] in the NeMo-Skills coordinator runtime.") from error
     return Sandbox, ConnectionConfig, RunCommandOpts, NetworkPolicy, NetworkRule
+
+
+async def _resolve_dockerhub_image_digest(image: str) -> str:
+    """Resolve a public Docker Hub tag without changing its case."""
+    if "@" in image:
+        return image
+
+    import httpx
+
+    parts = image.split("/", 1)
+    explicit_registry = len(parts) == 2 and ("." in parts[0] or ":" in parts[0] or parts[0] == "localhost")
+    if explicit_registry:
+        if parts[0] not in {"docker.io", "index.docker.io", "registry-1.docker.io"}:
+            raise ValueError("resolve_image_tags_to_digests supports public Docker Hub images only.")
+        image = parts[1]
+    repository, separator, tag = image.rpartition(":")
+    if not separator:
+        repository, tag = image, "latest"
+    if "/" not in repository:
+        repository = f"library/{repository}"
+
+    async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+        token_response = await client.get(
+            "https://auth.docker.io/token",
+            params={"service": "registry.docker.io", "scope": f"repository:{repository}:pull"},
+        )
+        token_response.raise_for_status()
+        token = token_response.json()["token"]
+        manifest_response = await client.head(
+            f"https://registry-1.docker.io/v2/{repository}/manifests/{quote(tag, safe='')}",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": ", ".join(
+                    [
+                        "application/vnd.oci.image.index.v1+json",
+                        "application/vnd.docker.distribution.manifest.list.v2+json",
+                        "application/vnd.oci.image.manifest.v1+json",
+                        "application/vnd.docker.distribution.manifest.v2+json",
+                    ]
+                ),
+            },
+        )
+        manifest_response.raise_for_status()
+        digest = manifest_response.headers.get("Docker-Content-Digest", "")
+        if re.fullmatch(r"sha256:[0-9a-f]{64}", digest) is None:
+            raise ValueError(f"Docker Hub did not return a valid SHA-256 manifest digest for {repository}:{tag}.")
+    return f"{repository}@{digest}"
 
 
 def _is_transient_create_error(error: Exception) -> bool:
@@ -110,6 +158,7 @@ class OpenSandboxExecutor:
         create_retries: int = 3,
         create_retry_min_s: float = 30,
         create_retry_max_s: float = 120,
+        resolve_image_tags_to_digests: bool = False,
     ):
         domain = domain or os.environ.get("OPENSANDBOX_DOMAIN")
         api_key = os.environ.get("OPENSANDBOX_API_KEY")
@@ -147,6 +196,19 @@ class OpenSandboxExecutor:
         self.create_retries = create_retries
         self.create_retry_min_s = create_retry_min_s
         self.create_retry_max_s = create_retry_max_s
+        self.resolve_image_tags_to_digests = resolve_image_tags_to_digests
+        self._image_digests: dict[str, str] = {}
+        self._image_digest_lock = asyncio.Lock()
+
+    async def _resolve_image(self, image: str) -> str:
+        if not self.resolve_image_tags_to_digests or "@" in image:
+            return image
+        async with self._image_digest_lock:
+            if image not in self._image_digests:
+                resolved = await _resolve_dockerhub_image_digest(image)
+                self._image_digests[image] = resolved
+                LOG.info("Resolved OpenSandbox image %s to %s", image, resolved)
+            return self._image_digests[image]
 
     @asynccontextmanager
     async def _connection_config(self):
@@ -267,6 +329,7 @@ class OpenSandboxExecutor:
         image = image.removeprefix("docker://")
         if image.startswith("/") or image.endswith(".sif") or "://" in image:
             raise RuntimeError("OpenSandbox requires docker_image to be an OCI image reference.")
+        image = await self._resolve_image(image)
         timeout = min(timeout, self.command_timeout_s)
         logs_dir = output_dir / "opensandbox_logs"
         logs_dir.mkdir(exist_ok=True, parents=True)

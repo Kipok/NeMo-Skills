@@ -120,6 +120,16 @@ its own `setup_timeout`. Setup currently installs the pinned agent or verifier i
 each sandbox and therefore needs download access. Sandbox lifetime includes setup,
 execution, readiness, and an artifact-transfer allowance.
 
+If an OpenSandbox registry mirror changes tag casing (for example,
+`NodeBB__NodeBB` to `nodebb__nodebb`), enable
+`++opensandbox.resolve_image_tags_to_digests=True`. NeMo-Skills resolves public
+Docker Hub tags to immutable digests before sandbox creation and caches each
+resolution for the coordinator's lifetime. Resolution uses manifest HEAD requests
+and does not download image layers. The coordinator needs HTTPS access to
+`auth.docker.io` and `registry-1.docker.io`. Existing digest references are
+passed through unchanged. The option defaults to false; tag resolution for private
+images and other registries is not supported.
+
 The same backend can be used for inference through
 `--generation_module=nemo_skills.inference.eval.swebench` with `++evaluate=False`.
 Output schemas and multilingual language instructions follow the existing SWE

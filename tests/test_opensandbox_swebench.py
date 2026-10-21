@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+import hashlib
 import io
 import json
 import shlex
@@ -32,6 +33,7 @@ from nemo_skills.inference.eval.opensandbox import (
     _archive_input_directory,
     _extract_outputs,
     _is_transient_create_error,
+    _resolve_dockerhub_image_digest,
 )
 from nemo_skills.inference.eval.swebench import (
     SupportedDatasetTypes,
@@ -117,6 +119,129 @@ def _sandbox_error(name, *, status_code=None):
     error = type(name, bases, {})()
     error.status_code = status_code
     return error
+
+
+@pytest.mark.parametrize(
+    "image,repository,tag",
+    [
+        (
+            "jefzda/sweap-images:nodebb.nodebb-NodeBB__NodeBB-abc",
+            "jefzda/sweap-images",
+            "nodebb.nodebb-NodeBB__NodeBB-abc",
+        ),
+        ("docker.io/jefzda/sweap-images:NodeBB", "jefzda/sweap-images", "NodeBB"),
+        ("ubuntu", "library/ubuntu", "latest"),
+    ],
+)
+def test_dockerhub_digest_resolution_preserves_tag_case(monkeypatch, image, repository, tag):
+    import httpx
+
+    manifest = b'{"schemaVersion":2,"layers":[]}'
+    digest = "sha256:" + hashlib.sha256(manifest).hexdigest()
+    requests = []
+
+    def respond(request):
+        requests.append(request)
+        if request.url.host == "auth.docker.io":
+            assert request.url.params["scope"] == f"repository:{repository}:pull"
+            assert "authorization" not in request.headers
+            return httpx.Response(200, json={"token": "anonymous-registry-token"})
+        assert request.url.host == "registry-1.docker.io"
+        assert request.method == "HEAD"
+        assert request.url.path == f"/v2/{repository}/manifests/{tag}"
+        assert request.headers["Authorization"] == "Bearer anonymous-registry-token"
+        assert "OPEN-SANDBOX-API-KEY" not in request.headers
+        return httpx.Response(200, headers={"Docker-Content-Digest": digest})
+
+    client_factory = httpx.AsyncClient
+    transport = httpx.MockTransport(respond)
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: client_factory(transport=transport, **kwargs))
+    assert asyncio.run(_resolve_dockerhub_image_digest(image)) == f"{repository}@{digest}"
+    assert len(requests) == 2
+
+
+@pytest.mark.parametrize("failure", ["authentication", "missing_manifest", "missing_digest", "invalid_digest"])
+def test_dockerhub_resolution_fails_without_using_an_unverified_digest(monkeypatch, failure):
+    import httpx
+
+    def respond(request):
+        if request.url.host == "auth.docker.io":
+            return httpx.Response(401 if failure == "authentication" else 200, json={"token": "anonymous"})
+        if failure == "missing_manifest":
+            return httpx.Response(404, json={"errors": [{"code": "MANIFEST_UNKNOWN"}]})
+        headers = {} if failure == "missing_digest" else {"Docker-Content-Digest": "sha256:not-a-digest"}
+        return httpx.Response(200, headers=headers)
+
+    client_factory = httpx.AsyncClient
+    monkeypatch.setattr(
+        httpx,
+        "AsyncClient",
+        lambda **kwargs: client_factory(transport=httpx.MockTransport(respond), **kwargs),
+    )
+    expected_error = ValueError if failure in {"missing_digest", "invalid_digest"} else httpx.HTTPStatusError
+    with pytest.raises(expected_error):
+        asyncio.run(_resolve_dockerhub_image_digest("jefzda/sweap-images:NodeBB"))
+
+
+def test_digest_resolution_rejects_other_registry_tags():
+    with pytest.raises(ValueError, match="public Docker Hub"):
+        asyncio.run(_resolve_dockerhub_image_digest("private.example:5000/team/image:Tag"))
+
+
+def test_digest_resolution_is_opt_in_and_preserves_existing_digests(executor, monkeypatch):
+    resolve = AsyncMock(side_effect=AssertionError("must not resolve this reference"))
+    monkeypatch.setattr("nemo_skills.inference.eval.opensandbox._resolve_dockerhub_image_digest", resolve)
+    image = "jefzda/sweap-images:NodeBB"
+    assert asyncio.run(executor._resolve_image(image)) == image
+    executor.resolve_image_tags_to_digests = True
+    pinned = "private.example/team/image@sha256:" + "1" * 64
+    assert asyncio.run(executor._resolve_image(pinned)) == pinned
+    assert asyncio.run(_resolve_dockerhub_image_digest(pinned)) == pinned
+    resolve.assert_not_awaited()
+
+
+def test_digest_resolution_caches_concurrent_requests(executor, monkeypatch):
+    executor = OpenSandboxExecutor(resolve_image_tags_to_digests=True)
+    image = "jefzda/sweap-images:NodeBB"
+    pinned = "jefzda/sweap-images@sha256:" + "1" * 64
+    resolve = AsyncMock(return_value=pinned)
+    monkeypatch.setattr("nemo_skills.inference.eval.opensandbox._resolve_dockerhub_image_digest", resolve)
+
+    async def run():
+        assert await asyncio.gather(executor._resolve_image(image), executor._resolve_image(image)) == [pinned, pinned]
+        assert await executor._resolve_image(image) == pinned
+
+    asyncio.run(run())
+    resolve.assert_awaited_once_with(image)
+
+
+def test_agent_and_verifier_use_the_resolved_digest(executor, monkeypatch, tmp_path):
+    executor = OpenSandboxExecutor(resolve_image_tags_to_digests=True, poll_interval_s=0.001)
+    sandbox, create = _sandbox(executor, monkeypatch, _archive())
+    args = _arguments(tmp_path)
+    image = "jefzda/sweap-images:NodeBB"
+    pinned = "jefzda/sweap-images@sha256:" + "1" * 64
+    args["data_point"]["docker_image"] = image
+    resolve = AsyncMock(return_value=pinned)
+    monkeypatch.setattr("nemo_skills.inference.eval.opensandbox._resolve_dockerhub_image_digest", resolve)
+
+    asyncio.run(executor.execute(**args))
+    args["mode"] = "eval"
+    asyncio.run(executor.execute(**args))
+
+    assert [call.kwargs["image"] for call in create.call_args_list] == [pinned, pinned]
+    resolve.assert_awaited_once_with(image)
+    assert sandbox.kill.await_count == 2
+
+
+def test_resolution_failure_does_not_create_a_sandbox(executor, monkeypatch, tmp_path):
+    executor = OpenSandboxExecutor(resolve_image_tags_to_digests=True)
+    _, create = _sandbox(executor, monkeypatch)
+    resolve = AsyncMock(side_effect=ValueError("registry resolution failed"))
+    monkeypatch.setattr("nemo_skills.inference.eval.opensandbox._resolve_dockerhub_image_digest", resolve)
+    with pytest.raises(ValueError, match="registry resolution failed"):
+        asyncio.run(executor.execute(**_arguments(tmp_path)))
+    create.assert_not_called()
 
 
 def test_sdk_connection_reads_env_without_injecting_keys_into_worker(executor):
