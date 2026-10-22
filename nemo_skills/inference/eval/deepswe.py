@@ -159,6 +159,7 @@ class DeepSweGenerationTask(SweBenchGenerationTask):
         mode,
         timeout=100000,
         extra_apptainer_args="",
+        extra_mounts=(),
     ):
         # Wrapper for the parent class's method that injects per-task agent/verifier timeouts if they are enabled.
         if mode == "agent" and self.cfg.use_agent_timeouts and data_point.get("agent_timeout_sec"):
@@ -166,7 +167,7 @@ class DeepSweGenerationTask(SweBenchGenerationTask):
         if mode == "eval" and self.cfg.use_verifier_timeouts and data_point.get("verifier_timeout_sec"):
             timeout = int(data_point.get("verifier_timeout_sec")) + 120
         return await SweBenchGenerationTask._execute_container_command(
-            self, data_point, command, expected_file_pattern, mode, timeout, extra_apptainer_args
+            self, data_point, command, expected_file_pattern, mode, timeout, extra_apptainer_args, extra_mounts
         )
 
     def _resolve_tests_dir(self, data_point: dict) -> Path:
@@ -191,26 +192,33 @@ class DeepSweGenerationTask(SweBenchGenerationTask):
             shutil.rmtree(eval_out)
         eval_out.mkdir(parents=True, exist_ok=True)
 
-        tests_dir = self._resolve_tests_dir(data_point)
-        extra_apptainer_args = f" --mount type=bind,src={tests_dir},dst=/tests,ro "
-        if data_point["instance_id"] in NETWORK_ISOLATED_VERIFIER_TASKS:
-            extra_apptainer_args += " --net --network none "
+        extra_mounts = [
+            (self._resolve_tests_dir(data_point), "/tests", True),
+            (patch_path, "/patch_mount/model.patch", True),
+        ]
+        extra_apptainer_args = ""
+        if self.cfg.execution_backend == "apptainer" and data_point["instance_id"] in NETWORK_ISOLATED_VERIFIER_TASKS:
+            # On OpenSandbox, containers never share the same network namespace, so there is no need to isolate.
+            extra_apptainer_args = " --net --network none "
 
+        out_dir = f"/trajectories_mount/eval-outputs/{data_point['instance_id']}"
         verifier_cmd = (
             "mkdir -p /logs/artifacts /logs/verifier && "
-            f"cp /trajectories_mount/patches/{data_point['instance_id']}.patch /logs/artifacts/model.patch && "
+            "cp /patch_mount/model.patch /logs/artifacts/model.patch && "
             "export TESTS_DIR=/tests && "
             "export VERIFIER_DIR=/logs/verifier && "
             "export APP_DIR=/app && "
             "export ARTIFACTS_DIR=/logs/artifacts && "
             "cd /app && "
             "bash /tests/test.sh; "
-            f"mkdir -p /trajectories_mount/eval-outputs/{data_point['instance_id']} && "
-            f"cp -r /logs/verifier/. /trajectories_mount/eval-outputs/{data_point['instance_id']}/"
+            f"mkdir -p {out_dir} && "
+            f"cp -r /logs/verifier/. {out_dir}/ && "
+            # Create an .eval_done marker to indicate that the evaluation was completed (used as search_path below).
+            # DeepSWE crash sentinel only writes reward.txt=-1, so accept either reward.json or reward.txt existing.
+            f"if [ -f {out_dir}/reward.json ] || [ -f {out_dir}/reward.txt ]; then touch {out_dir}/.eval_done; fi"
         )
 
-        # Prefer reward.json; DeepSWE crash sentinel only writes reward.txt=-1.
-        search_path = str(eval_out / "reward.*")
+        search_path = str(eval_out / ".eval_done")
         try:
             await self._execute_container_command(
                 data_point,
@@ -219,8 +227,9 @@ class DeepSweGenerationTask(SweBenchGenerationTask):
                 mode="eval",
                 timeout=self.cfg.swebench_tests_timeout + 120,
                 extra_apptainer_args=extra_apptainer_args,
+                extra_mounts=extra_mounts,
             )
-        except ValueError:
+        except (ValueError, RuntimeError):
             if not (eval_out / "reward.json").exists() and not (eval_out / "reward.txt").exists():
                 LOG.error("DeepSWE verifier failed for %s", data_point["instance_id"])
                 return parse_deepswe_reward(None, patch_exists=True)

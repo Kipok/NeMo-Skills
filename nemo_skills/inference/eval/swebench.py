@@ -14,7 +14,6 @@
 
 import asyncio
 import copy
-import glob
 import hashlib
 import json
 import logging
@@ -24,10 +23,13 @@ import shlex
 import shutil
 import socket
 import sys
+import tempfile
+import uuid
 from dataclasses import field
 from enum import Enum
 from functools import partial
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import hydra
 import tomlkit
@@ -36,6 +38,7 @@ from omegaconf import OmegaConf
 
 from nemo_skills.inference.eval.claude_code_trajectory import convert_claude_code_stream_to_atif
 from nemo_skills.inference.eval.first_request_proxy import capture_first_llm_request
+from nemo_skills.inference.eval.git_sanitization import rewrite_legacy_git_cleanup
 from nemo_skills.inference.eval.opencode_trajectory import convert_opencode_session_to_atif
 from nemo_skills.inference.generate import GenerationTask
 from nemo_skills.inference.model import server_params
@@ -66,6 +69,23 @@ class SupportedAgentTasks(str, Enum):
     verification = "verification"
 
 
+SUPPLIED_PATCH_FRAMEWORKS = frozenset(
+    {
+        SupportedAgentFrameworks.gold_patch,
+        SupportedAgentFrameworks.model_patch,
+    }
+)
+OPENSANDBOX_AGENT_FRAMEWORKS = frozenset(
+    {
+        SupportedAgentFrameworks.mini_swe_agent,
+        SupportedAgentFrameworks.swe_agent,
+        SupportedAgentFrameworks.openhands,
+        SupportedAgentFrameworks.opencode,
+        SupportedAgentFrameworks.claude_code,
+    }
+)
+
+
 # OpenCode is installed from npm (not git). Pin matches NeMo Gym v0.5.0's default.
 OPENCODE_NPM_PACKAGE = "opencode-ai"
 OPENCODE_DEFAULT_VERSION = "1.17.11"
@@ -79,6 +99,103 @@ CLAUDE_CODE_DEFAULT_VERSION = "2.1.259"
 CLAUDE_CODE_NODE_VERSION = "22.15.0"
 CLAUDE_CODE_ALLOWED_TOOLS = "Bash,Read,Edit,Write,Glob,Grep"
 CLAUDE_CODE_EFFORT_LEVELS = frozenset({"low", "medium", "high", "xhigh", "max", "auto"})
+
+
+def _build_musl_node_runtime_command() -> str:
+    """Copy Alpine's Node runtime into /root/node so it survives task-container mounting."""
+    node_wrapper = (
+        "#!/bin/sh\n"
+        'runtime_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)\n'
+        'case "$(uname -m)" in aarch64|arm64) musl_arch=aarch64 ;; *) musl_arch=x86_64 ;; esac\n'
+        'exec "$runtime_dir/lib/ld-musl-$musl_arch.so.1" --library-path "$runtime_dir/lib" '
+        '"$runtime_dir/bin/node-native" "$@"\n'
+    )
+    return (
+        "mkdir -p /root/node/bin /root/node/lib && "
+        'cp -L "$(command -v node)" /root/node/bin/node-native && '
+        "cp -L /lib/ld-musl-${MUSL_ARCH}.so.1 /root/node/lib/ && "
+        "cp -L /lib/ld-musl-${MUSL_ARCH}.so.1 /root/node/lib/libc.musl-${MUSL_ARCH}.so.1 && "
+        "NODE_LIBRARIES=$(ldd /root/node/bin/node-native) && "
+        'printf "%s\\n" "$NODE_LIBRARIES" | '
+        "awk '$3 ~ /^\\// {print $3} $1 ~ /^\\// {print $1}' | "
+        'while IFS= read -r library; do cp -L "$library" /root/node/lib/ || exit 1; done && '
+        f"printf %s {shlex.quote(node_wrapper)} >/root/node/bin/node && "
+        "chmod 755 /root/node/bin/node && "
+        "/root/node/bin/node --version"
+    )
+
+
+def build_opencode_install_command(version: str) -> str:
+    """Build an OpenCode installer for glibc and Alpine/musl task containers."""
+    version = shlex.quote(version)
+    return (
+        "rm -rf /root/opencode /root/node && "
+        "mkdir -p /root/opencode && "
+        'case "$(uname -m)" in '
+        "    aarch64|arm64) export NODE_ARCH=arm64 MUSL_ARCH=aarch64 "
+        "        OPENCODE_MUSL_PACKAGE=opencode-linux-arm64-musl ;; "
+        "    *) export NODE_ARCH=x64 MUSL_ARCH=x86_64 "
+        "        OPENCODE_MUSL_PACKAGE=opencode-linux-x64-baseline-musl ;; "
+        "esac && "
+        "if [ -f /etc/alpine-release ]; then "
+        "    apk add --no-cache nodejs npm && "
+        f"   npm install -g --prefix /root/opencode {OPENCODE_NPM_PACKAGE}@{version} "
+        f"${{OPENCODE_MUSL_PACKAGE}}@{version} && "
+        "    cp /root/opencode/lib/node_modules/${OPENCODE_MUSL_PACKAGE}/bin/opencode "
+        "        /root/opencode/bin/opencode-native && "
+        "    chmod 755 /root/opencode/bin/opencode-native && "
+        "    ln -sf opencode-native /root/opencode/bin/opencode && "
+        "    mkdir -p /root/opencode/lib && "
+        "    cp -L /lib/ld-musl-${MUSL_ARCH}.so.1 /root/opencode/lib/ && "
+        "    cp -L /lib/ld-musl-${MUSL_ARCH}.so.1 "
+        "        /root/opencode/lib/libc.musl-${MUSL_ARCH}.so.1 && "
+        "    cp -L /usr/lib/libstdc++.so.6 /usr/lib/libgcc_s.so.1 /root/opencode/lib/ && "
+        "    touch /root/opencode/.musl && "
+        f"   {_build_musl_node_runtime_command()}; "
+        "else "
+        f"   export NODE_VERSION={OPENCODE_NODE_VERSION} && "
+        "    export NODE_ARCH=linux-${NODE_ARCH} && "
+        "    mkdir -p /root/node && "
+        "    curl -Lf "
+        '        "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-${NODE_ARCH}.tar.gz" '
+        "        -o /tmp/node.tar.gz && "
+        "    tar -xzf /tmp/node.tar.gz -C /root/node --strip-components=1 && "
+        "    export PATH=/root/node/bin:$PATH && "
+        f"   npm install -g --prefix /root/opencode {OPENCODE_NPM_PACKAGE}@{version}; "
+        "fi && "
+        "export PATH=/root/opencode/bin:/root/node/bin:$PATH && "
+        "opencode --version"
+    )
+
+
+def build_claude_code_install_command(version: str) -> str:
+    """Build a Claude Code installer for glibc and Alpine/musl task containers."""
+    version = shlex.quote(version)
+    return (
+        "rm -rf /root/claude-code /root/node && "
+        'case "$(uname -m)" in '
+        "    aarch64|arm64) export NODE_ARCH=arm64 MUSL_ARCH=aarch64 ;; "
+        "    *) export NODE_ARCH=x64 MUSL_ARCH=x86_64 ;; "
+        "esac && "
+        "if [ -f /etc/alpine-release ]; then "
+        "    apk add --no-cache nodejs npm && "
+        f"   npm install -g --prefix /root/claude-code {CLAUDE_CODE_NPM_PACKAGE}@{version} && "
+        f"   {_build_musl_node_runtime_command()}; "
+        "else "
+        f"   export NODE_VERSION={CLAUDE_CODE_NODE_VERSION} && "
+        "    export NODE_ARCH=linux-${NODE_ARCH} && "
+        "    mkdir -p /root/node && "
+        "    curl -Lf "
+        '        "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-${NODE_ARCH}.tar.gz" '
+        "        -o /tmp/node.tar.gz && "
+        "    tar -xzf /tmp/node.tar.gz -C /root/node --strip-components=1 && "
+        "    export PATH=/root/node/bin:$PATH && "
+        f"   npm install -g --prefix /root/claude-code {CLAUDE_CODE_NPM_PACKAGE}@{version}; "
+        "fi && "
+        "export PATH=/root/claude-code/bin:/root/node/bin:$PATH && "
+        "claude --version"
+    )
+
 
 # These verifiers bind fixed localhost ports. Run only their verifier
 # containers in private, network-disabled namespaces so concurrent
@@ -97,6 +214,11 @@ NETWORK_ISOLATED_VERIFIER_TASKS = frozenset(
 VERIFIER_TEST_TIMEOUT_OVERRIDES = {
     "reactivex__rxjava-7597": 5 * 60,
 }
+
+# Everything mounted into Apptainer is staged in a scratch dir, so that agents can't access the original paths,
+# which are usually on Lustre. We use node-local /raid/scratch if it exists, otherwise a dir inside the NS container.
+SCRATCH_DIR = Path("/raid/scratch")
+FALLBACK_SCRATCH_DIR = Path("/swe-bench-scratch")
 
 
 def _deep_merge_dicts(base: dict, override: dict) -> dict:
@@ -393,6 +515,7 @@ def build_opencode_config(
 class SupportedDatasetTypes(str, Enum):
     swe_bench = "swe_bench"
     swe_bench_pro = "swe_bench_pro"
+    swe_bench_pro_v2 = "swe_bench_pro_v2"
     swe_rebench_v2 = "swe_rebench_v2"
     deep_swe = "deep_swe"  # note: deepswe evaluation logic is implemented in deepswe.py
     senior_swe_bench = "senior_swe_bench"  # Harbor grading in senior_swe_bench.py
@@ -475,6 +598,9 @@ class SweBenchGenerationConfig:
     agent_max_turns: int = 100  # Max agent iterations
     # Save every transformed LLM request for proxy-backed harnesses. Intended only for debugging.
     capture_all_llm_requests: bool = False
+    # If True, run the agent container without network access.
+    # With the Apptainer backend, only supported for mini-swe-agent. With OpenSandbox, supported for all frameworks.
+    block_network: bool = False
 
     opencode_context_window: int = 262144  # Context window advertised to OpenCode
     claude_code_context_window: int = 262144  # Context window advertised to Claude Code
@@ -507,6 +633,13 @@ class SweBenchGenerationConfig:
 
     # Whether to run evaluation. If False, will only run inference (trajectory/patch generation).
     evaluate: bool = True
+
+    # OpenSandbox runs the agent and verifier remotely; model serving stays on the GPU nodes.
+    execution_backend: str = "apptainer"  # apptainer | opensandbox
+    opensandbox: dict = field(default_factory=dict)  # OpenSandboxExecutor options; credentials come from env.
+    opensandbox_proxy_host: str | None = (
+        None  # Auto-detect inside the job; optionally override the coordinator interface.
+    )
 
     # Native Scale-SWE evaluation runs with the host network, matching AweAgent's Docker bridge behavior.
     # When enabled, mount a usable resolver configuration into the verifier container. Agent inference and
@@ -595,9 +728,55 @@ class SweBenchGenerationTask(GenerationTask):
                 "SWE-bench generation task does not support eval_type parameter. Evaluation is done automatically."
             )
 
+        if (
+            self.cfg.dataset_type
+            in {
+                SupportedDatasetTypes.swe_bench_pro,
+                SupportedDatasetTypes.swe_bench_pro_v2,
+            }
+            and self.cfg.agent_framework == SupportedAgentFrameworks.openhands
+        ):
+            raise ValueError(
+                "OpenHands is not supported for SWE-bench Pro V1 or V2. "
+                "Use swe_agent, mini_swe_agent, opencode, or claude_code."
+            )
+
         self.should_run_evaluation = False
         self.evaluator = None
         self._reasoning_warning_shown = False
+
+        if self.cfg.execution_backend not in {"apptainer", "opensandbox"}:
+            raise ValueError(f"Unknown execution_backend: {self.cfg.execution_backend}")
+        self.opensandbox_executor = None
+        if self.cfg.execution_backend == "opensandbox":
+            from nemo_skills.inference.eval.opensandbox import OpenSandboxExecutor
+
+            if self.cfg.agent_framework not in OPENSANDBOX_AGENT_FRAMEWORKS | SUPPLIED_PATCH_FRAMEWORKS:
+                raise ValueError(f"Unsupported OpenSandbox agent framework: {self.cfg.agent_framework}.")
+            if self.cfg.swe_zero_container is not None:
+                raise ValueError("OpenSandbox + SWE-Zero is currently not supported.")
+            self.opensandbox_executor = OpenSandboxExecutor(**self.cfg.opensandbox)
+            if self.cfg.agent_framework in OPENSANDBOX_AGENT_FRAMEWORKS:
+                if self.cfg.opensandbox_proxy_host is None:
+                    self.cfg.opensandbox_proxy_host = self.opensandbox_executor.detect_proxy_host()
+                    LOG.info("Detected OpenSandbox model proxy interface: %s", self.cfg.opensandbox_proxy_host)
+                if not self.cfg.opensandbox_proxy_host or self.cfg.opensandbox_proxy_host in {
+                    "localhost",
+                    "127.0.0.1",
+                    "0.0.0.0",
+                    "::1",
+                    "::",
+                }:
+                    raise ValueError(
+                        "Set opensandbox_proxy_host to a coordinator interface reachable from OpenSandbox."
+                    )
+
+        if (
+            self.cfg.block_network
+            and self.cfg.execution_backend == "apptainer"
+            and self.cfg.agent_framework != SupportedAgentFrameworks.mini_swe_agent
+        ):
+            raise ValueError("block_network=True under Apptainer is currently only supported for mini_swe_agent.")
 
         # Set up output folder,
         # making sure it is different for each random seed if we're running with --benchmarks=swe-bench:N
@@ -655,9 +834,10 @@ class SweBenchGenerationTask(GenerationTask):
         if self.cfg.verifier_sees_traj and self.cfg.agent_task != SupportedAgentTasks.verification:
             raise ValueError("verifier_sees_traj is only supported with agent_task=verification.")
 
-        # Install SWE-agent/OpenHands and the SWE-bench evaluation harness. Here's how it works:
+        # Install the agent framework and the SWE-bench evaluation harness.
+        # Here's how it works (Apptainer backend only):
         #
-        # 1. This code installs SWE-agent/OpenHands and the eval harness in the Nemo-Skills container.
+        # 1. This code installs the agent framework and the eval harness in the Nemo-Skills container.
         #    All required files, venvs and dependencies are stored in /root.
         # 2. When we start SWE-bench containers via Apptainer, we mount /root to /root_mount.
         # 3. Inside of the child containers, we copy the required files from /root_mount to /root and run from there.
@@ -665,11 +845,30 @@ class SweBenchGenerationTask(GenerationTask):
         # The goal is to run inference & evaluation inside of the SWE-bench containers,
         # but avoid having to download & install everything in each container separately.
 
-        setup_commands = []
+        common_setup_commands = []  # commands installing setup dependencies (e.g. uv)
+
+        if self.opensandbox_executor is not None:
+            # For OpenSandbox, we run the setup inside of per-task containers,
+            # so git/curl/ca-certificates/make are not guaranteed to be present.
+            # This installs them for both Ubuntu and Alpine.
+            common_setup_commands.append(
+                "if command -v apk >/dev/null 2>&1; then "
+                "    apk info -e git curl ca-certificates make >/dev/null || "
+                "    apk add --no-cache git curl ca-certificates make; "
+                "else "
+                "    dpkg -s git curl ca-certificates make >/dev/null 2>&1 || "
+                "    (apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install "
+                "    -y --no-install-recommends --no-upgrade git curl ca-certificates make); "
+                "fi"
+            )
+
+        # Harbor-style OpenSandbox verifiers need the system tools above, but no Python runtime or evaluation harness.
+        opensandbox_base_setup_commands = list(common_setup_commands)
 
         # Install uv.
-        setup_commands.append(
+        common_setup_commands.append(
             # install uv
+            "export UV_INSTALL_DIR=/root/.local/bin && "
             "curl -Lf https://astral.sh/uv/install.sh | sh && "
             "export PATH=/root/.local/bin:$PATH && "
             # tell uv to store its data in /root/uv
@@ -678,7 +877,8 @@ class SweBenchGenerationTask(GenerationTask):
             "export UV_TOOL_BIN_DIR=/root/uv/tool-bin"
         )
 
-        # Install SWE-agent/OpenHands.
+        agent_setup_commands = []  # commands installing the agent framework
+
         if self.cfg.agent_framework == SupportedAgentFrameworks.swe_agent:
             if self.cfg.multilingual:
                 if self.cfg.agent_framework_repo is None:
@@ -691,7 +891,7 @@ class SweBenchGenerationTask(GenerationTask):
                 if self.cfg.agent_framework_commit is None:
                     self.cfg.agent_framework_commit = "HEAD"
 
-            setup_commands.append(
+            agent_setup_commands.append(
                 # clone the swe-agent repo
                 "rm -rf /root/SWE-agent && "
                 f"git clone {self.cfg.agent_framework_repo} /root/SWE-agent && "
@@ -701,6 +901,7 @@ class SweBenchGenerationTask(GenerationTask):
                 "uv venv --python 3.12 --managed-python venv && "
                 "source venv/bin/activate && "
                 "uv pip install -e . && "
+                "uv pip install litellm[mcp] && "  # fixes mcp import issue
                 # force downgrade rich - newer versions cause the swe-agent logger to hang in some instances
                 "uv pip install rich==14.2.0"
             )
@@ -716,7 +917,7 @@ class SweBenchGenerationTask(GenerationTask):
                     self.cfg.agent_framework_repo = "https://github.com/SWE-agent/mini-swe-agent.git"
                 if self.cfg.agent_framework_commit is None:
                     self.cfg.agent_framework_commit = "v2.4.6"
-            setup_commands.append(
+            agent_setup_commands.append(
                 # clone the mini-swe-agent repo
                 "rm -rf /root/mini-swe-agent && "
                 f"git clone {self.cfg.agent_framework_repo} /root/mini-swe-agent && "
@@ -726,6 +927,7 @@ class SweBenchGenerationTask(GenerationTask):
                 "uv venv --python 3.12 --managed-python venv && "
                 "source venv/bin/activate && "
                 "uv pip install -e . && "
+                "uv pip install litellm[mcp] && "  # fixes mcp import issue
                 # force downgrade rich - newer versions cause the mini-swe-agent logger to hang in some instances
                 "uv pip install rich==14.2.0"
             )
@@ -749,7 +951,7 @@ class SweBenchGenerationTask(GenerationTask):
                     # Future versions are not supported for now and will require significant changes.
                     self.cfg.agent_framework_commit = "1.2.1"
 
-            setup_commands.append(
+            agent_setup_commands.append(
                 # install python 3.12 with uv
                 "uv python install 3.12 && "
                 # install poetry in an isolated environment
@@ -780,7 +982,8 @@ class SweBenchGenerationTask(GenerationTask):
                 f"git checkout {self.cfg.agent_framework_commit} && "
                 # skip installing playwright, it is only needed for browsing features
                 "export INSTALL_PLAYWRIGHT=0 && "
-                # tell poetry to store venvs inside of the project folder (/root/OpenHands)
+                # tell poetry to create venvs and store them inside of the project folder (/root/OpenHands)
+                "export POETRY_VIRTUALENVS_CREATE=true && "
                 "export POETRY_VIRTUALENVS_IN_PROJECT=true && "
                 # this will make a venv using poetry & install openhands dependencies
                 # we no longer use 'make build' because it installs lots of unnecessary dependencies, e.g. frontend
@@ -797,23 +1000,7 @@ class SweBenchGenerationTask(GenerationTask):
                 )
             if self.cfg.agent_framework_commit is None:
                 self.cfg.agent_framework_commit = OPENCODE_DEFAULT_VERSION
-            setup_commands.append(
-                "if [[ $(uname -m) == 'aarch64' || $(uname -m) == 'arm64' ]]; then "
-                "    export NODE_ARCH=linux-arm64; "
-                "else "
-                "    export NODE_ARCH=linux-x64; "
-                "fi && "
-                f"export NODE_VERSION={OPENCODE_NODE_VERSION} && "
-                "rm -rf /root/node && "
-                "mkdir -p /root/node && "
-                "curl -Lf "
-                '"https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-${NODE_ARCH}.tar.gz" '
-                "-o /tmp/node.tar.gz && "
-                "tar -xzf /tmp/node.tar.gz -C /root/node --strip-components=1 && "
-                "export PATH=/root/node/bin:$PATH && "
-                f"npm install -g {OPENCODE_NPM_PACKAGE}@{self.cfg.agent_framework_commit} && "
-                "opencode --version"
-            )
+            agent_setup_commands.append(build_opencode_install_command(self.cfg.agent_framework_commit))
 
         elif self.cfg.agent_framework == SupportedAgentFrameworks.claude_code:
             if self.cfg.agent_framework_repo is not None:
@@ -824,23 +1011,7 @@ class SweBenchGenerationTask(GenerationTask):
                 )
             if self.cfg.agent_framework_commit is None:
                 self.cfg.agent_framework_commit = CLAUDE_CODE_DEFAULT_VERSION
-            setup_commands.append(
-                "if [[ $(uname -m) == 'aarch64' || $(uname -m) == 'arm64' ]]; then "
-                "    export NODE_ARCH=linux-arm64; "
-                "else "
-                "    export NODE_ARCH=linux-x64; "
-                "fi && "
-                f"export NODE_VERSION={CLAUDE_CODE_NODE_VERSION} && "
-                "rm -rf /root/node && "
-                "mkdir -p /root/node && "
-                "curl -Lf "
-                '"https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-${NODE_ARCH}.tar.gz" '
-                "-o /tmp/node.tar.gz && "
-                "tar -xzf /tmp/node.tar.gz -C /root/node --strip-components=1 && "
-                "export PATH=/root/node/bin:$PATH && "
-                f"npm install -g {CLAUDE_CODE_NPM_PACKAGE}@{self.cfg.agent_framework_commit} && "
-                "claude --version"
-            )
+            agent_setup_commands.append(build_claude_code_install_command(self.cfg.agent_framework_commit))
 
         elif self.cfg.agent_framework in {
             SupportedAgentFrameworks.gold_patch,
@@ -854,13 +1025,15 @@ class SweBenchGenerationTask(GenerationTask):
                 f"Supported frameworks: {', '.join(SupportedAgentFrameworks)}."
             )
 
+        eval_setup_commands = []  # commands installing the evaluation harness
+
         if self.cfg.evaluate and self.cfg.dataset_type in [
             SupportedDatasetTypes.swe_bench,
             SupportedDatasetTypes.swe_bench_pro,
             SupportedDatasetTypes.swe_rebench_v2,
         ]:
             # Install the SWE-bench/SWE-bench-Pro/SWE-rebench-V2 evaluation harness.
-            setup_commands.append(
+            eval_setup_commands.append(
                 # clone the repo
                 "rm -rf /root/SWE-bench && "
                 f"git clone {self.cfg.eval_harness_repo} /root/SWE-bench && "
@@ -871,11 +1044,64 @@ class SweBenchGenerationTask(GenerationTask):
             )
             if self.cfg.dataset_type != SupportedDatasetTypes.swe_rebench_v2:
                 # install dependencies (not needed for swe-rebench-v2)
-                setup_commands.append("source venv/bin/activate && uv pip install -e .")
+                eval_setup_commands.append("source venv/bin/activate && uv pip install -e .")
 
-        # Run all commands with retries and timeout
-        combined_setup_command = " && ".join(setup_commands)
-        asyncio.run(self._execute_local_command(combined_setup_command, timeout=self.cfg.setup_timeout))
+        if self.opensandbox_executor is None:
+            # For Apptainer, run all commands with retries and timeout
+            combined_setup_command = " && ".join(common_setup_commands + agent_setup_commands + eval_setup_commands)
+            asyncio.run(self._execute_local_command(combined_setup_command, timeout=self.cfg.setup_timeout))
+        else:
+            # For OpenSandbox, we don't run the setup yet, only save the commands to be executed later.
+            eval_common_setup_commands = (
+                common_setup_commands if eval_setup_commands else opensandbox_base_setup_commands
+            )
+            self.opensandbox_setup_commands = {
+                "agent": " && ".join(common_setup_commands + agent_setup_commands),
+                "eval": " && ".join(eval_common_setup_commands + eval_setup_commands),
+            }
+
+        # Set up the scratch dir where Apptainer mounts are staged (see _execute_container_command)
+        scratch_root = SCRATCH_DIR
+        if not scratch_root.is_dir():
+            LOG.warning(
+                "%s does not exist, staging Apptainer mounts in %s inside the Nemo-Skills container instead.",
+                SCRATCH_DIR,
+                FALLBACK_SCRATCH_DIR,
+            )
+            scratch_root = FALLBACK_SCRATCH_DIR
+            scratch_root.mkdir(exist_ok=True)
+        self.scratch_dir = Path(tempfile.mkdtemp(dir=scratch_root, prefix="nemo-skills-swe-"))
+        self.input_dir = self.scratch_dir / "input"
+        self._scratch_artifacts: dict[Path, bytes] = {}
+        self._ensure_scratch_dir()
+
+    def _ensure_scratch_dir(self):
+        """(Re)create the scratch dir and staged input if it vanished (e.g. node-local /raid/scratch got cleaned up)."""
+        if not self.scratch_dir.is_dir():
+            LOG.warning("Scratch dir %s disappeared, re-creating it.", self.scratch_dir)
+        self.scratch_dir.mkdir(parents=True, exist_ok=True)
+        if not (self.input_dir / Path(self.cfg.input_file).name).is_file():
+            self.input_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(self.cfg.input_file, self.input_dir)
+        for path, content in self._scratch_artifacts.items():
+            if not path.is_file():
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(content)
+
+    def _write_scratch_artifact(self, path: Path, content: str | bytes) -> None:
+        """Write and retain a generated input so scratch cleanup can be recovered before execution."""
+        if isinstance(content, str):
+            content = content.encode()
+        self._scratch_artifacts[path] = content
+        self._ensure_scratch_dir()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+
+    def generate(self):
+        try:
+            super().generate()
+        finally:
+            shutil.rmtree(self.scratch_dir, ignore_errors=True)
 
     def log_example_prompt(self, data):
         return
@@ -964,8 +1190,45 @@ class SweBenchGenerationTask(GenerationTask):
         mode,
         timeout=100000,
         extra_apptainer_args="",
+        extra_mounts=(),
     ):
-        """Execute a command in an Apptainer container with retry logic."""
+        """
+        Execute a command in an Apptainer container with retry logic.
+        Mounts are (src, dst, read_only) tuples, in addition to the ones from _get_apptainer_mounts.
+
+        NOTE: expected_file_pattern is expected to be a static path.
+        Glob patterns (e.g. 'dir/*/*.json') are no longer accepted, since they can cause issues on Lustre filesystems.
+        """
+        self._ensure_scratch_dir()
+        if getattr(self, "opensandbox_executor", None) is not None:
+            # Fixed-port multilingual verifiers get a separate sandbox network rather
+            # than sharing Apptainer's default host network.
+            if extra_apptainer_args:
+                raise RuntimeError("Apptainer-specific arguments are not supported with OpenSandbox.")
+            return await self.opensandbox_executor.execute(
+                data_point=data_point,
+                command=command,
+                expected_file=Path(expected_file_pattern),
+                output_dir=self.output_dir,
+                input_file=Path(self.cfg.input_file),
+                setup_command=self.opensandbox_setup_commands[mode],
+                setup_timeout=self.cfg.setup_timeout,
+                mode=mode,
+                agent_framework=self.cfg.agent_framework,
+                timeout=timeout,
+                extra_files=extra_mounts,
+                proxy_host=self.cfg.opensandbox_proxy_host,
+                block_network=self.cfg.block_network,
+                stage_eval_harness=self.cfg.dataset_type
+                in {
+                    SupportedDatasetTypes.swe_bench,
+                    SupportedDatasetTypes.swe_bench_pro,
+                    SupportedDatasetTypes.swe_rebench_v2,
+                },
+            )
+
+        mounts = self._get_apptainer_mounts(mode, data_point) + list(extra_mounts)
+
         # Commands to be executed in the Apptainer container, in order
         container_commands = []
 
@@ -983,7 +1246,7 @@ class SweBenchGenerationTask(GenerationTask):
             repo_url_or_path = repo_formatter.format(repo=data_point["repo"].removeprefix("https://github.com/"))
             if repo_url_or_path.startswith("/"):
                 # If the repo is local, we need to mount it inside of Apptainer
-                extra_apptainer_args += f" --mount type=bind,src={repo_url_or_path},dst=/instance_repo,ro "
+                mounts.append((repo_url_or_path, "/instance_repo", True))
                 repo_url_or_path = "/instance_repo"
                 # Prevent "dubious ownership" errors
                 container_commands.append("git config --global --add safe.directory /instance_repo")
@@ -1027,17 +1290,41 @@ class SweBenchGenerationTask(GenerationTask):
             )
 
             if mode == "agent":
-                # Get the folder where the repo is cloned inside the container
-                container_repo_dir = data_point.get("container_repo_dir", "/testbed")
+                # Get the folder where the repo is cloned inside the container. Some
+                # benchmark releases use more than one image layout, so they can
+                # provide an ordered list of candidate directories.
+                container_repo_dirs = data_point.get("container_repo_dirs")
+                dynamic_repo_dir = bool(container_repo_dirs)
+                if dynamic_repo_dir:
+                    candidates = " ".join(shlex.quote(path) for path in container_repo_dirs)
+                    container_commands.append(
+                        'container_repo_dir=""; '
+                        f"for candidate in {candidates}; do "
+                        'if git -C "$candidate" rev-parse --show-toplevel >/dev/null 2>&1; then '
+                        'container_repo_dir="$candidate"; break; fi; '
+                        "done; "
+                        'test -n "$container_repo_dir"'
+                    )
+                    repo_cd = 'cd "$container_repo_dir"'
+                else:
+                    container_repo_dir = data_point.get("container_repo_dir", "/testbed")
+                    repo_cd = f"cd {container_repo_dir}"
 
-                # If pre_commands are specified, execute them before running the agent
-                pre_commands = data_point.get("pre_commands", "").strip()
+                # Normalize legacy dataset cleanup before any harness runs: deleting
+                # packed-refs directly can remove the current branch as well.
+                pre_commands = rewrite_legacy_git_cleanup(data_point.get("pre_commands", "").strip())
                 if pre_commands:
-                    container_commands.append(f"cd {container_repo_dir}")
+                    container_commands.append(repo_cd)
                     container_commands.append(pre_commands)
 
                 # If the repo is not in /testbed, copy it before running the agent
-                if container_repo_dir != "/testbed":
+                if dynamic_repo_dir:
+                    container_commands.append(
+                        'if [ "$container_repo_dir" != /testbed ]; then '
+                        'rm -rf /testbed && cp -r "$container_repo_dir" /testbed; '
+                        "fi"
+                    )
+                elif container_repo_dir != "/testbed":
                     container_commands.append(f"cp -r {container_repo_dir} /testbed")
 
         container_commands.append(command)
@@ -1046,12 +1333,31 @@ class SweBenchGenerationTask(GenerationTask):
         if mode == "eval" and data_point["instance_id"] in NETWORK_ISOLATED_VERIFIER_TASKS:
             extra_apptainer_args += " --net --network none "
 
+        # Stage Apptainer mounts in a scratch directory to prevent the agent from accessing Lustre folders.
+        # Read-only mounts are copied in.
+        # Writable mounts start empty and are copied back to their original location after each attempt.
+        # This makes them effectively "write-only" mounts.
+        run_dir = Path(tempfile.mkdtemp(dir=self.scratch_dir))
+        container_mounts = []
+        for i, (src, dst, read_only) in enumerate(mounts):
+            src, local = Path(src), run_dir / str(i)
+            if src == Path("/root") or src.is_relative_to(self.scratch_dir):
+                local = src
+            elif not read_only:
+                local.mkdir()
+            elif src.is_dir():
+                await asyncio.to_thread(shutil.copytree, src, local, symlinks=True)
+            else:
+                await asyncio.to_thread(shutil.copy2, src, local)
+            container_mounts.append((local, dst, read_only))
+
         # Launch Apptainer container and execute the command
-        mount_args = " ".join(
-            f"--mount {shlex.quote(mount_spec)}" for mount_spec in self._get_apptainer_mounts(mode, data_point)
-        )
+        mount_specs = [
+            f"type=bind,src={src},dst={dst}{',ro' if read_only else ''}" for src, dst, read_only in container_mounts
+        ]
+        mount_args = " ".join(f"--mount {shlex.quote(mount_spec)}" for mount_spec in mount_specs)
         apptainer_cmd = (
-            f"apptainer exec --writable-tmpfs --cleanenv --pid --no-mount home,tmp,bind-paths "
+            f"apptainer exec --writable-tmpfs --cleanenv --pid --no-mount home,tmp,bind-paths,cwd --pwd / "
             f"{mount_args} "
             f"{extra_apptainer_args} "
             f"{container_name} bash -c {shlex.quote(combined_command)}"
@@ -1061,89 +1367,75 @@ class SweBenchGenerationTask(GenerationTask):
         logs_dir = self.output_dir / "apptainer_logs"
         logs_dir.mkdir(exist_ok=True)
 
-        # Retry apptainer command up to max_retries times
-        for attempt in range(self.cfg.max_retries):
-            log_file_path = logs_dir / f"{data_point['instance_id']}_{mode}_attempt{attempt + 1}.log"
-            LOG.info(
-                "Starting execution of an apptainer command (attempt %d of %d). Logs are available at %s",
-                attempt + 1,
-                self.cfg.max_retries,
-                log_file_path,
-            )
+        try:
+            # Retry apptainer command up to max_retries times
+            for attempt in range(self.cfg.max_retries):
+                log_file_path = logs_dir / f"{data_point['instance_id']}_{mode}_attempt{attempt + 1}.log"
+                LOG.info(
+                    "Starting execution of an apptainer command (attempt %d of %d). Logs are available at %s",
+                    attempt + 1,
+                    self.cfg.max_retries,
+                    log_file_path,
+                )
 
-            try:
                 # Stream output to log file as it appears
+                timed_out = False
                 with open(log_file_path, "w") as log_file:
+                    process = await asyncio.create_subprocess_shell(apptainer_cmd, stdout=log_file, stderr=log_file)
                     try:
-                        # Create async subprocess
-                        process = await asyncio.create_subprocess_shell(
-                            apptainer_cmd, stdout=log_file, stderr=log_file
-                        )
-                        # Wait for completion with timeout
-                        await asyncio.wait_for(process.communicate(), timeout=timeout)
-
-                        if process.returncode != 0:
-                            raise ValueError(f"Command failed with return code {process.returncode}")
-
+                        await asyncio.wait_for(process.wait(), timeout=timeout)
                     except asyncio.TimeoutError:
-                        # Kill the process if it's still running
-                        if process.returncode is None:
-                            process.kill()
-                            await process.wait()
-                        attempt = self.cfg.max_retries  # Force exit the loop on timeout
-                        raise ValueError("Command timed out")
+                        process.kill()
+                        await process.wait()
+                        timed_out = True
 
-                # Look for the expected file
-                pred_files = glob.glob(expected_file_pattern, recursive=True)
+                # Copy outputs from scratch back to their original location
+                for (src, _, read_only), (local, _, _) in zip(mounts, container_mounts):
+                    if not read_only:
+                        await asyncio.to_thread(shutil.copytree, local, src, symlinks=True, dirs_exist_ok=True)
 
-                if len(pred_files) == 1:
-                    # Success, break out of retry loop
-                    return pred_files[0]
-                else:
-                    raise ValueError(
-                        f"Expected exactly one file matching {expected_file_pattern} for {data_point['instance_id']}, "
-                        f"found {len(pred_files)}."
-                    )
-            except Exception:
-                if attempt < self.cfg.max_retries - 1:
-                    retry_interval = random.randint(self.cfg.min_retry_interval, self.cfg.max_retry_interval)
-                    LOG.warning(
-                        "Attempt %d failed for instance %s. Retrying in %d seconds...",
-                        attempt + 1,
-                        data_point["instance_id"],
-                        retry_interval,
-                    )
-                    if retry_interval > 0:
-                        await asyncio.sleep(retry_interval)
-                    continue
-                else:
-                    LOG.error(
-                        "All %d attempts failed for instance %s", self.cfg.max_retries, data_point["instance_id"]
-                    )
+                file_exists = os.path.exists(expected_file_pattern)
+                if process.returncode == 0 and file_exists:
+                    return expected_file_pattern
+
+                # Don't retry on timeout
+                if timed_out or attempt == self.cfg.max_retries - 1:
                     LOG.error("Apptainer command failed. Check logs at: %s", log_file_path)
                     raise ValueError(
-                        f"Job failed for {data_point['instance_id']}. Check logs at: {log_file_path}. "
-                        f"Expected exactly one file matching {expected_file_pattern}, "
-                        f"found {len(pred_files) if 'pred_files' in locals() else 'unknown'}."
+                        f"Job failed for {data_point['instance_id']} (return code {process.returncode}, "
+                        f"timed out: {timed_out}, expected output file {expected_file_pattern} exists: {file_exists}). "
+                        f"Check logs at: {log_file_path}."
                     )
 
-    def _get_apptainer_mounts(self, mode: str, data_point: dict) -> list[str]:
-        """Return the mounts used by agent and evaluation containers."""
+                retry_interval = random.randint(self.cfg.min_retry_interval, self.cfg.max_retry_interval)
+                LOG.warning(
+                    "Attempt %d failed for instance %s. Retrying in %d seconds...",
+                    attempt + 1,
+                    data_point["instance_id"],
+                    retry_interval,
+                )
+                await asyncio.sleep(retry_interval)
+        finally:
+            await asyncio.to_thread(shutil.rmtree, run_dir, ignore_errors=True)
+
+    def _get_apptainer_mounts(self, mode: str, data_point: dict) -> list[tuple]:
+        """Return the (src, dst, read_only) mounts used by agent and evaluation containers."""
+        # /trajectories_mount starts empty and is copied back to output_dir after the run,
+        # so any inputs for the container must be passed via extra_mounts instead.
         mounts = [
-            "type=bind,src=/nemo_run/code,dst=/nemo_run/code",
-            "type=bind,src=/root,dst=/root_mount,ro",
-            f"type=bind,src={self.output_dir},dst=/trajectories_mount",
+            ("/root", "/root_mount", True),
+            (self.output_dir, "/trajectories_mount", False),
         ]
         if mode == "eval":
-            mounts.append(f"type=bind,src={Path(self.cfg.input_file).parent},dst=/input_mount,ro")
+            # Mounts the folder with the input dataset. Used during evaluation.
+            # DO NOT do this in agent mode, to prevent the agent from accessing privileged info e.g. gold patches.
+            mounts.append((self.input_dir, "/input_mount", True))
         return mounts
 
-    def _write_openhands_rollout_input(self, data_point: dict) -> tuple[Path, str]:
-        """Write one JSONL record for an OpenHands rollout into the mounted output directory."""
+    def _write_openhands_rollout_input(self, data_point: dict) -> Path:
+        """Write one JSONL record for an OpenHands rollout into the scratch directory."""
         instance_token = hashlib.sha256(str(data_point["instance_id"]).encode()).hexdigest()[:20]
-        input_dir = self.output_dir / ".openhands_inputs"
-        input_dir.mkdir(parents=True, exist_ok=True)
-        host_path = input_dir / f"{instance_token}.jsonl"
+        host_path = self.scratch_dir / f"openhands_input_{instance_token}.jsonl"
         data_point_for_openhands = {
             # Include only the information OH needs, without exposing hidden info to the agent
             "instance_id": data_point["instance_id"],
@@ -1156,9 +1448,8 @@ class SweBenchGenerationTask(GenerationTask):
         }
         if data_point.get("language"):
             data_point_for_openhands["language"] = data_point["language"]
-        host_path.write_text(json.dumps(data_point_for_openhands, ensure_ascii=False) + "\n", encoding="utf-8")
-        container_path = f"/trajectories_mount/.openhands_inputs/{host_path.name}"
-        return host_path, container_path
+        self._write_scratch_artifact(host_path, json.dumps(data_point_for_openhands, ensure_ascii=False) + "\n")
+        return host_path
 
     async def _run_agent(self, data_point) -> str:
         """
@@ -1267,7 +1558,7 @@ class SweBenchGenerationTask(GenerationTask):
                 "cd /root/SWE-agent && "
                 # run the agent
                 f"/root/SWE-agent/venv/bin/python -m sweagent run "
-                f"    --config {get_config_path(self.cfg.agent_config)} "
+                f"    --config /swe_agent_config.yaml "
                 f"    --agent.templates.instance_template {shlex.quote(instance_template)} "
                 f"    --agent.model.name hosted_vllm/{self.cfg.server.model} "
                 f"    --agent.model.api_base {shlex.quote(api_base)} "
@@ -1281,20 +1572,27 @@ class SweBenchGenerationTask(GenerationTask):
                 f"    --env.repo.base_commit {data_point['base_commit']} "
                 f"    --problem_statement.text {shlex.quote(problem_statement)} "
                 f"    --problem_statement.id {data_point['instance_id']} "
-                f"    --problem_statement.extra_fields {shlex.quote(json.dumps(extra_fields))} && "
+                f"    --problem_statement.extra_fields {shlex.quote(json.dumps(extra_fields))} "
+                f"    --output_dir trajectories/root/{data_point['instance_id']} && "
                 # move trajectories to the mounted directory
                 f"cp -r trajectories /trajectories_mount/"
             )
 
         # Execute SWE-agent command
         search_path = os.path.join(
-            self.output_dir, "trajectories", "*", "*", data_point["instance_id"], f"{data_point['instance_id']}.pred"
+            self.output_dir,
+            "trajectories",
+            "root",
+            data_point["instance_id"],
+            data_point["instance_id"],
+            f"{data_point['instance_id']}.pred",
         )
         pred_file = await self._execute_agent_command_with_capture(
             data_point,
             build_swe_agent_command,
             search_path,
             request_transform=transform_litellm_reasoning_request,
+            extra_mounts=[(get_config_path(self.cfg.agent_config), "/swe_agent_config.yaml", True)],
         )
 
         with open(pred_file, "r") as f:
@@ -1394,28 +1692,47 @@ class SweBenchGenerationTask(GenerationTask):
             }
         )
 
-        (self.output_dir / "configs").mkdir(parents=True, exist_ok=True)
-        tmp_config_filename = f"configs/config_{data_point['instance_id']}.yaml"
-        host_tmp_path = os.path.join(self.output_dir, tmp_config_filename)
+        problem_statement = self._get_agent_problem_statement(data_point)
+        instance_id = data_point["instance_id"]
+        host_config_path = self.scratch_dir / f"mini_swe_agent_config_{instance_id}.yaml"
+        container_config_path = "/mini_swe_agent_config.yaml"
 
-        # Inside the container, this path maps to /trajectories_mount/
-        container_tmp_path = os.path.join("/trajectories_mount", tmp_config_filename)
+        extra_mounts = [(host_config_path, container_config_path, True)]
+        unix_socket = None
+        extra_apptainer_args = ""
+        forwarder_command = ""
+        if self.cfg.block_network and self.cfg.execution_backend == "apptainer":
+            # The container has no network, so LLM requests go through a local TCP -> Unix socket forwarder.
+            # Unix socket paths are limited to 107 bytes, so don't use instance_id in the name.
+            unix_socket = self.scratch_dir / f"{uuid.uuid4()}.sock"
+            extra_mounts += [
+                (unix_socket, "/llm.sock", True),
+                (Path(__file__).parent / "uds_forwarder.py", "/uds_forwarder.py", True),
+            ]
+            extra_apptainer_args = " --net --network none "
+            forwarder_command = "(/root/mini-swe-agent/venv/bin/python /uds_forwarder.py /llm.sock 8000 &) && "
 
         def build_mini_swe_agent_command(api_base):
+            if self.cfg.block_network and self.cfg.execution_backend == "apptainer":
+                # Set the base URL inside the Apptainer container to 127.0.0.1:8000.
+                # The forwarder (uds_forwarder.py) will listen at that port
+                # and forward requests to the Unix socket at /llm.sock.
+                # Our proxy will listen there and forward requests to the actual LLM.
+                api_base = urlsplit(api_base)._replace(netloc="127.0.0.1:8000").geturl()
             full_config["model"]["model_kwargs"]["api_base"] = api_base
-            with open(host_tmp_path, "w") as f:
-                yaml.dump(full_config, f)
+            self._write_scratch_artifact(host_config_path, yaml.dump(full_config))
 
             return (
                 f"{copy_solution_command}"
                 "cp -r /root_mount/mini-swe-agent /root && "
                 "cp -r /root_mount/uv /root && "
+                f"{forwarder_command}"
                 "cd /root/mini-swe-agent && "
                 "export MSWEA_CONFIGURED=true && "
-                f"export MSWEA_MINI_CONFIG_PATH={container_tmp_path} && "
+                f"export MSWEA_MINI_CONFIG_PATH={container_config_path} && "
                 "export MSWEA_MODEL_RETRY_STOP_AFTER_ATTEMPT=3 && "
                 f"/root/mini-swe-agent/venv/bin/python -m minisweagent.run.mini "
-                f"--config {container_tmp_path} "
+                f"--config {container_config_path} "
                 f"--model hosted_vllm/{self.cfg.server.model} "
                 f"{task_arg} "
                 f"--output trajectories/{instance_id}.traj.json "
@@ -1424,58 +1741,56 @@ class SweBenchGenerationTask(GenerationTask):
                 "mkdir -p /trajectories_mount/trajectories && cp -r trajectories/* /trajectories_mount/trajectories/"
             )
 
-        try:
-            search_path = os.path.join(self.output_dir, "trajectories", f"{instance_id}.traj.json")
+        search_path = os.path.join(self.output_dir, "trajectories", f"{instance_id}.traj.json")
 
-            # If we are doing verification and the model patch is empty or missing,
-            # skip the agent run and return a score of 0 for all rubric items.
-            if (
-                self.cfg.agent_task == SupportedAgentTasks.verification
-                and not (data_point.get("model_patch") or "").strip()
-            ):
-                pred_file = search_path
-                Path(pred_file).parent.mkdir(parents=True, exist_ok=True)
-                rubric = json.loads(data_point.get("rubric_json", "{}"))
-                zero_scores = {key: 0 for key in rubric}
-                trajectory_dict = {"info": {"submission": json.dumps(zero_scores)}}
-                LOG.info(
-                    "Skipping verification for instance %s because the model patch is empty or missing. "
-                    "Returning a score of 0 for all rubric items.",
-                    instance_id,
-                )
-            else:
-                if self.cfg.verifier_sees_traj:
-                    write_solution_dir(host_solution_dir, data_point["model_patch"], data_point["messages"])
-                # Execute mini-swe-agent command
-                pred_file = await self._execute_agent_command_with_capture(
-                    data_point,
-                    build_mini_swe_agent_command,
-                    search_path,
-                    request_transform=transform_litellm_reasoning_request,
-                )
-                with open(pred_file, "r") as f:
-                    trajectory_dict = json.loads(f.read().strip())
+        # If we are doing verification and the model patch is empty or missing,
+        # skip the agent run and return a score of 0 for all rubric items.
+        if (
+            self.cfg.agent_task == SupportedAgentTasks.verification
+            and not (data_point.get("model_patch") or "").strip()
+        ):
+            pred_file = search_path
+            Path(pred_file).parent.mkdir(parents=True, exist_ok=True)
+            rubric = json.loads(data_point.get("rubric_json", "{}"))
+            zero_scores = {key: 0 for key in rubric}
+            trajectory_dict = {"info": {"submission": json.dumps(zero_scores)}}
+            LOG.info(
+                "Skipping verification for instance %s because the model patch is empty or missing. "
+                "Returning a score of 0 for all rubric items.",
+                instance_id,
+            )
+        else:
+            if self.cfg.verifier_sees_traj:
+                write_solution_dir(host_solution_dir, data_point["model_patch"], data_point["messages"])
+            # Execute mini-swe-agent command
+            pred_file = await self._execute_agent_command_with_capture(
+                data_point,
+                build_mini_swe_agent_command,
+                search_path,
+                request_transform=transform_litellm_reasoning_request,
+                extra_mounts=extra_mounts,
+                unix_socket=unix_socket,
+                extra_apptainer_args=extra_apptainer_args,
+            )
+            with open(pred_file, "r") as f:
+                trajectory_dict = json.loads(f.read().strip())
 
-            pred_jsonl_file = pred_file.replace(".traj.json", ".jsonl")
-            with open(pred_jsonl_file, "w") as f:
-                trajectory_info = trajectory_dict.get("info", {})
-                trajectory_info["model_name_or_path"] = self.cfg.server.model
-                trajectory_info["instance_id"] = data_point["instance_id"]
+        pred_jsonl_file = pred_file.replace(".traj.json", ".jsonl")
+        with open(pred_jsonl_file, "w") as f:
+            trajectory_info = trajectory_dict.get("info", {})
+            trajectory_info["model_name_or_path"] = self.cfg.server.model
+            trajectory_info["instance_id"] = data_point["instance_id"]
 
-                patch = trajectory_info.pop("submission", None)
-                if not patch:
-                    patch = None
-                elif not patch.endswith("\n"):
-                    patch += "\n"
-                trajectory_info["model_patch"] = patch
+            patch = trajectory_info.pop("submission", None)
+            if not patch:
+                patch = None
+            elif not patch.endswith("\n"):
+                patch += "\n"
+            trajectory_info["model_patch"] = patch
 
-                f.write(json.dumps(trajectory_info))
+            f.write(json.dumps(trajectory_info))
 
-            return pred_jsonl_file
-
-        finally:
-            if os.path.exists(host_tmp_path):
-                os.remove(host_tmp_path)
+        return pred_jsonl_file
 
     async def _run_openhands(self, data_point):
         """
@@ -1517,11 +1832,11 @@ class SweBenchGenerationTask(GenerationTask):
         if completion_kwargs:
             config["llm"]["model"]["completion_kwargs"] = completion_kwargs
 
-        # Folder to copy the rollout record into.
+        # Folder to mount the rollout record into.
         # It's important that the name includes the original HF dataset name,
         # because OpenHands has internal checks for substrings like "swe-bench-live" in the name (case-insensitive)
         data_dir = "/root/" + data_point["dataset_name"].replace("/", "__")
-        rollout_input_path, rollout_input_container_path = self._write_openhands_rollout_input(data_point)
+        extra_mounts = [(self._write_openhands_rollout_input(data_point), f"{data_dir}/dataset.jsonl", True)]
 
         # The final 2 arguments to run_infer.sh and the user prompt template paths
         # are different between the swe_bench and multi_swe_bench scripts.
@@ -1547,8 +1862,9 @@ class SweBenchGenerationTask(GenerationTask):
         instruction_template_setup = ""
         if instruction_template is not None:
             # Entirely replace the user prompt template with the custom one, if present
+            extra_mounts.append((instruction_template, "/openhands_instruction.j2", True))
             instruction_template_setup = "".join(
-                f"cp {shlex.quote(instruction_template)} {prompt_file} && " for prompt_file in prompt_files
+                f"cp /openhands_instruction.j2 {prompt_file} && " for prompt_file in prompt_files
             )
         # Append extra instructions to the user prompt template
         instruction_template_setup += (
@@ -1580,9 +1896,6 @@ class SweBenchGenerationTask(GenerationTask):
                 "ln -sf /root/jq/jq /usr/local/bin/jq && "
                 # activate openhands venv
                 "source /root/OpenHands/.venv/bin/activate && "
-                # copy only the current rollout record
-                f"mkdir {data_dir} && "
-                f"cp {shlex.quote(rollout_input_container_path)} {data_dir}/dataset.jsonl && "
                 # set up config files
                 f"echo {shlex.quote(config_str)} >config.toml && "
                 f"echo \"selected_ids = ['{data_point['instance_id']}']\" >evaluation/benchmarks/{benchmark_name}/config.toml && "
@@ -1606,14 +1919,12 @@ class SweBenchGenerationTask(GenerationTask):
 
         # Execute OpenHands command
         search_path = os.path.join(self.output_dir, "trajectories", data_point["instance_id"], "output.jsonl")
-        try:
-            out_file = await self._execute_agent_command_with_capture(
-                data_point,
-                build_openhands_command,
-                search_path,
-            )
-        finally:
-            rollout_input_path.unlink(missing_ok=True)
+        out_file = await self._execute_agent_command_with_capture(
+            data_point,
+            build_openhands_command,
+            search_path,
+            extra_mounts=extra_mounts,
+        )
 
         with open(out_file, "r") as f:
             out_dict = json.loads(f.read().strip())
@@ -1654,6 +1965,9 @@ class SweBenchGenerationTask(GenerationTask):
         *,
         served_model_name=None,
         request_transform=None,
+        extra_mounts=(),
+        unix_socket=None,
+        extra_apptainer_args="",
     ):
         """Run an agent command through a proxy that saves its first LLM request."""
         capture_file = self.output_dir / "trajectories" / data_point["instance_id"] / "first-llm-request.json"
@@ -1666,12 +1980,18 @@ class SweBenchGenerationTask(GenerationTask):
             served_model_name=served_model_name,
             request_transform=request_transform,
             all_requests_dir=all_requests_dir,
+            unix_socket=unix_socket,
+            host=self.cfg.opensandbox_proxy_host
+            if getattr(self, "opensandbox_executor", None) is not None
+            else "127.0.0.1",
         ) as proxy_api_base:
             return await self._execute_container_command(
                 data_point,
                 command_builder(proxy_api_base),
                 expected_file_pattern,
                 mode="agent",
+                extra_apptainer_args=extra_apptainer_args,
+                extra_mounts=extra_mounts,
             )
 
     async def _run_opencode(self, data_point):
@@ -1728,7 +2048,18 @@ class SweBenchGenerationTask(GenerationTask):
             config_json = json.dumps(opencode_config)
             patch_setup, patch_collect = build_clean_patch_commands(f"{trajectory_dir}/model.patch")
             return (
-                "export PATH=/root_mount/node/bin:$PATH && "
+                "export PATH=/root_mount/opencode/bin:/root_mount/node/bin:$PATH && "
+                "if [ -f /root_mount/opencode/.musl ]; then "
+                '    case "$(uname -m)" in '
+                "        aarch64|arm64) "
+                "            export OPENCODE_LOADER=/root_mount/opencode/lib/ld-musl-aarch64.so.1 ;; "
+                "        *) export OPENCODE_LOADER=/root_mount/opencode/lib/ld-musl-x86_64.so.1 ;; "
+                "    esac && "
+                "    opencode() { "
+                '        "$OPENCODE_LOADER" --library-path /root_mount/opencode/lib '
+                '            /root_mount/opencode/bin/opencode-native "$@"; '
+                "    }; "
+                "fi && "
                 "export HOME=/root && "
                 "export XDG_CONFIG_HOME=/root/.config && "
                 "export OPENCODE_DISABLE_AUTOUPDATE=1 && "
@@ -1849,7 +2180,7 @@ class SweBenchGenerationTask(GenerationTask):
             settings_json = json.dumps(settings)
             patch_setup, patch_collect = build_clean_patch_commands(f"{trajectory_dir}/model.patch")
             return (
-                "export PATH=/root_mount/node/bin:$PATH && "
+                "export PATH=/root_mount/claude-code/bin:/root_mount/node/bin:$PATH && "
                 "export HOME=/root && "
                 "mkdir -p /root/.claude && "
                 f"printf %s {shlex.quote(settings_json)} >/root/.claude/settings.json && "
@@ -2023,7 +2354,7 @@ class SweBenchGenerationTask(GenerationTask):
         async with self.rollout_semaphore:
             pred_file = await self._run_agent(data_point)
 
-        pred_mounted_path = pred_file.replace(str(self.output_dir), "/trajectories_mount")
+        pred_mounted_path = f"/predictions_mount/{Path(pred_file).name}"
         with open(pred_file, "r") as f:
             trajectory_dict = json.loads(f.read())
 
@@ -2068,7 +2399,8 @@ class SweBenchGenerationTask(GenerationTask):
                     f"    --patch_path {pred_mounted_path} "
                     f"    --output_dir eval-outputs "
                     f"    --scripts_dir /root/SWE-bench/run_scripts && "
-                    f"cp -r eval-outputs /trajectories_mount/"
+                    f"mkdir -p /trajectories_mount/eval-outputs/results && "
+                    f"cp -r eval-outputs/*/{data_point['instance_id']} /trajectories_mount/eval-outputs/results/"
                 )
             elif self.cfg.dataset_type == SupportedDatasetTypes.swe_rebench_v2:
                 swe_bench_cmd = (
@@ -2098,11 +2430,14 @@ class SweBenchGenerationTask(GenerationTask):
                     f"    --run_id eval-outputs "
                     f"    --timeout {tests_timeout} "
                     f"    --dataset_name /input_mount/{Path(self.cfg.input_file).name} && "
-                    f"cp -r logs/run_evaluation/eval-outputs /trajectories_mount/"
+                    f"mkdir -p /trajectories_mount/eval-outputs/results && "
+                    f"cp -r logs/run_evaluation/eval-outputs/*/{data_point['instance_id']} /trajectories_mount/eval-outputs/results/"
                 )
 
-            # Execute SWE-bench evaluation command
-            search_path = os.path.join(self.output_dir, "eval-outputs", "*", data_point["instance_id"], "report.json")
+            # Execute the SWE-bench evaluation command. For all 3 harnesses, we copy output files to this exact path.
+            search_path = os.path.join(
+                self.output_dir, "eval-outputs", "results", data_point["instance_id"], "report.json"
+            )
             # TODO: should we fail on errors here? Seems that json isn't always generated
             try:
                 async with self.eval_semaphore:
@@ -2112,8 +2447,9 @@ class SweBenchGenerationTask(GenerationTask):
                         search_path,
                         mode="eval",
                         timeout=tests_timeout + 120,
+                        extra_mounts=[(pred_file, pred_mounted_path, True)],
                     )
-            except ValueError:
+            except (ValueError, RuntimeError):
                 LOG.error("Failed to execute SWE-bench evaluation command for %s", data_point["instance_id"])
                 report_json = {
                     data_point["instance_id"]: {

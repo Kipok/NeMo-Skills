@@ -13,13 +13,43 @@
 # limitations under the License.
 
 import json
+import shutil
+from pathlib import Path
+from types import SimpleNamespace
 
-from nemo_skills.inference.eval.swebench import SweBenchGenerationTask
+import pytest
+
+from nemo_skills.inference.eval.swebench import (
+    SupportedDatasetTypes,
+    SweBenchGenerationConfig,
+    SweBenchGenerationTask,
+)
+
+
+@pytest.mark.parametrize(
+    "dataset_type",
+    [SupportedDatasetTypes.swe_bench_pro, SupportedDatasetTypes.swe_bench_pro_v2],
+)
+def test_openhands_is_rejected_for_swe_bench_pro(tmp_path, dataset_type):
+    cfg = SweBenchGenerationConfig(
+        _init_nested=True,
+        input_file=str(tmp_path / "input.jsonl"),
+        output_file=str(tmp_path / "output.jsonl"),
+        agent_framework="openhands",
+        dataset_type=dataset_type,
+    )
+
+    with pytest.raises(ValueError, match="OpenHands is not supported for SWE-bench Pro V1 or V2"):
+        SweBenchGenerationTask(cfg)
 
 
 def test_openhands_rollout_input_contains_only_current_record(tmp_path):
     task = object.__new__(SweBenchGenerationTask)
-    task.output_dir = tmp_path
+    task.scratch_dir = tmp_path
+    task.input_dir = tmp_path / "input"
+    task.cfg = SimpleNamespace(input_file=str(tmp_path / "dataset.jsonl"))
+    Path(task.cfg.input_file).write_text("{}\n")
+    task._scratch_artifacts = {}
     data_point = {
         "instance_id": "owner__repo-123",
         "dataset_name": "princeton-nlp/SWE-bench_Verified",
@@ -32,10 +62,9 @@ def test_openhands_rollout_input_contains_only_current_record(tmp_path):
         "PASS_TO_PASS": ["tests/test_stable.py::test_ok"],
     }
 
-    host_path, container_path = task._write_openhands_rollout_input(data_point)
+    host_path = task._write_openhands_rollout_input(data_point)
 
-    assert host_path.parent == tmp_path / ".openhands_inputs"
-    assert container_path == f"/trajectories_mount/.openhands_inputs/{host_path.name}"
+    assert host_path.parent == tmp_path
     assert host_path.read_text(encoding="utf-8").count("\n") == 1
     assert json.loads(host_path.read_text(encoding="utf-8")) == {
         "instance_id": "owner__repo-123",
@@ -46,3 +75,28 @@ def test_openhands_rollout_input_contains_only_current_record(tmp_path):
         "PASS_TO_PASS": [],
         "FAIL_TO_PASS": [],
     }
+
+
+def test_scratch_recovery_restores_staged_and_generated_inputs(tmp_path):
+    source = tmp_path / "dataset.jsonl"
+    source.write_text('{"instance_id":"owner__repo-123"}\n')
+    task = object.__new__(SweBenchGenerationTask)
+    task.scratch_dir = tmp_path / "scratch"
+    task.input_dir = task.scratch_dir / "input"
+    task.cfg = SimpleNamespace(input_file=str(source))
+    task._scratch_artifacts = {}
+    data_point = {
+        "instance_id": "owner__repo-123",
+        "dataset_name": "princeton-nlp/SWE-bench_Verified",
+        "problem_statement": "Fix the bug",
+        "base_commit": "abc123",
+    }
+
+    rollout_input = task._write_openhands_rollout_input(data_point)
+    expected_rollout = rollout_input.read_bytes()
+    shutil.rmtree(task.scratch_dir)
+
+    task._ensure_scratch_dir()
+
+    assert (task.input_dir / source.name).read_bytes() == source.read_bytes()
+    assert rollout_input.read_bytes() == expected_rollout

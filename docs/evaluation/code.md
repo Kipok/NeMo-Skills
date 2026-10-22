@@ -62,6 +62,114 @@ mounts:
 
 When this path is accessed during evaluation, `{instance_id}` will be replaced by the value of the instance_id column in the dataset, replacing `__` with `_1776_`. For example, `astropy__astropy-12907` becomes `astropy_1776_astropy-12907`.
 
+#### Remote tool execution with OpenSandbox
+
+Native `ns eval` and the SWE generation module support
+`++execution_backend=opensandbox` for mini-SWE-agent, SWE-agent, OpenHands,
+OpenCode, Claude Code, `gold_patch`, and `model_patch`. For agent harnesses, the
+model server stays on GPU nodes while agent commands and grading run in separate,
+fresh OpenSandbox task containers. Supplied-patch modes create their prediction
+files on the coordinator and use OpenSandbox only for grading. Gym is not required.
+Apptainer remains the default backend.
+
+Install `nemo_skills[opensandbox]` in the coordinator's runtime image or environment.
+Export `OPENSANDBOX_DOMAIN` and `OPENSANDBOX_API_KEY`; NeMo-Skills forwards these
+variables into the coordinator container like other API keys. The OpenSandbox
+backend requires both. The domain may include an `http://` or `https://` scheme.
+For a trusted endpoint with a self-signed certificate, explicitly export
+`OPENSANDBOX_TLS_VERIFY=false`; this variable is also forwarded into the job.
+Certificate verification remains enabled by default. Disabling it bypasses server
+certificate authentication for OpenSandbox HTTPS connections.
+
+Prepare OCI task images rather than local `.sif` files:
+
+```bash
+ns prepare_data swe-bench-multilingual
+
+ns eval --cluster=<CLUSTER> \
+  --benchmarks=swe-bench-multilingual \
+  --server_type=vllm --model=<SERVED_MODEL> \
+  --server_address=http://<GPU_MODEL_HOST>:8000/v1 \
+  --output_dir=<OUTPUT_DIR> \
+  ++agent_framework=mini_swe_agent \
+  ++execution_backend=opensandbox \
+  ++max_concurrent_requests=2 ++max_samples=3
+```
+
+For agent harnesses, NeMo-Skills automatically discovers the coordinator's IPv4
+interface after the job starts using its network route to `OPENSANDBOX_DOMAIN`,
+with the node's hostname as a fallback. This uses the allocated compute node,
+including on Slurm; no IP needs to be supplied when submitting the job. NeMo-Skills
+logs the detected address and passes the per-instance proxy URL to the remote agent
+in its model configuration. For unusual network setups, override it with
+`++opensandbox_proxy_host=<COORDINATOR_IP>`. NeMo-Skills binds each model proxy to
+this interface on dynamically allocated ports. The sandbox workers must be able to
+reach these ports on the cluster network; automatic address discovery does not
+create a tunnel or change firewall rules. The proxy forwards model requests to the
+configured GPU endpoint and preserves request transformations and capture. With a
+pre-hosted model server, the coordinator can run on a CPU node. When NeMo-Skills
+hosts the model itself, the coordinator can remain on its GPU node while all task
+commands run remotely. Supplied-patch modes do not start this model proxy and do
+not require `opensandbox_proxy_host`.
+
+Optional resource settings use `++opensandbox.resources.cpu=4` and
+`++opensandbox.resources.memory=16Gi`. Other options are `ready_timeout_s` (1200),
+`request_timeout_s` (60), `command_timeout_s` (10800), and `poll_interval_s` (5).
+The command timeout caps the agent/verifier execution budget; dependency setup has
+its own `setup_timeout`. Setup currently installs the pinned agent or verifier in
+each sandbox and therefore needs download access. Sandbox lifetime includes setup,
+execution, readiness, and an artifact-transfer allowance.
+
+If an OpenSandbox registry mirror changes tag casing (for example,
+`NodeBB__NodeBB` to `nodebb__nodebb`), enable
+`++opensandbox.resolve_image_tags_to_digests=True`. NeMo-Skills resolves public
+Docker Hub tags to immutable digests before sandbox creation and caches each
+resolution for the coordinator's lifetime. Resolution uses manifest HEAD requests
+and does not download image layers. The coordinator needs HTTPS access to
+`auth.docker.io` and `registry-1.docker.io`. Existing digest references are
+passed through unchanged. The option defaults to false; tag resolution for private
+images and other registries is not supported.
+
+The same backend can be used for inference through
+`--generation_module=nemo_skills.inference.eval.swebench` with `++evaluate=False`.
+Output schemas and multilingual language instructions follow the existing SWE
+flow. Command logs are saved under `opensandbox_logs`; successful outputs are
+downloaded before each sandbox is terminated. Sandboxes are also terminated on
+command failure or cancellation.
+Agent infrastructure failures propagate. Evaluator command failures return
+unresolved patch metrics so one failed verifier does not abort the shard.
+
+Support covers the five agent harnesses and both supplied-patch modes on standard
+SWE-bench and SWE-bench Multilingual OCI images. The backend also supports SWE-bench
+Pro V1 subject to its benchmark-specific agent caveats below. Supplied-patch grading
+also supports SWE-rebench V2; agent rollouts on SWE-rebench V2 remain unsupported.
+Select an agent harness with `++agent_framework=mini_swe_agent`, `swe_agent`,
+`openhands`, `opencode`, or `claude_code`; use that harness's agent config or
+leave `agent_config` unset for its default. To smoke-test a remote evaluator
+without an LLM, use:
+
+```bash
+ns eval --cluster=<CLUSTER> \
+  --benchmarks=swe-bench --server_type=vllm --model=gold-patch \
+  --server_address=http://localhost:1 --output_dir=<OUTPUT_DIR> \
+  ++agent_framework=gold_patch ++execution_backend=opensandbox ++max_samples=3
+```
+
+To grade existing predictions instead, replace the final line with:
+
+```bash
+++agent_framework=model_patch ++model_patch_file=<PATCHES_JSONL> ++execution_backend=opensandbox
+```
+
+Neither supplied-patch mode contacts the dummy server address or creates an
+OpenSandbox agent container. The same commands work for SWE-rebench V2 by using
+`--benchmarks=swe-rebench-v2`.
+
+SWE-Zero and other benchmark dataset types are not supported. Each task has its
+own sandbox network, so fixed-port multilingual verifiers do not share the
+coordinator network. Start with a few samples before increasing concurrency to
+match the service's capacity.
+
 #### SWE-bench-specific parameters
 
 There are a few parameters specific to SWE-bench. They have to be specified with the `++` prefix. All of them are optional, except for ++agent_framework.
@@ -86,6 +194,10 @@ There are a few parameters specific to SWE-bench. They have to be specified with
 - **++agent_max_turns:** The maximum number of turns the agent is allowed to take. Defaults to 100. For OpenCode, this is written to `agent.<default_agent>.steps`; after the limit, OpenCode forces a final text-only response instead of allowing more tool calls. For Claude Code, this is passed as `--max-turns`.
 
 - **++capture_all_llm_requests:** Save every transformed LLM request made by SWE-agent, mini-SWE-agent, OpenHands, OpenCode, or Claude Code under `trajectories/<instance_id>/llm-requests/`. Defaults to `False` because the artifacts can be large and contain sensitive prompt and repository context. Intended for debugging only.
+
+- **++block_network:** Whether to block network access in agent containers. Defaults to `False`. Evaluation containers are not affected.
+    - With the Apptainer backend, only mini-SWE-agent is supported. Its containers run with `--net --network none`, so the agent cannot access the internet, and LLM requests reach the model server through a Unix socket mounted into the container. Container setup runs without network too, so SWE-Zero needs a local `repo_formatter` mirror, and `pre_commands` must not download anything.
+    - With the OpenSandbox backend, all agent frameworks are supported. The sandbox is created with an egress policy that denies all traffic except the model proxy. For the setup portion only (before running the agent), common domain wildcards (`*.com`, `*.org`, `*.net`, `*.io`, `*.sh`, `*.dev`, `*.rs`, `*.co`, `*.edu`, `*.cn`) are allowed. The OpenSandbox server must have an egress sidecar image configured (`[egress] image`), and should use `mode = "dns+nft"`: in the default `dns` mode, only DNS lookups are filtered, so connections to literal IP addresses are not blocked.
 
 - **++max_concurrent_requests:** Maximum concurrent agent rollouts and per-instance evaluations within each chunk job. Defaults to 512. Reduce this for memory-heavy evaluation containers, especially with `model_patch`.
 
@@ -219,7 +331,7 @@ ns prepare_data scale-swe
 
 This loads `PrimeIntellect/Scale-SWE-Verified` and its `train` split by default. The
 generated data preserves each instance's `image_url`, `workdir`,
-`pre_commands`, and F2P/P2P fields, and renames `parent_commit` to
+and F2P/P2P fields, and renames `parent_commit` to
 `base_commit`. The default container
 formatter lets Apptainer pull `image_url` directly. For larger evaluations,
 pre-convert the required images to SIF files and pass a formatter that uses
@@ -242,9 +354,7 @@ ns eval \
 Use `++agent_framework=gold_patch ++max_samples=5` as an initial environment
 and evaluator smoke test. `++evaluate=False` runs rollout generation without
 grading, and `++swebench_tests_timeout` controls the per-instance test timeout
-(1800 seconds by default). SWE-Zero is not supported because valid Scale-SWE
-rollouts require each instance's native image, `parent_commit`, and
-`pre_commands`.
+(1800 seconds by default). SWE-Zero is not supported.
 
 To evaluate patches generated previously, use
 `++agent_framework=model_patch ++model_patch_file=<GENERATIONS_JSONL>`.
@@ -440,8 +550,8 @@ Missing rubric/taste fields fail closed for tasteful solve (counted as not taste
 SWE-bench Pro uses mostly the same logic as regular SWE-bench, so most of the [SWE-bench docs](#swe-bench) apply to it as well. The differences are as follows:
 
 1. Since it is a multilingual benchmark, we use the multilingual inference logic for it, same as for [SWE-bench Multilingual](#swe-bench-multilingual).
-2. 88 of 731 instances have to be run in a separate evaluation job with a different Nemo-Skills container based on Alpine Linux. The dockerfile for this container is provided [here](https://github.com/NVIDIA-NeMo/Skills/tree/main/dockerfiles/swe-bench/Dockerfile.nemo-skills.alpine). You can use the `--main_container` option of Nemo-Skills to change the container for this subset of instances, and run the rest as usual. See below for an example.
-3. Due to technical issues, OpenHands is not supported for this benchmark. SWE-agent, mini-SWE-agent and OpenCode are supported on the Ubuntu subset. OpenCode needs a glibc Node.js runtime, so it is not expected to work on the Alpine subset.
+2. 88 of 731 instances require a different Nemo-Skills container based on Alpine Linux. The dockerfile for this container is provided [here](https://github.com/NVIDIA-NeMo/Skills/tree/main/dockerfiles/swe-bench/Dockerfile.nemo-skills.alpine). A single evaluation can run both subsets by using `--main_container` for Ubuntu tasks and `--alpine_container` for Alpine tasks.
+3. Due to technical issues, OpenHands is not supported for this benchmark. SWE-agent, mini-SWE-agent, OpenCode, and Claude Code support both the Ubuntu and Alpine subsets. NeMo-Skills installs musl-compatible OpenCode and Node.js runtimes for Alpine tasks.
 
 #### Sample run
 
@@ -463,44 +573,22 @@ Here's how to run a sample evaluation of [Qwen3-Coder-Next](https://huggingface.
 
     The data preparation command will create 2 dataset files: `default.alpine.jsonl` for the Alpine-based instances and `default.ubuntu.jsonl` for the Ubuntu-based instances.
 
-2. Run 2 jobs:
-
-    Alpine subset:
+2. Run both subsets in one evaluation:
 
     ```
     ns eval \
         --cluster=<CLUSTER_NAME> \
-        --main_container=<PATH_TO_ALPINE_NS_CONTAINER> \
+        --main_container=<PATH_TO_UBUNTU_NS_CONTAINER> \
+        --alpine_container=<PATH_TO_ALPINE_NS_CONTAINER> \
         --model=Qwen/Qwen3-Coder-Next \
         --server_type=vllm \
         --server_args="--enable-auto-tool-choice --tool-call-parser qwen3_coder" \
         --server_nodes=1 \
         --server_gpus=8 \
         --benchmarks=swe-bench-pro \
-        --output_dir=<OUTPUT_DIR_ALPINE> \
-        --split=default.alpine \
-        --num_chunks=13 \
-        ++agent_framework=swe_agent \
-        ++inference.temperature=1.0 \
-        ++inference.top_p=0.95 \
-        ++inference.top_k=40 \
-        ++agent_max_turns=300
-    ```
-
-    Ubuntu subset:
-
-    ```
-    ns eval \
-        --cluster=<CLUSTER_NAME> \
-        --model=Qwen/Qwen3-Coder-Next \
-        --server_type=vllm \
-        --server_args="--enable-auto-tool-choice --tool-call-parser qwen3_coder" \
-        --server_nodes=1 \
-        --server_gpus=8 \
-        --benchmarks=swe-bench-pro \
-        --output_dir=<OUTPUT_DIR_UBUNTU> \
-        --split=default.ubuntu \
-        --num_chunks=2 \
+        --output_dir=<OUTPUT_DIR> \
+        --split=default.ubuntu,default.alpine \
+        --num_chunks=15 \
         ++agent_framework=swe_agent \
         ++inference.temperature=1.0 \
         ++inference.top_p=0.95 \
@@ -510,12 +598,37 @@ Here's how to run a sample evaluation of [Qwen3-Coder-Next](https://huggingface.
 
     replacing <...> with your desired parameters.
 
-After all jobs are complete, you can check the results in `<OUTPUT_DIR_ALPINE>/eval-results/swe-bench-pro/metrics.json` and `<OUTPUT_DIR_UBUNTU>/eval-results/swe-bench-pro/metrics.json`. The combined score on both subsets should be around 40%.
+NeMo-Skills allocates chunks proportionally between the two splits, runs each rollout with the correct client container, and merges the outputs before computing metrics. After all jobs are complete, check the combined result in `<OUTPUT_DIR>/eval-results/swe-bench-pro/metrics.json`. The score should be around 40%.
+
+The command above uses the default Apptainer backend. To run the task images remotely with OpenSandbox, prepare
+the dataset with the default command so each row retains its OCI `docker_image`, export `OPENSANDBOX_DOMAIN` and
+`OPENSANDBOX_API_KEY`, and add `++execution_backend=opensandbox`. Both subsets can share the regular NeMo-Skills
+coordinator container, so `--alpine_container` is not needed:
+
+```
+ns eval \
+    --cluster=<CLUSTER_NAME> \
+    --model=Qwen/Qwen3-Coder-Next \
+    --server_type=vllm \
+    --server_args="--enable-auto-tool-choice --tool-call-parser qwen3_coder" \
+    --server_nodes=1 \
+    --server_gpus=8 \
+    --benchmarks=swe-bench-pro \
+    --output_dir=<OUTPUT_DIR> \
+    --split=default.ubuntu,default.alpine \
+    --num_chunks=15 \
+    ++agent_framework=mini_swe_agent \
+    ++execution_backend=opensandbox \
+    ++max_concurrent_requests=2
+```
+
+OpenSandbox creates each agent and verifier from the row's Ubuntu or Alpine task image. Apptainer continues to use
+`container_formatter`, including local `.sif` paths, and remains the default.
 
 Keep in mind there is some variance between runs, so we recommend running evaluation multiple times and averaging out the resolve rate. To do that automatically, you can set `--benchmarks=swe-bench-pro:N`, where N is your desired number of repeats.
 
-To evaluate the same model with mini-SWE-agent or OpenCode,
-replace `swe_agent` with `mini_swe_agent` or `opencode` in the Ubuntu command. OpenHands is not supported for this benchmark. OpenCode is not expected to work on the Alpine subset.
+To use another supported agent, replace `swe_agent` with `mini_swe_agent`, `opencode`, or `claude_code`.
+These agents support both subsets with Apptainer and OpenSandbox. OpenHands is not supported for this benchmark.
 
 !!! note
     There are some instances where the gold (ground truth) patches do not pass the evaluation tests. Therefore, it's likely that on those instances even patches that resolve the issue will be incorrectly evaluated as "unresolved". We have observed 18 such instances in SWE-bench Pro:
@@ -526,6 +639,65 @@ replace `swe_agent` with `mini_swe_agent` or `opencode` in the Ubuntu command. O
 
 !!! note
     For evaluation, we use a [custom fork](https://github.com/wasiahmad/SWE-bench_Pro-os) of the SWE-bench Pro repository that supports running evaluation inside of an existing container. It may not always have the latest updates from the upstream repo.
+
+### swe-bench-pro-v2
+
+- Benchmark data is defined in [`nemo_skills/dataset/swe-bench-pro-v2`](https://github.com/NVIDIA-NeMo/Skills/tree/main/nemo_skills/dataset/swe-bench-pro-v2).
+- The official V2 task release and protocol are [here](https://github.com/scaleapi/SWE-bench_Pro-os/tree/main/v2).
+
+SWE-bench Pro V2 uses Harbor verifier tasks and fresh-sandbox grading. Preparation downloads the Hugging Face
+`default` (642 tasks) and `hard` (HARD-51) configs, then clones the official repository at the pinned `v2.0.0`
+release and materializes its verifier tasks under `<DATA_DIR>/swe-bench-pro-v2/tasks`. The temporary Git checkout is
+removed after preparation.
+
+```bash
+ns prepare_data swe-bench-pro-v2 \
+    --cluster=<CLUSTER_NAME> \
+    --data_dir=<DATA_DIR>
+```
+
+This creates `default.alpine.jsonl`, `default.ubuntu.jsonl`, `hard.alpine.jsonl`, and `hard.ubuntu.jsonl`. As with
+V1, run Alpine and Ubuntu subsets separately. Pass `--container_formatter` when using locally converted SIF images.
+
+Evaluation follows the official locked protocol:
+
+1. mini-SWE-agent runs without network access; model calls are forwarded through NeMo-Skills' local proxy.
+2. Only the captured `model.patch` leaves the agent sandbox.
+3. The patch is applied to a pristine task image and the unchanged `tests/test.sh` verifier is run.
+4. The verifier retains public network access because some tasks fetch dependencies while testing.
+
+```bash
+ns eval \
+    --cluster=<CLUSTER_NAME> \
+    --data_dir=<DATA_DIR> \
+    --model=<MODEL> \
+    --server_type=vllm \
+    --server_gpus=8 \
+    --benchmarks=swe-bench-pro-v2 \
+    --split=default.ubuntu \
+    --output_dir=<OUTPUT_DIR>
+```
+
+Use `--split=hard.ubuntu` or `hard.alpine` for HARD-51. The default locked networking mode requires mini-SWE-agent
+with the Apptainer backend, or mini-SWE-agent with OpenSandbox:
+
+```bash
+ns eval \
+    --cluster=<CLUSTER_NAME> \
+    --data_dir=<DATA_DIR> \
+    --model=<MODEL> \
+    --server_type=vllm \
+    --server_gpus=8 \
+    --benchmarks=swe-bench-pro-v2 \
+    --split=default.ubuntu \
+    --output_dir=<OUTPUT_DIR> \
+    ++execution_backend=opensandbox
+```
+
+OpenSandbox uploads the task's verifier files only to a fresh grading sandbox; they are not exposed to the
+network-restricted agent sandbox. It requires the prepared OCI `docker_image` references and does not accept local
+SIF images. Other agents can be used by explicitly disabling `++block_network`, except OpenHands, which is not
+supported for SWE-bench Pro V2.
 
 ### compute-eval
 

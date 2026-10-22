@@ -15,10 +15,22 @@
 import pytest
 
 from nemo_skills.inference.eval.swebench import (
+    build_claude_code_install_command,
     build_claude_code_settings,
     get_claude_code_api_base,
     transform_claude_code_request,
 )
+
+
+def test_claude_code_installer_bundles_alpine_node_runtime():
+    command = build_claude_code_install_command("2.1.259")
+
+    assert "apk add --no-cache nodejs npm" in command
+    assert "npm install -g --prefix /root/claude-code @anthropic-ai/claude-code@2.1.259" in command
+    assert "/root/node/bin/node-native" in command
+    assert "ld-musl-${MUSL_ARCH}.so.1" in command
+    assert "node-v${NODE_VERSION}-${NODE_ARCH}.tar.gz" in command
+    assert "export PATH=/root/claude-code/bin:/root/node/bin:$PATH" in command
 
 
 @pytest.mark.parametrize(

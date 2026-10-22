@@ -242,13 +242,14 @@ class SeniorSweBenchGenerationTask(SweBenchGenerationTask):
         mode,
         timeout=100000,
         extra_apptainer_args="",
+        extra_mounts=(),
     ):
         if mode == "agent" and self.cfg.use_agent_timeouts and data_point.get("agent_timeout_sec"):
             timeout = int(data_point.get("agent_timeout_sec")) + 120
         if mode == "eval" and self.cfg.use_verifier_timeouts and data_point.get("verifier_timeout_sec"):
             timeout = int(data_point.get("verifier_timeout_sec")) + 120
         return await SweBenchGenerationTask._execute_container_command(
-            self, data_point, command, expected_file_pattern, mode, timeout, extra_apptainer_args
+            self, data_point, command, expected_file_pattern, mode, timeout, extra_apptainer_args, extra_mounts
         )
 
     def _resolve_tests_dir(self, data_point: dict) -> Path:
@@ -275,16 +276,26 @@ class SeniorSweBenchGenerationTask(SweBenchGenerationTask):
             data_point.get("repo_name") or Path(data_point.get("container_repo_dir", "/repo")).name
         )
 
-        tests_dir = self._resolve_tests_dir(data_point)
-        extra_apptainer_args = f" --mount type=bind,src={tests_dir},dst=/tests,ro "
-        extra_apptainer_args += _verifier_env_apptainer_args(repo_name)
+        extra_mounts = [
+            (self._resolve_tests_dir(data_point), "/tests", True),
+            (patch_path, "/patch_mount/model.patch", True),
+        ]
+        extra_apptainer_args = _verifier_env_apptainer_args(repo_name)
 
         instance_id = data_point["instance_id"]
+        out_dir = f"/trajectories_mount/eval-outputs/{instance_id}"
+        save_outputs = (
+            f"mkdir -p {out_dir} && "
+            f"cp -r /logs/verifier/. {out_dir}/ && "
+            # Create an .eval_done marker to indicate that the evaluation was completed (used as search_path below).
+            # Accept either reward.json or reward.txt existing.
+            f"if [ -f {out_dir}/reward.json ] || [ -f {out_dir}/reward.txt ]; then touch {out_dir}/.eval_done; fi"
+        )
         # SSB test.sh assumes a post-agent dirty tree under /repo/$REPO_NAME.
         # Apply the captured model.patch first; on failure write apply_failed reward.
         verifier_cmd = (
             "mkdir -p /logs/artifacts /logs/verifier && "
-            f"cp /trajectories_mount/patches/{instance_id}.patch /logs/artifacts/model.patch && "
+            "cp /patch_mount/model.patch /logs/artifacts/model.patch && "
             "export TESTS_DIR=/tests && "
             "export VERIFIER_DIR=/logs/verifier && "
             "export ARTIFACTS_DIR=/logs/artifacts && "
@@ -292,8 +303,7 @@ class SeniorSweBenchGenerationTask(SweBenchGenerationTask):
             f"cd /repo/{repo_name} || {{ "
             '  echo \'{"reward": 0, "apply_failed": 1}\' > /logs/verifier/reward.json; '
             "  echo 0 > /logs/verifier/reward.txt; "
-            f"  mkdir -p /trajectories_mount/eval-outputs/{instance_id} && "
-            f"  cp -r /logs/verifier/. /trajectories_mount/eval-outputs/{instance_id}/; "
+            f"  {save_outputs}; "
             "  exit 0; "
             "} && "
             "if ! git apply --whitespace=nowarn /logs/artifacts/model.patch 2>/logs/verifier/apply.err; then "
@@ -301,17 +311,15 @@ class SeniorSweBenchGenerationTask(SweBenchGenerationTask):
             "      >>/logs/verifier/apply.err 2>&1; then "
             '    echo \'{"reward": 0, "apply_failed": 1}\' > /logs/verifier/reward.json; '
             "    echo 0 > /logs/verifier/reward.txt; "
-            f"    mkdir -p /trajectories_mount/eval-outputs/{instance_id} && "
-            f"    cp -r /logs/verifier/. /trajectories_mount/eval-outputs/{instance_id}/; "
+            f"    {save_outputs}; "
             "    exit 0; "
             "  fi; "
             "fi && "
             "bash /tests/test.sh; "
-            f"mkdir -p /trajectories_mount/eval-outputs/{instance_id} && "
-            f"cp -r /logs/verifier/. /trajectories_mount/eval-outputs/{instance_id}/"
+            f"{save_outputs}"
         )
 
-        search_path = str(eval_out / "reward.*")
+        search_path = str(eval_out / ".eval_done")
         try:
             await self._execute_container_command(
                 data_point,
@@ -320,8 +328,9 @@ class SeniorSweBenchGenerationTask(SweBenchGenerationTask):
                 mode="eval",
                 timeout=self.cfg.swebench_tests_timeout + 120,
                 extra_apptainer_args=extra_apptainer_args,
+                extra_mounts=extra_mounts,
             )
-        except ValueError:
+        except (ValueError, RuntimeError):
             if not (eval_out / "reward.json").exists() and not (eval_out / "reward.txt").exists():
                 LOG.error("Senior SWE-Bench verifier failed for %s", instance_id)
                 return parse_senior_swe_bench_reward(None, patch_exists=True)

@@ -23,6 +23,7 @@ from nemo_skills.inference.eval.swebench import (
     build_clean_patch_commands,
     build_direct_agent_user_prompt,
     build_opencode_config,
+    build_opencode_install_command,
 )
 
 
@@ -142,6 +143,19 @@ def test_build_opencode_config_merges_user_keys():
     model = config["provider"][OPENCODE_PROVIDER_ID]["models"]["Qwen/Qwen3-Coder-30B-A3B-Instruct"]
     assert model["limit"]["output"] == OPENCODE_DEFAULT_OUTPUT_TOKEN_MAX
     assert "options" not in model
+
+
+def test_opencode_installer_selects_native_musl_package_for_alpine():
+    command = build_opencode_install_command("1.17.11")
+
+    assert "opencode-linux-arm64-musl" in command
+    assert "opencode-linux-x64-baseline-musl" in command
+    assert "${OPENCODE_MUSL_PACKAGE}@1.17.11" in command
+    assert "ln -sf opencode-native /root/opencode/bin/opencode" in command
+    assert "ld-musl-${MUSL_ARCH}.so.1" in command
+    assert "libstdc++.so.6" in command
+    assert "/root/node/bin/node-native" in command
+    assert "node-v${NODE_VERSION}-${NODE_ARCH}.tar.gz" in command
 
 
 def test_append_extra_instructions_keeps_prompt_inside_instruction_tags():

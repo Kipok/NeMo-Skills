@@ -44,6 +44,8 @@ from pathlib import Path
 
 import tomlkit
 
+from nemo_skills.dataset.utils import get_swe_sanitization_command
+
 DEFAULT_REPO = "https://github.com/datacurve-ai/deep-swe.git"
 # Default keeps the official ECR image reference. Prefer pointing at pre-built .sif paths
 # on Slurm via --container_formatter, e.g. "/path/{instance_id}.sif".
@@ -187,6 +189,7 @@ def _load_task(task_dir: Path, container_formatter: str, dataset_dir: Path) -> d
         # Used by ++agent_framework=gold_patch
         "patch": solution_patch,
         "dataset_name": "datacurve/deep-swe",
+        "pre_commands": get_swe_sanitization_command(),
     }
 
 
