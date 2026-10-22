@@ -184,7 +184,7 @@ class ScaleSweGenerationTask(SweBenchGenerationTask):
                 mode="eval",
                 timeout=self.cfg.swebench_tests_timeout + 120,
             )
-        except ValueError:
+        except (ValueError, RuntimeError):
             LOG.error("Scale-SWE verifier failed for %s", instance_id)
             return normalize_scale_swe_report(None)
 

@@ -192,12 +192,14 @@ class DeepSweGenerationTask(SweBenchGenerationTask):
             shutil.rmtree(eval_out)
         eval_out.mkdir(parents=True, exist_ok=True)
 
-        extra_mounts = [
-            (self._resolve_tests_dir(data_point), "/tests", True),
-            (patch_path, "/patch_mount/model.patch", True),
-        ]
+        extra_mounts = []
+        for file in ["config.json", "Dockerfile", "grader.py", "test.patch", "test.sh"]:
+            extra_mounts.append((self._resolve_tests_dir(data_point) / file, f"/tests/{file}", True))
+        extra_mounts.append((patch_path, "/patch_mount/model.patch", True))
+
         extra_apptainer_args = ""
-        if data_point["instance_id"] in NETWORK_ISOLATED_VERIFIER_TASKS:
+        if self.cfg.execution_backend == "apptainer" and data_point["instance_id"] in NETWORK_ISOLATED_VERIFIER_TASKS:
+            # On OpenSandbox, containers never share the same network namespace, so there is no need to isolate.
             extra_apptainer_args = " --net --network none "
 
         out_dir = f"/trajectories_mount/eval-outputs/{data_point['instance_id']}"
@@ -228,7 +230,7 @@ class DeepSweGenerationTask(SweBenchGenerationTask):
                 extra_apptainer_args=extra_apptainer_args,
                 extra_mounts=extra_mounts,
             )
-        except ValueError:
+        except (ValueError, RuntimeError):
             if not (eval_out / "reward.json").exists() and not (eval_out / "reward.txt").exists():
                 LOG.error("DeepSWE verifier failed for %s", data_point["instance_id"])
                 return parse_deepswe_reward(None, patch_exists=True)

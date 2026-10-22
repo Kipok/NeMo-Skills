@@ -330,7 +330,7 @@ class SeniorSweBenchGenerationTask(SweBenchGenerationTask):
                 extra_apptainer_args=extra_apptainer_args,
                 extra_mounts=extra_mounts,
             )
-        except ValueError:
+        except (ValueError, RuntimeError):
             if not (eval_out / "reward.json").exists() and not (eval_out / "reward.txt").exists():
                 LOG.error("Senior SWE-Bench verifier failed for %s", instance_id)
                 return parse_senior_swe_bench_reward(None, patch_exists=True)

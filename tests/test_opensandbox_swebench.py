@@ -883,23 +883,7 @@ def test_supplied_patch_keeps_opensandbox_dataset_restrictions(executor, monkeyp
         execution_backend="opensandbox",
     )
 
-    with pytest.raises(ValueError, match="SWE-bench Pro V1"):
-        SweBenchGenerationTask(cfg)
-
-
-def test_agent_harness_cannot_use_opensandbox_for_swe_rebench_v2(tmp_path):
-    dataset = tmp_path / "dataset.jsonl"
-    dataset.write_text("{}\n")
-    cfg = SweBenchGenerationConfig(
-        _init_nested=True,
-        input_file=str(dataset),
-        output_file=str(tmp_path / "output.jsonl"),
-        agent_framework="mini_swe_agent",
-        dataset_type=SupportedDatasetTypes.swe_rebench_v2,
-        execution_backend="opensandbox",
-    )
-
-    with pytest.raises(ValueError, match="SWE-rebench V2 for supplied-patch grading"):
+    with pytest.raises(ValueError, match="SWE-Zero"):
         SweBenchGenerationTask(cfg)
 
 

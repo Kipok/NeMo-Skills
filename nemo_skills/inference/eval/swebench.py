@@ -697,19 +697,8 @@ class SweBenchGenerationTask(GenerationTask):
 
             if self.cfg.agent_framework not in OPENSANDBOX_AGENT_FRAMEWORKS | SUPPLIED_PATCH_FRAMEWORKS:
                 raise ValueError(f"Unsupported OpenSandbox agent framework: {self.cfg.agent_framework}.")
-            supports_dataset = self.cfg.dataset_type in {
-                SupportedDatasetTypes.swe_bench,
-                SupportedDatasetTypes.swe_bench_pro,
-                SupportedDatasetTypes.swe_bench_pro_v2,
-            } or (
-                self.cfg.dataset_type == SupportedDatasetTypes.swe_rebench_v2
-                and self.cfg.agent_framework in SUPPLIED_PATCH_FRAMEWORKS
-            )
-            if not supports_dataset or self.cfg.swe_zero_container:
-                raise ValueError(
-                    "OpenSandbox supports standard SWE-bench, SWE-bench Multilingual, and SWE-bench Pro V1/V2 "
-                    "task images, plus SWE-rebench V2 for supplied-patch grading."
-                )
+            if self.cfg.swe_zero_container is not None:
+                raise ValueError("OpenSandbox + SWE-Zero is currently not supported.")
             self.opensandbox_executor = OpenSandboxExecutor(**self.cfg.opensandbox)
             if self.cfg.agent_framework in OPENSANDBOX_AGENT_FRAMEWORKS:
                 if self.cfg.opensandbox_proxy_host is None:
@@ -914,7 +903,8 @@ class SweBenchGenerationTask(GenerationTask):
                 f"git checkout {self.cfg.agent_framework_commit} && "
                 # skip installing playwright, it is only needed for browsing features
                 "export INSTALL_PLAYWRIGHT=0 && "
-                # tell poetry to store venvs inside of the project folder (/root/OpenHands)
+                # tell poetry to create venvs and store them inside of the project folder (/root/OpenHands)
+                "export POETRY_VIRTUALENVS_CREATE=true && "
                 "export POETRY_VIRTUALENVS_IN_PROJECT=true && "
                 # this will make a venv using poetry & install openhands dependencies
                 # we no longer use 'make build' because it installs lots of unnecessary dependencies, e.g. frontend
