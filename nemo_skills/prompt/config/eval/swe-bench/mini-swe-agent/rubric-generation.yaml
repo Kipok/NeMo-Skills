@@ -56,10 +56,10 @@ agent:
       • If you need to forbid something, just mention the exact string '@pytest.mark.skip', etc
 
     Axes (execution-free):
-      • file_change_rubrics (4 - 12 rubrics): Scope, locality, and sufficiency of edits in PATCH (files/symbols/guards/regexes/flags). Penalize unrelated file churn; reward minimal, reversible diffs tied to the stated bug.
-      • spec_alignment_rubrics (3 - 9 rubrics): Alignment of code to PR_DESCRIPTION. Use textual acceptance criteria (required types/conditions/error handling/API contracts) and ensure the patch reflects them.
-      • integrity_rubrics (3 - 9 rubrics): Hygiene and "no-cheating" safeguards - avoid test weakening (if tests appear in PATCH), mass renames, or dependency churn; preserve public API/semantics unless PR_DESCRIPTION requires otherwise.
-      • runtime_rubrics (3 - 9 rubrics): Natural-language criteria describing **intended runtime behavior** (NOT concrete tests), supported by execution-free textual evidence.
+      • file_change_rubrics (4 - 8 rubrics): Scope, locality, and sufficiency of edits in PATCH (files/symbols/guards/regexes/flags). Penalize unrelated file churn; reward minimal, reversible diffs tied to the stated bug.
+      • spec_alignment_rubrics (3 - 6 rubrics): Alignment of code to PR_DESCRIPTION. Use textual acceptance criteria (required types/conditions/error handling/API contracts) and ensure the patch reflects them.
+      • integrity_rubrics (3 - 6 rubrics): Hygiene and "no-cheating" safeguards - avoid test weakening (if tests appear in PATCH), mass renames, or dependency churn; preserve public API/semantics unless PR_DESCRIPTION requires otherwise.
+      • runtime_rubrics (3 - 6 rubrics): Natural-language criteria describing **intended runtime behavior** (NOT concrete tests), supported by execution-free textual evidence.
         - **Distinguishability:** Ensures the patch introduces or preserves signals that differentiate correct vs. incorrect behavior under plausible inputs (e.g., specific exception class, sentinel return, boundary guard).
         - **Regression safety:** Confirms backward-compatibility constraints (e.g., original API signatures/flags remain valid, deprecations gated via warnings).
         - **Determinism / flake resistance:** Avoids nondeterministic sources at runtime (unseeded randomness, wall-clock sleeps, network I/O) that would make tests flaky.
