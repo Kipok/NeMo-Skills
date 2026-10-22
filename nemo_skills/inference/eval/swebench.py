@@ -1661,14 +1661,6 @@ class SweBenchGenerationTask(GenerationTask):
 
         instance_id = data_point["instance_id"]
 
-        # Solution files are written to the mounted output dir, then copied into the container before the agent runs.
-        copy_solution_command = ""
-        if self.cfg.verifier_sees_traj:
-            solution_dirname = f"solution_{json.loads(data_point['original_run_metadata'])['run_id']}"
-            host_solution_dir = self.output_dir / "solutions" / instance_id / solution_dirname
-            full_config["run"]["template_vars"]["solution_dir"] = f"/{solution_dirname}"
-            copy_solution_command = f"cp -r /trajectories_mount/solutions/{instance_id}/{solution_dirname} / && "
-
         if "agent" not in full_config:
             full_config["agent"] = {}
         if "instance_template" not in full_config["agent"]:
@@ -1692,12 +1684,16 @@ class SweBenchGenerationTask(GenerationTask):
             }
         )
 
-        problem_statement = self._get_agent_problem_statement(data_point)
-        instance_id = data_point["instance_id"]
         host_config_path = self.scratch_dir / f"mini_swe_agent_config_{instance_id}.yaml"
         container_config_path = "/mini_swe_agent_config.yaml"
-
         extra_mounts = [(host_config_path, container_config_path, True)]
+
+        if self.cfg.verifier_sees_traj:
+            solution_dirname = f"solution_{json.loads(data_point['original_run_metadata'])['run_id']}"
+            host_solution_dir = self.scratch_dir / "solutions" / instance_id / solution_dirname
+            full_config["run"]["template_vars"]["solution_dir"] = f"/{solution_dirname}"
+            extra_mounts.append((host_solution_dir, f"/{solution_dirname}", True))
+
         unix_socket = None
         extra_apptainer_args = ""
         forwarder_command = ""
@@ -1723,7 +1719,6 @@ class SweBenchGenerationTask(GenerationTask):
             self._write_scratch_artifact(host_config_path, yaml.dump(full_config))
 
             return (
-                f"{copy_solution_command}"
                 "cp -r /root_mount/mini-swe-agent /root && "
                 "cp -r /root_mount/uv /root && "
                 f"{forwarder_command}"
