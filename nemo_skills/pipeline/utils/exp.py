@@ -40,6 +40,7 @@ from nemo_skills.pipeline.utils.mounts import (
     check_remote_mount_directories,
     get_mounts_from_config,
     get_unmounted_path,
+    hf_home_not_mounted_message,
     is_mounted_filepath,
     normalize_mounts_list,
 )
@@ -565,7 +566,7 @@ def add_task(
                 "Please add a new variable: HF_HOME=/mounted/path/to/your/hf_home"
             )
         if not is_mounted_filepath(cluster_config, env_vars["HF_HOME"]):
-            raise RuntimeError(f"Invalid cluster_config: HF_HOME={env_vars['HF_HOME']} is not a mounted path.")
+            raise RuntimeError(hf_home_not_mounted_message(cluster_config, env_vars["HF_HOME"]))
 
     # Ray executor path: bypass nemo_run.Experiment.add() and submit directly via
     # RayJobClient. Scoped to single-command Ray jobs; unsupported modes raise

@@ -36,7 +36,12 @@ from nemo_skills.pipeline.utils.exp import (
     get_packaging_job_key,
     tunnel_hash,
 )
-from nemo_skills.pipeline.utils.mounts import get_mounts_from_config, is_mounted_filepath, normalize_mounts_list
+from nemo_skills.pipeline.utils.mounts import (
+    get_mounts_from_config,
+    hf_home_not_mounted_message,
+    is_mounted_filepath,
+    normalize_mounts_list,
+)
 from nemo_skills.pipeline.utils.scripts import SandboxScript
 from nemo_skills.pipeline.utils.server import wrap_python_path
 from nemo_skills.utils import get_logger_name
@@ -422,7 +427,7 @@ class Pipeline:
                     "Please add a new variable: HF_HOME=/mounted/path/to/your/hf_home"
                 )
             if not is_mounted_filepath(self.cluster_config, env_vars["HF_HOME"]):
-                raise RuntimeError(f"Invalid cluster_config: HF_HOME={env_vars['HF_HOME']} is not a mounted path.")
+                raise RuntimeError(hf_home_not_mounted_message(self.cluster_config, env_vars["HF_HOME"]))
 
     def run(self, dry_run: bool = False, log_dir: Optional[str] = None, _reuse_exp=None, sequential: bool = False):
         """Execute the pipeline by calling NeMo-Run directly.
