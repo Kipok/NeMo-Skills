@@ -457,3 +457,57 @@ def test_add_task_sandbox_mounts_override_keep_mounts_true(mock_port, mock_get_e
     )
 
     assert mock_get_executor.call_args_list[-1].kwargs["mounts"] == ["/host/data:/sandbox/data:ro"]
+
+
+HF_HOME_TEST_MOUNTS = ["/lustre/fsw/user/hf_cache:/cache/huggingface", "/lustre/fsw/user/data:/data"]
+
+
+def _check_hf_home(raise_site, hf_home):
+    """Runs the HF_HOME check of the given entry point and returns the raised error message."""
+    from types import SimpleNamespace
+
+    from nemo_skills.pipeline.utils.declarative import Pipeline
+    from nemo_skills.pipeline.utils.exp import add_task
+
+    cluster_config = {
+        "executor": "slurm",
+        "containers": {},
+        "mounts": HF_HOME_TEST_MOUNTS,
+        "env_vars": [f"HF_HOME={hf_home}"],
+    }
+    with pytest.raises(RuntimeError, match="is not a mounted path") as exc_info:
+        if raise_site == "add_task":
+            add_task(
+                exp=SimpleNamespace(add=MagicMock()),
+                cmd="echo hello",
+                task_name="test-task",
+                cluster_config=cluster_config,
+                container="main:latest",
+                log_dir="/logs",
+                sandbox_port=12345,
+            )
+        else:
+            Pipeline(name="test", cluster_config=cluster_config, jobs=[{"name": "job1"}])
+    return str(exc_info.value)
+
+
+@pytest.mark.parametrize("raise_site", ["add_task", "pipeline"])
+@pytest.mark.parametrize(
+    "hf_home,suggested_hf_home",
+    [
+        ("/lustre/fsw/user/hf_cache", "/cache/huggingface"),
+        ("/lustre/fsw/user/hf_cache/hub", "/cache/huggingface/hub"),
+        ("/home/user/hf_cache", None),
+    ],
+)
+def test_hf_home_not_mounted_error_explains_container_path(raise_site, hf_home, suggested_hf_home):
+    message = _check_hf_home(raise_site, hf_home)
+
+    assert f"HF_HOME={hf_home} is not a mounted path" in message
+    assert "inside the container" in message
+    for mount in HF_HOME_TEST_MOUNTS:
+        assert mount in message
+    if suggested_hf_home is None:
+        assert "Did you mean" not in message
+    else:
+        assert f"Did you mean HF_HOME={suggested_hf_home}?" in message

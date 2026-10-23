@@ -46,6 +46,36 @@ def is_mounted_filepath(cluster_config: dict | None, path: str, mounts: Optional
     return False
 
 
+def hf_home_not_mounted_message(cluster_config: dict, hf_home: str) -> str:
+    """
+    Build the error message for an HF_HOME that is not inside any mount destination.
+
+    If HF_HOME points to the host side of a mount, the message suggests the matching path inside the container.
+
+    Args:
+        cluster_config: cluster config dictionary
+        hf_home: the HF_HOME value from the cluster config env_vars
+
+    Returns:
+        str: error message
+    """
+    mounts = get_mounts_from_config(cluster_config)
+    message = (
+        f"Invalid cluster_config: HF_HOME={hf_home} is not a mounted path.\n"
+        "HF_HOME is used inside the container, so it has to start with the destination of one of the mounts "
+        "(the part after ':' in source:destination), not with the host path.\n"
+        f"Configured mounts: {mounts}"
+    )
+    for mount in mounts:
+        mount_source, mount_dest = mount.split(":")
+        mount_source = mount_source.rstrip("/")
+        if hf_home == mount_source or hf_home.startswith(mount_source + "/"):
+            container_path = mount_dest.rstrip("/") + hf_home[len(mount_source) :]
+            message += f"\nHF_HOME matches the source of mount {mount}. Did you mean HF_HOME={container_path}?"
+            break
+    return message
+
+
 def check_if_mounted(cluster_config, path_to_check):
     """Will check that path_to_check is referenced inside one of the mounts."""
     if cluster_config["executor"] == "none":
