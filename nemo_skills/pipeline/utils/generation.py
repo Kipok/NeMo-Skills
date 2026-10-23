@@ -456,6 +456,13 @@ def get_generation_cmd(
 
     # Separate Hydra config args (--config-*) from override args (++)
     hydra_config_args, override_args = separate_hydra_args(extra_arguments)
+    # output_file is derived from output_dir, and the .done files and chunk merging rely on that path,
+    # so a user override would silently write somewhere else
+    for arg in shlex.split(extra_arguments):
+        if arg.split("=", 1)[0].lstrip("+~") == "output_file":
+            raise ValueError(
+                f"Setting output_file explicitly is not supported (got '{arg}'). Use --output_dir instead."
+            )
 
     # Handle file paths vs module names
     common_args = f"++skip_filled=True ++input_file={input_file} ++output_file={output_file}"

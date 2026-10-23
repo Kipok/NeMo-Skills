@@ -51,10 +51,9 @@ def label_data(cluster, expname, run_after, stage_config, **kwargs):
     """Labels the data for the GenSelect pipeline."""
     output_dir = stage_config["output_dir"]
     input_file = stage_config["input_file"]
-    output_file = f"{output_dir}/output.jsonl"
 
     generate(
-        ctx=wrap_arguments(f"++output_file={output_file} {stage_config.get('inline_args', '')} "),
+        ctx=wrap_arguments(stage_config.get("inline_args", "")),
         cluster=cluster,
         input_file=input_file,
         output_dir=output_dir,
