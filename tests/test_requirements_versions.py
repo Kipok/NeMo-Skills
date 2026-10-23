@@ -491,6 +491,17 @@ class TestStemRequirements:
         locked_version = Version(next(iter(setuptools.specifier)).version)
         assert Version("78.1.1") <= locked_version < Version("82")
 
+    @pytest.mark.parametrize(
+        ("package", "minimum"),
+        [("anyio", "4.15.1"), ("typing-extensions", "4.16.0")],
+    )
+    def test_sandbox_lock_keeps_anyio_typing_extensions_compatible(self, package, minimum):
+        # AnyIO 4.15.1 requires typing-extensions >=4.16.0 on the sandbox's Python 3.11.
+        req, _ = _find_requirement(SANDBOX_LOCK, package)
+        specs = {spec.operator: spec.version for spec in req.specifier}
+        assert "==" in specs, f"expected an exact lock pin for {package}, got {req.specifier}"
+        assert Version(specs["=="]) >= Version(minimum)
+
     def test_sandbox_uses_python_311_for_fixed_keras(self):
         dockerfile = SANDBOX_DOCKERFILE.read_text()
         assert "FROM tiangolo/uwsgi-nginx-flask:python3.11" in dockerfile

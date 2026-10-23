@@ -638,7 +638,6 @@ httpx==0.28.1
     #   langchain-core
     #   langgraph-sdk
     #   openai
-    #   rdflib
     #   weasel
     #   wikipedia-api
 httpx-sse==0.4.3
@@ -2332,7 +2331,7 @@ typer==0.24.1
     #   weasel
 types-pytz==2026.1.1.20260408
     # via pandas-stubs
-typing-extensions==4.15.0
+typing-extensions==4.16.0
     # via
     #   aiohttp
     #   aiosignal
