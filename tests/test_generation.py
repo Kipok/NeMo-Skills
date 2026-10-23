@@ -24,7 +24,7 @@ from nemo_skills.evaluation.metrics import ComputeMetrics
 from nemo_skills.inference.generate import GenerationTask, GenerationTaskConfig, InferenceConfig
 from nemo_skills.inference.model.base import BaseModel, EndpointType
 from nemo_skills.pipeline.generate import _create_job_unified
-from nemo_skills.pipeline.utils.generation import configure_client
+from nemo_skills.pipeline.utils.generation import configure_client, get_generation_cmd
 from nemo_skills.pipeline.utils.scripts import ServerScript
 
 
@@ -463,3 +463,30 @@ def test_parse_completion_response_token_counts(usage_kwargs, expected_input):
     result = model._parse_completion_response(response)
     assert result["num_generated_tokens"] == 10
     assert result.get("num_input_tokens") == expected_input
+
+
+@pytest.mark.parametrize(
+    "extra_arguments",
+    [
+        "++output_file=/tmp/x",
+        "+output_file=/tmp/x",
+        "output_file=/tmp/x",
+        "++inference.temperature=0.6 ++output_file=/tmp/x",
+    ],
+)
+def test_get_generation_cmd_rejects_output_file(extra_arguments):
+    with pytest.raises(ValueError, match="Setting output_file explicitly is not supported"):
+        get_generation_cmd(output_dir="/out", input_file="/in.jsonl", extra_arguments=extra_arguments)
+
+
+@pytest.mark.parametrize(
+    "extra_arguments",
+    [
+        "++prompt_suffix='output_file=/tmp/x'",
+        "++output_file_suffix=x",
+        "++inference.output_file=/tmp/x",
+    ],
+)
+def test_get_generation_cmd_allows_output_file_inside_other_args(extra_arguments):
+    cmd = get_generation_cmd(output_dir="/out", input_file="/in.jsonl", extra_arguments=extra_arguments)
+    assert cmd.count("++output_file=") == 1
